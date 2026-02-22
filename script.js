@@ -30,6 +30,11 @@ class StarBattleGame {
     const countLabel = document.getElementById('puzzle-count-label');
     const helpBtn = document.getElementById('help-btn');
 
+    this.lastLoadedSelection = {
+        catId: null,
+        puzNum: null
+    };
+
     // Populate Categories
     this.categories.forEach(cat => {
       const opt = document.createElement('option');
@@ -53,6 +58,8 @@ class StarBattleGame {
 
         // Auto-load the first one on category change
         puzInput.value = 1;
+        this.lastLoadedSelection.catId = catId;
+        this.lastLoadedSelection.puzNum = 1;
         this.loadPuzzle(this.loadedPuzzles[0], catId);
       } catch (err) {
         this.showToast("Could not load category", "error");
@@ -69,6 +76,14 @@ class StarBattleGame {
       if (isNaN(val)) val = 1;
       if (val < 1) val = 1;
       if (val > max) val = max;
+
+      // ignore this if nothing changed. Dunno why this happens.
+      if (this.lastLoadedSelection.catId === catId && 
+        this.lastLoadedSelection.puzNum === val) {
+        return; 
+      }
+      this.lastLoadedSelection.catId = catId;
+      this.lastLoadedSelection.puzNum = val;
 
       // 2. Sync the UI value
       puzInput.value = val;
