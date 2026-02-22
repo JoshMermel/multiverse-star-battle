@@ -19,6 +19,7 @@
   gap: 20px;
   width: 100%;
   min-height: 400px;
+  padding: 5px;
 }
 
 /* Desktop */
@@ -27,21 +28,33 @@
     /* On desktop, two boards + gap need to fit. 
     We use 40vw so both boards fit within ~80-90% of width */
   --cell-size: min(55px, 42vw / var(--grid-n));
-}
+  }
 
-#boards-wrapper {
-  flex-direction: row; /* Force side-by-side */
-  flex-wrap: nowrap;   /* Never wrap to a new line */
-  justify-content: center;
-  gap: 40px;
-}
+  #boards-wrapper {
+    flex-direction: row; /* Force side-by-side */
+    flex-wrap: nowrap;   /* Never wrap to a new line */
+    justify-content: center;
+    gap: 40px;
+  }
 }
 
 /* Mobile */
 @media (max-width: 600px) {
   :root {
-    --cell-size: 30px; 
+    --cell-size: clamp(30px, 90vw / var(--grid-n), 65px);
   }
+
+  .menu-container {
+        flex-wrap: wrap; /* Allows the 'Puzzle #' row to drop below 'Book' if needed */
+        gap: 8px;
+        padding: 8px 4px;
+        font-size: 14px; /* Slightly smaller text saves space */
+    }
+
+    #puzzle-input {
+        width: 50px; /* Slimmer input for mobile fingers */
+        height: 35px;
+    }
 }
 
 .grid-wrapper {
@@ -53,6 +66,7 @@
   display: grid;
   background: var(--grid-bg);
   user-select: none;
+  max-width: 100vw;
 }
 
 .region-svg {

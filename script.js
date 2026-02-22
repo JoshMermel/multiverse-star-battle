@@ -52,36 +52,56 @@ class StarBattleGame {
 
         // Auto-load the first one on category change
         puzInput.value = 1;
-        this.loadPuzzle(this.loadedPuzzles[0]);
+        this.loadPuzzle(this.loadedPuzzles[0], catId);
       } catch (err) {
         this.showToast("Could not load category", "error");
         console.log(err);
       }
     };
 
-    puzInput.oninput = (e) => {
-      let val = parseInt(e.target.value);
+    const commitPuzzleSelection = () => {
+      let val = parseInt(puzInput.value);
       const max = this.loadedPuzzles.length;
+      const catId = catSelect.value;
 
-      // 1. If not a number, default to first (1)
+      // 1. Validation & Clamping
       if (isNaN(val)) val = 1;
-
-      // 2. Clamp values (Min 1, Max count)
       if (val < 1) val = 1;
       if (val > max) val = max;
 
-      // 3. Update the display in case we clamped it
-      // We use a small timeout so it doesn't fight the user while typing
-      clearTimeout(this.inputTimeout);
-      this.inputTimeout = setTimeout(() => {
-        e.target.value = val;
-        this.loadPuzzle(this.loadedPuzzles[val - 1]);
-      }, 300);
+      // 2. Sync the UI value
+      puzInput.value = val;
+
+      // 3. Load the puzzle
+      this.loadPuzzle(this.loadedPuzzles[val - 1], catId);
     };
+
+    puzInput.addEventListener('input', (e) => {
+        // 'inputType' is null or 'insertReplacementText' when arrows are clicked
+        // If the user is typing, we wait for Enter. 
+        // If they click the arrows, it triggers immediately.
+        if (e.inputType === undefined || e.inputType === 'insertReplacementText') {
+            commitPuzzleSelection();
+        }
+    });
+
+    puzInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault(); // Stop form submission if inside a form
+        commitPuzzleSelection();
+        puzInput.blur(); // Optional: remove focus after selection
+      }
+    });
+
+    // Optional: Also commit if the user clicks out of the box
+    puzInput.addEventListener('blur', () => {
+        commitPuzzleSelection();
+    });
   }
 
-  loadPuzzle(puzzleData) {
+  loadPuzzle(puzzleData, categoryId) {
     // Save the reference to the current puzzle data
+    this.currentPuzzleUniqueId = `${categoryId}_${puzzleData.id}`;
     this.currentPuzzle = puzzleData;
 
     // Map data to game properties
@@ -101,6 +121,7 @@ class StarBattleGame {
     // Re-run the board creation logic
     this.init(); 
     this.showToast(`Playing Puzzle ${puzzleData.id}`, "info");
+    this.loadProgress();
   }
 
   init() {
@@ -235,6 +256,7 @@ class StarBattleGame {
     this.state[idx] = type;
     this.updateVisuals();
     this.validate();
+    this.saveCurrentState();
   }
 
   validate() {
@@ -307,6 +329,7 @@ class StarBattleGame {
     const isWin = this.state.every((v, i) => (this.solution[i] === 'x') ? v === 'star' : v !== 'star');
     if (isWin && errorIndices.size === 0) {
       this.showToast("🏆 Perfect! You've solved the Star Battle!", "win");
+      this.markAsSolved();
     }
   }
 
@@ -397,6 +420,37 @@ class StarBattleGame {
     document.getElementById('redo-btn').onclick = () => this.redo();
     document.getElementById('reset-btn').onclick = () => this.reset();
     document.getElementById('check-btn').onclick = () => this.checkCorrectness();
+  }
+
+  saveCurrentState() {
+      const key = `sb_state_${this.currentPuzzleUniqueId}`;
+      localStorage.setItem(key, JSON.stringify(this.state));
+  }
+  markAsSolved() {
+      const solved = JSON.parse(localStorage.getItem('sb_solved') || '[]');
+      if (!solved.includes(this.currentPuzzleUniqueId)) {
+          solved.push(this.currentPuzzleUniqueId);
+          localStorage.setItem('sb_solved', JSON.stringify(solved));
+      }
+      this.updateSolvedUI();
+  }
+  loadProgress() {
+      // 1. Load the board state if it exists
+      const savedState = localStorage.getItem(`sb_state_${this.currentPuzzleUniqueId}`);
+      if (savedState) {
+          this.state = JSON.parse(savedState);
+          this.updateVisuals();
+      }
+
+      // 2. Check if this puzzle was already solved to show a checkmark
+      this.updateSolvedUI();
+  }
+  updateSolvedUI() {
+    const solved = JSON.parse(localStorage.getItem('sb_solved') || '[]');
+    const badge = document.getElementById('solved-badge');
+
+    const isSolved = solved.includes(this.currentPuzzleUniqueId);
+    badge.style.visibility = isSolved ? 'visible' : 'hidden';
   }
 }
 
