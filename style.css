@@ -1,0 +1,205 @@
+:root {
+  /* N is our number of cells. JS will update this property. */
+  --grid-n: 8;
+
+  /* Calculate cell size: 90% of screen width divided by N */
+  /* We also cap it at 50px so it doesn't get huge on desktop */
+  --cell-size: min(60px, 85vw / var(--grid-n));
+
+  --line-thin: 1px solid #ccc;
+  --color-thick: #000;
+}
+
+#game-container { display: flex; flex-direction: column; align-items: center; font-family: sans-serif; padding: 20px; }
+
+#boards-wrapper {
+  display: flex;
+  flex-direction: column; /* Stack on mobile */
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  min-height: 400px;
+}
+
+/* Desktop */
+@media (min-width: 900px) {
+  :root {
+    /* On desktop, two boards + gap need to fit. 
+    We use 40vw so both boards fit within ~80-90% of width */
+  --cell-size: min(55px, 42vw / var(--grid-n));
+}
+
+#boards-wrapper {
+  flex-direction: row; /* Force side-by-side */
+  flex-wrap: nowrap;   /* Never wrap to a new line */
+  justify-content: center;
+  gap: 40px;
+}
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  :root {
+    --cell-size: 30px; 
+  }
+}
+
+.grid-wrapper {
+  position: relative; /* So the SVG can sit exactly on top of the cells */
+  border: 3px solid #000;
+}
+
+.star-battle-grid {
+  display: grid;
+  background: var(--grid-bg);
+  user-select: none;
+}
+
+.region-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  border: var(--line-thin);
+  display: flex; justify-content: center; align-items: center;
+  font-size: 28px; cursor: pointer;
+  box-sizing: border-box;
+}
+
+.star, .dot { pointer-events: none; }
+.star { color: #000; font-weight: bold; }
+.dot { width: 6px; height: 6px; background: #444; border-radius: 50%; }
+
+#controls { margin-bottom: 20px; display: flex; gap: 10px; }
+button { padding: 8px 16px; cursor: pointer; background: #eee; border: 1px solid #999; border-radius: 4px; }
+button:hover { background: #ddd; }
+
+.error-cell {
+  background-color: rgba(255, 0, 0, 0.1) !important;
+}
+
+.error-cell .star {
+  color: #d00;
+}
+
+.star-battle-grid {
+  display: grid;
+  background: var(--grid-bg);
+  user-select: none;
+  /* Prevent default touch actions like scrolling/zooming while touching the board */
+  touch-action: none; 
+}
+
+#toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%); /* Fixed horizontal center */
+  padding: 12px 24px;
+  border-radius: 25px;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: opacity 0.3s, bottom 0.3s, transform 0.2s;
+  user-select: none;
+}
+
+/* Hidden state - slightly lower than the active state */
+.toast-hidden {
+  opacity: 0;
+  transform: translate(-50%, 20px) !important;
+  pointer-events: none;
+}
+
+.toast:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+.toast:active {
+  transform: scale(0.98);
+}
+
+/* Color Themes */
+.toast-success { background-color: #2e7d32; }
+.toast-error { background-color: #c62828; }
+.toast-info { background-color: #1976d2; }
+
+.toast-win {
+  background-color: #6a1b9a;
+  border: 2px solid #ffd700;
+  animation: win-pulse 2s infinite;
+}
+
+@keyframes win-pulse {
+  0% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.05); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+.menu-container {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+select {
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+select:disabled {
+  background: #eee;
+  cursor: not-allowed;
+}
+
+.puzzle-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+}
+
+#category-select {
+  min-width: 60px;
+  padding: 6px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 16px;
+}
+
+#puzzle-input {
+  width: 60px;
+  padding: 6px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 16px;
+}
+
+#puzzle-input:focus {
+  border-color: #1976d2;
+  outline: none;
+}
+
+#puzzle-count-label {
+  color: #666;
+  font-size: 0.9em;
+}

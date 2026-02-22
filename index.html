@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Star Battle Interactive</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="menu-container">
+      <div class="puzzle-input-group">
+        <label for="category-select">Book</label>
+        <select id="category-select"></select>
+        <label for="puzzle-input">Puzzle #</label>
+        <input type="number" id="puzzle-input" min="1" value="1">
+        <span id="puzzle-count-label">of --</span>
+      </div>
+    </div>
+    <div id="game-container">
+      <h1>Star Battle</h1>
+      <div id="controls">
+        <button id="undo-btn">Undo</button>
+        <button id="redo-btn">Redo</button>
+        <button id="reset-btn">Reset</button>
+        <button id="check-btn">Correct so far?</button>
+      </div>
+
+      <div id="boards-wrapper">
+        <div class="board-container">
+          <h3>Board 1</h3>
+          <div id="board1" class="grid-wrapper"></div>
+        </div>
+        <div class="board-container">
+          <h3>Board 2</h3>
+          <div id="board2" class="grid-wrapper"></div>
+        </div>
+      </div>
+    </div>
+    <div id="toast" class="toast-hidden"></div>
+    <script src="script.js"></script>
+  </body>
+</html>
