@@ -25,7 +25,7 @@
 /* Desktop */
 @media (min-width: 900px) {
   :root {
-    /* On desktop, two boards + gap need to fit. 
+    /* On desktop, two boards + gap need to fit.
     We use 40vw so both boards fit within ~80-90% of width */
   --cell-size: min(55px, 42vw / var(--grid-n));
   }
@@ -89,7 +89,18 @@
 .star { color: #000; font-weight: bold; }
 .dot { width: 6px; height: 6px; background: #444; border-radius: 50%; }
 
-#controls { margin-bottom: 20px; display: flex; gap: 10px; }
+#controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 800px;
+  margin: 20px auto;
+}
+#help-btn {
+  margin-left: auto;
+}
 button { padding: 8px 16px; cursor: pointer; background: #eee; border: 1px solid #999; border-radius: 4px; }
 button:hover { background: #ddd; }
 
@@ -106,7 +117,7 @@ button:hover { background: #ddd; }
   background: var(--grid-bg);
   user-select: none;
   /* Prevent default touch actions like scrolling/zooming while touching the board */
-  touch-action: none; 
+  touch-action: none;
 }
 
 #toast {

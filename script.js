@@ -28,6 +28,7 @@ class StarBattleGame {
     const catSelect = document.getElementById('category-select');
     const puzInput = document.getElementById('puzzle-input');
     const countLabel = document.getElementById('puzzle-count-label');
+    const helpBtn = document.getElementById('help-btn');
 
     // Populate Categories
     this.categories.forEach(cat => {
@@ -78,7 +79,7 @@ class StarBattleGame {
 
     puzInput.addEventListener('input', (e) => {
         // 'inputType' is null or 'insertReplacementText' when arrows are clicked
-        // If the user is typing, we wait for Enter. 
+        // If the user is typing, we wait for Enter.
         // If they click the arrows, it triggers immediately.
         if (e.inputType === undefined || e.inputType === 'insertReplacementText') {
             commitPuzzleSelection();
@@ -97,6 +98,17 @@ class StarBattleGame {
     puzInput.addEventListener('blur', () => {
         commitPuzzleSelection();
     });
+
+    helpBtn.onclick = () => {
+      const instructions = `
+STAR BATTLE RULES:
+1. Place stars in cells so that each row, column, and bolded region contains exactly one star.
+2. Stars cannot touch each other, even diagonally.
+3. Use 'Dots' to mark cells where stars cannot possibly go.
+    `;
+
+      alert(instructions);
+    };
   }
 
   loadPuzzle(puzzleData, categoryId) {
@@ -119,7 +131,7 @@ class StarBattleGame {
     document.getElementById('board2').innerHTML = '';
 
     // Re-run the board creation logic
-    this.init(); 
+    this.init();
     this.showToast(`Playing Puzzle ${puzzleData.id}`, "info");
     this.loadProgress();
   }
@@ -149,7 +161,7 @@ class StarBattleGame {
     grid.className = 'star-battle-grid';
     grid.style.width = 'fit-content';
     // Use the variable directly in the style for perfect sync
-    grid.style.gridTemplateColumns = `repeat(${this.n}, var(--cell-size))`; 
+    grid.style.gridTemplateColumns = `repeat(${this.n}, var(--cell-size))`;
 
     // Prevent default right-click menu on the board
     grid.oncontextmenu = (e) => e.preventDefault();
@@ -181,7 +193,7 @@ class StarBattleGame {
     }, { passive: false });
 
     grid.addEventListener('touchmove', (e) => {
-      e.preventDefault(); 
+      e.preventDefault();
       const touch = e.touches[0];
       const target = document.elementFromPoint(touch.clientX, touch.clientY);
       if (target && target.classList.contains('cell')) {
@@ -358,7 +370,7 @@ class StarBattleGame {
   showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
-    toast.className = ''; 
+    toast.className = '';
     toast.classList.add(`toast-${type}`);
     toast.classList.remove('toast-hidden');
     toast.onclick = () => {
