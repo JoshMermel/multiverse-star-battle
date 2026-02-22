@@ -1,0 +1,9 @@
+{
+    "categories": [
+        {"id": "6x6_beginner", "label": "6x6 Beginner"},
+        {"id": "6x6_expert", "label": "6x6 Expert"},
+        {"id": "8x8_beginner", "label": "8x8 Beginner"},
+        {"id": "8x8_expert", "label": "8x8 Expert"},
+        {"id": "12x12", "label": "12x12 Puzzles"}
+    ]
+}
