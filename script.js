@@ -74,8 +74,6 @@ class StarBattleGame {
       const max = this.loadedPuzzles.length;
       const catId = catSelect.value;
 
-      console.log('a', val);
-
       // Validation & Clamping
       if (isNaN(val)) val = 1;
       if (val < 1) val = 1;
