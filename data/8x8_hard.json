@@ -1,0 +1,802 @@
+[
+  {
+    "id": "1",
+    "N": 8,
+    "board1": "CCGDDDEECCGGDDEECCGGDDEEFFFFDDDHFFFFFFHHAAABBFHHAAABBBHHAAAABBBH",
+    "board2": "FFGGDDDDFFGGBDDDFFFGBDDDFFFGBBDDAFAGBCCCAAAACCCCAAAAHECCAAAHHEEE",
+    "solution": "..x...........x..x..........x...x..............x.....x.....x....",
+    "unused_metadata": "226,24,442,True"
+  },
+  {
+    "id": "2",
+    "N": 8,
+    "board1": "EEAAAAGGEHHAAGGGHHHAGGFFHHHAFFFFHHHHFFFFBBBDDCCFBBDDDDCCBBBBCCCC",
+    "board2": "CCCDDDDGCCCDDDDGCCCDDDDGCCCHDGGGFFCHHGGGFEEHHHHAFEEBBBAAFFBBBBAA",
+    "solution": ".x...........x.........x...x....x.........x.........x.........x.",
+    "unused_metadata": "170,12,442,True"
+  },
+  {
+    "id": "3",
+    "N": 8,
+    "board1": "BBBBBEGGBBBBEEGGAAFEEEGHAFFFFEGHFFFFFEEHCCCFFEEHCCFFFFEFDDDDFFFF",
+    "board2": "GGGBAAAAGBGBCCAABBBBCCAABBDDDCCCDDDDCCCEFFDCCCCEFHDDHHEEFHHHHHEE",
+    "solution": "..x...........x..x..........x..........x.....x..x..........x....",
+    "unused_metadata": "65,148,443,True"
+  },
+  {
+    "id": "4",
+    "N": 8,
+    "board1": "GGFFDBBBGGFDDBBEGGDDDBBEGGDDDBEEAAACBBBEAACCCBEEAAHCCCEEHHHHCCCE",
+    "board2": "HHHEEEEEHHEEEEEEHCCFFCEEHCCCFCEEBBBCCCCCBBBCCCAADDDGGGAADDDDGGAA",
+    "solution": "..x...........x..x..........x...x..............x.....x.....x....",
+    "unused_metadata": "70,47,443,True"
+  },
+  {
+    "id": "5",
+    "N": 8,
+    "board1": "BBHHHHDDBBHHHDDDBFHAAAADFFFAAAAAFFGGGAACEEGGAACCEEGGGCCCEEGGGGCC",
+    "board2": "CCGGHHBBCCGGHHBBCCGHHHBBCCFFHBBBEEFAAAABEEDAAAABDDDDAAABDDDDDDAB",
+    "solution": "...x.........x..x.........x...........x..x.............x....x...",
+    "unused_metadata": "78,31,444,True"
+  },
+  {
+    "id": "6",
+    "N": 8,
+    "board1": "HHHDDDGGHHHDDDDGHHDDDDDGHBDDDDGGHBBBFFGGBBBFFFFACCEEFAAACCCEFAAA",
+    "board2": "EEEEHHHHEEEHHHHHEEEAAHHHDDAAAHFFDDDFFFFFCDDDDFBBCGGDDFBBGGGGGBBB",
+    "solution": "......x...x.........x....x...........x.........xx..........x....",
+    "unused_metadata": "4,36,444,True"
+  },
+  {
+    "id": "7",
+    "N": 8,
+    "board1": "DGGGBBBBDDGGGBBFDDDDDDFFEEDDDDCFEEHHHCCFEEHHHCCCEEAAHCCCEAAAACCC",
+    "board2": "GGGGBCCCGGBBBCCCGFHBDDDDFFHHHDDDFFHHDDDDFFHADDDDAAAAAAADEEEAAAAA",
+    "solution": "......x.....x...x..............x...x.....x...........x....x.....",
+    "unused_metadata": "247,18,448,True"
+  },
+  {
+    "id": "8",
+    "N": 8,
+    "board1": "AAAAFFFDAAAADFFDBBAHDDDDBBBHHHDDBBBHHECCGGBEEECCGGGEEECCGGGEEEEC",
+    "board2": "CCCBHEEECCCBHHHECCBBHHHHCCFFFFFDCFFFFFFDFFFFFDDDFFFAGDADAAAAAAAA",
+    "solution": ".......x.....x....x.....x..........x..........x.....x....x......",
+    "unused_metadata": "536,21,448,True"
+  },
+  {
+    "id": "9",
+    "N": 8,
+    "board1": "GGGGGGBCGGGGGBBCGGGFGBBBDDDFBBBBADFFFEBBAAAHHEEEAHHHHEEEAAAHHEEE",
+    "board2": "AAAACCCBAAAACCCBAAAAAACBDAAAEFCBDDDEEFCBDDDGFFFFDDGGFFFFHHHHFFFF",
+    "solution": ".......x.....x....x.....x...........x.........x....x.....x......",
+    "unused_metadata": "117,56,448,True"
+  },
+  {
+    "id": "10",
+    "N": 8,
+    "board1": "GGGGGBBBCCGGGBBBCCGEBBBBCCEEBBDDHHHHBBDDHHHAAAAFHHHAAAAFHHHHAAAF",
+    "board2": "ADDDBBBBAADDDBBBAADDDBBHAACDFBHHACCCFFHHCCCFFFHHCCCCEHHGCCCEEEEG",
+    "solution": ".x...........x..x.........x...........x.....x..........x...x....",
+    "unused_metadata": "71,27,449,True"
+  },
+  {
+    "id": "11",
+    "N": 8,
+    "board1": "DDGGFFCCDDGDFFCCDDDDBCCCDDHHBBBCHHHHBBBBHHHBBBEEHHHABBEEAAAAAAEE",
+    "board2": "GGGGGDDDGGGGBDDDFFBBBDDDFFFFDDACFFFFDAACFFFEEECCFHHEEECCFHHEEEEE",
+    "solution": "..x.........x.........x.x............x.........x.x.........x....",
+    "unused_metadata": "121,112,449,True"
+  },
+  {
+    "id": "12",
+    "N": 8,
+    "board1": "AAHHHHHHAHHHHHHHAAAHHEHEBBBDFEEEBBDDFFEEBBDDFFFFBBBDGGGGBCCCGGGG",
+    "board2": "DDDDFFFBDDDHHFFBDDDHHFBBHHHHHFBBHHHHHAAAHHEHCCCCEEECCGGGEEECGGGG",
+    "solution": "....x...x..............x.x...........x....x...........x....x....",
+    "unused_metadata": "49,8,449,True"
+  },
+  {
+    "id": "13",
+    "N": 8,
+    "board1": "BBBBBEDDHHBEEEDDHHHHEDDDFHHHADDCFGGAADCCFGGGGGCCFGGGGGCCFGGGGGCC",
+    "board2": "CCEEBBBBCCEEBBBECDDEEEEEDDDEEEAADDGGAAAAGGGGGAAAFFGGGHHHFFFFGHHH",
+    "solution": ".x...........x.........x..x.........x...x.............x....x....",
+    "unused_metadata": "109,350,450,True"
+  },
+  {
+    "id": "14",
+    "N": 8,
+    "board1": "DDDDEGGGDDDEEAAGHHHEEAGGHHEEEAAABBBEEAFFBBBAAAFFBBBBAAFFBBBCCCCC",
+    "board2": "BBGGHHHHBCCGHHHHBCCCHHAADCCFFFAADDDDFFAADDDDFAAEDDDDDAEEDDDDDEEE",
+    "solution": "...x...........xx.........x...........x.....x....x...........x..",
+    "unused_metadata": "274,48,451,True"
+  },
+  {
+    "id": "15",
+    "N": 8,
+    "board1": "DDBBBBBBDDEEBBBBDDEEBBBBDDCEEEHADDCCHHHAFCCCCHHAFFGGGGGAFFGGGGAA",
+    "board2": "EECCDDDDEEECDDDHEEEBDDDHEABBDDDHFAABDHHHFAAGGGHHFAAAGGHHFAAAAHHH",
+    "solution": ".x.........x..........x...x............x.....x..x...........x...",
+    "unused_metadata": "148,8,451,True"
+  },
+  {
+    "id": "16",
+    "N": 8,
+    "board1": "AAAAEFFFAAABEFFFADDBEEFFDDBBEEFFBBBBBEFFCCBBGGGHCCCGGGGHCCCGGGHH",
+    "board2": "HHEEEEEEHHBBAAEEGHBBAACCGHHBAAACGHHFAAACGHHFFFFFGHHFFFDDHHHFFFDD",
+    "solution": "..x.........x....x.........x...........x.....x..x.............x.",
+    "unused_metadata": "281,102,451,True"
+  },
+  {
+    "id": "17",
+    "N": 8,
+    "board1": "HHHDDDEEHHDDDEEEHHADEEEEAAAFCCGGAAFFCCGGBBFFCGGGBCCCCCGGBBBCCCGG",
+    "board2": "FCCCGGDDFCCCGGDDFFFCCGDAFFFCAAAAFFFEEEAAFHHEEEAAHHHHEEEBHHHHHEBB",
+    "solution": ".....x...x............x.....x...x..........x...........x..x.....",
+    "unused_metadata": "131,5,452,True"
+  },
+  {
+    "id": "18",
+    "N": 8,
+    "board1": "HHHABBBBHHHAABBBHHHAABBBHHHHCBBBHHFCCCBBDFFCCCEBDDFFEEEBDDDFEGGG",
+    "board2": "DAAAAAAADDAAGAAEDDDDGEEEDDGGGEEEFFHGGGCEFHHGGGCEFFHGCCCBFFHGCCCB",
+    "solution": "...x.....x............x.....x.....x.....x............x.........x",
+    "unused_metadata": "16,21,452,True"
+  },
+  {
+    "id": "19",
+    "N": 8,
+    "board1": "CCCCCAAADDCCAAAADDDCAAAAFFFFAHEEFFFFHHEEFFFFHHEEFFFBBEEGFFBBBGGG",
+    "board2": "CCEEBGGGCCEBBBGGCFEBBBBBFFDBHHBBFFDDHHHAFDDDHHHADDDDHHAADDDDDHAA",
+    "solution": ".....x....x.....x.............x..x..........x..........x...x....",
+    "unused_metadata": "120,6,452,True"
+  },
+  {
+    "id": "20",
+    "N": 8,
+    "board1": "BBDFFFFFBBDDDDDFBBDDAAEEBDDDAAAEBDDDAAEEGHHCCAAEGHHCCCEEGHHHCCCE",
+    "board2": "CCBBBBHHCCBBBBHHCCBBBHHHFFEEAHHHFFEAAAHHFFFFDDDDGFFDDDDDGGGDDDDD",
+    "solution": "....x....x.............x...x.........x....x.....x.............x.",
+    "unused_metadata": "127,72,454,True"
+  },
+  {
+    "id": "21",
+    "N": 8,
+    "board1": "CCCHHHHDBBCGHHHDBBBGHHHDBBBGGGGFBEEAGGFFEEAAGFFFEEEAAFFFEEEAAFFF",
+    "board2": "BBBBBBDDHHHBBDDDHHHBBCDFHHECCCFFHHEECCCCAAECCGGGAAAAAGGGAAAAAGGG",
+    "solution": ".x...........x.........xx.........x.........x.........x....x....",
+    "unused_metadata": "171,81,455,True"
+  },
+  {
+    "id": "22",
+    "N": 8,
+    "board1": "CCCDDFFFCCEDDFFFCEEEEFFFBBGGGHFHBBBGGHHHBBBBGHHHBBBGGAAABBBBGAAA",
+    "board2": "FAAHHHGGFAAAAGGGFFAEEGGGBBEEEGGCBBBBECCCBBBBBCCCDBBBBBCCDDDDBBCC",
+    "solution": "...x....x.........x...........x.....x..........x.....x...x......",
+    "unused_metadata": "42,13,455,True"
+  },
+  {
+    "id": "23",
+    "N": 8,
+    "board1": "AAAAAACCDAAAACCCDDEEECCCDDDDEEFFHDDBEEFFHHHBFFFFHHHBBFFGHHHBBBGG",
+    "board2": "HHHDDDGGHHHHDDGGHHHFFFGGHHHFFFFGBBBBFFFFAAAEFFFFAAAEEECCAAAEEECC",
+    "solution": ".x...........x.....x...........x..x.....x...........x.........x.",
+    "unused_metadata": "91,171,456,True"
+  },
+  {
+    "id": "24",
+    "N": 8,
+    "board1": "CCCAAAADCCHHAAADBCHHADDDBCHAADDGEEDDDDGGEEFFFFGGEEEFFFGGEEEEFFGG",
+    "board2": "GGGHHHAAGGGHHHAAGGHHHAAAEEEDDDCAEFFFDCCAEFFDDCCBEFFDDBBBEEEBBBBB",
+    "solution": "..x...........x....x....x............x...x..........x..........x",
+    "unused_metadata": "18,432,456,True"
+  },
+  {
+    "id": "25",
+    "N": 8,
+    "board1": "DDDCCCEEDDDCCFEEDDAAAFFEDAAAHHEEAAAAHAEEBBBAAAAEBBGGAAAABBGGGAAA",
+    "board2": "FGGGGGGGFFFCGGGGFFFCAAAAFFCCCAAHFFFFBBHHFFBBBHHHEFBEBDDDEEEEBDDD",
+    "solution": ".x.........x.........x.........x....x...x.............x...x.....",
+    "unused_metadata": "54,81,457,True"
+  },
+  {
+    "id": "26",
+    "N": 8,
+    "board1": "CCGDDDHHCCGGDDHHGGGGGBHHGFFBBBBHGGFBBABBGFFBAAAEGFBBAAEEGFBBAAEE",
+    "board2": "DDDFFFHHDDFFFHHHCCCFFHHHCCCAAAGGEECGGGGGEEEEGGGGEEEEGGGGBBBBBGGG",
+    "solution": "...x.....x.............x.....x....x.....x.............x.....x...",
+    "unused_metadata": "124,38,458,True"
+  },
+  {
+    "id": "27",
+    "N": 8,
+    "board1": "CCFFFAAACCFFFAAACCFEEHHHCEEEHHHHCDDEGHHHBDDGGHHHBBBGGGHHBBBGGGGH",
+    "board2": "CCCCFGBBCCCCFGBBCCCFFGGBFFFFFGGBHHFFFDDDHHAFDDDDEEAAADDDEEAAADDD",
+    "solution": "...x...........x....x.........x.x.........x..........x...x......",
+    "unused_metadata": "54,165,458,True"
+  },
+  {
+    "id": "28",
+    "N": 8,
+    "board1": "GGGGCCDDEGGGCCDDEGGGCCDBEFFFCCBBEFAAABBBEFAAAAHHEAAAHHHHEAAAAAHH",
+    "board2": "HHHDDDDFEHHAADDFEEEAADDFEEAAAGGGEECAGGGGBBCCGGGGBBCCCGGGBBCCCGGG",
+    "solution": "......x...x............x....x....x.........x.........x..x.......",
+    "unused_metadata": "280,88,458,True"
+  },
+  {
+    "id": "29",
+    "N": 8,
+    "board1": "GGGGGGGGDDAAAHHHDDAAAAFHDDCAACFFCCCCCCFBCCCCCCBBCCCEEEEBCEEEEEEB",
+    "board2": "AABBBBBBAACCBBBBCCCCBBBGFCCBBBBGFHHHDDDGFHHDDDDGFFHHDDDGFEEEEDGG",
+    "solution": ".x...........x.....x....x.............x...x............x....x...",
+    "unused_metadata": "39,58,458,True"
+  },
+  {
+    "id": "30",
+    "N": 8,
+    "board1": "CCCCCEEECCHHDDEEHHHDDDGGHHHDDFGGHHAFFFGGHAAAFFGGBBAAAFGGBBAAAAGG",
+    "board2": "DDDDEHBBDDDEEHHBDDDEFHHHGGDDFHHHAAAAFFHHAAAFFFFFCAAFFFFFCCCCCCCF",
+    "solution": "..x............x...x....x.............x.....x....x...........x..",
+    "unused_metadata": "273,19,459,True"
+  },
+  {
+    "id": "31",
+    "N": 8,
+    "board1": "BBHHHAAABBHDDAAAGGDDDCAAGGDDDCAAGDDDDCAADDDEEFFADDEEEFFFDEEFFFFF",
+    "board2": "EEECCCAAEEFCCCAAFFFFFFAAHHHHDDAAGHHHDDAAGGHHDDBBGGGDDBBBGGGDBBBB",
+    "solution": "...x.....x...........x.........xx.........x.........x.........x.",
+    "unused_metadata": "31,345,459,True"
+  },
+  {
+    "id": "32",
+    "N": 8,
+    "board1": "GDDDDEEEGGDDDEEEGGGHAAEBGGGHAAFBGGGHHFFBGGHHHHBBGCHHHHHBGCCCCCBB",
+    "board2": "DEEEEHHHDDDEEEFHDDDEEEFFGGDDEBFFGGCCCBBFCCCBBBBBCCAABBBBCCAABBBB",
+    "solution": ".....x....x.........x.........x.x..............x...x.....x......",
+    "unused_metadata": "33,89,459,True"
+  },
+  {
+    "id": "33",
+    "N": 8,
+    "board1": "CCCCBBBBCCCCBBBBFFCAAABBFFDDAAEGDDDDAAEGHDDDHHHGHHHHHHHGHHHHHHHG",
+    "board2": "FFFFGEEEFFBGGHEEFBBGGHEEABBBBBEEABBCCCEEAABCCCDDAAACDDDDAAAADDDD",
+    "solution": "....x...x............x...x............x....x...........x..x.....",
+    "unused_metadata": "70,69,460,True"
+  },
+  {
+    "id": "34",
+    "N": 8,
+    "board1": "CCCCFFFFCCCCFFFGCCCAAAGGCCAAAEGGCDAAEEGGBDAAEEGHBDDDHHHHBBBHHHHH",
+    "board2": "DCCCCCCCDBBCCCCCDBEGCGHHDBEGGGHHDEEFFGHHDAAAFAHHDAAAAAHHDAAAAHHH",
+    "solution": "......x...x..........x.........x.x..........x...x..........x....",
+    "unused_metadata": "146,22,460,True"
+  },
+  {
+    "id": "35",
+    "N": 8,
+    "board1": "BBBCCCCCBBBBCCCCBBBCCDDDAABFCGDDABBFGGGEFFFFGGEEHHFFFGEEHHHFFGEE",
+    "board2": "BBAAEEEEBAAAAAEEBBAAAAGGBBBAAGGDBBBGGGGDHHHHHGGCFHHHGGCCFFHHHCCC",
+    "solution": "....x.....x...........x..x.............x...x....x............x..",
+    "unused_metadata": "191,15,461,True"
+  },
+  {
+    "id": "36",
+    "N": 8,
+    "board1": "AAFEEEEHAAFDDEEHAAADDDEHGADDDDHHGGGDDDHHGGGCCDHHGCCCCBBBGCCCCBBB",
+    "board2": "HHCAAAFFHHCAAFFFHHBFAFFEBBBFFFFEDDBBFFEEDDDBGGEEDDDDGGEEDDDDDGGE",
+    "solution": ".....x....x.....x.............x....x.....x..........x..........x",
+    "unused_metadata": "159,56,462,True"
+  },
+  {
+    "id": "37",
+    "N": 8,
+    "board1": "FFEEEEDDFFBEHHDDFBBBHHHDBBBBHHHDABBBBHGGABBBBGGGACCCCGGGAACCCGGG",
+    "board2": "BBBBBCAABBBCCCAADBBCCCAADDBCCAAADDECCAAADGEHHFFFGGEHHFFFGGHHHFFF",
+    "solution": "...x.........x..x..............x..x...........x.....x....x......",
+    "unused_metadata": "118,18,462,True"
+  },
+  {
+    "id": "38",
+    "N": 8,
+    "board1": "FFFDDDDCFFFDDDCCFFGGGGCCHHHGGGGCHHHAAGGCBBBAAAEEBBBBEEEEBBBEEEEE",
+    "board2": "CAABHHGGCAABHDGGCCABDDGGCCFBDDGGFFFDDDEGFFFFFDEGFFFEEEEEFFEEEEEE",
+    "solution": "....x....x.........x....x..............x.....x....x...........x.",
+    "unused_metadata": "504,11,463,True"
+  },
+  {
+    "id": "39",
+    "N": 8,
+    "board1": "EEBBBBBGEEBBBBBGEEBBCCGGEEBCCCGGEHCCFFGGHHHHFFDDAAHHHDDDAAAHHDDD",
+    "board2": "FFFHHHGGFFEHHGGGEEEAHHGGAAAABBBGAAAAABBDAAAAADDDAAADDDDDCCCDDDDD",
+    "solution": "x.........x.........x..........x.....x.....x..........x..x......",
+    "unused_metadata": "128,8,463,True"
+  },
+  {
+    "id": "40",
+    "N": 8,
+    "board1": "HHFFFGGGHHFFFGGGHHHBBEAAHDBBBEAAHDDDEEAADDDDAAAACCCDAAAACCCCAAAA",
+    "board2": "DDDDDDHHDCDDDDHHCCCDEEEHCCCCCEEEACFCCCEEAAFFCCEEABBBCCEGBBBBGGGG",
+    "solution": "....x..........x.....x....x.....x..........x.....x............x.",
+    "unused_metadata": "66,31,463,True"
+  },
+  {
+    "id": "41",
+    "N": 8,
+    "board1": "BBBFFDDDBBBFFFDDBFFFFDDDGFHCCCCDGGHHHHCAGGGEEEEAGGGEEEAAGGGEEEAA",
+    "board2": "BBBHFFFFCCCHHFFFCCCHHFFFCCEEEEEECDDEAEEECCDAAEAACCDAAAAAGGGGAAAA",
+    "solution": ".x..........x..........x.....x....x.....x.............x....x....",
+    "unused_metadata": "203,27,463,True"
+  },
+  {
+    "id": "42",
+    "N": 8,
+    "board1": "DDDAAAAADDDDAAAAFDDDDEEEFFGGEEEEFFFGGEEEFFFHHBCCFFHHHBCCFFHHHBBC",
+    "board2": "HCCCCDDDHCCCGDDDHBCCGFADHBBBFFAAHBBFFFAABBBFFFAABBBBFEEEBBBBBEEE",
+    "solution": ".x..........x..........xx..........x..........x...x..........x..",
+    "unused_metadata": "80,68,464,True"
+  },
+  {
+    "id": "43",
+    "N": 8,
+    "board1": "BGGGGDDDBBGGCEDDBBBCCEEEFFCCCEEEAFFCCHHHAFFFCHHHAAFFFHHHAAFFFFHH",
+    "board2": "GGGCAAEEGGCCAAEEGGGCCAHHGGCCAAAHGGAAAAFFGDDBBFFFGDDBBFFFDDDBBBFF",
+    "solution": "......x...x.....x..............x...x.........x...x..........x...",
+    "unused_metadata": "142,36,464,True"
+  },
+  {
+    "id": "44",
+    "N": 8,
+    "board1": "EEEEEGGGECEEEGGGCCEEFFFFCCCCDDDDCCAADDDDBAAAADHHBAAAAHHHBBBBHHHH",
+    "board2": "DDDAAHHHDDGAAAHHDGGEAABBGGGEEBBBGGCCCBBBGGCCCCCCFFFCCCCCFFFCCCCC",
+    "solution": ".x.............x.....x.....x..........x.x.........x.........x...",
+    "unused_metadata": "390,26,465,True"
+  },
+  {
+    "id": "45",
+    "N": 8,
+    "board1": "HHHHHHDDFFDDDDDDFFDDDDGGBFBBBCGGBBBBBCCGAAAEBCCCAAAEECCCAAAECCCC",
+    "board2": "GGBBCCCDGGGBCCCDGGGCCCFDGGGGFCFFAGGEFFFFAAEEEFFFAAAAHHHFAAAAAHHH",
+    "solution": "..x..........x.........x.x.........x..........x.....x...x.......",
+    "unused_metadata": "259,69,465,True"
+  },
+  {
+    "id": "46",
+    "N": 8,
+    "board1": "BBBBBHDDBBBAAHHDBBHHAHHHHHHHHHFFHCCCHFFFECCCCFFFEECCCGGGEEEEGGGG",
+    "board2": "CCCCCCBBGGACCCBBGGACCCBBGGAACBBBGAAADDDBGAAAHDDDEEHHHFFDEEHHFFFF",
+    "solution": ".......x...x....x.........x...........x.....x....x...........x..",
+    "unused_metadata": "225,8,466,True"
+  },
+  {
+    "id": "47",
+    "N": 8,
+    "board1": "BBGGGGGGFBBGGDGDFFFFFDDDFFFCCDDDFFFCCDDDHHAAADDDHHAAEEEEHHHHEEEE",
+    "board2": "GGGGDDFFGGBGDFFFBGBBEEFFBBBBEEHFCCBBBBHHCCCAAHHHCCAAAHHHCCAAAAAH",
+    "solution": ".....x...x............x.....x.....x.....x..........x...........x",
+    "unused_metadata": "133,78,466,True"
+  },
+  {
+    "id": "48",
+    "N": 8,
+    "board1": "CCCCCAAACCCCAAAAEECCAAAAEECGAABBEDCGGABBDDDDDDBBDDDFFFFBDHHHFFFB",
+    "board2": "DDDCCCFFDAAFFFFFDAAFFEEFDAAFFEEEDAHHFEEEBBHHHGEEBBBBBGGGBBBBGGGG",
+    "solution": ".....x....x.....x..........x...........x....x.........x..x......",
+    "unused_metadata": "48,233,469,True"
+  },
+  {
+    "id": "49",
+    "N": 8,
+    "board1": "FFFFGGGGFFFFGGGGCEEEGGGGCEEEEHHGCCEEHHHGCCDAAAHACDDAAAAABBBAAAAA",
+    "board2": "HHADDDDCHHAADDCCHAAAAACCAAAAECCCGGGAEECCGGGBEECBFFBBBBBBFFFBBBBB",
+    "solution": ".....x.....x....x...........x.........x...x............x.x......",
+    "unused_metadata": "4,179,470,True"
+  },
+  {
+    "id": "50",
+    "N": 8,
+    "board1": "CFFFHDDDCFFFHDDDCCFFHDDDAAFFHBDDAAFHHBBEAAFGBBBEAGGGGBEEGGGGGBEE",
+    "board2": "HHHDDEEFHHHHDEEFHAADDEFFHAAAGGFFAAAAAGFFAAAAGGGGBBABGGCCBBBBBCCC",
+    "solution": "...x.........x..x...........x.........x..x.............x..x.....",
+    "unused_metadata": "384,92,470,True"
+  },
+  {
+    "id": "51",
+    "N": 8,
+    "board1": "AAAGGGGGAAGGGGCCEEGGGFFCEGGGFFFFEDBBFFFFDDBBFFFFDDDHHHFFDDDHHHHH",
+    "board2": "DDEEGGGGDDCCCAGGDDDCAAGGDDCCAAAGCCCCCAHHBCCCHHHHBCCCFHHHBBCFFHHH",
+    "solution": "..x..........x.........xx..........x..........x.....x....x......",
+    "unused_metadata": "48,119,470,True"
+  },
+  {
+    "id": "52",
+    "N": 8,
+    "board1": "AAAGGGGGBAAGGGGGBABBCGGGBBBBCCCCBBBBCDCCBFHHHDDDFFFHEEEEFFFEEEEE",
+    "board2": "CCFFFFFBCCFEFFBBHHEEEEBBHEEEEEBBHEEDDBBBAAADDDBBAAADDGGGAAADDGGG",
+    "solution": "......x..x..........x...x............x.....x...........x..x.....",
+    "unused_metadata": "63,162,470,True"
+  },
+  {
+    "id": "53",
+    "N": 8,
+    "board1": "ADDDBBGGAAADBBGGDDDDGGGFDDDDDGFFEHHHHHFFEEHHHCCCEEEEEECCEEEEECCC",
+    "board2": "CCCCFAHHECEFFAHHEEEAAAHHEEEAAAHHEBBADDDDEEBBGDDDEBBBGGDDBBBBGGDD",
+    "solution": "....x....x............x....x...........x..x.....x............x..",
+    "unused_metadata": "71,106,471,True"
+  },
+  {
+    "id": "54",
+    "N": 8,
+    "board1": "EEEEFFFFGGEECCCFGGEEECCCGGEEHHHHGGBHHHHHDGBBHHHHDDBHHAAADDDHHAAA",
+    "board2": "HHHGGGGGHHHGGGGGHAHBBBCGAAEBBBCCAEEECCCCDDEECCCCDDFFCCCCDDFFFFCC",
+    "solution": ".......x..x...........x.....x...x..........x.....x...........x..",
+    "unused_metadata": "236,51,471,True"
+  },
+  {
+    "id": "55",
+    "N": 8,
+    "board1": "AAAAFFEEAAFFFFEEAHHFFFEGHHHHFFEGCCCCFFFGDDCCFBGGDDDDFBGGDDFFFBGG",
+    "board2": "EEEEFFFFEGGEFFFFGGGEFFFFGGGGBBCCGAHHBDDCAAHHBDDDHHHHDDDDHHHHHDDD",
+    "solution": "...x..........x...x............x.x..........x...x............x..",
+    "unused_metadata": "262,168,471,True"
+  },
+  {
+    "id": "56",
+    "N": 8,
+    "board1": "AAAADDDEAAACDDDEAAACCBBEACCCBBBBHCCCGGBBHCCCGGBBHHFFGFFBHFFFFFFF",
+    "board2": "BBBBAAAABBBBBAAABBBCCCAEBBBBCDEEBBGGGDEEFFFGHDDDFFFHHHDDFFFFFHHH",
+    "solution": "......x..x.............x....x.....x..........x.....x....x.......",
+    "unused_metadata": "86,47,471,True"
+  },
+  {
+    "id": "57",
+    "N": 8,
+    "board1": "EECCCCCCEECCCCGCAAACGGGHAAABBGHHAAABBHHHAAABBHHHADDBFFHHDDDFFFFF",
+    "board2": "FEEEEEBBFEEEEBBBFFFGGBBBFFFGGGCBFFGGGCCDFFCCCCCDFHHAACDDHHHAACDD",
+    "solution": ".....x..x.............x....x...........x..x.........x....x......",
+    "unused_metadata": "330,79,472,True"
+  },
+  {
+    "id": "58",
+    "N": 8,
+    "board1": "DDHHBBBBDHHHBBBBDHHGFFFFDHHGFFFFDHGGAFAACHHGAAAACCCGEAAACCCCEEEE",
+    "board2": "AAAFFFGGDAAFFFGGDDDDFGGGDDDDFHHHCCDDBHHHCCCBBBEECCCCBBBECCCCCBBE",
+    "solution": "....x.....x..........x..x.............x....x.....x.............x",
+    "unused_metadata": "558,77,472,True"
+  },
+  {
+    "id": "59",
+    "N": 8,
+    "board1": "HHHHEEEEBHHEEEEEBEEEEEEEBBEEGGGGAACCGFGGAAACGFFFAAADFFFDAAADDDDD",
+    "board2": "EEEEGGGGEEEEDGGGAAADDDDGAAADDDDGAAAHHCCFAABHHCFFAABBBFFFAABBBBFF",
+    "solution": ".x..........x...x..............x...x.........x....x...........x.",
+    "unused_metadata": "107,60,473,True"
+  },
+  {
+    "id": "60",
+    "N": 8,
+    "board1": "EEEAAAAAEEEEAAAAEEEECABBGFEECCBBGFFHCCBDGFFHCDDDGGFHDDDDGGGHDDDD",
+    "board2": "GFFFFBBBGFFFFBBBGFFFFBAAGGEFFDDDGGECCCDDHHEECCCCHHEEECCCHHHHCCCC",
+    "solution": "......x...x............x.....x...x.........x....x...........x...",
+    "unused_metadata": "291,18,475,True"
+  },
+  {
+    "id": "61",
+    "N": 8,
+    "board1": "CCCCBBBBCCCCEBBBDDCCEEBBDDCCEEBBDDHHHEAADDHHGAAAFFHHGGAAFFHGGGGG",
+    "board2": "GGGAABBBGGCAAAABGCCCAAEECCCCAEEEFFCCHHHEFFFFHHHEFFFFHHHDFFFFHDDD",
+    "solution": "......x....x....x............x....x.........x..........x.x......",
+    "unused_metadata": "272,15,475,True"
+  },
+  {
+    "id": "62",
+    "N": 8,
+    "board1": "AAAAHHHCAAAAAHCCGAAAAHCCGGGDDECCGGGDDEEEFFFFFEEEBBBFFFEFBBBFFFFF",
+    "board2": "GGGGFCCCGGGFFCBBGGDDDDBBHGDDDDBBHHDDDDHHAHHHHHHHAHHHHHHHAAEEEEEE",
+    "solution": ".....x.....x...........x.x..........x...x.............x...x.....",
+    "unused_metadata": "345,73,475,True"
+  },
+  {
+    "id": "63",
+    "N": 8,
+    "board1": "AAAAAAABFAAACCCBFFAFGCEBFFFFGEEEFFFFGGEGHHDFGGGGHHDDDGGGDDDDDDGG",
+    "board2": "GGFFFFFFGGFFFEEEGGFFEEEDBGFFEEDDBBAFEEDDBBAAEEDDCCAAEHHDCCCCEHHD",
+    "solution": ".x..........x..........x.....x....x.....x.............x....x....",
+    "unused_metadata": "50,62,477,True"
+  },
+  {
+    "id": "64",
+    "N": 8,
+    "board1": "FDDDDDDDFFDDDDDDFEEEDDDDEEEEAAACGGEHAAACGGHHHHHHGGGBBBBBGGGBBBBB",
+    "board2": "CCCCDDDFAACDDDFFAAHDDFFFEAHHDFFFEEHHGGFFEEHGGGGFEEHGGGBBEEGGGGBB",
+    "solution": "...x....x.........x.........x..........x.....x...x............x.",
+    "unused_metadata": "67,208,477,True"
+  },
+  {
+    "id": "65",
+    "N": 8,
+    "board1": "HHHHFFAAHHHHFFAAHHGGFFFAHHGGDFFAEEEDDBBBEEEDDDBBEEEDDDDCEEDDCCCC",
+    "board2": "BBBHHHHHBBEHDDAABEECCDAAEEECCDAAEEEAAAAAEEEFFGAAEEFFGGGGEEFGGGGG",
+    "solution": "......x.....x...x..........x.........x...x.............x..x.....",
+    "unused_metadata": "154,56,477,True"
+  },
+  {
+    "id": "66",
+    "N": 8,
+    "board1": "GGGDDDFFGGGDDDDFGDDDEEEHGEEEEEEHCCCCEEHHCCCCHHHACCCCCCAACBBBBCAA",
+    "board2": "HHFFFCCGHHFFFCGGHHHFEGGGHHHEEEGGHHEEEBBBHDAAAABBDDDDDABBDDDDDDBB",
+    "solution": "......x....x.........x..x.........x.........x..........x.x......",
+    "unused_metadata": "31,125,478,True"
+  },
+  {
+    "id": "67",
+    "N": 8,
+    "board1": "AADGGGGGAADDDGGCBBFDDCCCBBFFFCCCBBFFFFCCBBEFFFFCEEEHHFFHEEHHHHHH",
+    "board2": "HAAAAAAAHHHAABBBHHHHDDBBHHHHDDDCEEHHHDDCEEEFDDCCEEEFFGCCEEEFGGCC",
+    "solution": ".x............x.....x...x..............x..x..........x.....x....",
+    "unused_metadata": "131,76,478,True"
+  },
+  {
+    "id": "68",
+    "N": 8,
+    "board1": "AAAADDDDAAAAADDDEGGGDDDDEGGGHHDDEBBFHHHDEBBFFHCCEEBFFCCCEEBBBCCC",
+    "board2": "GGGAAFFFGGGFFFFFGGFFFFFFGGHHFFFFCCHHHFDECCCCCCDEBBBBBCDEBBBBBBDE",
+    "solution": "...x.........x..x.........x...........x..x..........x..........x",
+    "unused_metadata": "184,72,478,True"
+  },
+  {
+    "id": "69",
+    "N": 8,
+    "board1": "FFFFFFDDGFFFFFHDGGGFFFHDGGGGEHHDGEEEEHHDCCCCBAADBBCBBAADBBBBBBAD",
+    "board2": "BBBBBEAABBBBBEAABBBFBEEECBFFDDEECCFFFFEEHHGFFFEEHHGFFFEEHHGGGGEE",
+    "solution": ".......x...x..........x.....x...x.........x..........x...x......",
+    "unused_metadata": "187,32,478,True"
+  },
+  {
+    "id": "70",
+    "N": 8,
+    "board1": "FAAAAHHHFFFGHHHHFFFGHHHHFFFGHHHBDFFCCBHBDFECCBBBDEECCCCBDDEEECCB",
+    "board2": "EEEEFFAAEEECCFAAEEECHHAAGGCCHHAAGGDCHHHADDDCHHHHBBDBBHHHBBBBBHHH",
+    "solution": "..x..........x.....x.....x.............xx.............x.....x...",
+    "unused_metadata": "70,78,478,True"
+  },
+  {
+    "id": "71",
+    "N": 8,
+    "board1": "CCCCHHHHCCAAHHHHBBAAHHHGBBAAAFHGBBDAFFGGBBDDFFEGDDDDDDEEDDDDDDEE",
+    "board2": "BBBBBDDDBBGGGDDDACCCGDDDAACCFDDDAEEEFFFFEEEEEFFFHHEEEEEFHHHEEEEF",
+    "solution": "..x.........x..........x...x....x............x...x............x.",
+    "unused_metadata": "241,14,479,True"
+  },
+  {
+    "id": "72",
+    "N": 8,
+    "board1": "EBBBBBGGEEFFGGGGEEFFFFGGDDFFFHHHDDFFFAHHDDFFFAACDDDDAAACDDDDCCCC",
+    "board2": "BBCHHDDDBCCCHDDDBBCCCDDDBBCCCEEDBBBCEEEEBBFFGEEEFFFAGGGEFFFAAGGE",
+    "solution": "...x.....x.............x.....x..x.........x...........x.....x...",
+    "unused_metadata": "123,8,480,True"
+  },
+  {
+    "id": "73",
+    "N": 8,
+    "board1": "GGGGCCCAGGGGCBBAFFFFCBBAFFFFHHBAEFFFFHHAEDFHHHHADDDDHHHADDDDDDHA",
+    "board2": "BBHHEDDDBHHEEAADBHHHCAAABHHCCAAABHCCCFFFBHCCFFFFBFCFFFGGFFFFFFGG",
+    "solution": ".....x.....x.....x............x.x...........x.....x............x",
+    "unused_metadata": "158,80,482,True"
+  },
+  {
+    "id": "74",
+    "N": 8,
+    "board1": "AABBBBBFAAABBFFFAABBDFFFCCBDDDGFCCCDDGGFCCCDEGGGHHHHEEGGHHHHEEGG",
+    "board2": "GGGBBBBBGGBBBBBBGGGHHHBBDDDHHHBBFDEAAABBFFEAAACCFFEEAACCFFEEACCC",
+    "solution": ".x............x.....x.....x.....x..............x.....x.....x....",
+    "unused_metadata": "512,79,482,True"
+  },
+  {
+    "id": "75",
+    "N": 8,
+    "board1": "AGGDDEEEAGGDDEEEAHDDDEEEHHHDDBBBHHFDBBBBHFFFBBBBFFFFBBCBFFFFCCCB",
+    "board2": "GGGGAAAAFFFFFAAAFFFCCAAAFFHCCAAAHHHCCABBHHHHEABBHHHEEEBDHHHEEEDD",
+    "solution": "..x..........x..x...........x....x.............x...x..........x.",
+    "unused_metadata": "18,102,483,True"
+  },
+  {
+    "id": "76",
+    "N": 8,
+    "board1": "HHHBBBBCHHDEEBCCHFDEEECCHFDEEECCFFDDDEDDFDDDDDDAFDDDDDAAFFDGGDAA",
+    "board2": "CCCCFFHHCCCCFFHHFFFFFFHHBBAAAGHHBGGGGGEEBBGGEEEEBBGGDDDDBBBBDDDD",
+    "solution": ".....x...x............x....x....x..............x..x.........x...",
+    "unused_metadata": "53,329,483,True"
+  },
+  {
+    "id": "77",
+    "N": 8,
+    "board1": "BFFFFFFABBBHFAAABBHHHHAAEEEHHCCAEEEGGCCAEEGGCCCAEDDDCCCCDDDDCCCC",
+    "board2": "EEGGDDBBEEGGDDBBEEEGDDAAEEEHHDAAEEEHHFFFEFFFFFFFFFFFFCCFFFFCCCCC",
+    "solution": "......x...x.........x..........x...x....x............x...x......",
+    "unused_metadata": "161,4,484,True"
+  },
+  {
+    "id": "78",
+    "N": 8,
+    "board1": "FFFGGGBBFFCGGGBBFFCGGBBBAEEEHHBBAEEEHHBBAAEEHHBBAAAEHDDDAADDDDDD",
+    "board2": "GGGGFHHHCEEFFHHHCEEFHHHACCFFHAAAFFFFFAAABBFFFAAABBBBDADABBDDDDDA",
+    "solution": ".x...........x....x.....x...........x..........x...x..........x.",
+    "unused_metadata": "110,17,484,True"
+  },
+  {
+    "id": "79",
+    "N": 8,
+    "board1": "EEHHHHHHEEEHHHGGAEEHHGGGAAEFGGGGBFFFFGCCBBFFFCCCBBBFFCCDBBBFFFDD",
+    "board2": "DDAAFFFFDDAAFFFFDDGGEFEEGGGGEEEEGGGEEEEEHHHEEEEEHHBBBBCCHBBBBCCC",
+    "solution": "...x..........x.x.........x.........x....x...........x.........x",
+    "unused_metadata": "97,129,485,True"
+  },
+  {
+    "id": "80",
+    "N": 8,
+    "board1": "HHFFFCCCHHFFFCCCHHEEFFCCHHEEDFBBHEEDDBBBGGEDDABBGGEAAABBGGGAAAAB",
+    "board2": "EEAGGGGFEEAAGGFFEEACGGFFEEACCGFFEEAADDBBEHAADBBBHHHHDBBBHHHHHBBB",
+    "solution": "..x..........x.....x...........xx...........x....x............x.",
+    "unused_metadata": "402,189,486,True"
+  },
+  {
+    "id": "81",
+    "N": 8,
+    "board1": "HHHHCCCDGHHCCCCDGGCCCDCDGGDDDDDDGGDDAFDBGEAAAFBBGEAAFFBBEEEBBBBB",
+    "board2": "EEBBBBGGEEGBGGGGHHGGGGGGHHFFGGGGHHFFCCAGHHFFAAAADDDFAAAADDDDAAAA",
+    "solution": "....x....x.............xx............x.....x..........x...x.....",
+    "unused_metadata": "71,26,487,True"
+  },
+  {
+    "id": "82",
+    "N": 8,
+    "board1": "AACCFFDDACCCFFDDAHCFFFDDHHCBFFFDHHHBFFFDHHHBFEEDGGGBBEEDGGGGBEEE",
+    "board2": "CCHHBGGGHHHHBBGGHHHBBGGGFFBBBBGEFAAAAEEEDDAAAEEEDDAAAEEEDDDAAEEE",
+    "solution": ".x.........x...........x.....x..x.............x.....x.....x.....",
+    "unused_metadata": "44,2,487,True"
+  },
+  {
+    "id": "83",
+    "N": 8,
+    "board1": "EEEEEAAAEGGGBAAADGGGBAAADDGGBBBACCHHHBBACHHHHBFACHHHFFFACCFFFFFF",
+    "board2": "GGGEEEEEGGGEEEECGGFFFEECDDFFBCCCDDDBBCCCDDBBBCCCAAABHHHCAAABHHHH",
+    "solution": "..x..........x.....x.....x............x.....x...x..............x",
+    "unused_metadata": "41,290,488,True"
+  },
+  {
+    "id": "84",
+    "N": 8,
+    "board1": "HHHHCCCEDHHDCCEEDDDDCCEEAAAAFCEEAAAAFFEEABFFFFEGBBFFFGGGBBBFGGGG",
+    "board2": "HHHFDDDDHHHFDDACHHEFAAACBEEFFFACBBFFGGCCBBGFGGGCBGGGGGGGBGGGGGGG",
+    "solution": ".x...........x....x...........x....x...........x....x...x.......",
+    "unused_metadata": "300,54,489,True"
+  },
+  {
+    "id": "85",
+    "N": 8,
+    "board1": "AAAAGGBBCCACGGBBCCCCGGBBCCCCCCBBCCCDDBBHEDDDDDHHEDDDFDHHEEFFFFFF",
+    "board2": "GGHEEEECGHHEEEECHHHHEEECHHHHEEECFDDDDCCCFFFDDCCAFFFDBCAAFFFDBBBA",
+    "solution": ".x...........x....x............x...x....x.............x.....x...",
+    "unused_metadata": "141,16,489,True"
+  },
+  {
+    "id": "86",
+    "N": 8,
+    "board1": "DDDHHGGGDDDHHHGCDDDCCCCCDDDCCCCBDEEECCCBEEEACCCBAAAACCFBAAAAAFFF",
+    "board2": "AAAFCCCCAAFFCCGGAAFFGGGGAAFFHHDBAAHHHHDBAAHHHDDBAEEEHDDDEEEEHDDD",
+    "solution": "....x.........x....x....x.........x............x.x...........x..",
+    "unused_metadata": "55,75,490,True"
+  },
+  {
+    "id": "87",
+    "N": 8,
+    "board1": "EEDDDDDCEEEFFFCCEEEFFFCHGEEFFFFHGEEHHHHHGGBBAAHHGGBBAAAAGBBBAAAA",
+    "board2": "GGHFFAAAGGHFFAAAGGHHFEEEGGHHDDEEGHHBBDDCHHHBBCCCHHHCCCCCHHCCCCCC",
+    "solution": "...x...........x.....x...x............x.....x...x.........x.....",
+    "unused_metadata": "287,11,491,True"
+  },
+  {
+    "id": "88",
+    "N": 8,
+    "board1": "DDDDBBFFDDBBBFFFDDBEBFFFAAEEEFEEAAHHEEEGAAHHEEGGHHHHEEEGHHHHECCG",
+    "board2": "DDDEEBBBDDDEEBBFADDEFFFFAAHHFFFFAAAHHFFFAAHHHGGGAAAHCCGGAAACCCCG",
+    "solution": "......x....x.....x..........x...x.........x............x.....x..",
+    "unused_metadata": "134,51,491,True"
+  },
+  {
+    "id": "89",
+    "N": 8,
+    "board1": "CEEEEEEECCEHHEEECCAAHHEECAAAAHEBCGGGAHBBCDDGAABBDDDAAFFFDDDDAFFF",
+    "board2": "FFDDDDDDFFDDDDDDBBBDDDDDBBBCDDEEBBBCCCEEAAGGHHHEAAGGHHHHGGGGHHHH",
+    "solution": "....x...x.........x............x.....x.....x.....x............x.",
+    "unused_metadata": "142,39,491,True"
+  },
+  {
+    "id": "90",
+    "N": 8,
+    "board1": "CDDDHHHHCDDDBBHHCDDDBBBHCCCCAAAACFFAAAAAFFFAAAAEFFFAGEEEFFFGGEEE",
+    "board2": "AAHHHBBDAAAHHBBDAAEEEEBDGGEEEEDDGGGEEEDDGGGGDDDFGGGCFFFFGGCCCFFF",
+    "solution": "....x....x............x...x............xx............x.....x....",
+    "unused_metadata": "170,150,491,True"
+  },
+  {
+    "id": "91",
+    "N": 8,
+    "board1": "EHHHHDDDEEHHHDDDEEHHADDDFFAHAADDFAAAAGBBFACCCGBBFFCCCGBBFFCCCGBB",
+    "board2": "FFFADDDDFFAAADDDBBBBBEEDBBBBEEEDBBBBGEEEBBCCGGGGHCCCCCCCHHHCCCCC",
+    "solution": "...x.....x.............x..x...........x.....x...x............x..",
+    "unused_metadata": "306,59,492,True"
+  },
+  {
+    "id": "92",
+    "N": 8,
+    "board1": "EEECBBBBCCCCHBBBCGGCHHABGGGHHAAAGGGHHDDDGGGFFFDDGGGFFFDDGGGFFFDD",
+    "board2": "BAAAEEEEBBAADDDEBBAAADDEBBAADDDEBBAACCDEGGGGCCEEHHGHCFEEHHHHFFFF",
+    "solution": "..x..........x..x..............x....x....x.........x..........x.",
+    "unused_metadata": "42,139,492,True"
+  },
+  {
+    "id": "93",
+    "N": 8,
+    "board1": "HHHHCEEEHHHCCCEGHHHBGGGGHBBBGGGGDDDDFGGGDDDFFFGFADFFFFFFAAFFFFFF",
+    "board2": "EEEEEAAAEEEEEBBAHHHEEBBBHHHHEBBGHHHHEFGGHCDDEFFGCCCDFFFFCCCDDDFF",
+    "solution": ".......x.....x.....x....x.............x...x.........x....x......",
+    "unused_metadata": "25,25,494,True"
+  },
+  {
+    "id": "94",
+    "N": 8,
+    "board1": "EEEEEAAACCCEEAABCCCHHHABCDDHHGGBCDDGGGGGDDGGGGGGDDFGFGGGFFFFFFGG",
+    "board2": "FFFGGGGGBBFDGGGGBBBDDAAGBBBDHAAABBCHHEEECCCCHEEECCCCEEEECCCCEEEE",
+    "solution": "..x...........x....x...........xx...........x....x...........x..",
+    "unused_metadata": "7,66,494,True"
+  },
+  {
+    "id": "95",
+    "N": 8,
+    "board1": "DHHHHHHADDDDHHAACCDGGGAACCBBBGAACCBBEEAACCCBBEAACCCCCEFFCCCFFFFF",
+    "board2": "CCCDGGGGBCCDFFGHBDDDFHHHBBDDDHHHBBDDDAAABBEEEAAABEEEEEAABEEEEEAA",
+    "solution": "......x..x..........x..........x..x..........x..x..........x....",
+    "unused_metadata": "49,30,495,True"
+  },
+  {
+    "id": "96",
+    "N": 8,
+    "board1": "GGGGHHHHGGGGHHHHAAGDDDHHAAADDDHHAACCBBBBAACCBBFBAAAFFFFFEEEEEFFF",
+    "board2": "EEEEDFFFHEEDDFFFHHBDDDCCHBBDDCCCHABDDCCCHABGGCCCAAAGCCCCAACCCCCC",
+    "solution": "...x...........x.....x..x.........x.........x.........x..x......",
+    "unused_metadata": "269,4,499,True"
+  },
+  {
+    "id": "97",
+    "N": 8,
+    "board1": "EEEEEBBHECCEBBHHGCCCCCHHGCCAAAHHGCAAAAHHGAADDDDFGAADDDDFAAAADDFF",
+    "board2": "CCCDDDFFCCBBDDFFCCBFFFFFEEGGFFFFEEEGFFFFEEGGGGFFHHGGGGAAHHGGGGGA",
+    "solution": ".....x.....x.....x............x...x.........x...x..............x",
+    "unused_metadata": "179,6,499,True"
+  },
+  {
+    "id": "98",
+    "N": 8,
+    "board1": "HHHAAAAGHHEAAAGGFEEEABBBFFFEAABBFFFDDBBBFFDDDDDDFCCCCDDDFCCCCCDD",
+    "board2": "EEHHHHHBEEHHHHHBEADDHHBBEAADDGBBEAADDGGBEAADDCCCFFFFFCCCFFFFFCCC",
+    "solution": "..x............x.x..........x.........x.x............x.....x....",
+    "unused_metadata": "23,260,499,True"
+  },
+  {
+    "id": "99",
+    "N": 8,
+    "board1": "BBBBFFFFBBBBDDCFBBBBDDCFBBAADCCCHHAADCCCHHHADCGCHEEEDEGCHEEEEEGG",
+    "board2": "EEEEEEEHEEEEEEEHGAAAFEHHGGAAFEEHDGGCFFEHDDCCCCCHDBBCCCCCDBBCCCCC",
+    "solution": ".......x....x...x..........x.........x...x............x...x.....",
+    "unused_metadata": "133,15,499,True"
+  },
+  {
+    "id": "100",
+    "N": 8,
+    "board1": "GGHHHHFFGGHHHHFFGGHHHHFFGCHHHHEFGCCBHEEFDCBBEEEADDDBBBAADDDDAAAA",
+    "board2": "AAAHHDDDAHHHDDDDFFHHDDDDFFHEDBDDFFFECBBDFGEECBBBGGGGCBBBGGGGCCBB",
+    "solution": "....x...x..............x.x.........x..........x...x..........x..",
+    "unused_metadata": "44,4,501,True"
+  }
+]
