@@ -186,39 +186,38 @@ STAR BATTLE RULES:
       cell.className = 'cell';
       cell.dataset.index = i;
 
-      // MOUSE HANDLERS
-      cell.onmousedown = (e) => {
-        e.preventDefault();
+      // UNIFIED POINTER HANDLERS (Replaces Mouse + Touch)
+      cell.onpointerdown = (e) => {
+        // Prevents the browser from firing 'emulated' mouse clicks after touch
+        e.preventDefault(); 
+
+        // Capture the pointer so 'pointermove' works even if the finger leaves the cell
+        cell.setPointerCapture(e.pointerId);
+
+        // e.button === 2 is right-click. Most mobile taps are button 0.
         this.handleStart(i, e.button === 2);
       };
-      cell.onmouseenter = () => {
-        if (this.isDragging) this.handleDrag(i);
+
+      cell.onpointerenter = (e) => {
+        // Only drag if the pointer is actually pressed down
+        if (this.isDragging) {
+          this.handleDrag(i);
+        }
+      };
+
+      // For mobile dragging to work smoothly like your 'touchmove' did:
+      cell.onpointermove = (e) => {
+        if (this.isDragging) {
+          // Find what cell we are currently over
+          const target = document.elementFromPoint(e.clientX, e.clientY);
+          if (target && target.classList.contains('cell')) {
+            const overIndex = parseInt(target.dataset.index);
+            this.handleDrag(overIndex);
+          }
+        }
       };
       grid.appendChild(cell);
     }
-
-    // TOUCH HANDLERS
-    grid.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      if (target && target.classList.contains('cell')) {
-        this.handleStart(parseInt(target.dataset.index), false);
-      }
-    }, { passive: false });
-
-    grid.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      if (target && target.classList.contains('cell')) {
-        this.handleDrag(parseInt(target.dataset.index));
-      }
-    }, { passive: false });
-
-    grid.addEventListener('touchend', (e) => {
-      this.handleEnd();
-    }, { passive: false });
 
     wrapper.appendChild(grid);
 
@@ -434,7 +433,7 @@ STAR BATTLE RULES:
     }
   }
   attachListeners() {
-    window.onmouseup = () => {
+    window.addEventListener('pointerup', () => {
       if (this.isDragging) {
         if (this.hasChangedDuringDrag) {
           this.saveHistory();
@@ -442,7 +441,7 @@ STAR BATTLE RULES:
         this.isDragging = false;
         this.hasChangedDuringDrag = false;
       }
-    };
+    });
     document.getElementById('undo-btn').onclick = () => this.undo();
     document.getElementById('redo-btn').onclick = () => this.redo();
     document.getElementById('reset-btn').onclick = () => this.reset();
