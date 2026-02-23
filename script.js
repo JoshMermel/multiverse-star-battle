@@ -74,10 +74,13 @@ class StarBattleGame {
       const max = this.loadedPuzzles.length;
       const catId = catSelect.value;
 
-      // 1. Validation & Clamping
+      console.log('a', val);
+
+      // Validation & Clamping
       if (isNaN(val)) val = 1;
       if (val < 1) val = 1;
       if (val > max) val = max;
+      puzInput.value = val;
 
       // ignore this if nothing changed. Dunno why this happens.
       if (this.lastLoadedSelection.catId === catId && 
@@ -87,10 +90,7 @@ class StarBattleGame {
       this.lastLoadedSelection.catId = catId;
       this.lastLoadedSelection.puzNum = val;
 
-      // 2. Sync the UI value
-      puzInput.value = val;
-
-      // 3. Load the puzzle
+      // Load the puzzle
       this.loadPuzzle(this.loadedPuzzles[val - 1], catId);
     };
 
@@ -364,7 +364,7 @@ STAR BATTLE RULES:
     // 6. Win Check
     const isWin = this.state.every((v, i) => (this.solution[i] === 'x') ? v === 'star' : v !== 'star');
     if (isWin && errorIndices.size === 0) {
-      this.showToast("🏆 Perfect! You've solved the Star Battle!", "win");
+      this.showToast("🏆 Perfect! You've solved the Star Battle!", "win", 15000);
       this.markAsSolved();
     }
   }
@@ -391,7 +391,7 @@ STAR BATTLE RULES:
   redo() { if (this.historyIdx < this.history.length - 1) { this.historyIdx++; this.state = JSON.parse(this.history[this.historyIdx]); this.updateVisuals(); this.validate(); } }
   reset() { if (confirm("Clear the entire board?")) { this.state.fill('none'); this.saveHistory(); this.updateVisuals(); this.validate(); } }
 
-  showToast(message, type = 'info') {
+  showToast(message, type = 'info', duration = 2000) {
     const toast = document.getElementById('toast');
     toast.textContent = message;
     toast.className = '';
@@ -400,9 +400,10 @@ STAR BATTLE RULES:
     toast.onclick = () => {
       toast.classList.add('toast-hidden');
     };
+    clearTimeout(this.toastTimeout);
     this.toastTimeout = setTimeout(() => {
       toast.classList.add('toast-hidden');
-    }, 2000);
+    }, duration);
   }
   hideToast() {
     document.getElementById('toast').classList.add('toast-hidden');
