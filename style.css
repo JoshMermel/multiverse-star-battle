@@ -224,6 +224,19 @@ button:hover { background: #ddd; }
   100% { transform: translateX(-50%) scale(1); }
 }
 
+.toast.show {
+  /* Initially ignore all touches/clicks */
+  pointer-events: none; 
+  animation: toastFadeIn 0.5s forwards, pulse 2s infinite 0.5s;
+}
+
+/* After 500ms, allow the user to click it if they want to dismiss it manually */
+@keyframes toastFadeIn {
+  0% { opacity: 0; pointer-events: none; }
+  90% { opacity: 1; pointer-events: none; }
+  100% { opacity: 1; pointer-events: auto; }
+}
+
 .menu-container {
   display: flex;
   justify-content: center;
