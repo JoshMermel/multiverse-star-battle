@@ -364,7 +364,7 @@ STAR BATTLE RULES:
     // 6. Win Check
     const isWin = this.state.every((v, i) => (this.solution[i] === 'x') ? v === 'star' : v !== 'star');
     if (isWin && errorIndices.size === 0) {
-      this.showToast("🏆 Perfect! You've solved the Star Battle!", "win", 15000);
+      this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
       this.markAsSolved();
     }
   }
