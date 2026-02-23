@@ -213,20 +213,23 @@ STAR BATTLE RULES:
       };
 
       cell.onpointerenter = (e) => {
-        // Only drag if the pointer is actually pressed down
-        if (this.isDragging) {
+        if (this.isDragging && this.lastDraggedIndex !== i) {
+          this.lastDraggedIndex = i;
           this.handleDrag(i);
         }
       };
 
-      // For mobile dragging to work smoothly like your 'touchmove' did:
       cell.onpointermove = (e) => {
         if (this.isDragging) {
-          // Find what cell we are currently over
           const target = document.elementFromPoint(e.clientX, e.clientY);
           if (target && target.classList.contains('cell')) {
             const overIndex = parseInt(target.dataset.index);
-            this.handleDrag(overIndex);
+
+            // CRITICAL FIX: Only drag if we have entered a DIFFERENT cell
+            if (overIndex !== this.lastDraggedIndex) {
+              this.lastDraggedIndex = overIndex;
+              this.handleDrag(overIndex);
+            }
           }
         }
       };
