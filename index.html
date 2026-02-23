@@ -8,11 +8,17 @@
   </head>
   <body>
     <div class="menu-container">
-      <div class="puzzle-input-group">
+      <div class="menu-group">
         <label for="category-select">Book</label>
-        <select id="category-select"></select>
-        <label for="puzzle-input">Puzzle #</label>
-        <input type="number" id="puzzle-input" min="1" value="1">
+        <select id="category-select"> </select>
+      </div>
+      <div class="menu-group puzzle-nav">
+        <button id="prev-puz" class="step-btn">←</button>
+        <div class="input-wrapper">
+          <span class="label-top">Puzzle #</span>
+          <input type="number" id="puzzle-input" value="1">
+        </div>
+        <button id="next-puz" class="step-btn">→</button>
         <span id="puzzle-count-label">of --</span>
         <span id="solved-badge" style="visibility: hidden;">✅</span>
       </div>

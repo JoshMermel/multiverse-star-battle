@@ -27,6 +27,8 @@ class StarBattleGame {
   setupMenu() {
     const catSelect = document.getElementById('category-select');
     const puzInput = document.getElementById('puzzle-input');
+    const prevBtn = document.getElementById('prev-puz');
+    const nextBtn = document.getElementById('next-puz');
     const countLabel = document.getElementById('puzzle-count-label');
     const helpBtn = document.getElementById('help-btn');
 
@@ -91,6 +93,14 @@ class StarBattleGame {
       // 3. Load the puzzle
       this.loadPuzzle(this.loadedPuzzles[val - 1], catId);
     };
+
+    const stepPuzzle = (delta) => {
+        let val = parseInt(puzInput.value) || 1;
+        puzInput.value = val + delta;
+        commitPuzzleSelection(); // Reuses your existing validation/load logic
+    };
+    prevBtn.onclick = () => stepPuzzle(-1);
+    nextBtn.onclick = () => stepPuzzle(1);
 
     puzInput.addEventListener('input', (e) => {
         // 'inputType' is null or 'insertReplacementText' when arrows are clicked

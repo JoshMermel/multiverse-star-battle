@@ -22,6 +22,32 @@
   padding: 5px;
 }
 
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.puzzle-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.step-btn {
+  padding: 10px 15px;
+  font-size: 1.2rem;
+  background: #eee;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.step-btn:active {
+  background: #ddd;
+}
+
 /* Desktop */
 @media (min-width: 900px) {
   :root {
@@ -45,16 +71,43 @@
   }
 
   .menu-container {
-        flex-wrap: wrap; /* Allows the 'Puzzle #' row to drop below 'Book' if needed */
-        gap: 8px;
-        padding: 8px 4px;
-        font-size: 14px; /* Slightly smaller text saves space */
-    }
+    flex-wrap: wrap;         /* Allows two lines on mobile */
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    gap: 15px;
+    flex-direction: column;
+  }
 
-    #puzzle-input {
-        width: 50px; /* Slimmer input for mobile fingers */
-        height: 35px;
-    }
+  #puzzle-input {
+    width: 50px; /* Slimmer input for mobile fingers */
+    height: 35px;
+  }
+
+  .step-btn {
+    padding: 12px 20px; /* Even bigger targets for thumbs */
+  }
+}
+
+.menu-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+}
+
+.label-top, .label-bottom {
+  font-size: 12px;
+  color: #666;
+  font-weight: bold;
 }
 
 .grid-wrapper {
@@ -219,6 +272,7 @@ select:disabled {
   border-radius: 4px;
   text-align: center;
   font-size: 16px;
+  margin: 2px 0;
 }
 
 #puzzle-input:focus {
