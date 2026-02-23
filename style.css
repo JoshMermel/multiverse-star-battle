@@ -227,7 +227,7 @@ button:hover { background: #ddd; }
 .toast.show {
   /* Initially ignore all touches/clicks */
   pointer-events: none; 
-  animation: toastFadeIn 0.5s forwards, pulse 2s infinite 0.5s;
+  animation: toastFadeIn 1.5s forwards, pulse 2s infinite 0.5s;
 }
 
 /* After 500ms, allow the user to click it if they want to dismiss it manually */
