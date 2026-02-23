@@ -97,8 +97,14 @@ class StarBattleGame {
         puzInput.value = val + delta;
         commitPuzzleSelection(); // Reuses your existing validation/load logic
     };
-    prevBtn.onclick = () => stepPuzzle(-1);
-    nextBtn.onclick = () => stepPuzzle(1);
+    prevBtn.onpointerdown = (e) => {
+      e.preventDefault();
+      stepPuzzle(-1);
+    };
+    nextBtn.onpointerdown = (e) => {
+        e.preventDefault();
+        stepPuzzle(1);
+    };
 
     puzInput.addEventListener('input', (e) => {
         // 'inputType' is null or 'insertReplacementText' when arrows are clicked
