@@ -1,100 +1,79 @@
+/* 1. CONFIGURATION & VARIABLES */
 :root {
-  /* N is our number of cells. JS will update this property. */
-  --grid-n: 8;
-
-  /* Calculate cell size: 90% of screen width divided by N */
-  /* We also cap it at 50px so it doesn't get huge on desktop */
+  --grid-n: 8; /* Updated by JS */
   --cell-size: min(60px, 85vw / var(--grid-n));
-
   --line-thin: 1px solid #ccc;
   --color-thick: #000;
+  --primary-blue: #1976d2;
+  --bg-light: #f8f9fa;
 }
 
-#game-container { display: flex; flex-direction: column; align-items: center; font-family: sans-serif; padding: 20px; }
+/* 2. RESET & BASE STYLES */
+* { box-sizing: border-box; }
+
+body {
+  font-family: sans-serif;
+  margin: 0;
+  background-color: #fff;
+}
+
+button { 
+  padding: 8px 16px; 
+  cursor: pointer; 
+  background: #eee; 
+  border: 1px solid #999; 
+  border-radius: 4px; 
+  transition: background 0.2s;
+}
+
+button:hover { background: #ddd; }
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 3. LAYOUT CONTAINERS */
+#game-container { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  padding: 20px; 
+}
+
+.menu-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 25px;
+  padding: 15px;
+  background: var(--bg-light);
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
 
 #boards-wrapper {
   display: flex;
-  flex-direction: column; /* Stack on mobile */
+  flex-direction: column; 
   align-items: center;
   gap: 20px;
   width: 100%;
   min-height: 400px;
-  padding: 5px;
 }
 
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-.puzzle-stepper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.step-btn {
-  padding: 10px 15px;
-  font-size: 1.2rem;
-  background: #eee;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.step-btn:active {
-  background: #ddd;
-}
-
-/* Desktop */
-@media (min-width: 900px) {
-  :root {
-    /* On desktop, two boards + gap need to fit.
-    We use 40vw so both boards fit within ~80-90% of width */
-  --cell-size: min(55px, 42vw / var(--grid-n));
-  }
-
-  #boards-wrapper {
-    flex-direction: row; /* Force side-by-side */
-    flex-wrap: nowrap;   /* Never wrap to a new line */
-    justify-content: center;
-    gap: 40px;
-  }
-}
-
-/* Mobile */
-@media (max-width: 600px) {
-  :root {
-    --cell-size: clamp(30px, 90vw / var(--grid-n), 65px);
-  }
-
-  .menu-container {
-    flex-wrap: wrap;         /* Allows two lines on mobile */
-    justify-content: center;
-    align-items: center;
-    padding: 15px;
-    background: #f9f9f9;
-    border-radius: 8px;
-    gap: 15px;
-    flex-direction: column;
-  }
-
-  #puzzle-input {
-    width: 50px; /* Slimmer input for mobile fingers */
-    height: 35px;
-  }
-
-  .step-btn {
-    padding: 12px 20px; /* Even bigger targets for thumbs */
-  }
-}
-
+/* 4. MENU & INPUT COMPONENTS */
 .menu-group {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.puzzle-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .input-wrapper {
@@ -102,25 +81,71 @@ input::-webkit-inner-spin-button {
   flex-direction: column;
   align-items: center;
   min-width: 80px;
+  margin-right: 25px;
 }
 
-.label-top, .label-bottom {
-  font-size: 12px;
-  color: #666;
+.input-relative-box {
+  position: relative;
+  display: inline-block;
+}
+
+#puzzle-input {
+  width: 65px;
+  padding: 6px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 18px;
   font-weight: bold;
 }
 
+#puzzle-input:focus {
+  border-color: var(--primary-blue);
+  outline: none;
+}
+
+.label-top, .label-bottom {
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#solved-badge {
+  position: absolute;
+  right: -25px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* 5. GRID & GAMEPLAY */
 .grid-wrapper {
-  position: relative; /* So the SVG can sit exactly on top of the cells */
+  position: relative;
   border: 3px solid #000;
 }
 
 .star-battle-grid {
   display: grid;
-  background: var(--grid-bg);
   user-select: none;
-  max-width: 100vw;
+  touch-action: none; /* Prevents scrolling while drawing */
 }
+
+.cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  border: var(--line-thin);
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+  font-size: 28px; 
+  cursor: pointer;
+}
+
+.star { color: #000; font-weight: bold; pointer-events: none; }
+.dot { width: 6px; height: 6px; background: #444; border-radius: 50%; pointer-events: none; }
 
 .region-svg {
   position: absolute;
@@ -129,21 +154,7 @@ input::-webkit-inner-spin-button {
   pointer-events: none;
 }
 
-.cell {
-  width: var(--cell-size);
-  height: var(--cell-size);
-  border: var(--line-thin);
-  display: flex; justify-content: center; align-items: center;
-  font-size: 28px; cursor: pointer;
-  box-sizing: border-box;
-  touch-action: manipulation;
-  user-select: none;
-}
-
-.star, .dot { pointer-events: none; }
-.star { color: #000; font-weight: bold; }
-.dot { width: 6px; height: 6px; background: #444; border-radius: 50%; }
-
+/* 6. CONTROLS */
 #controls {
   display: flex;
   justify-content: center;
@@ -153,147 +164,72 @@ input::-webkit-inner-spin-button {
   max-width: 800px;
   margin: 20px auto;
 }
-#help-btn {
-  margin-left: auto;
-}
-button { padding: 8px 16px; cursor: pointer; background: #eee; border: 1px solid #999; border-radius: 4px; }
-button:hover { background: #ddd; }
 
-.error-cell {
-  background-color: rgba(255, 0, 0, 0.1) !important;
-}
+#help-btn { margin-left: auto; }
 
-.error-cell .star {
-  color: #d00;
-}
-
-.star-battle-grid {
-  display: grid;
-  background: var(--grid-bg);
-  user-select: none;
-  /* Prevent default touch actions like scrolling/zooming while touching the board */
-  touch-action: none;
-}
-
+/* 7. TOASTS & FEEDBACK */
 #toast {
   position: fixed;
   bottom: 30px;
   left: 50%;
-  transform: translateX(-50%); /* Fixed horizontal center */
+  transform: translateX(-50%);
   padding: 12px 24px;
   border-radius: 25px;
   color: white;
-  font-weight: bold;
-  font-size: 16px;
   z-index: 1000;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  cursor: pointer;
-  transition: opacity 0.3s, bottom 0.3s, transform 0.2s;
-  user-select: none;
+  transition: opacity 0.3s, transform 0.3s;
 }
 
-/* Hidden state - slightly lower than the active state */
 .toast-hidden {
   opacity: 0;
   transform: translate(-50%, 20px) !important;
   pointer-events: none;
 }
 
-.toast:hover {
-  transform: scale(1.02);
-  filter: brightness(1.1);
-}
-.toast:active {
-  transform: scale(0.98);
-}
 
-/* Color Themes */
+.toast-info { background-color: #1976d2; }
 .toast-success { background-color: #2e7d32; }
 .toast-error { background-color: #c62828; }
-.toast-info { background-color: #1976d2; }
-
 .toast-win {
   background-color: #6a1b9a;
   border: 2px solid #ffd700;
   animation: win-pulse 2s infinite;
 }
 
+/* 8. RESPONSIVE DESIGN */
+@media (min-width: 900px) {
+  :root {
+    --cell-size: min(55px, 42vw / var(--grid-n));
+  }
+  #boards-wrapper {
+    flex-direction: row;
+    justify-content: center;
+    gap: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --cell-size: clamp(30px, 90vw / var(--grid-n), 65px);
+  }
+  .menu-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+  .step-btn {
+    padding: 12px 20px; /* Larger hit targets for mobile */
+  }
+  #help-btn {
+    margin-left: 0; /* Center it on mobile */
+  }
+  #controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
 @keyframes win-pulse {
-  0% { transform: translateX(-50%) scale(1); }
+  0%, 100% { transform: translateX(-50%) scale(1); }
   50% { transform: translateX(-50%) scale(1.05); }
-  100% { transform: translateX(-50%) scale(1); }
-}
-
-.toast.show {
-  /* Initially ignore all touches/clicks */
-  pointer-events: none; 
-  animation: toastFadeIn 1.5s forwards, pulse 2s infinite 0.5s;
-}
-
-/* After 500ms, allow the user to click it if they want to dismiss it manually */
-@keyframes toastFadeIn {
-  0% { opacity: 0; pointer-events: none; }
-  90% { opacity: 1; pointer-events: none; }
-  100% { opacity: 1; pointer-events: auto; }
-}
-
-.menu-container {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 25px;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-select {
-  padding: 8px 12px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  font-family: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-select:disabled {
-  background: #eee;
-  cursor: not-allowed;
-}
-
-.puzzle-input-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: bold;
-}
-
-#category-select {
-  min-width: 60px;
-  padding: 6px;
-  border: 2px solid #ddd;
-  border-radius: 4px;
-  text-align: center;
-  font-size: 16px;
-}
-
-#puzzle-input {
-  width: 60px;
-  padding: 6px;
-  border: 2px solid #ddd;
-  border-radius: 4px;
-  text-align: center;
-  font-size: 16px;
-  margin: 2px 0;
-}
-
-#puzzle-input:focus {
-  border-color: #1976d2;
-  outline: none;
-}
-
-#puzzle-count-label {
-  color: #666;
-  font-size: 0.9em;
 }

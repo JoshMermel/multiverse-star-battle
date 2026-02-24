@@ -225,7 +225,6 @@ STAR BATTLE RULES:
           if (target && target.classList.contains('cell')) {
             const overIndex = parseInt(target.dataset.index);
 
-            // CRITICAL FIX: Only drag if we have entered a DIFFERENT cell
             if (overIndex !== this.lastDraggedIndex) {
               this.lastDraggedIndex = overIndex;
               this.handleDrag(overIndex);

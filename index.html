@@ -1,51 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
+<body>
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Multiverse Star Battle</title>
     <link rel="stylesheet" href="style.css">
   </head>
-  <body>
-    <div class="menu-container">
-      <div class="menu-group">
-        <label for="category-select">Book</label>
-        <select id="category-select"> </select>
-      </div>
-      <div class="menu-group puzzle-nav">
-        <button id="prev-puz" class="step-btn">←</button>
-        <div class="input-wrapper">
-          <span class="label-top">Puzzle #</span>
-          <input type="number" id="puzzle-input" value="1">
-          <span class="label-bottom" id="puzzle-count-label">of --</span>
-          <span id="solved-badge" style="visibility: hidden;">✅</span>
-        </div>
-        <button id="next-puz" class="step-btn">→</button>
-      </div>
+  <header class="menu-container">
+    <div class="menu-group">
+      <label for="category-select">Book</label>
+      <select id="category-select"></select>
     </div>
-    <div id="game-container">
-      <h1>Multiverse Star Battle</h1>
-      <div id="controls">
-        <div style="margin-right: auto; width: 100px; visibility: hidden;"></div>
-        <button id="undo-btn">Undo</button>
-        <button id="redo-btn">Redo</button>
-        <button id="reset-btn">Reset</button>
-        <button id="check-btn">Correct so far?</button>
-        <button id="help-btn" class="secondary-btn">Instructions</button>
+    
+    <div class="menu-group puzzle-nav">
+      <button id="prev-puz" class="step-btn" aria-label="Previous Puzzle">←</button>
+      <div class="input-wrapper">
+        <span class="label-top">Puzzle #</span>
+        <div class="input-relative-box">
+          <input type="number" id="puzzle-input" value="1" inputmode="numeric">
+          <span id="solved-badge">✅</span>
+        </div>
+        <span class="label-bottom" id="puzzle-count-label">of 100</span>
       </div>
+      <button id="next-puz" class="step-btn" aria-label="Next Puzzle">→</button>
+    </div>
+  </header>
 
-      <div id="boards-wrapper">
-        <div class="board-container">
-          <h3>Board 1</h3>
-          <div id="board1" class="grid-wrapper"></div>
-        </div>
-        <div class="board-container">
-          <h3>Board 2</h3>
-          <div id="board2" class="grid-wrapper"></div>
-        </div>
-      </div>
+  <main id="game-container">
+    <h1>Multiverse Star Battle</h1>
+    
+    <section id="controls">
+      <button id="undo-btn">Undo</button>
+      <button id="redo-btn">Redo</button>
+      <button id="reset-btn">Reset</button>
+      <button id="check-btn">Correct so far?</button>
+      <button id="help-btn" class="secondary-btn">Instructions</button>
+    </section>
+
+    <div id="boards-wrapper">
+      <article class="board-container">
+        <h3>Board 1</h3>
+        <div id="board1" class="grid-wrapper"></div>
+      </article>
+      <article class="board-container">
+        <h3>Board 2</h3>
+        <div id="board2" class="grid-wrapper"></div>
+      </article>
     </div>
-    <div id="toast" class="toast-hidden"></div>
-    <script src="script.js"></script>
-  </body>
-</html>
+  </main>
+
+  <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
+  
+  <script src="script.js"></script>
+</body>
