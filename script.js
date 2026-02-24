@@ -196,44 +196,53 @@ STAR BATTLE RULES:
     grid.oncontextmenu = (e) => e.preventDefault();
 
     for (let i = 0; i < this.n * this.n; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.dataset.index = i;
-
-      // UNIFIED POINTER HANDLERS (Replaces Mouse + Touch)
-      cell.onpointerdown = (e) => {
-        // Prevents the browser from firing 'emulated' mouse clicks after touch
-        e.preventDefault(); 
-
-        // Capture the pointer so 'pointermove' works even if the finger leaves the cell
-        cell.setPointerCapture(e.pointerId);
-
-        // e.button === 2 is right-click. Most mobile taps are button 0.
-        this.handleStart(i, e.button === 2);
-      };
-
-      cell.onpointerenter = (e) => {
-        if (this.isDragging && this.lastDraggedIndex !== i) {
-          this.lastDraggedIndex = i;
-          this.handleDrag(i);
-        }
-      };
-
-      cell.onpointermove = (e) => {
-        if (this.isDragging) {
-          const target = document.elementFromPoint(e.clientX, e.clientY);
-          if (target && target.classList.contains('cell')) {
-            const overIndex = parseInt(target.dataset.index);
-
-            if (overIndex !== this.lastDraggedIndex) {
-              this.lastDraggedIndex = overIndex;
-              this.handleDrag(overIndex);
-            }
-          }
-        }
-      };
-      grid.appendChild(cell);
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+        grid.appendChild(cell);
     }
+
+    grid.onpointerdown = (e) => {
+        // Find the closest element with class 'cell'
+        const cell = e.target.closest('.cell');
+        if (!cell) return;
+
+        e.preventDefault();
+        cell.setPointerCapture(e.pointerId);
+        
+        const idx = parseInt(cell.dataset.index);
+        this.lastDraggedIndex = idx;
+        this.handleStart(idx, e.button === 2);
+    };
+
+    grid.onpointerover = (e) => {
+        // 'pointerover' is the delegation equivalent of 'pointerenter'
+        const cell = e.target.closest('.cell');
+        if (!cell || !this.isDragging) return;
+
+        const idx = parseInt(cell.dataset.index);
+        if (idx !== this.lastDraggedIndex) {
+            this.lastDraggedIndex = idx;
+            this.handleDrag(idx);
+        }
+    };
+
+    grid.onpointermove = (e) => {
+        if (!this.isDragging) return;
+
+        // On touch devices, 'pointerover' doesn't fire during a drag,
+        // so we still use elementFromPoint for finger-sliding.
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        const cell = target?.closest('.cell');
+        
+        if (cell) {
+            const idx = parseInt(cell.dataset.index);
+            if (idx !== this.lastDraggedIndex) {
+                this.lastDraggedIndex = idx;
+                this.handleDrag(idx);
+            }
+        }
+    };
 
     wrapper.appendChild(grid);
 

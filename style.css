@@ -154,6 +154,14 @@ input[type="number"]::-webkit-inner-spin-button {
   pointer-events: none;
 }
 
+.error-cell {
+  background-color: rgba(255, 0, 0, 0.1) !important;
+}
+
+.error-cell .star {
+  color: #d00;
+}
+
 /* 6. CONTROLS */
 #controls {
   display: flex;
@@ -185,6 +193,14 @@ input[type="number"]::-webkit-inner-spin-button {
   opacity: 0;
   transform: translate(-50%, 20px) !important;
   pointer-events: none;
+}
+
+.toast:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+.toast:active {
+  transform: scale(0.98);
 }
 
 
@@ -227,6 +243,10 @@ input[type="number"]::-webkit-inner-spin-button {
     flex-wrap: wrap;
     justify-content: center;
   }
+}
+
+.step-btn:active {
+  background: #ddd;
 }
 
 @keyframes win-pulse {
