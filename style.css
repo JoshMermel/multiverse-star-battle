@@ -28,6 +28,18 @@ button {
 
 button:hover { background: #ddd; }
 
+button:disabled {
+    background: #f0f0f0;
+    color: #bbb;
+    border-color: #ddd;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+button:disabled:hover {
+    background: #f0f0f0;
+  }
+
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;

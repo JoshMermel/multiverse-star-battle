@@ -400,6 +400,7 @@ STAR BATTLE RULES:
     this.history = this.history.slice(0, this.historyIdx + 1);
     this.history.push(snap);
     this.historyIdx++;
+    this.updateControls()
   }
 
   undo() { if (this.historyIdx > 0) { this.historyIdx--; this.state = JSON.parse(this.history[this.historyIdx]); this.updateVisuals(); this.validate(); } }
@@ -473,11 +474,23 @@ STAR BATTLE RULES:
         this.hasChangedDuringDrag = false;
       }
     });
-    document.getElementById('undo-btn').onclick = () => this.undo();
-    document.getElementById('redo-btn').onclick = () => this.redo();
+    document.getElementById('undo-btn').onclick = () => {
+      this.undo();
+      this.updateControls();
+    }
+    document.getElementById('redo-btn').onclick = () => {
+      this.redo();
+      this.updateControls();
+    }
     document.getElementById('reset-btn').onclick = () => this.reset();
     document.getElementById('check-btn').onclick = () => this.checkCorrectness();
   }
+  updateControls() {
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    undoBtn.disabled = (this.historyIdx === 0);
+    redoBtn.disabled = (this.historyIdx >= this.history.length - 1);
+}
 
   saveCurrentState() {
       const key = `sb_state_${this.currentPuzzleUniqueId}`;
@@ -492,15 +505,16 @@ STAR BATTLE RULES:
       this.updateSolvedUI();
   }
   loadProgress() {
-      // 1. Load the board state if it exists
-      const savedState = localStorage.getItem(`sb_state_${this.currentPuzzleUniqueId}`);
-      if (savedState) {
-          this.state = JSON.parse(savedState);
-          this.updateVisuals();
-      }
+    const savedState = localStorage.getItem(`sb_state_${this.currentPuzzleUniqueId}`);
+    if (savedState) {
+        this.state = JSON.parse(savedState);
+        this.history = [JSON.stringify(this.state)];
+        this.historyIdx = 0;
+        this.updateVisuals();
+    }
 
-      // 2. Check if this puzzle was already solved to show a checkmark
-      this.updateSolvedUI();
+    this.updateControls()
+    this.updateSolvedUI();
   }
   updateSolvedUI() {
     const solved = JSON.parse(localStorage.getItem('sb_solved') || '[]');
