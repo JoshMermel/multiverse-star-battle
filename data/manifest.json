@@ -8,6 +8,7 @@
         {"id": "8x8_medium", "label": "8x8 Medium"},
         {"id": "8x8_hard", "label": "8x8 Hard"},
         {"id": "8x8_expert", "label": "8x8 Expert"},
+        {"id": "8x8_symmetric", "label": "8x8 Symmetric"},
         {"id": "12x12", "label": "12x12 Puzzles"}
     ]
 }
