@@ -405,7 +405,16 @@ STAR BATTLE RULES:
 
   undo() { if (this.historyIdx > 0) { this.historyIdx--; this.state = JSON.parse(this.history[this.historyIdx]); this.updateVisuals(); this.validate(); } }
   redo() { if (this.historyIdx < this.history.length - 1) { this.historyIdx++; this.state = JSON.parse(this.history[this.historyIdx]); this.updateVisuals(); this.validate(); } }
-  reset() { if (confirm("Clear the entire board?")) { this.state.fill('none'); this.saveHistory(); this.updateVisuals(); this.validate(); } }
+  reset() {
+    if (confirm("Clear the entire board?")) {
+      this.state.fill('none');
+      this.history = [JSON.stringify(this.state)];
+      this.historyIdx = 0;
+      this.updateVisuals();
+      this.updateControls();
+      this.validate();
+    }
+  }
 
   showToast(message, type = 'info', duration = 2000) {
     const toast = document.getElementById('toast');
@@ -510,6 +519,7 @@ STAR BATTLE RULES:
         this.state = JSON.parse(savedState);
         this.history = [JSON.stringify(this.state)];
         this.historyIdx = 0;
+        this.validate();
         this.updateVisuals();
     }
 
