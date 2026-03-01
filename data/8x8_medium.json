@@ -2,801 +2,1601 @@
   {
     "id": "1",
     "N": 8,
-    "board1": "GGGEHHBBGGGEEHHBGGGEEHHHDGGEEHHHDDDFCCCHDDDFFCCHDDAFFCCCDAAFFCCC",
-    "board2": "AAAGGGGGFAABGGGGFAABBBBGFAAABBBGFAABBBDDAAABEBBHCCCCEEHHCCCCCHHH",
-    "solution": "......x..x.........x....x..............x....x.....x..........x..",
-    "unused_metadata": "340,48,291,True"
+    "board1": "DDDDDDCCAAADDHCCEAAAHHHBEEEFHHHBEEEFFBBBEEEEEEBBGGEEEEEBGGGGGGGB",
+    "board2": "DDDCCCCCDCCCCCCCHHCCCCCCHHHACECCFHHAEECCFFHEEEEEFFFBEGGGFFFBBGGG",
+    "solution": "..x...........x..x...........x.....x....x..............x....x...",
+    "unused_metadata": "50 puzzle_102"
   },
   {
     "id": "2",
     "N": 8,
-    "board1": "HHHCEEEEHHHCCCEEBBAAACCCBBBAAFFDBBBFFFFDGGBFFDDDGGGGFDDDGGGGGDDD",
-    "board2": "DDDDHCCCDDDDHCCCFFEEEEBCFFFEEBBBFFFAABBBFFAAAGGGFAAAAAAGFFAAAAGG",
-    "solution": "....x....x.............x...x.........x....x.....x.............x.",
-    "unused_metadata": "108,4,291,True"
+    "board1": "ACCCHHFFAAACHHFFDAACHHHHDDACHHGGDECCCGGGEEEEBBGGEEEEBBBBEEEEBBBB",
+    "board2": "CCCCCCFFCCCCCCCFHGGGCCFFHHGGCAFFHHGGCAABHHHHCAABHHDDDABBEEDDDBBB",
+    "solution": "......x...x.....x............x.....x...........x....x....x......",
+    "unused_metadata": "50 puzzle_5479"
   },
   {
     "id": "3",
     "N": 8,
-    "board1": "GGAAGGGGGGGGGGGGBGGGCCFGBBCCCFFFBBCCFFFEHHHHDFFEHHHHDDDEHHHHDDEE",
-    "board2": "BBBBBBBCEEBBBBBCEEEBBBCCEEEHDDAAEEEHDAAAGGEHHAAAGGGFFAAAGGGGFAAA",
-    "solution": "..x............xx............x.....x.....x..........x.........x.",
-    "unused_metadata": "101,28,291,True"
+    "board1": "BBBDDDCCBBDDDDCCDDDDDDHHFFFDDDHHAFEEDGGGAFFEEGGGAFFEEGGGFFFFFGGG",
+    "board2": "HHHHEEEEBBBAAEEEBBBAAAADBBBAAAADBBAAADDDBBGCCDDDBBGCCCDDBBCCCFFD",
+    "solution": ".x............x....x...........xx...........x.....x..........x..",
+    "unused_metadata": "50 puzzle_11012"
   },
   {
     "id": "4",
     "N": 8,
-    "board1": "HHHHHGGGHHHEEEGGHHHEFFGGHHHHFFFGBBBBFCCGBBBBCCCADDBBDCCADDDDDAAA",
-    "board2": "CCCBHEEECCCBHEDDCCCBHHDDCGGFFFDDGGGFFFDDGGGFFDDDAGGGGDDDAAAAADDD",
-    "solution": "......x....x.........x..x.........x.........x..........x.x......",
-    "unused_metadata": "97,6,291,True"
+    "board1": "BBBBBBCCDDBBBCCCDDBBBCCCDDGEEECCEEEEECCCHHEFFCAAHHHFFCAAHHHFFFAA",
+    "board2": "BFFFFFAABDDFFFAABDDDFFFCDDDCCCCCHHHCCCCCHHHGCCCEHHGGCCCEHHGGGEEE",
+    "solution": ".....x.........xx.........x.........x....x.........x..........x.",
+    "unused_metadata": "50 puzzle_28964"
   },
   {
     "id": "5",
     "N": 8,
-    "board1": "EEEGGBBBEEGGBBBBEFFFFBBAEDDFFBBAHDDDFAAAHHDDFAAAHHDCFAAACCCCCCAA",
-    "board2": "HHHBBBBBHHHBBBBBDEEEBBBADEAAAAAADEFFFAGGCFFFCCGGCCCCCCGGCCCCCCGG",
-    "solution": "....x....x.........x..........x.x.........x............x.....x..",
-    "unused_metadata": "80,64,291,True"
+    "board1": "DDCCCCCCDDCCCCCCDCCCCGGGDBCCHGGGBBBBEEEGFFBFEEEEFFFFAAEEFFFFAAEE",
+    "board2": "HHHCCHHHBHHHHHHHBBEEEHHHBBEEEGGGBEEEEGGGBADDDFGGAADDDFFFAADDDFFF",
+    "solution": "...x....x..............x....x.........x...x..........x...x......",
+    "unused_metadata": "51 puzzle_11259"
   },
   {
     "id": "6",
     "N": 8,
-    "board1": "CCDDDDDDCCCCDDDDGCCCBBBDGGCBBBBBGGGBAAAHFFFBHHHHFFFFHHHHEEEEHHHH",
-    "board2": "AADDDDDDAAADDHHHAADDDHHHCCDHHHGGCCBBHHGGCCBBBBGGEFFFFFFFEEEFFFFF",
-    "solution": ".......x..x..........x...x............x.....x...x..........x....",
-    "unused_metadata": "136,130,291,True"
+    "board1": "BBBBBCCCDBBBBCCCDDFBBAAADDFFBAAAHDFFFAAAHHGGGEEEHHGGGEEEHHGGGEEE",
+    "board2": "DDDDEEEEDDDDEEEEDDDCCCCCDDDAFCBBDDAAFBBBDDGGFFBBGGGGGGGHGGGGGGGG",
+    "solution": ".....x..x..........x..........x...x.........x..........x.x......",
+    "unused_metadata": "51 puzzle_26217"
   },
   {
     "id": "7",
     "N": 8,
-    "board1": "EGGGGDDDEGGGGDDDEBBBBBDDEEBBBBDDEEAABBBHEEAAABFHEECCCFFHCCCCHHHH",
-    "board2": "GGGGHHHHDDDCCHHHDDDDBBHHDDDDBBBHDDDEBEBAEEEEEEAAEEEEFFAAEEEEFFAA",
-    "solution": "x..........x..........x.....x.....x............x.....x...x......",
-    "unused_metadata": "95,62,291,True"
+    "board1": "BAAAHHHHBAAAHDDDBBBBDDDDBBBBBDDDFFBBGGEDFBBEEEEECBBBEEEECCCEEEEE",
+    "board2": "GHHHHCCEGHHHHCCEGHHHHHCCGGFHHCCFGFFHFFFFBFFFFFFFBAAFFDDDBAAAFDDD",
+    "solution": ".......x...x..........x..x..........x...x............x....x.....",
+    "unused_metadata": "52 puzzle_3351"
   },
   {
     "id": "8",
     "N": 8,
-    "board1": "ECCCCHHHECCCCHHHEEAGGHHHEEADDDDFEAADDDFFBADDDDFFBBDDFFFFBBBFFFFF",
-    "board2": "CCCCCCCCDDDHHCGCDDDHHGGGFFDGGGGGFFGGGGGAFFBBBBAAFFEBBBAAFEEBBBAA",
-    "solution": "...x..........x.....x.....x.....x............x.........x.x......",
-    "unused_metadata": "13,206,291,True"
+    "board1": "BBBCCEEEBBCCCCCEBBBGCCCCBAAGGDCDAAGGHDDDAAHHHHDDAAHHHFDDAAHHHFFF",
+    "board2": "FFFEEEHHFFFEEEHHFFFFCCHHBBFFFFHHBBBGFFAHBDDGFAAABDDGGAAADDDGGAAA",
+    "solution": ".....x...x..........x..........x...x....x.........x...........x.",
+    "unused_metadata": "52 puzzle_15468"
   },
   {
     "id": "9",
     "N": 8,
-    "board1": "CCCCDDGGCCCDDDGGCCDDDDDBCCCDBBBBCFAEBBBBFFAEEBBBFFAEHHHHFAAAAHHH",
-    "board2": "HHHHBBBBHHHHBBBBHHHHBFFFHADDDDFFAAADDDDDAAGGCDEEAAGGEEEEAGGGEEEE",
-    "solution": "......x.x..............x...x.....x..........x.....x..........x..",
-    "unused_metadata": "144,46,291,True"
+    "board1": "DDDDGGGFDDDGGFFFDFFFFFFFDFFFFFFEBBBCCEEEBBBCCHEHBABCHHHHAAAAHHHH",
+    "board2": "AACBBCEEACCBCCEEACCCCCEEACCCCEEEDDDCCEEFDDDGGEFFHDGGGGFFHGGGGGFF",
+    "solution": ".x.........x.........x.........x..x.........x.........x.x.......",
+    "unused_metadata": "53 puzzle_9914"
   },
   {
     "id": "10",
     "N": 8,
-    "board1": "DDDDHHHHDDDDHHHHBBBHHHHHBBBBHAAABEEEEAAFEEEEEEFFGEEEEEFFGEECCCCC",
-    "board2": "CCCBBEEECCCEEEEDCCEEEEDDCCHHHEDDHHHHHEDDFHHHGGGAFFHGGAAAFHHHGAAA",
-    "solution": "...x.........x...x............x...x............xx...........x...",
-    "unused_metadata": "40,89,291,True"
+    "board1": "FFFFBBBBCFFFABBBCCCAABBBCCCAEBBBCCCEEBHHDDCEEGHHDDDEGGGHDDDDGGHH",
+    "board2": "DAAAGGGGDAAAAGGGDAACFFGFDBBCFFFFHBBCFFFEHHHCFFFEHHFFFFFFHFFFFFFF",
+    "solution": "x...........x.........x...x............x...x.....x...........x..",
+    "unused_metadata": "53 puzzle_37875"
   },
   {
     "id": "11",
     "N": 8,
-    "board1": "HHDDFFFFHDDDDFFFHHAAAFEEHHAAACEEHHBAACCEHHBBACEEBBBBBCCGBBBBBCGG",
-    "board2": "HHHHFFFFHHHFFFFFHHHFFFCFGHDFFFCCGDDFFCCCGDDFFACCEEEEBAAAEEEEBBBB",
-    "solution": "....x....x............x...x.....x............x.....x...........x",
-    "unused_metadata": "54,4,292,True"
+    "board1": "GEEEDDDDEEEEEDDDEEEEDDDDBBBFFFFFBBBHHHHHBCBCHHHACCCCAAAACCCCAAAA",
+    "board2": "HHHGGFFDHHHHGFFDHHHGGGFDHHHGGGDDEHCGAAAAEECCCAABEECCCCCBEECCCCCB",
+    "solution": "x............x.....x..........x.....x.....x............x.x......",
+    "unused_metadata": "54 puzzle_4649"
   },
   {
     "id": "12",
     "N": 8,
-    "board1": "FFGGGDDDFFFFGDDDFFFFGDDDFFFHHHCCAFAHHHHCAAAHHHHEAABHHHEEABBBHHEE",
-    "board2": "BBBGGGGGBBAAGGGGDAAAAAAADDAAAAAACCAAAAAHCCFFEEEHFFFFEEEHFFFFEEEH",
-    "solution": "..x..........x..x...........x..........x.x............x....x....",
-    "unused_metadata": "79,34,292,True"
+    "board1": "BDDHHHHHBDDDHHHHBDDDHFFFBBDAAFFFBEDAACFFBEDACCCFBBDACCCGBDDDDCCG",
+    "board2": "EEEBBBBBEFFFACCCFFFFACCCFFFFACCCFFFFFCCCHHFGGGGGHHFGGGGGHHHGGGDD",
+    "solution": "...x....x.........x.........x.........x..x...........x.........x",
+    "unused_metadata": "54 puzzle_13818"
   },
   {
     "id": "13",
     "N": 8,
-    "board1": "EEEEBBHHEEEBBBHHFFBBBHHHFFFFBAHHFFFAAAHGCCFDDAGGCDDDDGGGCCDDGGGG",
-    "board2": "DDDDDCBBDDDCCCBBDDDCCGGGDDDCGGGGADDCGGGGAAFFFGGGAAEEFFFHAEEEHHHH",
-    "solution": "..x...........x....x.........x..x...........x..........x.x......",
-    "unused_metadata": "398,28,292,True"
+    "board1": "AAAACCCCGAACCCCCGGBBHHHHGGGBBHHHGGGGGHHHGDDDDEHEFDDDDEEEFDDDDEEE",
+    "board2": "DCCEEEEEDDCDEEEEDDDDDDDGDDDDDHGGDDDHHHHHBDBBFHHABBBBFHHABBBBBHHA",
+    "solution": ".x...........x....x...........x....x...........x....x...x.......",
+    "unused_metadata": "54 puzzle_20932"
   },
   {
     "id": "14",
     "N": 8,
-    "board1": "DDAAACCCDDDGCCCCDDDGGCHHDDDHHHHHDDDHHHHHEEEEHHHHBEEEEFFFBBEEEFFF",
-    "board2": "BBBBDDDEBBBBDDDEBBCDDDDEBCCCDDEEFFCCCHHEFCCCAAHHFGCGAAHHFGGGAAHH",
-    "solution": "...x...........x....x.....x...........x.x............x...x......",
-    "unused_metadata": "62,193,292,True"
+    "board1": "BEAAAAAABEAACCCCBECCCCCCBDCCHHCCBDDCHHHHBDDDHHHHBGGGHHHHGGGGHFHH",
+    "board2": "EEDDDHHHEEDDDHHHCCDFFHHHCCDFFFHHCCFFFFGHCCFFGGGBCFFGGGGAFFFGAAAA",
+    "solution": "....x....x............x.x.........x............x...x.........x..",
+    "unused_metadata": "54 puzzle_28793"
   },
   {
     "id": "15",
     "N": 8,
-    "board1": "CCCCCAAECCCCAAEEHHCAAAEEHHFFEEEEHFFFEEEEDDDDDDGGBBBBDGGGBBBBDGGG",
-    "board2": "DDDAACCCDDDAGCCCDDDGGCCCDDDCCCCCBBDHEEEEBHHHEEEEBHHHHEEEBBBHHFFE",
-    "solution": "...x...........x....x.....x.....x............x...x............x.",
-    "unused_metadata": "366,37,292,True"
+    "board1": "DHFFFFFFDDDFFFFADDDDAAAADDDDAAAADDDGCCABGGGGGBABGGGGGBBBGGEEBBBB",
+    "board2": "FFFFFFDBFFFEEEDBFFFEEBBBHHHAABBBHHHAABBBHHHAAGBBHCCGGGBBCCCCGGGG",
+    "solution": ".x............x....x...........x....x...x............x....x.....",
+    "unused_metadata": "54 puzzle_37299"
   },
   {
     "id": "16",
     "N": 8,
-    "board1": "BBBFFEEEBBBFFFEEGBBFFFEEGHBBFFFAGHHBBDDAHHCCBDDAHCCCCCDAHCCCCCCA",
-    "board2": "HHEEBBBBHHEEBBBBHFFFFBDDAAFFFFDDAAAFFFDDAAAFCCDDAAAACCDDAAAACGGG",
-    "solution": ".....x.....x....x.........x...........x..x..........x..........x",
-    "unused_metadata": "63,84,292,True"
+    "board1": "FFFFFFHHEEFFGGHHEEEFGHHHEEEGGHHHAAACCHHBDAAACBBBDAAAABBBDDAABBBB",
+    "board2": "DDDEEEEBDDEEEEEBDDDEEEEBDDAAAAABDDDDCAABHGDDDAAFHGDDDAFFHGGGDFFF",
+    "solution": ".x...........x.........x..x.........x...x.............x....x....",
+    "unused_metadata": "54 puzzle_44964"
   },
   {
     "id": "17",
     "N": 8,
-    "board1": "HBBDDGGGHBBDGGGDHCCDDGDDHHCDDDDDHHCDDDDFHHAAAFFFHAAEEEFFAAAEEEFF",
-    "board2": "FHHHHDDDFHHHHDDDFFHHAADDFFEEAAADFGGECAAAGGGECCCCGGGCCCCCGGGCCBBB",
-    "solution": "..x...........x..x.........x...........x....x...x............x..",
-    "unused_metadata": "66,175,292,True"
+    "board1": "GGGGGGBBGGGGGGBBGCCCCHBBAAAAHHBBAAAEHHFBEEEEEHFFEDDEFFFFDDDFFFFF",
+    "board2": "AAAACCCCAAAADCCCAAABBHHHFAABBHHHFFBBBBHHFFFFEHHHFGEEEEHHFEEEEEEH",
+    "solution": ".......x....x.....x.....x..........x.........x...x............x.",
+    "unused_metadata": "55 puzzle_2372"
   },
   {
     "id": "18",
     "N": 8,
-    "board1": "BBBHHFFFBBHHHFFFBBBHHEEEBBBHHHEEDDHHEEEAGDDDCEAAGDDDCCCAGGDDCCCA",
-    "board2": "EEEEAAEEGEEEEEEEGEECCFEEGGGCCFFFGCCCCFFFGDDHHFFFGDDHHFFFBBBHHFFF",
-    "solution": ".....x..x.............x....x...........x..x.........x....x......",
-    "unused_metadata": "66,13,292,True"
+    "board1": "BBBEEAAABBBEEAAABBBBFAAABFFFFFAHCFFFFFGHCDDDDFGHCCDDFFHHCCCCFFHH",
+    "board2": "DDDBBBBBDDDBBCCCGGGFFCFFGGGFFFFFGGGFFFFEGGGAAAEEGGAAAAAEGGAAAHHH",
+    "solution": "....x....x...........x.....x....x.............x...x............x",
+    "unused_metadata": "55 puzzle_16649"
   },
   {
     "id": "19",
     "N": 8,
-    "board1": "HHHHHHCCBBHHAACCBBAAAACCBBACCCCCBBGCCEDDGGGGEEDDGFFFFFDDFFFFFFDD",
-    "board2": "AAHHBBBBAAAHHDBBAAAHHDDBAAAHHDDDAAAADDDGAAAFFDGGECCFFFGGEECCFFGG",
-    "solution": "......x....x.........x...x.............x....x...x.........x.....",
-    "unused_metadata": "271,19,292,True"
+    "board1": "BBBGGGGGBBBHHGGGCBBBHHGGCCBDEHHGCCBDEHFACCDDEEFACCFFEFFACFFFFFAA",
+    "board2": "CCFFFFBBCCFHHHBBCEHHHDBBEEAADDDBEEEADDDBEEEEDDBBGGGEEEBBGGGGEEBB",
+    "solution": "..x..........x..x.............x....x...........x....x....x......",
+    "unused_metadata": "55 puzzle_24908"
   },
   {
     "id": "20",
     "N": 8,
-    "board1": "FFFCCBBBFCCCBBBBFGCCEBBBFGGEEBBBHGGEEABBHHGEEAAAHHEEEAAAHEEEDDAA",
-    "board2": "EEEEAAAAEEEEAAAFHHBGGAAFHHBGGAFFHHHDGGFFDDDDDFFCDDDDDCCCDDDDDCCC",
-    "solution": ".......x...x....x.........x.........x.........x..x...........x..",
-    "unused_metadata": "36,32,292,True"
+    "board1": "BFFFFAAABBBBAAAABBBDDGGGBBBDDGEECBBDDGEECCCCGGEECCCCHHHHCHHHHHHH",
+    "board2": "GGGDDDDAGGGDDDDAGGGGDDDHGCGGFFHHGCCFFFHHCCCFFEHHCCCCFEEECBBBBEEE",
+    "solution": "....x..........x.x............x....x.........x..x.........x.....",
+    "unused_metadata": "55 puzzle_33770"
   },
   {
     "id": "21",
     "N": 8,
-    "board1": "FFFFBDDDFFFFBBEEFFFBBBEECHFHHHEGCHHHHHHGCCHHHGGGCCCHHHGGAAAGGGGG",
-    "board2": "CDDDAAAACDDDDAAACDDFHABBCCFFHHBBCCGGHHBBGGGGGHEEGGGGHHEEGGGGHHEE",
-    "solution": ".....x...x.........x..........x.x..............x....x.....x.....",
-    "unused_metadata": "25,157,293,True"
+    "board1": "BBBCCCFFBBBCCFFFBBBCCHHHABCCCHHHABEEEHHHAEEEDDHHAGEDDDDDAGEDDDDD",
+    "board2": "GGGGGAAFGGGGAAFFGGDDDAFFGGDDHHHFGGDEEEEEGGDEEEEEGBBEEEEEBBBBBBCC",
+    "solution": ".......x....x.....x..........x..x..........x.....x............x.",
+    "unused_metadata": "55 puzzle_41448"
   },
   {
     "id": "22",
     "N": 8,
-    "board1": "GGGGGGGDGGGGGGDDBCGGGDDDBCCCFFDDBCCFFFDDBECFFFFHBECAAAHHBEEEAAHH",
-    "board2": "GGGGGDDDGGCCCDDDHHHCDDDDHHHCDDDDHHHDDBBDHHHHBBEEAHHHFFEFAAHHFFFF",
-    "solution": "..x...........x.x..........x.........x.........x....x....x......",
-    "unused_metadata": "40,9,293,True"
+    "board1": "HHHHFGGGHAHHFGGGAAAHGGGGAAAAGGGDABAAGGGDBBCAGDDDEECCDDDDCCCCCCDD",
+    "board2": "CCCCCCFFHHBCCFFFHHHCFFFFHHHGGFFEAHGGGGGEAAGGGDDEAADDDDDDAAADDDDD",
+    "solution": "....x.....x...........x....x.....x.............xx............x..",
+    "unused_metadata": "55 puzzle_48578"
   },
   {
     "id": "23",
     "N": 8,
-    "board1": "BBBBBAAEBGBFAAAEGGGFCAAADGGFCCAADGGCCCAADDGGCCAAHHGHHCCHHHHHHHHH",
-    "board2": "AAAAABEEDAAACBBEDDACCBBEDDDCCHBHDDDDHHHHDDDGGGHHFFFFGGGGFFFFGGGG",
-    "solution": ".x.............x...x..........x.....x...x.........x..........x..",
-    "unused_metadata": "15,86,293,True"
+    "board1": "FFGGGADDFFEGAAADFEEGGGAABBEGGGCCBBEGHHCCBBEHHHCCEEEEHHCCEEEHHCCC",
+    "board2": "AAAAAAAAAAAAAACCHEEEACCCHHEEECCCGGGBCCCCGGGBDCCCGGBBDDCCGGBBDFFC",
+    "solution": ".....x.........xx..........x.....x..........x.....x...........x.",
+    "unused_metadata": "56 puzzle_12936"
   },
   {
     "id": "24",
     "N": 8,
-    "board1": "DAAHHBCCDAAHBBCCDAHHBBCCDDHBBCCCFFBBBECCFFBBBEEEFFFBBEEEFFFFBEGG",
-    "board2": "FFDDDDDDFFFGGGGEFBGGGEEEBBAEEEEEBBAAAEEEAAAAAAEECCCAAAEECCCCHHHE",
-    "solution": "...x.....x..........x...x..............x.....x....x...........x.",
-    "unused_metadata": "43,72,293,True"
+    "board1": "AAAAAAGGAAAAAAGGBHHHHHHHDDDHHHHHDDDDDHFFEEEEDFFFEECCDDFFECCCDDFF",
+    "board2": "CCCCCCCFCCCCCEFFCCCCBEFFAABBBEFFAAAAGGFFAAADDGGFAADDDGGFHHHHDDDD",
+    "solution": ".......x.....x..x...........x....x.........x..........x...x.....",
+    "unused_metadata": "56 puzzle_26430"
   },
   {
     "id": "25",
     "N": 8,
-    "board1": "FFFEEEEEFFEEEEEEFFEEEEAGCEEEEEGGCCDDEEGGCCDDBBGGCCDDBBBBCCHHHBBB",
-    "board2": "GDDDEEEEGGDDEEEEAADEEEEHAAEEEEEHAAABBBBHAFFBBBHHFFFFCCCCFFFFCCCC",
-    "solution": "...x.....x............x.x..............x.....x....x.........x...",
-    "unused_metadata": "11,105,293,True"
+    "board1": "CAAGGGBBCCAGGGBBCCCGGBBBCCCGGBBBDDDGBBBBDDFFFBBEDDFFHEEEDFFHHEEE",
+    "board2": "EEEEHHCCEEEHHCCCDHHHGGGCDAHHGGGCDABBGGGGDDBGGGGFBBBBGGFFBBBBFFFF",
+    "solution": ".....x....x.....x..............x.x..........x.........x....x....",
+    "unused_metadata": "56 puzzle_39947"
   },
   {
     "id": "26",
     "N": 8,
-    "board1": "BBBBDDDFBBBBBBFFABBBBBFFAABBBFFFCCCBBGGGCCCCEGGHCEECEGGHCEEEEGGH",
-    "board2": "HHAAAAAAEHHAAAAAEEEACAAAEEEECCCCEDCCCCCCDDCCFGGGDDFFFGGBDDFFFGBB",
-    "solution": "....x.....x.....x.............x..x...........x.........x...x....",
-    "unused_metadata": "38,20,293,True"
+    "board1": "GGGHBBBBGGGHBBBHGEEHHHHHEECCCHFFCCCCFFFFCCCCFFFACCCCFFDDCCCCDDDD",
+    "board2": "HEEBBDDDHHBBBBDDHHFBBFDDCHFFFFDGCCFFFFGGCCFFFFGGCFFFFFFGCCFFFAAG",
+    "solution": "..x...........x....x.....x..........x..........xx............x..",
+    "unused_metadata": "57 puzzle_5841"
   },
   {
     "id": "27",
     "N": 8,
-    "board1": "HFFEEEEEHFFFEEEDHCFFBEDDCCCCBBDDCCCCBBDDAAGBBBDDAAGGGGGGAAGGGGGG",
-    "board2": "AAACCCCEAAAFFCCEAAAAFDEEAHADDDEEHHDDDDEGHHHBBBEGHHHBBBBGHHHBBBBB",
-    "solution": ".....x.....x....x.............x...x.........x..........x.x......",
-    "unused_metadata": "131,22,293,True"
+    "board1": "GGGGGDEEAAAADDEEAAAADDEEBBBBBEEEBBBBBEEEFFFFHEEEFFFHHECEFFFHHHCC",
+    "board2": "DDDHHHFFDDDDHHFFDDDGHHFFDDGGGEFBCCGGGEFBAAAGGEBBAAAGEEBBAAAAEEBB",
+    "solution": ".x...........x.....x..........x.x.........x.........x..........x",
+    "unused_metadata": "57 puzzle_16349"
   },
   {
     "id": "28",
     "N": 8,
-    "board1": "GGGEFFFFGGGEHBBFGEEEHBBBGEHHHBBBGDHHHBBBDDDCCBAADDDCCCAADDDCCAAA",
-    "board2": "GGGGGGEEHGGGGGEEHHAABBBBHHHHBBBBHHHHCCBBHHHHCCDDHHDDDDDDHHDDDDFF",
-    "solution": "x..............x..x.........x....x...........x.....x..........x.",
-    "unused_metadata": "373,10,293,True"
+    "board1": "DDDFFFFBDDDFGFBBDDDEGGGBDDEEGGGGDDEEGGGGDDEEHHGGDDHHHHGADCCCCCCA",
+    "board2": "GGGBBBEEGGGBBBEEGGGGBBBEGGGGFBDEHHHFFDDDHHFFDDDAHCCCDDDACCCCDDAA",
+    "solution": "...x..........x.x...........x.....x..........x.........x.x......",
+    "unused_metadata": "57 puzzle_28231"
   },
   {
     "id": "29",
     "N": 8,
-    "board1": "CCBBBGGGCCBBBGGGCCBBBDGGEDDDDDAAEEDDDDAAEEDDDFAAEHDDDFFFHHHDDFFF",
-    "board2": "GGGGGEEEGGGGEEEEBGBGEDDDBBBCCHHDFFFCCHAAFFFFHHHAFFFFFHHAFFFHHHHA",
-    "solution": ".x..........x.........x.x..........x...........x.....x....x.....",
-    "unused_metadata": "182,52,293,True"
+    "board1": "AAAAHHHHAAAAAHCCAFAACCCCAFFFFCCCFFFFFGCCBDDFGGGCBDDGGGGEBBGGGGEE",
+    "board2": "FFEEEAAAFDEEAAAADDEEABAGDDDCCBBGDDDDBBGGDDGGGGGGDDHHGGGHDDHHHHHH",
+    "solution": "....x...x.............x....x.........x....x............x.x......",
+    "unused_metadata": "57 puzzle_40111"
   },
   {
     "id": "30",
     "N": 8,
-    "board1": "EEEDDDDDEEEEEDDDGGGGGAADFGGGAAADFCGBAAAAFCBBAHHAFFBBHHHAFBBHHHHH",
-    "board2": "FFFFFFGGCCCFFAAGCCCDDDAACCCHDAAACCHHHBAAEEEHHBAAEEEEHBAAEEEEHHHA",
-    "solution": "..x............x....x.........x..x.........x.........x..x.......",
-    "unused_metadata": "37,37,293,True"
+    "board1": "EEDDDFFFEEDDDDDFEEDDDDDFEECCCCDDEGGCCCDDGGGGCCABHHGGCCABHHHGGBBB",
+    "board2": "HHHAAAEEHHHHAAAECBBBAAAECCDDAAAACCDAAAAACCCFFAGGCCFFFGGGCCCFFFGG",
+    "solution": ".......x...x.....x..........x.....x...........x.x............x..",
+    "unused_metadata": "58 puzzle_5913"
   },
   {
     "id": "31",
     "N": 8,
-    "board1": "EEEEEEAAEEFGGGHAFFFHHHHAFFCCHHHACCCCCHBACCCCBBBBCCDBBBBBCDDBBBBB",
-    "board2": "GHHHHHEEGABBHHEEGABHHDEEGACCDDEEGACCDDDDAACFFFDDAAFFFFFFAAFFFFFF",
-    "solution": ".....x.....x..........x.x..............x..x.........x....x......",
-    "unused_metadata": "33,71,293,True"
+    "board1": "BBBBFFFFGGBGEFFFGGGGEFFFGGCEEFFAGGCCDDDAHCCHDDDAHCCHHDDAHHHHHDDA",
+    "board2": "AAAACFFHAAAACFFHAAABCFFHAAABBFFHBBBBBBBBBBBBBBGGDDDEEEGGDDDEEEGG",
+    "solution": ".....x....x.........x..........xx.............x..x.........x....",
+    "unused_metadata": "58 puzzle_35033"
   },
   {
     "id": "32",
     "N": 8,
-    "board1": "FCCCCHHHFCCAAHHHFFEAAHHHFEEEAAHHFEEEAADDFEBEADDDBBBAADDGBBBDDDDD",
-    "board2": "CCGGGGBBCCGGGBBBCHGAFBBBHHHAFFBBDDHAFFFBDDEAFFEBDDEEEEEEDDEEEEEE",
-    "solution": "....x...x..........x..........x...x..........x.........x.x......",
-    "unused_metadata": "49,63,293,True"
+    "board1": "CCCDGGGGCCCDDGGGEEDDDDGGEEDDDDBFAEEEBBBFAAHEEBBBAAHEEBBBAHHHEBBB",
+    "board2": "EAAAAHHHEAAAAFHHEGAAAFHHGGGAAFHHGCGAFFHBGCDDDBBBCCDDDDDBCCDDDDBB",
+    "solution": "....x...x............x.........x..x...........x..x.........x....",
+    "unused_metadata": "59 puzzle_5413"
   },
   {
     "id": "33",
     "N": 8,
-    "board1": "AAAACCHHAAAACCHHAACCCEHHAFFCCEHHAFFFFEHHDDDFFEBBDDDBBBBBDDDBGGGG",
-    "board2": "CCCEEEEFDDCEHHHFGDCCHHHFGDDCBBHHGDDAAHHHGGGAAHHHGGGAHHHHGGGAAHHH",
-    "solution": "...x...........x..x..........x...x............x.x...........x...",
-    "unused_metadata": "104,33,294,True"
+    "board1": "DDDAEEFFDDDAEEEBDDDAEEBBDDDAAEBBHAAAAGGBHAAAAGGGHHHCGGGGHHCCCGGG",
+    "board2": "GGAEEEDDGGAEEEDFGGGEEFFFGGGEEFFFGGGGHHHHGGGGBBHHCCCBBBBBCCCBBBBB",
+    "solution": "......x...x.........x..........x.....x...x.........x....x.......",
+    "unused_metadata": "59 puzzle_14924"
   },
   {
     "id": "34",
     "N": 8,
-    "board1": "CCCHHHHFCCHHHHFFCCCHHFFFCCCHFFAABCEEDDAABEEDDDDABEEDDGGABBBBGGGA",
-    "board2": "EEEEFFAAEEEEDDAAHEEEDDAAHHHHDGGAHHHGGGGABBHCGGGGBBCCGGGGCCCCGGGG",
-    "solution": "....x....x...........x.........x..x.....x..........x..........x.",
-    "unused_metadata": "112,78,294,True"
+    "board1": "HHHHHAACHHHDDACCHDDDDACCDDDDEAABGGDEEBBBGGGEEBFFGGGGFFFFGGGFFFFF",
+    "board2": "GGHHHHFFGGHHHHFFGGHHHHFFCDDHHFFFCDAHHEEBCCAEEEEBCAAAEEBBAAAAEBBB",
+    "solution": ".....x...x............x...x............x....x...x..........x....",
+    "unused_metadata": "59 puzzle_25846"
   },
   {
     "id": "35",
     "N": 8,
-    "board1": "GGHHEEEEGGHCCCEDGGHCCCCDGGHHCCCDGGAAACCCFFAAAACCFFFFBBCCFFFFBBBB",
-    "board2": "AAAHHHHHAAAHHHHHAAAHHHHECCDDHHEECCDDDEEEFCDDDBEEFDDDGBBBFDDGGGBB",
-    "solution": ".....x....x............x.x.........x....x.............x.....x...",
-    "unused_metadata": "127,9,294,True"
+    "board1": "GECCBBBBGECCBFBBGCCCFFBBFFFFFFBBAAFFFFFFAAAFFFFDAAAFFFDDAAAHHHHH",
+    "board2": "CCCFFFEECCCFFFEEDDCEEEEEDGGGEEEEGGGGGGHHGGGAGGHHAAAABBBHAAAAABBH",
+    "solution": ".x.........x....x.............x.....x..........x..x..........x..",
+    "unused_metadata": "59 puzzle_36261"
   },
   {
     "id": "36",
     "N": 8,
-    "board1": "HHHHBBBBHHHHBBEEHHHHHBEEAAAAAEEEDDAAAEEEDDAFFFCCFFFFFFCCGGFFCCCC",
-    "board2": "DDDHHHHHDDDDHHHHDDGBBBBHGGGBBBBBCGEFFBBBCEEEFFBACEEAAAAACEAAAAAA",
-    "solution": ".....x.....x..........x...x.....x...........x..........x.x......",
-    "unused_metadata": "53,30,294,True"
+    "board1": "BFFFAAAGBFFEAAAGBBFEEAGGBBBEEHHGBBBBEHHGBBCCHHGGCCCCHHHGCCCCHDDD",
+    "board2": "HHHHHHFFCBBHHHFFCCBDHGFFCCBBGGGECCBGGGGECCCGGGEECCCAAAEECCAAAAEE",
+    "solution": ".x............x....x...........x..x.........x...x............x..",
+    "unused_metadata": "59 puzzle_44502"
   },
   {
     "id": "37",
     "N": 8,
-    "board1": "DDHHHHHHDDBBBHHHDBBBBBHHGGBBBBBAGGFFBBAAGGFFAAAACCCFEAAACCCEEEAA",
-    "board2": "AAAAAAAHGAAAAAHHGGABBHHHDDBBBHHHDDCCCHHHFFCEEHHHFFFEEEHEFFFEEEEE",
-    "solution": "......x.x...........x....x.........x...........x..x..........x..",
-    "unused_metadata": "29,10,294,True"
+    "board1": "FFFFFBHHCFFFFBHHCCFFFHHHCCFFFGHHCEEGGGGDEEEGGGGDAEEGGGGDAAAAGGGD",
+    "board2": "HHHHDDDDHHHHGDDDHHHGGEDDFFFGGEEEFFFFEEEEFFFFCBBEFFFFCBBBFFAAABBB",
+    "solution": ".....x..x..........x..........x..x..........x..........x..x.....",
+    "unused_metadata": "60 puzzle_3171"
   },
   {
     "id": "38",
     "N": 8,
-    "board1": "GGGFFFBBCCGGAABBCCGAAABBCCCAABBBDDCCBBBBDDDEEHHBDDDEEEEBDDDDEEEE",
-    "board2": "EEEHHHHHEEEEHHHHGEEEHAAHGEEAAACCGGGAABBCDGGFABBCDDDFFFBCDDFFFFFC",
-    "solution": "....x.....x.....x..........x...........x.....x...x............x.",
-    "unused_metadata": "3,82,294,True"
+    "board1": "HHHHEEAAHHHEEAAAHHHHGGAAHHCGGGAACCCCGFFABCDDGFFFBBDDGFFFBBBBBBBF",
+    "board2": "GGHHHHHHGGHHBHDDCCCBBDDDCCCBBDDDCCCDDDDDACFFDEDEACFDDEEEACEEEEEE",
+    "solution": ".....x...x..........x.....x............x...x..........x.x.......",
+    "unused_metadata": "60 puzzle_13440"
   },
   {
     "id": "39",
     "N": 8,
-    "board1": "DEEEEBBBDDEEEBBBDAAAABBBDAAABBHHDGAAAHHHGGAAAFHHGGAAFFCCGFFFFFFC",
-    "board2": "FEEACCGGFEEACCGGFBBACCGGFBBBCDGGFFFFDDGDFFFFFDDDFHHHHDDDHHHHDDDD",
-    "solution": "...x.....x...........x....x...........x.x...........x..........x",
-    "unused_metadata": "166,6,294,True"
+    "board1": "HHHHHHBAHHHHHBBAHHHHBBBADDFCCCCADDFFEEAADFFFEEAAFFGGGGAAFFGGGAAA",
+    "board2": "BBBBBFFABBBBHCFABBBHHCFABEEHHHFFBEEEHHHFEEGGGDDDGGGDDDDDGGGDDDDD",
+    "solution": ".......x.....x....x...........x.....x...x..........x.....x......",
+    "unused_metadata": "60 puzzle_22142"
   },
   {
     "id": "40",
     "N": 8,
-    "board1": "DDDDDDEEFHHHDDEEFHHHHDAAFFGHHAAAFFGGCCAAGGGBCCBAGGGBBBBABBBBBBBA",
-    "board2": "DFFFHHHHDFFFHHHHDFFBBBEEAAGGBBEEAAACBBEEAACCCBEECCCCCBEECCCCEEEE",
-    "solution": "..x...........x.x..........x.........x...x..........x..........x",
-    "unused_metadata": "221,8,294,True"
+    "board1": "HHDDDDGGHHDDEEGGHHHEEEGGFHHEEEEEFFCCEEEEFFCCCAAABBBCCAAABBBBCAAA",
+    "board2": "AAAABBCCAAAABBBCAAAABBBCAAAAEBBBAGEEEBDBGGEEEEDDFFHHEEDDFHHEEEDD",
+    "solution": ".....x.........x..x.........x....x............x....x....x.......",
+    "unused_metadata": "60 puzzle_31153"
   },
   {
     "id": "41",
     "N": 8,
-    "board1": "HDDDDDEEHDDDBEEEHHHGBEEEGGGGBBAEGGGGCAAEGGGCCAAAFFCCCCCCFFCCCCCC",
-    "board2": "HHEEEEFFHHHEEFFFHCCAAAAFCCCAAAAFCCCGGGAFDDCGGGAADCCGGAAABBBBBBBB",
-    "solution": ".x..........x.....x............x...x..........x.x............x..",
-    "unused_metadata": "174,148,294,True"
+    "board1": "DDCCCCBBDDDDHHBBDDDHHHBBDDDHHHBEDDDGHHHEDFGGGHAEFFGGAAAAFFGGGGGA",
+    "board2": "GGGAAAAAGGGADAAEBBGGDAEEBBBEEEEEBHHHEEFFCCHHFFFFCCCCCFFFCCCCCFFF",
+    "solution": "..x...........x.....x..........xx..........x.........x...x......",
+    "unused_metadata": "60 puzzle_39709"
   },
   {
     "id": "42",
     "N": 8,
-    "board1": "FFEEBBBBFEEEBBBBFEEEHBBBFAGGHBBDAAAAHBDDCCACHBDDCCCCCBDDCCCCCCDD",
-    "board2": "BBBCCCGGFBBCCGGGFFCCCGGGFFDDDDGGFFFEEEGGFFFFEAAAFFFFAAAAFFFFFHHA",
-    "solution": ".x.........x..........x...x.....x...........x..........x.....x..",
-    "unused_metadata": "5,20,294,True"
+    "board1": "HHHEBBBBHHEEDDBBEEEEDDBBEEEECCGGFFFECCCGFFFAACGGFAAAAAAGAAAAAAAA",
+    "board2": "GGAAABBBGGAAABBBGGAABBBBEGDFFBBBEEDFFFBBEEEEFFFHCCCEFFHHCCCEEHHH",
+    "solution": ".x..........x.........x...x..........x.........xx..........x....",
+    "unused_metadata": "60 puzzle_49470"
   },
   {
     "id": "43",
     "N": 8,
-    "board1": "BCCCAAAABBBHAAFFBBHHAAFFBBHHHHFFEEHHHGGGEDDHHGGGDDDHHGGGDDDDDDGG",
-    "board2": "EEDDFFFCEDDDDFFCEDDDDFCCBDDDDFCCBBDHGAAAHHHHGGGAHHHGGGGGHHHGGGGG",
-    "solution": "...x.........x..x.............x..x.............x....x.....x.....",
-    "unused_metadata": "71,16,295,True"
+    "board1": "FFFDGGGGFFFDGGBGFFCCBBBBCCCCBBBBCCCCHHBBCCCCHHBBAACHHHHEAAHHHHEE",
+    "board2": "DDDDDDCCGDDDDDCCGDDDDDCCGHHHEEEEHHHHHEEEBHHHAEEEBBBBAEEEBBBAAAAF",
+    "solution": "......x....x....x............x....x.........x....x.............x",
+    "unused_metadata": "61 puzzle_11436"
   },
   {
     "id": "44",
     "N": 8,
-    "board1": "CCCCCHHHFCCCCHHHFFCCCAADFFFBCCADEFFBBDDDEEEBGGDDEEEGGGGGEEEGGGGG",
-    "board2": "CCCCCCCAECCCCAAAECCCCCDAEECCBCDAEEGGBBBBGGGGGBBBHGGGFBBBHGGFFFFB",
-    "solution": ".......x..x...........x..x...........x.....x....x...........x...",
-    "unused_metadata": "99,7,295,True"
+    "board1": "DDCCCBBBDDDCCCCCDDDDCCCCEDACCCCCEEAAACCCAEAFGGGHAAAFGGHHAAAFGGGG",
+    "board2": "BBBCGGGGBBBCCGGGDBBCCHHHDBEEHHHHDBAAAHHHAAAAAHFFAAAAAFFFAAAAFFFF",
+    "solution": "......x..x..........x.....x.....x............x.........x...x....",
+    "unused_metadata": "61 puzzle_24794"
   },
   {
     "id": "45",
     "N": 8,
-    "board1": "GGDDDDDFGGGDDDDFGGGGDDBFGGGCBBBBEGCCAABBEECAAAABEEEAHHABEEEHHHHH",
-    "board2": "CCCCCGGGCCCCCHGHCCCCCHHHFFCHHHHHFFDHHHHHDDDDAEAHBBBAAEAABBBBAAAA",
-    "solution": ".......x...x..........x.x.........x..........x...x..........x...",
-    "unused_metadata": "149,4,295,True"
+    "board1": "BBBBCCCCDBBBCCCCDBGGGGGGDDHHHHHHDDHHHHEEDDEEEEEEFFEEEEAAFFFAAAAA",
+    "board2": "DDDDFCCCDDBBBBCCDDBBBBCCEEEBBBGGEEEEEEGGEEEAAGGGEEEAHHHHEAAAAHHH",
+    "solution": "....x....x............x....x....x............x.........x..x.....",
+    "unused_metadata": "61 puzzle_35694"
   },
   {
     "id": "46",
     "N": 8,
-    "board1": "HHHFFFFFHHHFFFFFHHEFFAAACEEBAAAACEEBAAAACEEGGGAACEEGDDDDCCGGDDDD",
-    "board2": "AAAAFFFBAAAFFFFBAAAFFFBBCCCFFFHBCCCEFHHBDCCCFHHBDCCGGHHHDCCGGHHH",
-    "solution": "......x...x............x.x.........x.........x..x...........x...",
-    "unused_metadata": "77,27,295,True"
+    "board1": "CCCCFFFFCCCFFFAACHHHFAAABBHHHHADBBHHHDDDGBBHHDDDGEEEEDDDGGEEEEED",
+    "board2": "AAAGGEEEAAAGGEEEAAGGGGEEAAAGGGCCAAADCCCCHHHDFFCCBBDDFFCCBBDDFFCC",
+    "solution": "......x...x..........x.........x...x.....x..........x...x.......",
+    "unused_metadata": "61 puzzle_47540"
   },
   {
     "id": "47",
     "N": 8,
-    "board1": "BBBBBDDDBBEEFFDDAAEEFDDDAHEEFDDDHHHHFFCDGGHCCCCCGGHHCCCCGGHCCCCC",
-    "board2": "HHHHFFFFAAHHEEFFAAHHEEFFAAHHEEEGAACHEEEGACCBBBDGACCBBBDDACCBBBDD",
-    "solution": "....x.....x.....x..............x.....x...x.........x..........x.",
-    "unused_metadata": "28,56,295,True"
+    "board1": "HHHHGGGGHCCHGGDDCCCGGGDDCCCCAAADFCEEAAADFFEEAAADEEEEAAAAEEBBBAAA",
+    "board2": "ADDDDDBEAAADDDBEAAGGGCEEGGGGCCCEGGGGGCCCGGGGGHHHFFFFHHHHFFFFHHHH",
+    "solution": "......x....x.....x.............x.....x..x.........x.........x...",
+    "unused_metadata": "62 puzzle_8108"
   },
   {
     "id": "48",
     "N": 8,
-    "board1": "HHHHBBCCHHHHHBBCHHHHHBBEGHHHHEEEGADDDFFEGADDDFFFAAAAFFFFAAAAFFFF",
-    "board2": "DDDDEEEEDDDHHBEEDHHHHBBBAAAHHCFFAAAHHCCFAACCCCCCAACCCCCCAACGGGGG",
-    "solution": "......x..x...........x.........x...x....x.........x.........x...",
-    "unused_metadata": "42,12,295,True"
+    "board1": "DDBBBEEEDDBBEEEEDDBBBEEEDDHHHCCCDDDHHHCADGGGHHAADFFFHHHAFFFFHHHA",
+    "board2": "AAABBHEEAAAHHHHEAAAAHHHEAAGGGGEEAAGGGGDDCFFGGDDDCFFDDDDDCFFDDDDD",
+    "solution": "...x.........x...x............x.....x.....x............xx.......",
+    "unused_metadata": "62 puzzle_21789"
   },
   {
     "id": "49",
     "N": 8,
-    "board1": "DDDDBGGGDDDBBGGGDDDABGGGAAAAHGCCAAAAHGCCAAAAHECCFFEEEECCFFEEEEEE",
-    "board2": "EEAABBBBAAAAABBBGGCCCCBBGGCCCDDBGGGHDDDDFHHHDHHHFHHHHHHHFFHHHHHH",
-    "solution": ".x.........x.........x.........x..x.........x...x.............x.",
-    "unused_metadata": "80,3,295,True"
+    "board1": "EEGGAAADEEEGAADDEEEEAHHDEFFFFHDDBFFFFFDDBBBFFFDDBBBFFCCCBBBBBCCC",
+    "board2": "GGGCCCAAGGGCCAAAGGGDCAAABGGDDDDAGGGDDDDDFGDDDHDHFFFHHHHHFFHHHEEE",
+    "solution": "..x.........x.........x.x..........x...........x.x...........x..",
+    "unused_metadata": "62 puzzle_32176"
   },
   {
     "id": "50",
     "N": 8,
-    "board1": "EEEEFFFFECEEFFFFCCCFFAAGHHCCCAAGHHHCHAGGHHHHHDDGHBBHHDGGBBBBBDDG",
-    "board2": "AAFFFFFFAAAFFFFFEAAAFFFHEAAGGGGHECGGGGGHCCCCGHHHCCCBBHHDCCBBBBBD",
-    "solution": "....x.....x.....x.............x..x...........x.........x...x....",
-    "unused_metadata": "120,8,295,True"
+    "board1": "AAAAAAADAAAAADDDAAAAADDHBBAAAHHHBBEEFFCCGGEEEFCCGGEFFFFCGGEFFFFF",
+    "board2": "HHHHDDDDBBBAAADDBBBAAADDBBBAAGGGBBBBAGGGEBBBAGGGECCCAGGGEEFFFGGG",
+    "solution": "...x.........x.........x.x............x.x.........x.........x...",
+    "unused_metadata": "62 puzzle_43126"
   },
   {
     "id": "51",
     "N": 8,
-    "board1": "BBGGGGGGBBGGGGAABBCCDGAAHFFCDDAAHFFCDDAAHHFCDDEEFFFFDEEEFFFFDEEE",
-    "board2": "EEGGGGDDEEEGGGGDEEEGGHDDEEEGGHHHBGGGGHHHBFFGGAHCBFFGGACCAAAAAAAC",
-    "solution": ".x.............x.....x.....x....x.........x...........x.....x...",
-    "unused_metadata": "255,22,295,True"
+    "board1": "EEBBBBBBEEHBBBBBEEHHBFFDEHHHFFFDCCHHHFFDCCHHGGGDHHHHGAADHHHHGAAA",
+    "board2": "HHHHCCCCDDCCCCEEDDDCCCCEDDDDCEEEGGGGGEEEGGGFFEAAFFFFFFABFFFFFFBB",
+    "solution": "..x.....x..........x.........x...x.............x....x.........x.",
+    "unused_metadata": "63 puzzle_15282"
   },
   {
     "id": "52",
     "N": 8,
-    "board1": "AAAAGGGGAHHAGGGGHHHHGGGGFHDDDCCCFFDEECCBDDDEEBBBDDDEBBBBDDDEEBBB",
-    "board2": "BBBBBBHHGGGBBHHHGGGBCCCHFFGGGACHFFDAAAAEFDDAAAAEFFFAAAAEFFFAAAEE",
-    "solution": "...x.........x...x............x.x.........x............x....x...",
-    "unused_metadata": "224,32,296,True"
+    "board1": "EEHHHHGGECCHHHGGEAAAGGGGEAAAGGGGAAAFFGGGAAAFFDDDAAABBDDDAAABBDDD",
+    "board2": "FFFFHHHHDFFFHHHHDFFFCCHHDFFFFCCHDEEEECCCGEEECCCAGGEEEEAAGGGGBBBA",
+    "solution": ".....x....x.....x.............x....x...........x.x..........x...",
+    "unused_metadata": "63 puzzle_40101"
   },
   {
     "id": "53",
     "N": 8,
-    "board1": "CCCCCEEECCCCBEEEGCCCBEHHGGBBBBHHGBBBBBBHGBBBAADDFFFAAADDFFFAAAAD",
-    "board2": "ABBBBEEEABBBBBEEABBBBBEEAABDDEEHAAAAFFHHCAAFFFGHCCFFFGGGCCFFGGGG",
-    "solution": ".....x....x.....x..........x...........x....x.........x..x......",
-    "unused_metadata": "139,52,296,True"
+    "board1": "BBDDAAAABBBDAAAHCBBHHHAHCBBHHHHHCCBHHHHGCCCFEEEGCFFFFEEGCCFFEEEE",
+    "board2": "EEEFFFFFEEEFGGGBEEEEGGBBAEEDCCBBAADDCCCBAADDCCCCAADDDCCHAADDDCCH",
+    "solution": "...x.........x...x............x.x...........x..........x..x.....",
+    "unused_metadata": "64 puzzle_7476"
   },
   {
     "id": "54",
     "N": 8,
-    "board1": "GGGEEEEBGGGGEEEBGHHHDBBBGHHHDDFFHHHHDDFFHHHDDDAFHHCCCDAAHCCCCCAA",
-    "board2": "DDDFFCCCDDFFFBCCFFFFFBCCFFFFFBBCFHHGGGBCHHAAEEEEHHHEEEEEHHHHEEEE",
-    "solution": "...x....x............x.........x....x.....x...........x..x......",
-    "unused_metadata": "25,30,296,True"
+    "board1": "DDDDHHHHGDDDHHHAGDDFFFFAGGFFFAAAGGGFAAAACCCCEEAACCCCCEAACCCCBBBB",
+    "board2": "CCCBBBBBCCCBBBAACCGGGGFFCCGGDDDFEEGGDDDFEEEGHDFFEEEHHHFFEEEHHHHH",
+    "solution": "...x..........x.x.........x............x.....x...x..........x...",
+    "unused_metadata": "64 puzzle_18823"
   },
   {
     "id": "55",
     "N": 8,
-    "board1": "FFFFFAADFFFCCADDFFFCAADDFEFCCCDDEEFBBBBDEEEBBBBGEEHHGGGGEEHHGGGG",
-    "board2": "CCGGHHHHCCGGGGEECBGGGEEEFBBBEEEEFFBDDEEEFFADDDDDFFADDDDDFAADDDDD",
-    "solution": ".......x.....x..x..........x..........x..x..........x.....x.....",
-    "unused_metadata": "208,5,296,True"
+    "board1": "EEEHDDDDEEEHHHHHEEHHHBBBEEFHHHBBGGFFHHCBGGFHHHCBGGGHHHCCGGGHAACC",
+    "board2": "BBGGGGGHBBCCCCHHEEDCCCHHEEDCCCHHEEDCHHHHAEAAHHHHAAAHHHHFAAAHHHHF",
+    "solution": "......x..x...........x....x.....x..........x...........x....x...",
+    "unused_metadata": "64 puzzle_28993"
   },
   {
     "id": "56",
     "N": 8,
-    "board1": "EEEEEEEEGGDEEEEEGGDDHHHHGGDHHHHHCDDAAAHHCCBBAAAHCCBBBAFHCCBBBBFF",
-    "board2": "GGGGGBBBAGGGGGBBADDDDEEBAAADDFEBAAADFFCCAAAACFCCHAACCCCCHHHCCCCC",
-    "solution": ".....x...x.........x..........x.....x.....x.....x..............x",
-    "unused_metadata": "158,68,296,True"
+    "board1": "FHHCCCCCFHHHHGGCFHHBBGGGHHBBGGGGHHHBDAAAHHDDDDAAEEEEEDAAEEEEEDAA",
+    "board2": "EEEEHHBBEEEHHBBBGGDFHBBBGGDFFFCBGGFFAACCGGGAAACCGGGCCCCCGGCCCCCC",
+    "solution": "....x...x.........x............x...x.........x...x............x.",
+    "unused_metadata": "64 puzzle_40027"
   },
   {
     "id": "57",
     "N": 8,
-    "board1": "BBBBDDDHBCBBFDDHCCCCFFDACCFFFAAACCFFFAAAEEFFFAAAEEEFFGAAEEGGGGGA",
-    "board2": "HHGGFFFCHGGFFFCCHEEFFFFBHEEFFBBBDAEEBBBBDAAABBBBDDAAABBBDDAAABBB",
-    "solution": ".......x..x...........x.x..........x.........x...x..........x...",
-    "unused_metadata": "16,7,296,True"
+    "board1": "BBBBBFFFDDDDDDFFHHDDDDFFHDDDDGFFHDCAGGGFHHCAAGGGHECAAGGGHEAAAGGG",
+    "board2": "CCCCCBBBCCCCCBBBCCCCCBBDFFFCFBBDFFFFFEHHFFAFEEHHGGAEEEEHGGAAEEEE",
+    "solution": "...x.........x.........xx.............x...x.........x....x......",
+    "unused_metadata": "65 puzzle_1766"
   },
   {
     "id": "58",
     "N": 8,
-    "board1": "BBGGGCCCBBGGCCCCBBGGFCCCEEFFFCCCEEFFFCCAEEEFFFAAEEDHHHAADDDHHHAA",
-    "board2": "HHHHCCAAHHHHHCCAHHHHDCCEHHHDDEEEGFFDDDEEGFFFFDEBGGFFFDBBGGGFFBBB",
-    "solution": "....x..........x.x.........x....x.............x...x..........x..",
-    "unused_metadata": "120,7,296,True"
+    "board1": "DDDDBBBHFDDDBBBHFDHDHHHHFFHHHHHCFEHHHHCCFEHHGGCCHHHHHGGGHHHAAAAA",
+    "board2": "BGGGGGGEBBBGGGGEFFGGGEEEFFFHEEEEFAHHDDDDFACCDDDDCCCCCCDDCCCCCCDD",
+    "solution": ".....x....x.....x..............x...x.....x............x.....x...",
+    "unused_metadata": "65 puzzle_12242"
   },
   {
     "id": "59",
     "N": 8,
-    "board1": "CCCCCCFFGCCCCCFFGGGHHCFFGGGHHCAFGGBHHEAADBBBHEAADBBBEEEADBBEEEEE",
-    "board2": "BBGGFHHHBBBGFFHHBBGGFFCCEEGGCCCCEAADDCCCEAADDCCCEEEEDCCCEEEEEECC",
-    "solution": ".......x.....x...x.........x..........x...x.........x...x.......",
-    "unused_metadata": "215,44,296,True"
+    "board1": "ECCCCFBBEEECCFFBEEDDCFFFEEDDDFFFEEDDGGGGEEEGGGGGEEHHHAAAEEHHAAAA",
+    "board2": "GGGGCCCCGGGCCCCCGGCCCAAAECCCAABBECCHAABBCCCHHHBBDDDDHHBBDDDFFFBB",
+    "solution": ".x.............x.....x..x..........x..........x...x.........x...",
+    "unused_metadata": "65 puzzle_25083"
   },
   {
     "id": "60",
     "N": 8,
-    "board1": "AAAAGGGGAAAAGGGGAAAAHHGGCCAHHHHGBCCHDDDDBCCDDDDDBEEEDDDFBEEEEFFF",
-    "board2": "EFFGGGCHEEEGGCCHEEEGGCCHEEEGGCCHEEDDGHHHBBDDDHHHBBDDDHHHBBDDAAHH",
-    "solution": "..x...........x.....x....x.............xx..........x.........x..",
-    "unused_metadata": "29,56,296,True"
+    "board1": "DGGGGGCCDDGGGGCCHDDDGGCCHDDGGGBBHHDGGBBBHHHEEEEBHHFEEEEAFFFFEEAA",
+    "board2": "FFFFFFEEFFFFDFEEBFDDDDDEBBCDDGGEBBCDGGGECCCCGGGACCCHHHAACCHHHHAA",
+    "solution": "......x..x..........x...x............x.....x...........x..x.....",
+    "unused_metadata": "65 puzzle_36237"
   },
   {
     "id": "61",
     "N": 8,
-    "board1": "AAABBBCCAAABBBCCAAAEEHHCAAAEEHHCAAEEEEFFGGGFFFFDGGGFFFDDGGGGFDDD",
-    "board2": "FFFCDDDDFCCCCDDDFFAAHHHHEAAAGGHHEAAGGGHHEBBBGGGHBBBBGGGGBBBBBGGG",
-    "solution": ".......x....x....x............x...x.....x..........x.........x..",
-    "unused_metadata": "82,14,296,True"
+    "board1": "EEGGGGGGEECCGGGGCCCCGGGGCCCCGHHHCCCCFHHHBBCCFFFFBBCCDFAABBCDDDAA",
+    "board2": "AAABBBBBAACBBBBBAACCDGGBAACCDGGHEACDDGHHEFDDDHHHFFFFFHHHFFFFFHHH",
+    "solution": ".x...........x....x...........x.....x...x..............x...x....",
+    "unused_metadata": "65 puzzle_48952"
   },
   {
     "id": "62",
     "N": 8,
-    "board1": "CCCCCBBBCCCCCBBBHCCCCCABHHHHCAAAEEECCAAAEEEECCGGEEEDFFFGEDDDFFFG",
-    "board2": "AAFHHHBBAAFHHHBBCCFFHHBBCCGFHHHBCGGFHHDBGGGHHDDDGGGEEDDDGGGEEDDD",
-    "solution": ".....x...x............x....x....x..............x....x.....x.....",
-    "unused_metadata": "21,136,296,True"
+    "board1": "FFFHHHDDGGFHHCDDGGFFHCCCGGFFFCCCBGBFFEECBBBAAEEEBBBBEEEEBBBBEEEE",
+    "board2": "CCCCCCCCCCCCCFFFADDCFFFFAAFFFFFFAAFFFFGGAABFHHGGABBBHEEGBBBHHEEE",
+    "solution": "...x..........x...x.....x..............x....x....x...........x..",
+    "unused_metadata": "66 puzzle_12548"
   },
   {
     "id": "63",
     "N": 8,
-    "board1": "CCCCEEEEDCHHHBEEDCHHHBEEDDDHBBEGDDFHBBBGDDFFBBGGAAFFFBGGAAFFFBBB",
-    "board2": "AACCHHHHAACCCHHHAAAEEDDHAAFFEDDDEEFEEDDDEEEEEEDDEEEEBBDDEGGGBBDD",
-    "solution": "...x..........x.....x...x.........x............x.....x...x......",
-    "unused_metadata": "194,25,296,True"
+    "board1": "DDDDCCCCAADDCCCCAACCCCCBGGGGGBBBGGGGGGBBGGEEHGBBFFHHHHHBFFHHHHHB",
+    "board2": "FHHHAAAAFHHAAAAADDDDAGGADDDBBBGGDDDBBBBGDDDBBBBGDEECCCCGEEEECCCG",
+    "solution": "...x....x...........x..........x.....x....x...........x..x......",
+    "unused_metadata": "66 puzzle_27412"
   },
   {
     "id": "64",
     "N": 8,
-    "board1": "HHHHFEEEHHHHFFEEHHHHFFEEBHHFFEEEBDDCFEAEDDCCCAAADDCCCGGGDDCCCGGG",
-    "board2": "HHCCCCCCHHHGGCCCHHHHGBBBHHHDDDBBHHHDDDAEDDDDDDAEFFFFDAAEFFFFFFFF",
-    "solution": "..x.........x.........x.x..........x...........x.....x...x......",
-    "unused_metadata": "96,11,296,True"
+    "board1": "CCDDDDFFGCCDDFFFCCCDDEFFCCEEEEBBAAEEEBBBAAEEEEBBAAAAAABBAHHHHABB",
+    "board2": "AAGFFFFFAAGGGGGGADGGCCCGDDCCCCCCEECCCCCCEEECBBBHEEEEBBBHEEEEBBBH",
+    "solution": "......x.x..........x.....x..........x..........x.....x....x.....",
+    "unused_metadata": "66 puzzle_43609"
   },
   {
     "id": "65",
     "N": 8,
-    "board1": "DDGGGHHHDDGGCHHHFFCCCCHHFFCCCCAAFECCCBAAFEECCBAAEECCCBAAEECCCCAA",
-    "board2": "GGGDDDDDGGGDDDDFGGCDDFFFGGCCEFFFBBCEEAAFBBEEEAAABBBHHHAABBHHHHAA",
-    "solution": "....x....x............x....x....x.........x..........x.........x",
-    "unused_metadata": "31,372,297,True"
+    "board1": "AAAAEEEGAAAAAAFGAAAAFFFGAADDFGGGDDDDHHHGDDDCHHHGBCCCHHHHBBCHHHHH",
+    "board2": "AAEEEHHHAEEEEHHHAEECCHHHAAECCCCCAGGCCCBCFDDDCCBBFDDDBBBBFFDDDBBB",
+    "solution": "....x...x............x.........x..x...........x....x.....x......",
+    "unused_metadata": "67 puzzle_3546"
   },
   {
     "id": "66",
     "N": 8,
-    "board1": "DDDDDCCFDEAAACCFEEEACCFFEEEEECFFHHEEECFFHHHEGGGGHHHEGGGGHHHGGBBB",
-    "board2": "HCCCFFFFHHHFFFFEHHFFDDEEHHFFDDEEAAAADDGGAAAABBGGAAABBBBGAAABBBBG",
-    "solution": ".x.........x..........x.x............x....x.........x..........x",
-    "unused_metadata": "101,77,297,True"
+    "board1": "FFFCHDDDFFFCHHDDBFCCHHDDBFFCHGGGBFFAGGGGBBEAAGGGBBEAAGGGEEEAAAGG",
+    "board2": "EEEDDDDDEFGDDGCDFFGGGGCDFFFHGGGGFFHHHGGGFAAAABBBAAABBBBBAAABBBBB",
+    "solution": ".x..........x.........x....x...........xx.........x..........x..",
+    "unused_metadata": "67 puzzle_14683"
   },
   {
     "id": "67",
     "N": 8,
-    "board1": "BBBBFFFFBBBBFFFFBBBHGGFFBEEHHGAABEHHHHAABHHHHHAABDDDHCCCDDDDDCCC",
-    "board2": "HHDDFEEEHHDDFEEEHHDDFAAEHHHHFAEEHHCCAAAEGGCGABBBGGGGGBBBGGGGGBBB",
-    "solution": "...x...........x....x....x............x...x..........x..x.......",
-    "unused_metadata": "98,55,297,True"
+    "board1": "BBBFFAAABBBFFEEGBBFFFEEGBBFFFFEGBBFFFFEDBHHFFEEDCHHFFFDDCHHHDDDD",
+    "board2": "HHHHHDDDBBBHHDDDBBBHHHHHBCCCHHHHBCCCHHAAGEECHFAAGEEFFFAAEEEFFFAA",
+    "solution": ".....x...x.............x...x..........x...x.....x...........x...",
+    "unused_metadata": "67 puzzle_25495"
   },
   {
     "id": "68",
     "N": 8,
-    "board1": "HHHHGGEEHHHHGGEEHHHHBEEFHHHHBBFFHHCDBBFFACCDBBFFACCDDFFFACDDDDFF",
-    "board2": "GGGDDHFFGGGDHHFFGGGDDHFFGGGGDCBFCCCCCCBFEEEBCBBBEEEBBBBAEEEEEBBA",
-    "solution": ".....x...x............x.....x.....x.....x..........x...........x",
-    "unused_metadata": "94,7,297,True"
+    "board1": "FFFGDDDDFFGGDDDDFFGHDDDDFFGHCDDDAFGHCBBBAAGHCBBEAAAHHEEEAAAHHEEE",
+    "board2": "HHGGGGBBHHCGBBBBCCCBBBBBCCCCBBEECCCCBEEEDAAAEEEEDDDAFFFEDDDAFFEE",
+    "solution": ".....x..x.........x.........x..........x...x..........x..x......",
+    "unused_metadata": "67 puzzle_38401"
   },
   {
     "id": "69",
     "N": 8,
-    "board1": "AAAGGGEEFAAHHHEEFAAHHHEEFFHHHHEEFFHHBBBECCCCDBBECCCCDDBBCCCCDDBB",
-    "board2": "HHHHBBBBHHHEBBBBHHHEEBBGHHEEEBGGCCEEAFFFCCCAAFFFCCCAAFDDCCCADDDD",
-    "solution": "....x....x.............x..x.....x.............x....x.........x..",
-    "unused_metadata": "202,34,297,True"
+    "board1": "FFFAAGGGFFFACCGGHHFCCCBBHHCCCCBBHHCCCBBBHHHCCCBBHDEEECCBDDDEEECB",
+    "board2": "EEFFFGGBEEFHHGGBDEEHHHBBDAAHHABBDAAAAABBCAAAAABBCCCAAAAACCCCCAAA",
+    "solution": "...x..........x...x.........x...x..............x.x...........x..",
+    "unused_metadata": "67 puzzle_48911"
   },
   {
     "id": "70",
     "N": 8,
-    "board1": "GGGDDDDDGGDDDDDDGHDEDDDDGHHEEEFFCCBEFFFFCBBFFAAACCBBFAAACCBBFAAA",
-    "board2": "GGGGFHHHGGGGFHHHBBBGFFFFBBBBFAFFDDBEEACCDDDEEACCDDDEECCCDDDDDCCC",
-    "solution": "..x...........x..x..........x..........x.....x.....x....x.......",
-    "unused_metadata": "14,118,297,True"
+    "board1": "GGGGBBBCGGGBBBBCGGGBBBBCGEEEBBBCDDEEBFFFDDDFFFHHAAAAHHHHAAAAAHHH",
+    "board2": "FFFEEEEAFFFFEEEAHFFFGGGDHHFFGGDDHHFFFGDDFFFFFCDDCFBBCCDDCCCCCCDD",
+    "solution": "...x...........x....x....x............x.x.........x..........x..",
+    "unused_metadata": "68 puzzle_23969"
   },
   {
     "id": "71",
     "N": 8,
-    "board1": "BBBBFFFFBBBBFFFFBBBBGGGGCAABHGGGCAAHHDGGCCAEDDDGCCEEEDDGEEEEDDDG",
-    "board2": "CCCBBBHHCCCBBCHHEECCCCHHEECCCCHHEGGDDHHHEGGGFFHHEGGGFFAAGGGFFFAA",
-    "solution": ".....x...x.............xx...........x.....x...........x....x....",
-    "unused_metadata": "132,89,297,True"
+    "board1": "HHDDDDDDHHHDDBBBHHHDGGBBHHCEEGBBHCCEEGBBCCCEGGBBFFFEGGAAFFFEEAAA",
+    "board2": "DDDGGGGCDDDGGGAADDGGGGAADHGGGGAADHGGGGAAHHHBEEEEHBBBEEEEBBBFFFFE",
+    "solution": ".......xx.............x....x.....x..........x.....x..........x..",
+    "unused_metadata": "68 puzzle_48225"
   },
   {
     "id": "72",
     "N": 8,
-    "board1": "BBDDDDDABBDDDDAACCCDFAAACCCDFFAACCGGGFAACCEEHHHHEEEEHHHHEHHHHHHH",
-    "board2": "HHHFFFFFHHHFFFFCHHHHGGGCHEEGGGGCHEEEGGGCBBBDGGGCAAADGGGCAADDDGGC",
-    "solution": "......x..x.............x.....x.....x....x.........x.........x...",
-    "unused_metadata": "15,5,297,True"
+    "board1": "HGGGDDDAHHGGDDAAHHHDDDDAFFFFFDDAEEFFFFBBEECCCBBBEECCCBBBEECCCCBB",
+    "board2": "BBBBEEBGHHBBBBBGHHBBBBGGHHHBBBGGHHHCBBGGFFFCCDGGFFFCCDAAFFFFDDAA",
+    "solution": ".....x....x.....x..............x...x.....x............x.....x...",
+    "unused_metadata": "69 puzzle_14084"
   },
   {
     "id": "73",
     "N": 8,
-    "board1": "GGGAAAAAGGGAABBBGGGGABBBDDGGADCCDDDDDDCCEEEDDDCCEEEDHHCCFFEEHHHC",
-    "board2": "FFAAAEEEFFAAAEEHFFFFHHHHCFFBBGGGCFFBBDDGCFFBBDDGCCCBBDDDCCBBBDDD",
-    "solution": "..x...........x.....x..........x...x.....x...........x..x.......",
-    "unused_metadata": "46,61,297,True"
+    "board1": "BBGGFFFHBBGGGHHHBBGGGGHHBBEGGGGHBEEAGGGGEEEAAGGGEEDDDGGGEECCCGGG",
+    "board2": "HHBBBBEEHHHBBBEEHHHHBBEEHHHHBBFEGGDCCFFFGGDCCFFFADDDFFFFAAAAAFFF",
+    "solution": ".....x.........x.x............x....x....x.........x.........x...",
+    "unused_metadata": "69 puzzle_25470"
   },
   {
     "id": "74",
     "N": 8,
-    "board1": "AAAHHHHHAAAAAHHHDDABBBBBDDDCBBBBCCCCGBBBCCCFGEEECFFFGEEECFFFGEEE",
-    "board2": "EEEHHHHHEEEEBBHHEEEEBBHHEEAABBHHFFFAABBBFFFAABCBDFFGGBCCDDDGGCCC",
-    "solution": ".......x...x.........x....x.....x.............x.....x....x......",
-    "unused_metadata": "466,18,297,True"
+    "board1": "CCCCBBBBGCCCCBABGCCAAAAAFCAAAAAAFFAAHAAAFHHHHHHEFFHHHDDEFFEEEEEE",
+    "board2": "HFFFFBBBHHFFGBBBHHDDGGGBHHDDGGGGHDDDGGGGHDDEECCCDDDEEACCDDDEEAAC",
+    "solution": "......x...x.....x...........x....x.........x.........x.........x",
+    "unused_metadata": "69 puzzle_38227"
   },
   {
     "id": "75",
     "N": 8,
-    "board1": "CAAAAAAACCCCHHFFGGCHHHFFGGGHHFFFGGGHHFFFEBBBBFDDEEEBBDDDEEEEBDDD",
-    "board2": "AAEEEEHHAAEEEEHHAAEEEEHHBAEGEEHHBEEGDDDDBBBGBFDFBBBBBFFFBBBCCCFF",
-    "solution": "......x...x.....x..........x.........x.........x.x..........x...",
-    "unused_metadata": "632,22,297,True"
+    "board1": "DDDDDDDEDDDDDDEEFDHHHHHEFFHHCCEEFFFFFEEEBBBGGAAEBBBBBAAABBBBBAAA",
+    "board2": "EEEBBBBBEEEBBBBDEEEGGGGDHEEGGFGDHHEFFFFDHHHFFFFFHAAAFFFCAAAAFCCC",
+    "solution": ".....x.........x..x.........x...x..........x.....x............x.",
+    "unused_metadata": "69 puzzle_49144"
   },
   {
     "id": "76",
     "N": 8,
-    "board1": "BBBBBBBBBGBBBBBBBGGAAAAEFAAAAEEEFAAAEEEEFDDDDEEEFHHHDDCEHHHHCCCC",
-    "board2": "AAABBBFFAAABBFFFAADDDFFFDDDDDCCCDDDEECCCDDDEECCCHHHGGGCCHHHGGGCC",
-    "solution": "...x.....x............x.x..............x....x.....x..........x..",
-    "unused_metadata": "37,240,298,True"
+    "board1": "GGGGGGGCGGGGGCCCGGGAACCCEEEDAAAABEDDHHHHBBBDHHHHBDDDFHFFDDDDFFFF",
+    "board2": "DDDDDCCCDDDDDCCCDDDEECCCHHFEEGCCHHFAAGBBHFFFGGBBHHFGGGBBHHFGBBBB",
+    "solution": "..x...........x.....x...x..........x.....x...........x.........x",
+    "unused_metadata": "70 puzzle_13537"
   },
   {
     "id": "77",
     "N": 8,
-    "board1": "HGGGGBBBHHHHGBBFHHHBBBBFHHHBBFFFDDDDCFFFDDDDCCAADDDDCCAADDDDEEAA",
-    "board2": "BBBBGGEEBBBBGGEEBBBGGEEECCCGGGEECCCFFEEECCCHFDDACCHHHADACHHHHAAA",
-    "solution": ".x.............x...x....x...........x.........x...x..........x..",
-    "unused_metadata": "8,44,298,True"
+    "board1": "HHHHHFCCHHHFFFCCEEHFFGCCEEEFGGGCEEEEGADCBBEEAADDBBBBDDDDBBBBDDDD",
+    "board2": "AABEEHHHABBEEHHHAFBBEHHHAFFBEGGGFFFBEGGGFFFBEGGGDCCCCGGGDCCCCCGG",
+    "solution": ".x.............x...x..........x...x.........x...x............x..",
+    "unused_metadata": "71 puzzle_1875"
   },
   {
     "id": "78",
     "N": 8,
-    "board1": "DDDDCGGGDDDDCCGGFFDBBCGGFFDBBBHHFFAAAHHHFAAAAEHHAAAAAEEEAAEEEEEE",
-    "board2": "CCCCBDDDCCHHBDDDCHHHBDDDCHHEBDDDCCEEBDDDEEEABBGDEAAABFGGAAAAAFFF",
-    "solution": "....x.....x............x...x....x.............x..x...........x..",
-    "unused_metadata": "85,35,298,True"
+    "board1": "HHAAAAAAHAAAAADDHHCAAADDHCCAEDDDCCCFEEDDCFFFGGGGFFBBGGGGBBBBGGGG",
+    "board2": "BBGGHHHCBBBGGHHCBBBGGGGEBBBBGGEEBAAAGGEEFAAADDEEFAADDDDDAAADDDDD",
+    "solution": ".....x.........x.x..........x.....x...........x.x..........x....",
+    "unused_metadata": "71 puzzle_44392"
   },
   {
     "id": "79",
     "N": 8,
-    "board1": "EEDDDDDDEEDDDDGGEEFFCCGGBBFFCCGGBBFFCGGGBBBBCGGABBBHCGAAHHHHHGAA",
-    "board2": "GGGHHHHHGDDHHHHEDDDDHHEEDDCCHBBEDAAHHBBBFAAAAABBFFAAABBBFFFAAABB",
-    "solution": ".x...........x.........x...x....x...........x.........x...x.....",
-    "unused_metadata": "286,18,298,True"
+    "board1": "GGFFDDDDGGFFFDDHGEFFFBDHGEFBBBBHEEAABBCHAAAABBCCAAAAACCCAAAAACCC",
+    "board2": "FFAAAAAAFFAAAAAAFBBAAACCGBBAAACCGBBAAACCGGBDDEECGGBDDHHHGGBDDHHH",
+    "solution": "....x....x.............x..x.....x............x.....x..........x.",
+    "unused_metadata": "72 puzzle_8866"
   },
   {
     "id": "80",
     "N": 8,
-    "board1": "GGGGCCCCGGGCCCCEAAAABCEEAAAABBBBAAAHBBBBAADHHBBBFFDHHHFFFFFFFFFF",
-    "board2": "DCCCCGGGDCCCGGGGDCCCGHGHEECCHHHHEEEFFHFFAAAFFFFFAAAAFFFFAAAABBBB",
-    "solution": "x..........x..........x..x...........x....x.........x..........x",
-    "unused_metadata": "89,241,298,True"
+    "board1": "AEEEHHHHAEECHHHHAECCHHHHAEGGGGGGAEGGGGGGBBBGGGGFBBBGGDDFBBBBDDDF",
+    "board2": "AAAAADDDAAAAAADDAAABAADDFBBBEEEDFFFEEEDDFFFEEEHCGFHHHHHCGGHHHHCC",
+    "solution": "..x...........x....x....x...........x..........x.....x...x......",
+    "unused_metadata": "72 puzzle_23356"
   },
   {
     "id": "81",
     "N": 8,
-    "board1": "HHHHHHHCGHHHHHCCGGDHHDCCGGDDDDCFGGGDEEFFGGGDDEFFBBAAFFFFBBAFFFFF",
-    "board2": "HHEEEEFFHHECCFFFHBCCCAAFBBBGCCAABBGGAAAABBGGGDDDBBGGDDDDBBBGGDDD",
-    "solution": "..x...........x.x...........x..........x.....x.....x.....x......",
-    "unused_metadata": "37,45,298,True"
+    "board1": "CCCCFFFFCCCCFBEEAAGCGBEEAAGGGBBEHAGGEEEEHHGGDDEEHHGGDDDDHHDDDDDD",
+    "board2": "FFFBBBBBFFFFFFDDAFFFFGGDAAGGGGDDCCGGGGGDCCGGGGDDCEEEEEDDCEEEHEDD",
+    "solution": "......x....x.........x...x.............xx.........x.........x...",
+    "unused_metadata": "72 puzzle_37262"
   },
   {
     "id": "82",
     "N": 8,
-    "board1": "CCCDDDEECCCCDDEECCCCBBGGCCACBBGGAAACBBBGAAFFFFBGHHFFFFFFHFFFFFFF",
-    "board2": "DDDDAAAADDDDDAAABDDAAAAABGGCCFAABBBCCFFFBEBHCFFFEEEHHHFFEEEEHHFF",
-    "solution": "...x..........x.x.........x.........x..........x.x...........x..",
-    "unused_metadata": "42,15,298,True"
+    "board1": "AAAGGGGGDAAGGGGGDAEGGCCCBBEEGCCCBBEEGCCHBBEECCCHBBFFFFHHBFFFFFFH",
+    "board2": "HDDDDDDGHBDDDDGGHBBBGGGGHBBBBGEEHHBBBBEEHHCCCEEEHHCCAEEFHHCCAAAF",
+    "solution": "..x.....x...........x....x............x....x...........x.....x..",
+    "unused_metadata": "73 puzzle_2508"
   },
   {
     "id": "83",
     "N": 8,
-    "board1": "GGEEEEECGGGEEEECGGGFFCCCGGGFFCCCGGAFFDHHAAABBDHHAAABBHHHAAABBHHH",
-    "board2": "GGGGGGCCAGGGGGCCAAAGGGCDAAEEEEDDABEEFHHDABBFFFHDBBBBFFHHBBBBBFHH",
-    "solution": "..x.....x.............x....x.........x.........x....x....x......",
-    "unused_metadata": "31,12,298,True"
+    "board1": "CCCCFFFFCCBBFFFFCCBBFFFHDDBBBHHHDDDDHHHAGGDDEEEAGGDDEEAAGGGGEEAA",
+    "board2": "AACCDDDFAACCDDDFHAHHDDDFHHHHDDDFBBBHEEEEBBBBEEEEBBBBGEGGBBBGGGGG",
+    "solution": "x.........x.........x..........x...x.........x...x............x.",
+    "unused_metadata": "74 puzzle_864"
   },
   {
     "id": "84",
     "N": 8,
-    "board1": "EEEBBBHHEEEBBBHHEEEBBBHFDDBBBBBFDDDAABFFDDDAAGGFDCCACGFFDCCCCCCC",
-    "board2": "BBDEEEEEBDDDDEEFDDDGGEFFDDDCGFFFHHCCGCFFHHCCCCCFHHHCCCCCAAAACCCC",
-    "solution": "......x.x..............x..x.........x....x...........x.....x....",
-    "unused_metadata": "127,63,298,True"
+    "board1": "FFFDDDDDFFFDDDDDFEBBDDDGFEBBBDGGFBBBBBGGCCCCBBAACCCCCHAACCCHHHAA",
+    "board2": "DDGGGHHHCCGGAAHHCCGGAAHHCCAAAAEECCCCAAEECCCBBBEEBBBBBFFFBBBBBFFF",
+    "solution": "x..........x...........x.x..........x.........x...x..........x..",
+    "unused_metadata": "74 puzzle_13932"
   },
   {
     "id": "85",
     "N": 8,
-    "board1": "FCCCAAAAFFCCCHAAFFGGGHHAFFGGGEEAFFGGGGEEBFDDDEEEBBDDDEEEBBDDDDEE",
-    "board2": "FDDDDDCCFFFFDCCCFFFFDBBAHHHFFAAAHHHFEAAEGHHEEEEEGEEEEEEEGEEEEEEE",
-    "solution": "..x............x.....x.....x..........x..x..........x...x.......",
-    "unused_metadata": "329,3,298,True"
+    "board1": "EEHFFFCCEHHFFFCCEEAFFDDCEEAADDDCEEAABBBBGGABBBBBGGGGBBBBGGGGBBBB",
+    "board2": "BBBBGGCCBBBBGGCCBBBGGGCHBBDGGGHHFBDDDGHHFFDDDAAHFFFEAAAAFFFEEAAA",
+    "solution": ".......x.x..........x.........x.x.........x..........x.....x....",
+    "unused_metadata": "75 puzzle_18938"
   },
   {
     "id": "86",
     "N": 8,
-    "board1": "FFBBBDDDFFBBDDDDHHHGDDDDHHHGGGDDHHHHGGGEHHHCAAAEHHHCAAAECCCCCCCE",
-    "board2": "FFGGGGGBFGGGGGBBFGDAABBBCGDDDBBBCDDDBBBBCCDHHHBBCCDDEEEECCDDEEEE",
-    "solution": "....x...x..........x..........x...x..........x.........x.x......",
-    "unused_metadata": "115,45,298,True"
+    "board1": "CCCCAFFFCCCCAAFFCCCDDDFFHDDDDDDDHEDDDDDDHEDBBGGGHHHBBGGGHHHBBGGG",
+    "board2": "EEEEHHHHEEEEBBHHEEEEBBBBEEEEBBBAFFFBBBBAFGGGGBAAFGGCCDDDFCCCDDDD",
+    "solution": "......x.....x...x..............x.x.........x.........x....x.....",
+    "unused_metadata": "75 puzzle_33268"
   },
   {
     "id": "87",
     "N": 8,
-    "board1": "FFFFAAAAFFDDDAHHFDDDDHHHCCCDDDHHCCDDDGHHCCCDDGGECCBBGGEECBBBBBBE",
-    "board2": "FFFFGGGGBBFFCCGGBBBFGGGGEBBHHGGGEEBHHHGGDEEHHHHHDDAAAHHHDDAAAAHH",
-    "solution": "...x.........x....x...........x.x..............x....x....x......",
-    "unused_metadata": "77,14,298,True"
+    "board1": "BBBHAAAFBBBHAAFFBBBHHHFFBHHHHFFFCCGGEDDDCCGGEEDDCCCCEEDDCCCCEEEE",
+    "board2": "BBHHHAAABBBHAAADBBBBAADDBBBBEEFFGGBCCEFFGGGCCCFFGGGCCCCFGGCCCCCF",
+    "solution": "..x.........x.........x..x...........x.....x....x..............x",
+    "unused_metadata": "75 puzzle_48141"
   },
   {
     "id": "88",
     "N": 8,
-    "board1": "AAAFFFBBAAAFBBBBGGAFBBBBGGFFEBBBEEEEEBDDEEEEEDDDEEEEHHHCEEEHHHCC",
-    "board2": "BBGGGHHHBBGGGHHHBBGGGHHHBBBCCCHHBBBCCCHFEBBDDCCFEDDDDAAFEEDAAAAF",
-    "solution": "..x..........x...x.........x...........xx...........x.........x.",
-    "unused_metadata": "90,60,298,True"
+    "board1": "HHHHDFFFCCCDDFFFCCDDDDDDACDDDDDEAADBBDEEAABBBBEEAABBBBBEABBBGGGG",
+    "board2": "GFFHHHHHGFFBBBBBGFFAABBBGFAAABBDFFFAAEBDAAAAAEEDAAAACEEDAAACCEED",
+    "solution": "...x..........x.x..............x..x..........x...x..........x...",
+    "unused_metadata": "76 puzzle_13700"
   },
   {
     "id": "89",
     "N": 8,
-    "board1": "CCCBDDDDCCCBBBDDCCCBBBFFCCHHBBFFHHHAAAFFHHHAAAFFHEEEAAAGHEEAAGGG",
-    "board2": "HHDGGCCCHHDDDCCCHHHDDCCCHHDDDDCCHHADDDCFAAAADBFFAAAAEBBFEEEEEEBF",
-    "solution": "....x...x..........x..........x...x..........x.........x.x......",
-    "unused_metadata": "146,105,298,True"
+    "board1": "DDEEEEEEDEEEEEBBDEEEEBBBDEGGGBBBEEGCCBAAHEHCCBBAHHHCCBFFHCCCCFFF",
+    "board2": "CCCDDDDDHCCEEEDGCCCCEEGGCCCCEFFFBBBEEFFFBBBFFFFFBBBFFFFABBBFAAAA",
+    "solution": "...x....x.............x...x.........x..........x.x...........x..",
+    "unused_metadata": "76 puzzle_28475"
   },
   {
     "id": "90",
     "N": 8,
-    "board1": "CCDDDDDDCCEEEDDDFCCAADHHFFFAAHHHFFFAAHHBGGFAABBBGGBBBBBBGGBBBBBB",
-    "board2": "AAACCCCCAAACCCCCAAAAFEEEAAAAFEEDGAAHFFEDGHHHFBBDGHHHHBBBHHHHHHBB",
-    "solution": ".x.........x.........x.........x....x.....x.....x.............x.",
-    "unused_metadata": "61,19,299,True"
+    "board1": "EEEEEDBBEEEEDDBBEEEEDDHHEEEEDDDHGEECDFFHGCCCAFFFGGAAAFFFGGAAAAFF",
+    "board2": "EEAAAGGGEEAAAGGGEEEACGGGEEEECCCCBHHECCCCBBHCCFFFBBDDFFDFBBDDDDDF",
+    "solution": "......x.....x....x.............xx.........x..........x.....x....",
+    "unused_metadata": "76 puzzle_42761"
   },
   {
     "id": "91",
     "N": 8,
-    "board1": "AAAFBBBBAFFFBBBBAFFGBBBBGFFGGEEBGGGGGEEEDDGGCCEHDDDGGCHHDDDGGCCC",
-    "board2": "FFFFBBBBHFFFEBBBHHHGEBBBHHHGEEBBHHHGAABDHHGGAADDHHHCCDDDHHCCCDDD",
-    "solution": "x...........x....x............x....x.........x.........x..x.....",
-    "unused_metadata": "79,47,299,True"
+    "board1": "CCCBBBHHCCCCBHHHFFFABHHHFFAABHHHDDAAAGHHDDDDGGHHDDDDGGEEDDDDGGEE",
+    "board2": "AAAAAADDAAADDDDDAAACDHHHCCCCCCHHEEEEBBBHEEEEBBBBEEEFFBBBEEEFFFBG",
+    "solution": ".x..........x.........x.x.........x..........x.....x...........x",
+    "unused_metadata": "77 puzzle_7634"
   },
   {
     "id": "92",
     "N": 8,
-    "board1": "FEEEEEHHFEEEEEBHFFFAEEBHFFFAAEBHCCFCCGBBCCCCDGGGCCCCDDDGCCCDDDDD",
-    "board2": "HHGGGGDDHHGGGGDDHHHAAADAHHFFAAAAHHHFFAAAHHHFBBBBCCEEEBBBCCEEEBBB",
-    "solution": "......x...x.....x..........x...........x.....x...x..........x...",
-    "unused_metadata": "7,190,299,True"
+    "board1": "DAAAAAAHDDAAAAHHDDDAEEHHEEEEEEGGEEBBEECGEEBBCCCGEEBBFFFFEEBBFFFF",
+    "board2": "CCCFFFFFCCCGFGFFCCCGGGGACCCGGGGACCEEGGGACCEEHGBACDEEHHBBCDDEEBBB",
+    "solution": "x.............x....x...........x..x.........x....x...........x..",
+    "unused_metadata": "77 puzzle_24948"
   },
   {
     "id": "93",
     "N": 8,
-    "board1": "CCCCBBBBCCCCBBBBCCCCFFFFECDCFFFFEDDHHHAFEDDHHHAAEDDDHHAADDDDHGGG",
-    "board2": "BFFFHHHHBEFFFFHHBEEEFFGGBBEEEGGGBEEEEGGGBEEEECCDBAAAACCDAAAAACDD",
-    "solution": "....x.....x...........x.x..........x...........x.x...........x..",
-    "unused_metadata": "44,25,300,True"
+    "board1": "BBBBBCCEAAGGGCCEAAADGCCEAAADDCCCAHHDCCFFHHHDCCCFHHHHHCFFHHHHHCCF",
+    "board2": "CCCCGGEECFFEGEEEABFEEEEEABFEEEEEABBBBBHHAADDDHHHAADDDDHHADDDDDHH",
+    "solution": ".x..........x..........x..x..........x.....x..........x.x.......",
+    "unused_metadata": "77 puzzle_38911"
   },
   {
     "id": "94",
     "N": 8,
-    "board1": "CCCHHHHHCCCHHHHHDDFFBBHHDGGFFBBBGGGFFBBAGGEEFFAAGGEEAAAAGGEEAAAA",
-    "board2": "GGGGGHHHGGGGGCCHGGGGGCCHEEGGGGGHDEEAGFFFDAAABFFFDDAABBBBDDAABBBB",
-    "solution": "......x...x..........x..x..............x....x....x.........x....",
-    "unused_metadata": "125,95,300,True"
+    "board1": "GGGFEEEEGGGFEEEEGGGFEEEDCCFFFEDDCCCCDDDDCCCDDDHDAACBDBHHAACBBBBB",
+    "board2": "HHHGGCCCHHGGGCCDBGGGGGGDBGGGGGGDBEFFFAADEEFFFAAAEEEFFAAAEEEAAAAA",
+    "solution": "..x..........x.........x....x...x.............x....x.....x......",
+    "unused_metadata": "78 puzzle_9536"
   },
   {
     "id": "95",
     "N": 8,
-    "board1": "HGGGGGEEHHGGGGGEHHFFFFGEHHFFFFFCHHHDFFCCHDDDDFCCHDBBDDDDHBBBBAAA",
-    "board2": "CCCGFFFFCCGGFFFFCCGGFFFFCCHHFFEEDDHHHFEEDDBBHAEEBBBBBAEEBBBBAAEE",
-    "solution": "......x...x.....x..............x....x....x.........x.........x..",
-    "unused_metadata": "20,64,300,True"
+    "board1": "BBBBHEEEBBBBHEEEGBAHHFFFGAAHHFFFGAAAAFFFGGAFFFFFGGGDFCCCGGDDDCCC",
+    "board2": "EGGGAAAAEEGFAAAAEEEFHHBBEEEHHHBBECCDHBBBCCCDDBBBCCCDDDDDCCCDDDDD",
+    "solution": ".x............x....x....x...........x..........x.....x....x.....",
+    "unused_metadata": "78 puzzle_34218"
   },
   {
     "id": "96",
     "N": 8,
-    "board1": "CCGBBBBBCCGGBBBBGGGGGGHHEGEGGGHHEEEEEHHHFFEEDHHHFFDDDAAAFFDDDAAA",
-    "board2": "DFFFFAAADFFFFAAAFFFFAAAAFFFFAHAAFFEEAHHHFFEEBHGGCFBBBBGGCCCBBBGG",
-    "solution": "...x....x..............x.....x....x.........x.........x..x......",
-    "unused_metadata": "226,22,300,True"
+    "board1": "BCCCCCGGBCCCCGGGBAAAAGGGBBAAAFGGBBAAAFDDEBAAFFDHEEFFFFDHEEFFFHHH",
+    "board2": "ECCDDDFFECCDDFFBECCCBBBBGCCHBBBBGCHHHBBAGGHHHBBBGGGHHHBBGGGHHHBB",
+    "solution": "...x.........x..x.........x............x....x....x............x.",
+    "unused_metadata": "79 puzzle_5359"
   },
   {
     "id": "97",
     "N": 8,
-    "board1": "EEEBBBAAEEEBBBBAFFFFFAAAFFCFAAAAFCCFHAAAGCCHHHHHGCDHHHHHGGDDDDHH",
-    "board2": "CCCGGGGGCCCCGGAABFFFGDAEBBFDDDAEBBBHHDDEBBHHHHEEBBBHHHHHBBBHHHHH",
-    "solution": ".x............x.....x.....x..........x.........xx..........x....",
-    "unused_metadata": "51,16,300,True"
+    "board1": "GGGHHAACGGHHHAACGHHHAAAAGHHHAAAABBHEEAAABBFEEEAABBFFFDDDBBFFFDDD",
+    "board2": "AAAAAAGGAEEAAEGGEEEEEEHHCEEEEFHHCBBEFFFHCBBEFFFFCDDDFFFFCDDDFFFF",
+    "solution": ".......x....x.........x.x..........x.....x...........x....x.....",
+    "unused_metadata": "79 puzzle_21322"
   },
   {
     "id": "98",
     "N": 8,
-    "board1": "HHDDFFFFHHDDDFDFBBDDDDDEBBBDDDEEBBBDDEEEBBBCGEAECCCCGAAECCCGGGAE",
-    "board2": "BBBHDDDDBBHHDDDDBBHHHFDDCCCHHFFFCCCHHFAFCCCEEAAGCCCEGGGGCCCEGGGG",
-    "solution": "....x...x.........x............x.x............x....x.........x..",
-    "unused_metadata": "100,21,300,True"
+    "board1": "EEEECCCFEBHCCCCFBBHHHCCFBHHHHCCFAHHGHCDFAAHGHDDDAAADDDDDAAADDDDD",
+    "board2": "AAEEEEHHAAEEEEHHDDDEEEHHDDDDDEEEDDDDDFFFBBBGGFCCBBBGGGCCBBBBGGGC",
+    "solution": ".x.............x....x...x............x.....x..........x...x.....",
+    "unused_metadata": "79 puzzle_37479"
   },
   {
     "id": "99",
     "N": 8,
-    "board1": "AAGGGGGGAAAGGGGGAAAAAADGHHEAADDGHHEEADDDHEEECDDFBEECCCCFBBBCCCFF",
-    "board2": "DDDDFFFADDDDFFFADDGFFFAAEGGGGFFHEGEBBFHHEEEBBBCHEEEBBBCHEEEBBCCC",
-    "solution": "....x.....x...........x..x.........x...........xx............x..",
-    "unused_metadata": "12,53,300,True"
+    "board1": "BBBBBBFFBBBBBFFFBDDEFFFFBDDEHHFFGAHHHHHCGAAAHHHCGAACCCCCAAACCCCC",
+    "board2": "GGGCCCCCGGGGCCBBGGGGCBBBGFFGBBBBFFFFADAHFFAAAAAHEEEEEEAHEEEEEEAH",
+    "solution": "....x.........x....x.....x...........x....x.....x..............x",
+    "unused_metadata": "80 puzzle_3354"
   },
   {
     "id": "100",
     "N": 8,
-    "board1": "AAAACCBBAHACCCCBHHHECCGBHHEEEGGGEEEEGGDDFFEEDDDDFFFEDDDDFFFFDDDD",
-    "board2": "FFFHHHBBFFFFHHCBFFFFDCCBFFFDDDDDAAADDDDDAAAAADDDEEAAAGDDEEEEGGGD",
-    "solution": "...x...........x.....x...x..........x.....x.....x.............x.",
-    "unused_metadata": "82,6,300,True"
+    "board1": "GGAAAACCGGAAAACCGAAAFFCCBBAFFFCCBFFFFFCCBBHFFFCCBHHFFDEEHHHHHDDE",
+    "board2": "FFFFFFCCBBBFFCCCBBBBCCCCBBBHCCCCGGBHCCCCGEEHDDDCGEEHDDDCAAAAAAAA",
+    "solution": "....x....x............x....x....x.........x..........x.........x",
+    "unused_metadata": "80 puzzle_23042"
+  },
+  {
+    "id": "101",
+    "N": 8,
+    "board1": "GGCCEEFFGGCCCBFFGGCCCBFFGGCCBBFFGGBBBBFFGGGBBDDDAAAHDDDDAAHHDDDD",
+    "board2": "DDDDDDGGDDDDGGGGBBBGGGAABBBEEGAABFEEEEAACFEHEEAACFHHHEAAFFHHHHAA",
+    "solution": ".....x.........x..x.........x....x............x.x..........x....",
+    "unused_metadata": "80 puzzle_40333"
+  },
+  {
+    "id": "102",
+    "N": 8,
+    "board1": "AAAACCCCABBBCFCCDDDDDFFCDDDDFFGGDDDDFGGEHHHDFEGEHHHHEEEEHHHHHHEE",
+    "board2": "BAAAHHHHBBBHHHHHBFFHHHHHFFFFCCEEFGGFCCEEGGGDDEEEGGGDDDDDGGGGDDDD",
+    "solution": "...x.....x.............x.....x..x.............x.....x.....x.....",
+    "unused_metadata": "81 puzzle_7399"
+  },
+  {
+    "id": "103",
+    "N": 8,
+    "board1": "EBBBBFFFEEEBFFFFDDDDFFFFDDDDFFFFHDDDDFAAHDDDGCAAHDDGGCCAHHDGGCCA",
+    "board2": "HHHBBBBBHHAABBBBEHAAAAGFEHHAADDFEHHDDDFFEEEEDDCFEEEECCCFEEECCCCC",
+    "solution": "....x.....x...........x..x.............x.....x..x..........x....",
+    "unused_metadata": "81 puzzle_37182"
+  },
+  {
+    "id": "104",
+    "N": 8,
+    "board1": "FFEEECCCFFFEEEEEFFGGGEEEFGGGGGBBFAGGGHBBAADHHHBBADDDHHHBADDHHHHB",
+    "board2": "BBBBEEEEBBBBBEEDBBBBBADDBBBHAADDFFFHHHDDFFFHGHHCFFFGGHCCFGGGGGCC",
+    "solution": ".....x..x.............x.....x....x.........x...........x..x.....",
+    "unused_metadata": "82 puzzle_5127"
+  },
+  {
+    "id": "105",
+    "N": 8,
+    "board1": "GGGGGGDDAAGGGGDDAAAAGDDDAAAAAAHHBAAAAHHHBEAFCHHHBEFFCHHHEEEFCHHH",
+    "board2": "DGGGGGGADDDFFFAADDDFFFFABHHHFFFABBHHCCCCBBHHCCCCEEHCCCCCEECCCCCC",
+    "solution": ".....x.........x..x...........x.x..........x.....x..........x...",
+    "unused_metadata": "82 puzzle_23588"
+  },
+  {
+    "id": "106",
+    "N": 8,
+    "board1": "HHHHHCCCHHGHCCCCHHGGGGCCDDGGAACCDDAAAACFDDAABCCCDDEEBBCCEEEBBBBB",
+    "board2": "HEEEEEBBHEEEAABBHCCCAAGGCCCAAAAGCCCCFFGGCCCFFFDDCCCFFDDDCCCFFDDD",
+    "solution": "......x...x.....x...........x..........x.x.........x.........x..",
+    "unused_metadata": "82 puzzle_39269"
+  },
+  {
+    "id": "107",
+    "N": 8,
+    "board1": "BGGGAAABBBGAAAABBBBBBBBBBBHHFFBBHHHHFFDEHHHHFDDEHCCCFDDECCCCDDDE",
+    "board2": "FFCCCCGGFFCCCGGGFFGGGGGGHDDGGGGGHHDGGGGBHHDDEEEBHHDDEEEBHHDAAABB",
+    "solution": "...x..........x.x.........x............x....x....x...........x..",
+    "unused_metadata": "83 puzzle_9206"
+  },
+  {
+    "id": "108",
+    "N": 8,
+    "board1": "AACCCEEEAACCEEEEACCCFFFFACCCBFFFACCBBBFFGHCGBBFFGHGGBDDDGGGGGDDD",
+    "board2": "DHHHHHHHDDDDHHHGDDDFFHHGDDDBFFEEDDBBBBEEDDBBAAAECCAAAAAECCCAAAAE",
+    "solution": "..x............xx...........x.........x....x.....x...........x..",
+    "unused_metadata": "83 puzzle_37606"
+  },
+  {
+    "id": "109",
+    "N": 8,
+    "board1": "BHFFFCCCBHHFFFCCBHHHFFCCBBHFFFGCBEFFFGGGEEEEAAGGEEEEGGGGEEEDDDDD",
+    "board2": "EDDBBBCCEDDBBCCFGGGBBBCFGGGBBBBFGGGBBBHFGGBBBHHHGGAABBHHGGAABBBH",
+    "solution": "x.........x...........x.....x..........x.....x...x.........x....",
+    "unused_metadata": "84 puzzle_8895"
+  },
+  {
+    "id": "110",
+    "N": 8,
+    "board1": "GGBBBBBBGGBBBBBCGGGGBBCCGGGGBBFFEGDDBFFFEEDDAAAFEEDDAAAAEHHDDAAA",
+    "board2": "BBBCCFFFBBBCCFFFBBBCAAFFBBGCCAAFBGGECAAFGGGEEDFFGGGEEEEFHHHEEFFF",
+    "solution": "....x..........x.x............x....x.........x..x.........x.....",
+    "unused_metadata": "84 puzzle_43440"
+  },
+  {
+    "id": "111",
+    "N": 8,
+    "board1": "HHHHHHHCHHGHHCCCGGGGGCCCEEGFFBCCEEGEEBBCEEEEBBCCEEEEBBDDEEEAADDD",
+    "board2": "HHHHFFFFBHHHFFGGBHHDDFGGBBDEDDGGBBDDDDGGBBDDCDGGBBBCCCAABBBCCCAA",
+    "solution": ".x...........x..x..........x..........x...x............x....x...",
+    "unused_metadata": "85 puzzle_15672"
+  },
+  {
+    "id": "112",
+    "N": 8,
+    "board1": "CCCCBBBBCCCBBBBBCCEEEEAACCEEEEAAGCEEEEHHGGGEEEHHGGGFFDDDGGFFFDDD",
+    "board2": "AAABBBBEAABBEEEEAFFBEEEHFFFBEHHHGGGBBHHHDGGGGHHHDGGGGHHHGGGGCCHH",
+    "solution": "....x....x............x...x............xx..........x.........x..",
+    "unused_metadata": "85 puzzle_36083"
+  },
+  {
+    "id": "113",
+    "N": 8,
+    "board1": "CCFAAAAACCFFAAAACCCHAAGACCHHHGGACCHHHGGGEEHHDGGGEEEEDBBBEEEEEBBB",
+    "board2": "GGHHHAAAGGGHHAAAGGGAAAAAGCCCCFADCCCFFFEDCCCBBFEEBBBBBBEEBBBBBBEE",
+    "solution": "..x.....x..........x...........x.....x...x..........x.........x.",
+    "unused_metadata": "86 puzzle_4507"
+  },
+  {
+    "id": "114",
+    "N": 8,
+    "board1": "EEBBBBBDEEEAAADDEEEAAADDFEEEEAGDFEEEGGGHEEEEHHHHEEEEHHHHECEEHHHH",
+    "board2": "HHHDDBBBHHDDDDBBCCDDDAAACCCCFFAACCCCFFEACGFFFFEECGFFFEEEGGFFFEEE",
+    "solution": "..x............x....x.........x.x..........x.........x...x......",
+    "unused_metadata": "86 puzzle_19558"
+  },
+  {
+    "id": "115",
+    "N": 8,
+    "board1": "FFGGGBBBFFEEGEBBFFEEEEBBDDEEEEEBDDDEAAAADDDAAAAADDHHCCCCDDDHCCCC",
+    "board2": "FFFFDEEEDDDDDEEEDDDDEEEEBDDDDDEEBGGGGGEEBCGGGAAECCCCHHAACCCCCHAA",
+    "solution": ".x..........x..........xx..........x..........x...x..........x..",
+    "unused_metadata": "86 puzzle_39412"
+  },
+  {
+    "id": "116",
+    "N": 8,
+    "board1": "DDACCCCCAAACCCCCAACCCCEFABBBEEEFBBBBEEFFBBBBBEFFBBHBBEGFHHHHHHGG",
+    "board2": "HFEEEEEEHHAEAAEEHHAAAAGGHAAAABGGHAAAABGGHAACCBBGAAADBBBDAAADDDDD",
+    "solution": ".x.........x....x............x.........x....x.....x...........x.",
+    "unused_metadata": "87 puzzle_9561"
+  },
+  {
+    "id": "117",
+    "N": 8,
+    "board1": "CCCFFFHHCCAAFHHHAAAAFHHHAAAAAAAHGGGGGGGGBGGGGGEDBBBBGEEDBBBBEEED",
+    "board2": "GGGGHHHHCGGGHHAECGGGHAAECCCGHEEECCCBBEEECCCBBEEEFFFFBBEDFFFFFBED",
+    "solution": "....x....x...........x..x..........x..........x...x............x",
+    "unused_metadata": "87 puzzle_31122"
+  },
+  {
+    "id": "118",
+    "N": 8,
+    "board1": "EHHHHHHHEEHHHHCCEHHHAACCDDDAAAFFDDDAAAGFDDDAAAGGBBBAAGGGBBBAAAGG",
+    "board2": "AGGGGCCCAGGGCCCDAABBCCCDAABBBDDDBBBBBDDEFBFBEEDEFFFEEEEEHHFFEEEE",
+    "solution": "...x..........x.x..............x....x.....x..........x...x......",
+    "unused_metadata": "88 puzzle_29718"
+  },
+  {
+    "id": "119",
+    "N": 8,
+    "board1": "FFFFCCCCFFFFCCCBFFFFFCBBGGGDDDBBGGGDDDEBHHGDEEEBHHAAAEEBAAAAAEEE",
+    "board2": "EAAAAAAHEEAAAAHHEEEAAAGGEECCCBBGFECCBBBGFCCDDDBBCCCDDBBBCCCDDDBB",
+    "solution": ".......x...x..........x..x..........x...x.........x..........x..",
+    "unused_metadata": "89 puzzle_5531"
+  },
+  {
+    "id": "120",
+    "N": 8,
+    "board1": "FFFHGGGGFFFHGGGGFFFHHGGGBFEHHHDGBEEHHHDDEEHHHCCCEEAAAACCEEEAAAAC",
+    "board2": "BBBBBBDABBBBEDDAFCBEEDDAFCBCGGAAFCCCGGAACCCCGAAACCCCGGGACCCCGGHH",
+    "solution": "..x..........x.....x....x.............x..x..........x..........x",
+    "unused_metadata": "89 puzzle_29968"
+  },
+  {
+    "id": "121",
+    "N": 8,
+    "board1": "GGGGHHHAGGGHHAAAECGFFAAAECGFFAABECCFFFBBEFFFFBBBEEEFDDDBEEEEDDDB",
+    "board2": "AADDGGGGAADDBBGGAADDDBBHAAFFDBBHAAFEBBBHFFFEEHHHFFFEEHHCEEEEEEHC",
+    "solution": "....x.....x...........x..x.........x....x............x.........x",
+    "unused_metadata": "89 puzzle_47222"
+  },
+  {
+    "id": "122",
+    "N": 8,
+    "board1": "GGGEEEDDGGBBEEDDGBBBDDDDGGAAAADDGAAAAACCGAAAAACCFFAFFFHHFFFFFFFH",
+    "board2": "AAEECBBBAAECCBBBAADCCCBFADDCCCFFDDDDHFFFDDDHHHHFGGGGGGFFGGGGGGGF",
+    "solution": ".....x....x.........x...x..........x..........x..x.............x",
+    "unused_metadata": "90 puzzle_21460"
+  },
+  {
+    "id": "123",
+    "N": 8,
+    "board1": "HDDDDDDDHHDDDDDBHHHECCBBEEEEEBBBAEEEEEEBAAEFFFEBAGGFFFFFGGGFFFFF",
+    "board2": "GGGBBBFFGGGFFFFFGGGAFFHHGGGAAHHHEEEAAHHHCAAAAADDCAAACADDCCCCCDDD",
+    "solution": "...x.....x...........x.........xx.............x...x.........x...",
+    "unused_metadata": "91 puzzle_20392"
+  },
+  {
+    "id": "124",
+    "N": 8,
+    "board1": "FEEEAAAAFEEEAAAAFFFECACCFFFFCCCCHHHCCCCBHHHHGGBBHHGGGGBBDDDGGGGB",
+    "board2": "EEAAAFFFEEEAAAFGEEEAAGGGEEDCAAGGDDDCCCCCDDDCBHHHDDHHHHHHDHHHHHHH",
+    "solution": ".....x.....x..........x..x.............x....x...x.........x.....",
+    "unused_metadata": "91 puzzle_39776"
+  },
+  {
+    "id": "125",
+    "N": 8,
+    "board1": "AAFFFFFCAAAAFFCCAAAABBCCGGGGBBCCGGEEBBBDHHEEDDDDHEEEDDDDHEEEDDDD",
+    "board2": "HHHEEEBBHHHHEFFFHEEEEFFFDDEEECFCDDEEECCCDDDDECCCDDDDGGGGADDDGGGG",
+    "solution": "......x..x.............x...x.........x....x.........x...x.......",
+    "unused_metadata": "92 puzzle_13491"
+  },
+  {
+    "id": "126",
+    "N": 8,
+    "board1": "FFFAAHHHFFFAAAHHFFFAAAEHFFFDDCEHFFDDDDEEFDDDGGEEDDDBBBEEDDBBBBBE",
+    "board2": "CCCAAAAECCCCCCEECCHCCCBEFCHDDGBEFFHHDGBBFFHHDGBBFFHHHHBBFFHHHHBB",
+    "solution": "...x..........x..x...........x.........x....x...x.........x.....",
+    "unused_metadata": "92 puzzle_37138"
+  },
+  {
+    "id": "127",
+    "N": 8,
+    "board1": "CCCCBBBBGGECCBCCGGEECCCCGGEECCCFGGGHHHHFGGDHHHHFDDDDHHFFDDDHHAAA",
+    "board2": "AAEDDDEEAAEEEDEEAAHHEEEEAAHHCEEEAAHGCCFFHHHGGGFFHHGGGGFBHHGGGGBB",
+    "solution": ".....x....x.....x...........x..........x...x.....x............x.",
+    "unused_metadata": "93 puzzle_13142"
+  },
+  {
+    "id": "128",
+    "N": 8,
+    "board1": "FFAAAEEBFFFAEEHBFFFAAEHBFFAAAEHBDGGGGGGBDGGGGGGBDCGGGGGGCCCCCGGG",
+    "board2": "EEEEEFFFEEFFFFFFAAFFFBBBFFFFBBBBGFFFFBBBGGFFFBHHGGGCCDHHGGGCCDDH",
+    "solution": "..x.........x....x............x.x..............x.....x.....x....",
+    "unused_metadata": "93 puzzle_37043"
+  },
+  {
+    "id": "129",
+    "N": 8,
+    "board1": "DDDGGCCCDDDGGCCCDDGGGCEEDDGGGGEEFFFFAAEEBBBFAAAAHBHHAHHHHHHHHHHH",
+    "board2": "AAAAAAAACCAAAAAACCHHAAAAGCHHBAAEGFHBBDEEGFFBBDDDGFBBBDDDGGBBBDDD",
+    "solution": ".....x...x.........x...........xx.........x.........x.........x.",
+    "unused_metadata": "94 puzzle_7789"
+  },
+  {
+    "id": "130",
+    "N": 8,
+    "board1": "FFFCCCCCAAAACCCBDAAAAABBDAAAAABBDDHHBBBBHHHBBBBBHHHEEEGGHEEEEGGG",
+    "board2": "DDDDDDBBDDDDDBBBDDDCEEBBADCCCEBBAAACCCBGAHFFGGGGHHHHGGGGHHHHGGGG",
+    "solution": ".x............x.....x...x............x....x............x...x....",
+    "unused_metadata": "94 puzzle_29168"
+  },
+  {
+    "id": "131",
+    "N": 8,
+    "board1": "DDDAGGGGDDAAGGGCDAAHGGCCDDHHHHCCDDEHHHHCBBEEHFFFBBBEFFFFBBBEEFFF",
+    "board2": "AAAFFFFEAAAADFEEAAAADDEECGGGGBEECCCGGBBBCCCGGBHHCCCGHHHHCGGGHHHH",
+    "solution": "...x....x...........x..........x.....x....x...........x..x......",
+    "unused_metadata": "95 puzzle_2327"
+  },
+  {
+    "id": "132",
+    "N": 8,
+    "board1": "DDBBBBBBDDFBBBBBDDFFBBBGDDFFHHGGDAFFHHGGAAAFEHCCAAAFEECCAAAEEECC",
+    "board2": "GGHHHHDDGGGHHEDDGGHHHEDDGGAHEEEEGAAFEEEEAAFFBCECAAFFBCCCAACCCCCC",
+    "solution": "..x.....x..............x.....x.....x.....x..........x.........x.",
+    "unused_metadata": "95 puzzle_30312"
+  },
+  {
+    "id": "133",
+    "N": 8,
+    "board1": "EEEEEEEEEEEEEEHHFEEAHHHHFFAAHHHHFDAAAHHHFDCBAGGGFCCBBBGGCCCCBGGG",
+    "board2": "FFFFFHHHFFFFFAHHDDFFAAEEDDGAAEEEBGGAAAEEBBBBAEEEBBBCCCCEBBBCCCCC",
+    "solution": "....x.........x.x..........x.....x.............x.....x....x.....",
+    "unused_metadata": "96 puzzle_7122"
+  },
+  {
+    "id": "134",
+    "N": 8,
+    "board1": "AAAAAEEEAAGGEEBBAGGEEEBBHGEEEFBBHHHEEFBBHCCEBBBBHCCCBBBDCCCCBBDD",
+    "board2": "HHBBAAAAHHBAAAFFBBBAFFFFBEEAFFFFBEEAGFFFCCCCGDDDCCCCGDDDCCCCGDDD",
+    "solution": "......x.x.........x..........x...x..........x..........x...x....",
+    "unused_metadata": "96 puzzle_34246"
+  },
+  {
+    "id": "135",
+    "N": 8,
+    "board1": "GBBBAAAAGBBDDAAAFFFFDDAAFFFFEAAAHFFFEECAHFFFECCCHHCCCCCCHHCCCCCC",
+    "board2": "HHEEBBBFHHEEBBBFGGEECBFFGGGECAAFGGGDCAAAGGGDDDAAGGDDDDAADDDDDDAA",
+    "solution": "...x....x............x.........x....x.....x...........x..x......",
+    "unused_metadata": "97 puzzle_9846"
+  },
+  {
+    "id": "136",
+    "N": 8,
+    "board1": "AAAAAADDAAAAAHDDBBBGGHHDBBBGGGGGBBGGEGCCEEEEEECCEFFFFECCFFFFFECC",
+    "board2": "EHHHHHFFEEHDHHFFEEDDDBFFEEDDDBFFEEAAABAAGAAAAAAAGCAAAAAACCCAAAAA",
+    "solution": "....x..........x.....x.....x.....x............x.x.........x.....",
+    "unused_metadata": "97 puzzle_32522"
+  },
+  {
+    "id": "137",
+    "N": 8,
+    "board1": "BBFHHHHHBFFHHHHEFFFHGHHEFGGGGGEEDGGGGGCEDGGDGGCADDDDDGAADDDDDAAA",
+    "board2": "AAAAADDDGGCEDDDDGGCEDDDDCCCEDDDDCCCEFFDHCCCFFHHHBBFFFFHHBFFFFFHH",
+    "solution": "....x...x.........x............x...x..........x..x...........x..",
+    "unused_metadata": "98 puzzle_15198"
+  },
+  {
+    "id": "138",
+    "N": 8,
+    "board1": "CCCCHBBBCCHHHEFBDCDHHEFBDDDDEEFFDDDDGFFFDDDGGAAADDGGGAAADDDGGAAA",
+    "board2": "GGGGFFHHGGGFFFHEGGGBBBEEGGGBBBEEGGGBAAEEDDGCCAAADDCCCCAADDCCCCAA",
+    "solution": "......x....x.....x..........x..........x.....x....x.....x.......",
+    "unused_metadata": "99 puzzle_21519"
+  },
+  {
+    "id": "139",
+    "N": 8,
+    "board1": "ABBBBBBBAAABBBBEAHHBBEEEHHGGGEEEFFGGGECCFFGGDCCCFFGDDDCCFFFDDDCC",
+    "board2": "FFAAEEEEFFFEEEEEFFGEEEECFHGGEECCHHHGGECCHHHGGGCCHHHHBBCCDDDHBBBB",
+    "solution": "...x....x.............x..x..........x..........x.....x....x.....",
+    "unused_metadata": "99 puzzle_42369"
+  },
+  {
+    "id": "140",
+    "N": 8,
+    "board1": "DDGGGGFFDDGGGGFFDDDGFFFFDCCGFFFFCCCCCCFHBBBBAHHHEEAAAHHHEEEAAAHH",
+    "board2": "HBBBBBBCHHHBGGCCHHHGGGCCHHHGGGCCHHEEEGFFHHEEEGFADDEEEEFADDDEEAAA",
+    "solution": ".x..........x.........x...x............x...x....x............x..",
+    "unused_metadata": "100 puzzle_19008"
+  },
+  {
+    "id": "141",
+    "N": 8,
+    "board1": "DDGGGBBBDDGGGBBADDGGBBBADDBBBBAADFFFFCACHHHFFCCCHHHFFECEHHHHEEEE",
+    "board2": "DDDDFFFEDDBBBBBEDDDBBBBBDDGGBBBBDHGGGCCBHHGGCCCCHHGGAAAAHHGGAAAA",
+    "solution": ".....x.........x...x....x.........x...........x..x..........x...",
+    "unused_metadata": "101 puzzle_1476"
+  },
+  {
+    "id": "142",
+    "N": 8,
+    "board1": "GFFFFFCCGAFEEECCGGFEHECCGGEEHCCCGEEEHCCDGGHHHBBDGGGDHBDDGGGDDDDD",
+    "board2": "AAGGGGGHAAAGGGHHAAGGGGHHADDGGGHHADDBBEEHFFFFBEEECCCFEEEECCCCCEEE",
+    "solution": ".....x...x.............x..x.........x.........x....x....x.......",
+    "unused_metadata": "101 puzzle_31518"
+  },
+  {
+    "id": "143",
+    "N": 8,
+    "board1": "BBBBBACCBBBBAAACDBBBAAHHDDEAAAAHDDEAAAAHDFEEEGHHFFFEEGGGFFFEGGGG",
+    "board2": "GAAAAAFFGAAAAAFFGAAAAAFFGGGCCFFFGGCCCFFEBBHCCFFEBBHHEEEEBBHHHDDD",
+    "solution": "......x...x.....x...........x..........x.x.........x.........x..",
+    "unused_metadata": "102 puzzle_4157"
+  },
+  {
+    "id": "144",
+    "N": 8,
+    "board1": "AAAFFFBBAAAAEEBBADDDEEBBDDDDEEBBDHHHGBBBHHHHGGGGHHHHGCGGHHHHGCCC",
+    "board2": "BBBGGGEEHBBGGEEEHABBEEEEHAAAEEEEAAAACDDDAAAACDDDAACCCCCCAACCCCCF",
+    "solution": "...x.....x...........x..x.............x...x.........x..........x",
+    "unused_metadata": "102 puzzle_36659"
+  },
+  {
+    "id": "145",
+    "N": 8,
+    "board1": "DDDHAAAADDHHAAAACBBHHHHACBBBHHHECCCBBHHECCCFFFHHCCCFFHHGCCCFGGGG",
+    "board2": "ADHHBBBBADHHHBBBDDDHHHBBDDGGGEEBDDGFEEEBDFFFEEECDFFFCCCCDFFFCCCC",
+    "solution": "x...........x....x.............x..x...........x....x.........x..",
+    "unused_metadata": "103 puzzle_14563"
+  },
+  {
+    "id": "146",
+    "N": 8,
+    "board1": "EAAAAAAAEGGGAAAAEGGGAAAAEGGGGGCCEEGGDDCFHHHDDDFFHHBBBBFFHHBBBBBF",
+    "board2": "AABBBBBHAABBBBHHFFBBGGGHGGGGGGHHGGGGGCHHDGGGCCEHDDDGCCEHDDDDCCEE",
+    "solution": "x...........x....x.............x.....x....x...........x....x....",
+    "unused_metadata": "103 puzzle_49666"
+  },
+  {
+    "id": "147",
+    "N": 8,
+    "board1": "CCEEEAAACCEEAAAADCCEBBBBDDDDDBBBDDDGGBBFGGGGGBFFGGHHHHFFHHHHHFFF",
+    "board2": "EHHHCCCCEHHHHCCCEEHDBCCCEEDDBGGGFFFBBGGGFFAABGGGFAAAAGAAFAAAAAAA",
+    "solution": "..x..........x...x.........x..........x.....x..........xx.......",
+    "unused_metadata": "104 puzzle_26942"
+  },
+  {
+    "id": "148",
+    "N": 8,
+    "board1": "BGGGGGGHBGGGFFFHBBGGFFFHBBEEFFAABBEEDAAADDDDDAAADDDDDCCCDDDDCCCC",
+    "board2": "HHHHHBBBFFFHHBBBDDFGCCCCDDGGGGCCDDDEECCCDDDEECCCDDEEECCCDDEEAAAA",
+    "solution": "x..............x..x..........x.....x..........x..x..........x...",
+    "unused_metadata": "105 puzzle_11490"
+  },
+  {
+    "id": "149",
+    "N": 8,
+    "board1": "HHHHHHGGHHHHHAAGCAAAAAAGCCBAAAAABBBAAAEABDDDDDEEBFDDDEEEFFFFEEEE",
+    "board2": "HDDDFFEEHHDDDFEEHHHDDAAAHHBBAAAACCBBAAAACCGBAAAACGGBAGAACGGGGGGG",
+    "solution": ".....x.........x....x....x............x....x....x.........x.....",
+    "unused_metadata": "105 puzzle_45497"
+  },
+  {
+    "id": "150",
+    "N": 8,
+    "board1": "DDDDHHBBDDDDDHBBDAAAEEEBCAGGGEGBCAGGGGGGCCFFGGGGCFFFFFGGCFFFFFFG",
+    "board2": "DDDGGGHCDDDGGGHCDDDGGHHCFFFAAHHBFFFAABBBEEAAABBBEEEEABBBEEEEAABB",
+    "solution": "....x.....x............x.....x...x.........x..........x.x.......",
+    "unused_metadata": "106 puzzle_23407"
+  },
+  {
+    "id": "151",
+    "N": 8,
+    "board1": "CGGHHAAACGGHHAAACCGHHHFACCCCHFFFCCCCFFFFEEBBBBFFEEEBBBDDEEEEBBDD",
+    "board2": "AAAAEEEEAAHHHEGGCCHHHEGGCCFHHBBBCCFFDBBBCCCFDBBBCCCDDBBBCCCCDBBB",
+    "solution": ".....x...x............x.....x.....x.....x..........x...........x",
+    "unused_metadata": "107 puzzle_6411"
+  },
+  {
+    "id": "152",
+    "N": 8,
+    "board1": "BBHGGFFDBBHHGGGDBHHHHGGDBHHHHGGDHHEHHCCCEEEEHCCCEEEAACCCEEAAACCC",
+    "board2": "AAACCFFHAACCCFHHAACCCCHHEEEEEEHHEEEEEEEGEEBBGEGGBBBBGGGGDDDBGGGG",
+    "solution": "......x.....x...x..............x.x.........x.........x....x.....",
+    "unused_metadata": "107 puzzle_42641"
+  },
+  {
+    "id": "153",
+    "N": 8,
+    "board1": "DDDDDEEFDDDDEEFFBDDCEEEHBDCCHHHHBBBCHHHHBBBGHHHAGGGGHAAAGGGGAAAA",
+    "board2": "FFFFFFGGFFFFFDDGEEFFFFDGEEFAFFCCEEEAAACCEEAAAAACBEBBAAACBBBHHHHC",
+    "solution": ".......x.....x.....x.....x............x...x.....x...........x...",
+    "unused_metadata": "108 puzzle_28381"
+  },
+  {
+    "id": "154",
+    "N": 8,
+    "board1": "HDDDDDDCHDDDDDCCHHHDEBCCHHHEEBBCHHHEEAAAHHFEAAAAGFFFAAAAGFFFAAAA",
+    "board2": "GGGGAAFFGGGGFFFFGGBBBBBBGGBEEEEEHGEEEEEEHHHCCEEEHHDCCEEEHDDDEEEE",
+    "solution": "....x..........x.....x...x............x....x....x.........x.....",
+    "unused_metadata": "109 puzzle_12801"
+  },
+  {
+    "id": "155",
+    "N": 8,
+    "board1": "FFFFFGGGFFFFFGGEFFFFFGGEFFFFDGEEHAAADEEEHAAABEEEHAACBBBBAAACCCCB",
+    "board2": "BBAAAAAABBAAAAAABBBHAAGGDBHHHHGGDDDCCGGGDDCCCFGGEEECCFGGEEEEEFGG",
+    "solution": "......x..x.............x....x...x.........x..........x.....x....",
+    "unused_metadata": "109 puzzle_42566"
+  },
+  {
+    "id": "156",
+    "N": 8,
+    "board1": "HHHDDDDDEHHDDDDDEEEECDCDEEEECCCCEFFCCCCCAAFFGGGGAAABBGGGBBBBBBBB",
+    "board2": "AADDDEHHAADDEEEHAADDEEEEFFBBBEEEFFBBBEEEGGGBBEECGGGGGECCGGGGEECC",
+    "solution": "x..............x...x.........x...x..........x.....x...........x.",
+    "unused_metadata": "110 puzzle_30587"
+  },
+  {
+    "id": "157",
+    "N": 8,
+    "board1": "HHABBBBBHHABBBBBHHABBBGGCCAEEGGGCCAEEGGGCCAEEEEECCFEEEDDCFFFEEDD",
+    "board2": "BBGGDDDDBBGGGFFDGGGGGFFFGGCCCCEEHCCCCCCEHCCCCAAEHHHCCAAEHHHHHHAE",
+    "solution": "....x....x............x.x.........x..........x.........x...x....",
+    "unused_metadata": "111 puzzle_21271"
+  },
+  {
+    "id": "158",
+    "N": 8,
+    "board1": "CCCCCDDDGGDDDDDDGADDDDDFAABBDDFFAADDDEFFAAHHDEEFAAHHHHHFAAHHHHHH",
+    "board2": "CAAAAAHBCEEEEEHBEEEEEEHBEEDEEEHBDDDDFHHBFFFFFHHGFFFFFGGGFFFFFGGG",
+    "solution": "...x....x...........x.....x............x.....x...x............x.",
+    "unused_metadata": "112 puzzle_3674"
+  },
+  {
+    "id": "159",
+    "N": 8,
+    "board1": "AAADDDDBADDDDDBBADDDBBBBGGGEEEBBGGGEEEBBGCCFEHBBGCCFFHHHGCFFFHHH",
+    "board2": "BBBAAACCBBBAAACCBBBBGAACEEBBGGDCFFFGGDDDFFFFDDDDFFFFDDDDFFFFDHHH",
+    "solution": "..x..........x.........xx..........x.....x..........x.........x.",
+    "unused_metadata": "112 puzzle_45350"
+  },
+  {
+    "id": "160",
+    "N": 8,
+    "board1": "FFFFDDDDHHHDDDDDHHEDDADDHHEAAAGGCHEAAAGGCEEEGGGGCEEEBBBGCCBBBBBG",
+    "board2": "AAADDDCCAAACDCCCAAACCCCBAAAAAFCBHHAAAFCBHHAAAFCGHHEEEFGGHHEEEFGG",
+    "solution": "...x.....x..........x..........x.....x..x.........x...........x.",
+    "unused_metadata": "113 puzzle_44636"
+  },
+  {
+    "id": "161",
+    "N": 8,
+    "board1": "DDDDDEEEAADDEEHHAAEEEEHHAAEEEHHHCEEEEHHHCCEGGGGHCCFFGGGBCCFFFGBB",
+    "board2": "DDGGBBBBDDDFFBBBDDDFFBBBDDDFBBCCEEHHHBCCEEHHHHCCEEHHHHCAEEHHHHAA",
+    "solution": "..x.........x....x...........x..x.............x....x...........x",
+    "unused_metadata": "114 puzzle_34209"
+  },
+  {
+    "id": "162",
+    "N": 8,
+    "board1": "EECCCCCCEECCCCCCEEGGGGGDAEFGGDGDAFFDDDDDAFFFHHHHAFBBBBBBBBBBBBBB",
+    "board2": "FFFFHHBBFFFFHHBBFFFFFDDBFFFFFDDBCCCFDDDGCCCGGGGGEEEAGGGGEEAAAGGG",
+    "solution": "....x....x...........x.........x..x...........x.x..........x....",
+    "unused_metadata": "115 puzzle_26611"
+  },
+  {
+    "id": "163",
+    "N": 8,
+    "board1": "GGGEEEBBGEEEEABBGCEEEABBCCCCEABBCCDDAAFBCCCDAFFFHCCDFFFFHCCCFFFF",
+    "board2": "BBBBDDDABBBBDDDABBFFFDAABBFFFFAABBFFFGEECBCCFGGECCCGGGGEHHCGGGGG",
+    "solution": ".x..........x.........x...x..........x.....x...........xx.......",
+    "unused_metadata": "116 puzzle_13583"
+  },
+  {
+    "id": "164",
+    "N": 8,
+    "board1": "FFFHHHHHFFFHHHHAGFFEEHHAGGGEEEHAGGGGEECCBBBBBCCCDBBBBBCCDDDBBBBC",
+    "board2": "DDDBBBBBDDDDDBBBCCCDDDBBCCCCDFFFCCCCAAAFCCCHHAAFGGGHHEEEGGGEEEEE",
+    "solution": "....x.....x.....x..............x.....x.....x..........x..x......",
+    "unused_metadata": "116 puzzle_45320"
+  },
+  {
+    "id": "165",
+    "N": 8,
+    "board1": "AFFFFFDDAAFFFDDDHHHEEEDDHHHEEEEDBBHHCCDDBBBGCCCCBBBGCCCCBBBGCCCC",
+    "board2": "BBBBBBBBGGGGBBBHGGGGBBHHCGGGGAHHCDDAAAHHCCDDAAHHCCDDEFFFCCEEEFFF",
+    "solution": "....x....x.............x.....x....x.....x.............x....x....",
+    "unused_metadata": "117 puzzle_33246"
+  },
+  {
+    "id": "166",
+    "N": 8,
+    "board1": "DDDDBBBBDDDDBEBBGDDHHEEEGHHHHEEEGGHHHCEEGGHHCCEEAAHFFFFFAAAAAFFF",
+    "board2": "DDDDDDFFDDDEEEFFDDDGGEBBHHGGGCBBHHGGCCCCHHGGGCCCHHGGAAAAHHGGAAAA",
+    "solution": "......x....x....x..............x.....x....x.........x....x......",
+    "unused_metadata": "118 puzzle_24430"
+  },
+  {
+    "id": "167",
+    "N": 8,
+    "board1": "HHHHFFGGCCCHFFGGCCBHFGGGCCBBBGGGBBBBBBEEDDDBBEEEAAAAEEEEAAAEEEEE",
+    "board2": "BBHHHCCCBBBHHECCAAAHEEDCAAAEEEDDAAAEEEEDAAAAEEEDFGGGGGDDFGGGGGGD",
+    "solution": ".....x...x.........x...........x....x.....x.....x.............x.",
+    "unused_metadata": "119 puzzle_16093"
+  },
+  {
+    "id": "168",
+    "N": 8,
+    "board1": "FEEEEEBBFFFFEEBBFDFFFFABDDDFFAAADDDCCAAADDDCHAAAGDHHHHHHGGGGHHHH",
+    "board2": "DCCCBBFFDCCCBBFFDDCCBBBFDDDBBBBFHHEEEBBBHHHEEBBBHHAGGGBBHHAGGGBB",
+    "solution": "...x...........xx.............x.....x....x...........x....x.....",
+    "unused_metadata": "120 puzzle_12722"
+  },
+  {
+    "id": "169",
+    "N": 8,
+    "board1": "EEEEHHHHEEEEEHHHAEEEEFFFACBBEFFGACCBBFGGACCBBGGGACCBGGGGDDDGGGGG",
+    "board2": "AAABGGEEAAABHHEEAAABHHEEAAAHHHEEFFAAHHHHFFDDDHHHCCCDDHHHCCCDDHHH",
+    "solution": ".....x.....x....x.............x..x..........x..........x..x.....",
+    "unused_metadata": "121 puzzle_8387"
+  },
+  {
+    "id": "170",
+    "N": 8,
+    "board1": "EFFCCCCCEFFFFCCBEEGGFFBBEEGGHHDBEEGGHHDDEEEDDDDDEEADDDDDAAAADDDD",
+    "board2": "HHHGGGGGHHHHGGGGHCCCGGGGHHCCCGDDHHCCCAADFFCAAABDFFFFAABBFEEEAABB",
+    "solution": "....x....x.........x...........x.....x..x.............x...x.....",
+    "unused_metadata": "121 puzzle_44753"
+  },
+  {
+    "id": "171",
+    "N": 8,
+    "board1": "CCCCCCFFDDCCCBBBDDDCCBBBDGDBBBBBGGGHHBBBGGHHHHEBGHHHHHEEHHHAAAEE",
+    "board2": "CCHHHHEECCHHGEEECCGGGGEECCGGGGDDFFGGGDDDFFAGGDBBAAAABBBBAAAABBBB",
+    "solution": "......x...x.....x...........x....x...........x.........x...x....",
+    "unused_metadata": "122 puzzle_40130"
+  },
+  {
+    "id": "172",
+    "N": 8,
+    "board1": "AAEEEEEHAAEEHHHHAAEEHHHHAGGGHHHDAGGGGHDDFGGGGBDDFCCBBBDDCCCBBBDD",
+    "board2": "CCCGGHDDCCEGGHHDCCEEGGEDCCEEEEEDCCCCEAEEFFCCCAABFFCBAAABFFBBBBBB",
+    "solution": "...x..........x..x.............x....x...x............x....x.....",
+    "unused_metadata": "123 puzzle_38874"
+  },
+  {
+    "id": "173",
+    "N": 8,
+    "board1": "AADDDDEEABDDDBEEABBBBBBEBBBBBBBHBBBBFFHHBBBFFFHHCCCGFFHHCCCGGHHH",
+    "board2": "HHHHHGGGBBBBGGGGBBBBGGGGBBBBBFFDBBBBAADDCCBBAADDCCCEEEDDCCEEEEDD",
+    "solution": "..x...........x.x............x.........x....x....x.........x....",
+    "unused_metadata": "124 puzzle_32361"
+  },
+  {
+    "id": "174",
+    "N": 8,
+    "board1": "CCCGGGFFCCBBGGFFCCBBFFFFCBBBFFFEAAAAEEEEAAAAHDDDAAAAHDDDAAAHHHDD",
+    "board2": "FFFFCCCCFFFFCCDDFEEFADDDEEHHADDGEEAAAABGEAAAAABGEAAAAABBAAAAABBB",
+    "solution": "....x....x...........x....x............xx.............x....x....",
+    "unused_metadata": "125 puzzle_35351"
+  },
+  {
+    "id": "175",
+    "N": 8,
+    "board1": "HFFFFFFFHHGFFFFAHHGFDDDAHEGGDAAAHEGGGABBEEGGGABBEEEGCCBBEEECCCCB",
+    "board2": "CCEEGFFFEEEGGGFFEEGGGGFFGGGGGAFFGGGGGAAAHHHDDBBBHHHDDBBBHHHDDDBB",
+    "solution": ".x.............xx...........x.........x....x.........x....x.....",
+    "unused_metadata": "126 puzzle_29696"
+  },
+  {
+    "id": "176",
+    "N": 8,
+    "board1": "BBBECCCCBBBECCCCAGEEEEHCAGGEEEHCAAGGEGHCAAGGGGFFADGGGFFFADDGFFFF",
+    "board2": "HHGGGGBBHHHGGGBBHHHGGGBBHHHGAAFFCCCCAAFFCCCCCFFFCCDDDEEEDDDDDEEE",
+    "solution": "..x............xx...........x.........x....x.........x...x......",
+    "unused_metadata": "127 puzzle_26666"
+  },
+  {
+    "id": "177",
+    "N": 8,
+    "board1": "DDDHHHHHCCCCEHHHCCCEEHHHAAEEEGGGAAEEGGGGAAEEGGFFABFFFFFFBBBBFFFF",
+    "board2": "GGGGGDDDCCCCCDDDCCCCCBBDFFCCFBBDFFFFFFFDAFFFFFFFAAHHHHHHEEEHHHHH",
+    "solution": ".x.........x..........x.....x..........xx............x....x.....",
+    "unused_metadata": "128 puzzle_33374"
+  },
+  {
+    "id": "178",
+    "N": 8,
+    "board1": "GGGGGAAAGGGGAAAAGEEGBBAAGECCBBBADECFFFAADDCCDFAADDDDDFFFDDHHHHHH",
+    "board2": "BBEGGGGGBEEGGGGAEECCCCCAHHHDCCAAHHHDDAAAHHFFDAAAFFFFDDDAFFFFDDDA",
+    "solution": "x.............x..x...........x....x.........x..........x...x....",
+    "unused_metadata": "129 puzzle_40869"
+  },
+  {
+    "id": "179",
+    "N": 8,
+    "board1": "AADDCCCCAADDDDCCADDDDDDCDDDDFFFCHEEEEEFCHHBBEFFFHHHBEFFFHHHHGGGF",
+    "board2": "HHHCCBBBHHECCCAAHHEECCAADDEEGAAADDEGGGGADDGGGFFFDDDGFFFFDDDGFFFF",
+    "solution": ".......x.x..........x.........x...x.....x..........x.........x..",
+    "unused_metadata": "130 puzzle_49286"
+  },
+  {
+    "id": "180",
+    "N": 8,
+    "board1": "CHHHHHEECCHHHEEECBBGGEEEBBBGGEEEFFFGGEEEFFFGGEDDFFFGGAAAFFAAAAAA",
+    "board2": "FFFFFAAAFFFCCAAADFCCAAAADDCBAAAADDBBAAAHDDBEEEEHGGGEEEEHGGGEEHHH",
+    "solution": "x...........x..........x.x.........x..........x...x..........x..",
+    "unused_metadata": "132 puzzle_7190"
+  },
+  {
+    "id": "181",
+    "N": 8,
+    "board1": "EAAAAFFFEDDFFFFFEDFFFFFFEHHFBFFFEHHBBFFFEHHGGCCCGGGGGGCCGGGGGGGC",
+    "board2": "AAAAEEEEAAAAEEEEAAAAGCCEAFFGGCCCDDFGGCCCDDDDGBCCDDDDHBBBDDDDHHBB",
+    "solution": "....x.....x...........x..x.........x....x..............x.....x..",
+    "unused_metadata": "133 puzzle_12871"
+  },
+  {
+    "id": "182",
+    "N": 8,
+    "board1": "BBHHHHFFBBBHDGFFCBDDDGGFCCDDDGGGCCDDGGGGCEEEGGGGCEEEEAAACEEEAAAA",
+    "board2": "HHHHHHDDHHHHHDDDGGHHCCDDGGGCCCCFGGBCCFFFBBBEFFFFAAEEEFFFAAAEEFFF",
+    "solution": ".....x.........x.x.........x..........x...x.....x...........x...",
+    "unused_metadata": "134 puzzle_28028"
+  },
+  {
+    "id": "183",
+    "N": 8,
+    "board1": "AAAEEDDDAAEEDDDDAAEFCDHHBAFFCCHHBBFFFCHHBBBFFHHHBBFFGGGGBBFGGGGG",
+    "board2": "AAAGGGGHAEAGGGGHDEEEGGHHDDEEGCCCBBEECCCFBCCCCCFFBCCCCFFFBCCCCFFF",
+    "solution": ".......x..x.........x....x.........x.........x..x.............x.",
+    "unused_metadata": "135 puzzle_46871"
+  },
+  {
+    "id": "184",
+    "N": 8,
+    "board1": "GGGBBBBBGGGBBGABGGGGGGAAGGGGFGCCHDFFFECCHDDDFECEHDDDDEEEHDDDEEEE",
+    "board2": "HHHHBEEEHHHBBBEEHHGABBFFHGGAAFFFGGGAAFFFDGGAAFFFDCCAAAFFDCCAAAFF",
+    "solution": "...x..........x.....x..........x..x.....x............x...x......",
+    "unused_metadata": "137 puzzle_6852"
+  },
+  {
+    "id": "185",
+    "N": 8,
+    "board1": "AADDDDDDAAADDDDDAABHGGDCABBHGGCCBBHHFFFCBBHHFFCCBBEEFFCCBEEEFFCC",
+    "board2": "CCCCHGGGCCCHHGGGCCHHGGGGFFFEGGGGFFFEGGDDFFAEGGDDAAAAGBDDAAAABBBB",
+    "solution": "....x....x...........x.....x..........x.x.........x............x",
+    "unused_metadata": "137 puzzle_14475"
+  },
+  {
+    "id": "186",
+    "N": 8,
+    "board1": "DDBBBBBBDDDABBBBDDDABBBBDDDAGGFFDDDAAGGFHDDDEECCHDDDEECCHDEEECCC",
+    "board2": "EEEBBBFCEEEBBFFCDEGGGFFCDDDGGFFCDDDGGHFCDDDAGHHHDDAAGHHHDAAAAHHH",
+    "solution": "....x....x.........x.........x.........xx.............x...x.....",
+    "unused_metadata": "138 puzzle_7970"
+  },
+  {
+    "id": "187",
+    "N": 8,
+    "board1": "CCCCCCAAGGGCCCAAHGGCCCCAHGGCCCCEHGGCCEEEHGBBDDDEHBBBFDDEBBBBFFDE",
+    "board2": "GGHHHHEEGGHHHHEEGGGHHHHEAABBBBEEAABBBBBEAABDDCCEAFDDDCCCFFFDDCCC",
+    "solution": "...x...........x..x.....x.............x.....x....x...........x..",
+    "unused_metadata": "138 puzzle_46190"
+  },
+  {
+    "id": "188",
+    "N": 8,
+    "board1": "GGGCCCCHGGACCCCHAAAAACCHAEAAAAHHEEBAFFHHEEBBFFHHEBBFFFDHEBBBFFDD",
+    "board2": "ACCCCDDDAACCEDDDGCCEEEEDGGEEEEEEHHHHEEEEHHHHEEFFBBBBEEFFBBBBBEFF",
+    "solution": "....x...x..............x.x.........x.........x....x...........x.",
+    "unused_metadata": "139 puzzle_4652"
+  },
+  {
+    "id": "189",
+    "N": 8,
+    "board1": "AAAACCCCAAAADDDCAAEEEEEHAGEEEEHHGGGEEEEHGGFFEBBHGGFFFBBBGFFFFFBB",
+    "board2": "HHHFFFFDHHFFFDDDHHAAFDDDAAAAADDCAAAAADCCAABBCCCEGBBBEEEEGBBBBEEE",
+    "solution": "....x.........x..x.........x...........x..x..........x..x.......",
+    "unused_metadata": "140 puzzle_3444"
+  },
+  {
+    "id": "190",
+    "N": 8,
+    "board1": "GBBBBBBBGECCHHHBGEECHHDDGEECDDDDGEECDDDFAAECDDDFAACCDDDFAADDDDDF",
+    "board2": "FFFBBBCCFFFFAACCEFFAAACCEDAAAACCEDDHAACCDDDHAAACDGGHHGACDGGGGGGG",
+    "solution": "....x.........x...x.....x............x...x.........x...........x",
+    "unused_metadata": "140 puzzle_45341"
+  },
+  {
+    "id": "191",
+    "N": 8,
+    "board1": "BBBBAACCHHBEAECCHHEEEEECGHEEEDDCGGGGEDDCGGGDDDDDGFFFDDDDGFFFDDDD",
+    "board2": "BDDDAEEEBDDAAEEEBDAAAAAEBDAAAACEHHHAAACCGHHAACCCGGGGFCCCGGGFFFFC",
+    "solution": ".....x....x.....x...........x..........x.x.........x..........x.",
+    "unused_metadata": "141 puzzle_3363"
+  },
+  {
+    "id": "192",
+    "N": 8,
+    "board1": "DDDDDDFFDEEEHHFFDEEEEEEFCCCEEEEBCCCCAAABGGCCAABBGGGGAABBGGGGGABB",
+    "board2": "HHHBBBBCHHHHBBCCDDHHFBCCDEHHFAAAEEEEFAAAEEFFFGAAEEGGGGGGEEGGGGGG",
+    "solution": ".......x....x...x..........x.........x....x...........x..x......",
+    "unused_metadata": "142 puzzle_7700"
+  },
+  {
+    "id": "193",
+    "N": 8,
+    "board1": "CCCCCGGGCCCCGGGHBECFGGHHBEEFGGGHBEEFGGGHEEFFFGHHDDDDDAAADDDDDAAA",
+    "board2": "AAAGGGEEAACCCGGEACCCCGGECCCCDDGECCCCDDDECCCFHDDHCFFFHHHHFFFFBBHH",
+    "solution": "...x...........xx.........x...........x.....x....x...........x..",
+    "unused_metadata": "143 puzzle_3032"
+  },
+  {
+    "id": "194",
+    "N": 8,
+    "board1": "GGGBBBHHGGGBBAHHGGGBAADDGGGBAAADFFFBBAADEEFFFFFDEEFFCCCDEEEFFCCC",
+    "board2": "CCCCEEEECCCCBEEECCCFBBBECHHFBGBBAHFFGGGGAADDDDGGAAADDGGGAADDDDDG",
+    "solution": "......x...x..........x.....x.....x.............x....x...x.......",
+    "unused_metadata": "144 puzzle_9315"
+  },
+  {
+    "id": "195",
+    "N": 8,
+    "board1": "CCCCCDDDCCCCDDAACCCCFFAAHHCBBFAAHHCBBBBAHHHBGBBBHHEEGGBBHEEEEEEE",
+    "board2": "BGGGGGGHBGGGGGHHBBGGGHHHBBGFFEEHBBCFFFFHAACCCDFHAAAACDFDAADDDDDD",
+    "solution": "......x.x..............x.....x.....x.....x..........x.....x.....",
+    "unused_metadata": "145 puzzle_8839"
+  },
+  {
+    "id": "196",
+    "N": 8,
+    "board1": "BBBHHACCBBBHAACCBBHHAACCBBHHAACDEEHGGDDDEEGGGDDDFFFGGDDDFFFGGGDD",
+    "board2": "AAAEGGGBAAEEEBBBAACCCBBBAAACBBBBHAAABBBBHHAABBFFHDDFFFFFDDDFFFFF",
+    "solution": "......x.....x....x.........x...........xx.........x..........x..",
+    "unused_metadata": "146 puzzle_5421"
+  },
+  {
+    "id": "197",
+    "N": 8,
+    "board1": "CGGGHHHHCGGHHHHHCHHHHHHHCHHHHFFDBBHHFFFDBBBFFAADBBBFAAADBBEEEEAD",
+    "board2": "AAHHHEEEACHHHEEECCHHHHEECCHHHHEECCCHHDEGFFFDDDGGFFFDDDGGFFBBDGGG",
+    "solution": ".x..........x...x..............x.....x....x...........x....x....",
+    "unused_metadata": "147 puzzle_2299"
+  },
+  {
+    "id": "198",
+    "N": 8,
+    "board1": "GGHHHHCCGGEEECCCGGGECCCCGGGEEDDDGGGEEDFFGGBBEDDFBBBADDDFBBAAADDF",
+    "board2": "EEEFFFFFEEEFFFFFEEEFFFCGBBDDCCCGBBBDDHHGBBDDGGGGBBAAGGGGBBAAAGGG",
+    "solution": "....x....x............x....x.........x.........xx.........x.....",
+    "unused_metadata": "148 puzzle_1171"
+  },
+  {
+    "id": "199",
+    "N": 8,
+    "board1": "EEEEEAAAEDEEEAAAHDDEEBBBHDDDBBCCGGDDBBCCGGGBBBCCFFFBBBBCFFFFCCCC",
+    "board2": "GGGFDDDDGGFFFDDDGGGFFCCDGAAFFCCCAAAAECCCBBBEECCHBBBEEECHBBBEEEEH",
+    "solution": "......x.....x...x.........x..........x...x.............x...x....",
+    "unused_metadata": "149 puzzle_49696"
+  },
+  {
+    "id": "200",
+    "N": 8,
+    "board1": "BBDDDDGGBBDDDDGGBBDDDDCCFFFDDDCCFFFAAHHHFFFAAAAAFFFAAAAAEEEAAAAA",
+    "board2": "AAAAHHHHAAAAAAHHAEAAAAGGEEEEDGGGEEFDDDGGBFFFDDGGBFCCDDGGBBCCDDGG",
+    "solution": "......x.....x....x.............x.....x.....x....x.........x.....",
+    "unused_metadata": "150 puzzle_1168"
   }
 ]
