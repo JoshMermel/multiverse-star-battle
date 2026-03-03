@@ -528,7 +528,6 @@ STAR BATTLE RULES:
         this.state = JSON.parse(savedState);
         this.history = [JSON.stringify(this.state)];
         this.historyIdx = 0;
-        // this.validate();
         this.updateVisuals();
     }
 
