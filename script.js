@@ -444,22 +444,22 @@ STAR BATTLE RULES:
   checkCorrectness() {
     let errorCount = 0;
     let filledCount = 0;
+    let userStarCount = 0;
 
     for (let i = 0; i < this.n * this.n; i++) {
-      const userState = this.state[i];
+      const userState = this.state[i]; // 'none', 'star', or 'dot'
       const isSolutionStar = (this.solution[i] === 'x');
 
       if (userState === 'none') continue;
 
       filledCount++;
+      if (userState === 'star') userStarCount++;
 
       const isWrongStar = (userState === 'star' && !isSolutionStar);
       const isWrongDot = (userState === 'dot' && isSolutionStar);
 
       if (isWrongStar || isWrongDot) {
         errorCount++;
-
-        // Visual feedback (optional blink)
         const cell = document.querySelector(`[data-index="${i}"]`);
         cell.classList.add('error-blink');
         setTimeout(() => cell.classList.remove('error-blink'), 1500);
@@ -467,14 +467,21 @@ STAR BATTLE RULES:
     }
 
     if (filledCount === 0) {
+      console.log('1');
       this.showToast("The board is empty!", "info");
     } else if (errorCount > 0) {
+      console.log('2');
       const squareText = errorCount === 1 ? "square is" : "squares are";
       this.showToast(`${errorCount} ${squareText} incorrect.`, "error");
+    } else if (userStarCount === this.n) {
+      console.log('3');
+      this.showToast("You already solved the puzzle!", "win");
     } else {
-      this.showToast("So far so good", "success");
+      console.log('4');
+      this.showToast("So far so good!", "success");
     }
   }
+
   attachListeners() {
     window.addEventListener('pointerup', () => {
       if (this.isDragging) {
@@ -521,7 +528,7 @@ STAR BATTLE RULES:
         this.state = JSON.parse(savedState);
         this.history = [JSON.stringify(this.state)];
         this.historyIdx = 0;
-        this.validate();
+        // this.validate();
         this.updateVisuals();
     }
 
