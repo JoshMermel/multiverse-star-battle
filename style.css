@@ -239,7 +239,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 @media (max-width: 600px) {
   :root {
-    --cell-size: clamp(30px, 90vw / var(--grid-n), 65px);
+    --cell-size: clamp(30px, 85vw / var(--grid-n), 65px);
   }
   .menu-container {
     flex-direction: column;

@@ -531,7 +531,7 @@ STAR BATTLE RULES:
         this.updateVisuals();
     }
 
-    this.updateControls()
+    this.updateControls();
     this.updateSolvedUI();
   }
   updateSolvedUI() {
