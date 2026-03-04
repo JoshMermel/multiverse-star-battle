@@ -1,5 +1,7 @@
 // note to self
 //   python3 -m http.server 8000
+import { PuzzleSolver } from './solver.js';
+
 class StarBattleGame {
   constructor() {
     this.categories = []; // From manifest
@@ -165,6 +167,7 @@ STAR BATTLE RULES:
     this.init();
     this.showToast(`Playing Puzzle ${puzzleData.id}`, "info");
     this.loadProgress();
+    this.solver = new PuzzleSolver(this);
   }
 
   init() {
@@ -412,6 +415,7 @@ STAR BATTLE RULES:
       this.state.fill('none');
       this.history = [JSON.stringify(this.state)];
       this.historyIdx = 0;
+      this.clearHintUI();
       this.updateVisuals();
       this.updateControls();
       this.validate();
@@ -491,6 +495,7 @@ STAR BATTLE RULES:
         this.isDragging = false;
         this.hasChangedDuringDrag = false;
       }
+      this.clearHintUI();
     });
     document.getElementById('undo-btn').onclick = () => {
       this.undo();
@@ -502,6 +507,7 @@ STAR BATTLE RULES:
     }
     document.getElementById('reset-btn').onclick = () => this.reset();
     document.getElementById('check-btn').onclick = () => this.checkCorrectness();
+    document.getElementById('hint-btn').onclick = () => this.getHint();
   }
   updateControls() {
     const undoBtn = document.getElementById('undo-btn');
@@ -540,6 +546,46 @@ STAR BATTLE RULES:
 
     const isSolved = solved.includes(this.currentPuzzleUniqueId);
     badge.style.visibility = isSolved ? 'visible' : 'hidden';
+  }
+
+  applyHintUI(hint) {
+    // this.clearHintUI();
+    const selectors = (hint.boardIdx !== undefined) 
+      ? [`#board${hint.boardIdx + 1}`] 
+      : ['#board1', '#board2'];
+
+    // Apply Highlights (Blue Star)
+    hint.highlights.forEach(h => {
+      selectors.forEach(sel => {
+        const cell = document.querySelector(`${sel} [data-index="${h.idx}"]`);
+        if (cell) cell.classList.add(h.color);
+      });
+    });
+
+    // Apply Marks (Yellow Outlines)
+    hint.marks.forEach(m => {
+      selectors.forEach(sel => {
+        const cell = document.querySelector(`${sel} [data-index="${m.idx}"]`);
+        if (cell) cell.classList.add(m.color); // Use the color defined in the hint object
+      });
+    });
+
+    this.showToast(hint.description, "hint", 30000);
+  }
+
+  clearHintUI() {
+    document.querySelectorAll('.cell').forEach(cell => {
+      cell.classList.remove('hint-source-blue', 'hint-target-yellow', 'hint-error-red');
+    });
+  }
+
+  getHint() {
+    const hint = this.solver.getHint();
+    if (hint) {
+      this.applyHintUI(hint);
+    } else {
+      this.showToast("No hints found!", "info");
+    }
   }
 }
 
