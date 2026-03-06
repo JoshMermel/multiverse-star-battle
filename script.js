@@ -570,7 +570,8 @@ STAR BATTLE RULES:
       });
     });
 
-    this.showToast(hint.description, "hint", 30000);
+    // this.showToast(hint.description, "hint", 30000);
+    console.log(hint.description);
   }
 
   clearHintUI() {

@@ -155,11 +155,9 @@ input[type="number"]::-webkit-inner-spin-button {
   font-size: 28px; 
   cursor: pointer;
   box-sizing: border-box;
-  background-clip: border-box;
   background-color: white;
   position: relative;
   overflow: visible;
-  isolation: isolate;
 }
 
 .star { color: #000; font-weight: bold; pointer-events: none; }
@@ -287,17 +285,22 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .hint-source-blue {
   background-color: rgba(0, 123, 255, 0.25) !important;
-  z-index: -1;
 }
 
 .hint-error-red {
   background-color: rgba(255, 0, 0, 0.2) !important;
-  z-index: -1;
 }
 
 .hint-target-yellow {
-  background-color: transparent !important;
-  z-index: -1;
+  /* This creates a yellow circle as a background image */
+  background-image: radial-gradient(
+    circle, 
+    rgba(255, 255, 0, 0.6) 70%, 
+    transparent 71%
+  );
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 75% 75%; 
 }
 
 .hint-target-yellow::before {
@@ -317,6 +320,5 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* Ensure the dots/stars have a higher z-index than the circle */
 .cell .dot, .cell .star-icon {
-  position: relative;
-  z-index: 5;
+  pointer-events: none;
 }
