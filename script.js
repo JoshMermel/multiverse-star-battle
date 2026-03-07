@@ -471,17 +471,13 @@ STAR BATTLE RULES:
     }
 
     if (filledCount === 0) {
-      console.log('1');
       this.showToast("The board is empty!", "info");
     } else if (errorCount > 0) {
-      console.log('2');
       const squareText = errorCount === 1 ? "square is" : "squares are";
       this.showToast(`${errorCount} ${squareText} incorrect.`, "error");
     } else if (userStarCount === this.n) {
-      console.log('3');
       this.showToast("You already solved the puzzle!", "win");
     } else {
-      console.log('4');
       this.showToast("So far so good!", "success");
     }
   }
