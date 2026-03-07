@@ -945,6 +945,15 @@ export class PuzzleSolver {
         });
       }
     }
+    const regions = units.filter(u => u.label.includes("Region"));
+    for (const reg of regions) {
+        const hasStar = reg.indices.some(idx => state[idx] === 'star');
+        if (hasStar) {
+            reg.indices.forEach(idx => {
+                if (state[idx] === 'none') state[idx] = 'dot';
+            });
+        }
+    }
 
     // 2. If a unit has only one empty spot left, it must be a star (Only Empty) 
     //
