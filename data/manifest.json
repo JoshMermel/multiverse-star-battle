@@ -1,17 +1,16 @@
 {
     "categories": [
-        {"id": "6x6_beginner", "label": "6x6 Beginner"},
-        {"id": "6x6_medium", "label": "6x6 Medium"},
-        {"id": "6x6_hard", "label": "6x6 Hard"},
-        {"id": "6x6_expert", "label": "6x6 Expert"},
         {"id": "8x8_beginner", "label": "8x8 Beginner"},
         {"id": "8x8_medium", "label": "8x8 Medium"},
         {"id": "8x8_hard", "label": "8x8 Hard"},
         {"id": "8x8_expert", "label": "8x8 Expert"},
-        {"id": "8x8_grandmaster", "label": "8x8 Grandmaster"},
+        {"id": "6x6_beginner", "label": "6x6 Beginner"},
+        {"id": "6x6_medium", "label": "6x6 Medium"},
+        {"id": "6x6_hard", "label": "6x6 Hard"},
+        {"id": "12x12", "label": "12x12 Puzzles"},
         {"id": "8x8_symmetric", "label": "8x8 Symmetric Boards"},
         {"id": "8x8_self_symmetric", "label": "8x8 Self Symmetric"},
         {"id": "8x8_super_symmetric", "label": "8x8 Super Symmetric"},
-        {"id": "12x12", "label": "12x12 Puzzles"}
+        {"id": "pranks", "label": "Guessing Required?"}
     ]
 }

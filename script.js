@@ -146,7 +146,7 @@ STAR BATTLE RULES:
 
   loadPuzzle(puzzleData, categoryId) {
     // Save the reference to the current puzzle data
-    this.currentPuzzleUniqueId = `${categoryId}_${puzzleData.id}_v2`;
+    this.currentPuzzleUniqueId = `${categoryId}_${puzzleData.id}_v3`;
     this.currentPuzzle = puzzleData;
 
     // Map data to game properties
