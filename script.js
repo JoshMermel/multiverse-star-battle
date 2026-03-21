@@ -186,7 +186,9 @@ class StarBattleGame {
     // Re-run the board creation logic
     this.init();
     this.showToast(`Playing Puzzle ${puzzleData.id}`, "info");
+    this.justLoaded = true;
     this.loadProgress();
+    this.justLoaded = false;
     this.solver = new PuzzleSolver(this);
   }
 
@@ -400,7 +402,7 @@ class StarBattleGame {
 
     // 6. Win Check
     const isWin = this.state.every((v, i) => (this.solution[i] === 'x') ? v === 'star' : v !== 'star');
-    if (isWin && errorIndices.size === 0) {
+    if (isWin && errorIndices.size === 0 && !this.justLoaded) {
       this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
       this.markAsSolved();
     }
