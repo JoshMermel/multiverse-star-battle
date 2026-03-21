@@ -161,7 +161,7 @@ class StarBattleGame {
 
   setLoading(isLoading) {
     const ids = ['prev-puz', 'next-puz', 'puzzle-input', 'category-select',
-      'hint-btn', 'check-btn', 'undo-btn', 'redo-btn', 'reset-btn'];
+      'hint-btn', 'check-btn', 'reset-btn'];
     ids.forEach(id => document.getElementById(id).disabled = isLoading);
     document.getElementById('boards-wrapper').style.opacity = isLoading ? '0.4' : '1';
   }
@@ -202,17 +202,15 @@ class StarBattleGame {
 
     // Re-run the board creation logic
     document.documentElement.style.setProperty('--grid-n', this.n);
-    this.init();
-    this.showToast(`Playing Puzzle ${puzzleData.id}`, "info");
-    this.loadProgress({ suppressWinToast: true });
-    this.solver = new PuzzleSolver(this);
-  }
 
-  init() {
     this.renderBoard('board1', this.regions[0], 0);
     this.renderBoard('board2', this.regions[1], 1);
-    this.attachListeners();
     this.updateVisuals();
+
+    this.showToast(`Playing Puzzle ${puzzleData.id}`, "info");
+    this.solver = new PuzzleSolver(this);
+    this.loadProgress({ suppressWinToast: true });
+    this.updateControls();
   }
 
   renderBoard(id, regionMap, boardIdx) {
@@ -550,9 +548,6 @@ class StarBattleGame {
       }
       this.clearHintUI();
     });
-  }
-
-  attachListeners() {
     document.getElementById('undo-btn').onclick = () => this.undo();
     document.getElementById('redo-btn').onclick = () => this.redo();
     document.getElementById('reset-btn').onclick = () => this.reset();
