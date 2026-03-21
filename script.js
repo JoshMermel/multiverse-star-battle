@@ -565,7 +565,6 @@ STAR BATTLE RULES:
   }
 
   applyHintUI(hint) {
-    // this.clearHintUI();
     const selectors = (hint.boardIdx !== undefined) 
       ? [`#board${hint.boardIdx + 1}`] 
       : ['#board1', '#board2'];
@@ -586,13 +585,12 @@ STAR BATTLE RULES:
       });
     });
 
-    // this.showToast(hint.description, "hint", 30000);
-    console.log(hint.description);
+    this.showToast(hint.description, "hint", 30000);
   }
 
   clearHintUI() {
     document.querySelectorAll('.cell').forEach(cell => {
-      cell.classList.remove('hint-source-blue', 'hint-target-yellow', 'hint-error-red');
+      cell.classList.remove('hint-source-blue', 'hint-target-yellow', 'hint-target-green', 'hint-error-red');
     });
   }
 
