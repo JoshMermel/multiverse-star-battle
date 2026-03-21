@@ -427,6 +427,7 @@ STAR BATTLE RULES:
       this.updateVisuals();
       this.updateControls();
       this.validate();
+      this.saveCurrentState();
     }
   }
 
@@ -527,6 +528,7 @@ STAR BATTLE RULES:
         this.history = [JSON.stringify(this.state)];
         this.historyIdx = 0;
         this.updateVisuals();
+        this.validate(); 
     }
 
     this.updateControls();

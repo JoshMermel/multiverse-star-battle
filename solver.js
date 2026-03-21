@@ -20,14 +20,14 @@ export class PuzzleSolver {
   // Move all your hint logic here
   getHint() {
     const rules = [
-      this.hintCheckForErrors,
-      this.hintSingleCellRegion,
-      this.hintOnlyEmpty,
-      this.hintExcludeRow,
-      this.hintExcludeCol,
-      this.hintExcludeAdjacency,
-      this.hintExcludeRegion,
-      this.hintDomino,
+      () => this.hintCheckForErrors(),
+      () => this.hintSingleCellRegion(),
+      () => this.hintOnlyEmpty(),
+      () => this.hintExcludeRow(),
+      () => this.hintExcludeCol(),
+      () => this.hintExcludeAdjacency(),
+      () => this.hintExcludeRegion(),
+      () => this.hintDomino(),
       () => this.hintUnitRegionSync(1),
       () => this.hintSeesTooMuch(2),
       () => this.hintSeesTooMuch(3),
@@ -35,15 +35,13 @@ export class PuzzleSolver {
       () => this.hintSeesTooMuch(null),
       () => this.hintUnitRegionSync(3),
       () => this.hintDisjointUnitRegionSync(2),
-      this.hintManyRegionsSync,
+      () => this.hintManyRegionsSync(),
       () => this.hintRegionSubsetSync(1),
       () => this.hintDisjointUnitRegionSync(3),
       () => this.hintCrossBoardRegionPinned(2, "Row"),
       () => this.hintCrossBoardRegionPinned(2, "Col"),
-      //    self.rule_lookahead_half_stage, 50),
       () => this.hintCrossBoardRegionPinned(3, "Row"),
       () => this.hintCrossBoardRegionPinned(3, "Col"),
-      //    self.rule_crossboard_partial_overlap, 75),
       () => this.hintRegionSubsetSync(2),
       () => this.hintLookahead(1),
       () => this.hintLookahead(2),
@@ -53,7 +51,7 @@ export class PuzzleSolver {
     ];
 
     for (let rule of rules) {
-      const hint = rule.call(this);
+      const hint = rule();
       if (hint) return hint;
     }
     return null;
