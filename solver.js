@@ -101,6 +101,7 @@ export class PuzzleSolver {
       () => this.hintExcludeAdjacency(),
       () => this.hintExcludeSolvedUnit(),
       () => this.hintDomino(),
+      () => this.hintUnitSeesTooMuch(),
       () => this.hintUnitRegionSync(1),
       () => this.hintSeesTooMuch(2),
       () => this.hintSeesTooMuch(3),
@@ -403,11 +404,11 @@ export class PuzzleSolver {
       .map(idx => ({ idx, color: 'hint-source-blue' }));
 
     const unitType = axis.toLowerCase();
-    const unitNums = N === 1 ? `this 1 ${unitType}` : `${N} ${unitType}s`;
+    const unitsPhrase = N === 1 ? `this ${unitType}` : `these ${N} ${unitType}s`;
 
-    const description = type === "Standard" 
-      ? `The stars for these ${unitNums} are forced into the blue regions. Circled squares must be dots.`
-      : `These ${unitNums} are entirely contained within these ${N} regions. Circled squares must be dots.`;
+    const description = type === "Standard"
+      ? `The star for ${unitsPhrase} must fall in one of the blue regions. Circled squares must be dots.`
+      : `All empty cells in ${unitsPhrase} are covered by the blue regions. Circled squares must be dots.`;
 
     return {
       success: true,
@@ -416,6 +417,49 @@ export class PuzzleSolver {
       highlights: sourceHighlights,
       marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
     };
+  }
+
+  hintUnitSeesTooMuch() {
+    const n = this.n;
+
+    for (const unit of this.units) {
+      // Only consider unsolved rows and columns
+      if (unit.label.includes("Region")) continue;
+      if (unit.indices.some(i => this.game.state[i] === 'star')) continue;
+
+      const candidates = unit.indices.filter(i => this.game.state[i] === 'none');
+      if (candidates.length === 0) continue;
+
+      // Precompute coordinates for each candidate
+      const candCoords = candidates.map(i => ({ i, r: Math.floor(i / n), c: i % n }));
+
+      // Check every empty cell not in this unit
+      const targets = [];
+      for (let i = 0; i < n * n; i++) {
+        if (this.game.state[i] !== 'none' || unit.indices.includes(i)) continue;
+
+        const ir = Math.floor(i / n);
+        const ic = i % n;
+
+        const canSeeAll = candCoords.every(({ r, c }) =>
+          ir === r || ic === c || (Math.abs(ir - r) <= 1 && Math.abs(ic - c) <= 1)
+        );
+
+        if (canSeeAll) targets.push({ idx: i, color: 'hint-target-yellow' });
+      }
+
+      if (targets.length > 0) {
+        const unitType = unit.label.includes("Row") ? "row" : "column";
+        return {
+          success: true,
+          boardIdx: undefined,
+          description: `Every candidate in this ${unitType} is seen by the circled cell. Since one of them must be a star, the circled cell must be a dot.`,
+          highlights: candidates.map(i => ({ idx: i, color: 'hint-source-blue' })),
+          marks: targets,
+        };
+      }
+    }
+    return null;
   }
 
   hintSeesTooMuch(nTarget = null) {
@@ -493,10 +537,15 @@ export class PuzzleSolver {
             .filter(idx => !windowSet.has(idx) && this.game.state[idx] === 'none');
 
           if (targets.length > 0) {
+            const unitLabel = N === 1
+              ? `${axis} ${combo[0] + 1}`
+              : `${axis}s ${combo.map(u => u + 1).join(", ")}`;
+            const regPhrase = N === 1 ? "this region" : `these ${N} regions`;
+
             return {
               success: true,
               boardIdx: bIdx,
-              description: `${axis}s ${combo.map(u => u + 1).join(" & ")} can only fit their stars within these ${N} regions. Other parts of those regions must be dots.`,
+              description: `${unitLabel} can only place its star within ${regPhrase}. Other cells in ${regPhrase} must be dots.`
               highlights: [
                 ...availInUnits.filter(idx => regUnion.has(idx)).map(idx => ({ idx, color: 'hint-source-blue' })),
               ],
@@ -571,7 +620,7 @@ export class PuzzleSolver {
     return {
       success: true,
       boardIdx: undefined,
-      description: `Subset Logic: Since ${labelB} entirely contains ${labelA}, and both need the same number of stars, the extra squares in the larger area must be dots.`,
+      description: `Since these regions entirely overlap a smaller set that needs the same number of stars, the extra squares must be dots.`,
       highlights: sourceHighlights,
       marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
     };
@@ -651,7 +700,7 @@ export class PuzzleSolver {
     return {
       success: true,
       boardIdx: undefined,
-      description: `Cross-Board Logic: These ${combo.length} regions (${labels}) are pinned to ${axis}s ${unitNums}. Squares in these ${axis}s outside these regions must be dots.`,
+      `Cross-board: Regions ${labels} must place their stars in ${axis}s ${unitNums}. Empty cells in those ${axis.toLowerCase()}s outside these regions must be dots.`
       highlights: sourceHighlights,
       marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
     };
@@ -731,7 +780,7 @@ export class PuzzleSolver {
         return {
           success: true,
           boardIdx: undefined,
-          description: `${nStages}-stage Lookahead: Placing a star here makes the board impossible. This square must be a dot.`,
+          description: `Placing a star here would make the puzzle unsolvable. This square must be a dot.`,
           highlights: [],
           marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
         };
