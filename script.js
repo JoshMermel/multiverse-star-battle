@@ -1,5 +1,4 @@
 // note to self
-//   python3 -m http.server 8000
 import { PuzzleSolver } from './solver.js';
 
 class StarBattleGame {
