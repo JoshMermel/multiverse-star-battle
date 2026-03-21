@@ -1,4 +1,3 @@
-// note to self
 import { PuzzleSolver } from './solver.js';
 
 class StarBattleGame {
@@ -36,6 +35,12 @@ class StarBattleGame {
     const countLabel = document.getElementById('puzzle-count-label');
     const helpBtn = document.getElementById('help-btn');
 
+    document.getElementById('undo-btn').onclick = () => this.undo();
+    document.getElementById('redo-btn').onclick = () => this.redo();
+    document.getElementById('reset-btn').onclick = () => this.reset();
+    document.getElementById('check-btn').onclick = () => this.checkCorrectness();
+    document.getElementById('hint-btn').onclick = () => this.getHint();
+
     const modal = document.getElementById('help-modal');
     const modalCloseBtn = document.getElementById('modal-close-btn');
     helpBtn.onclick = () => modal.classList.remove('modal-hidden');
@@ -57,8 +62,6 @@ class StarBattleGame {
     const resetCloseBtn = document.getElementById('reset-modal-close-btn');
 
     const closeResetModal = () => resetModal.classList.add('modal-hidden');
-    const openResetModal = () => resetModal.classList.remove('modal-hidden');
-
     resetCancelBtn.onclick = closeResetModal;
     resetCloseBtn.onclick = closeResetModal;
     resetModal.addEventListener('click', (e) => { if (e.target === resetModal) closeResetModal(); });
@@ -348,6 +351,10 @@ class StarBattleGame {
     this.saveCurrentState();
   }
 
+  isSolved() {
+    return this.state.every((v, i) => (this.solution[i] === 'x') ? v === 'star' : v !== 'star');
+  }
+
   validate({ suppressWinToast = false } = {}) {
     const n = this.n;
     const errorIndices = new Set();
@@ -415,8 +422,8 @@ class StarBattleGame {
     });
 
     // 6. Win Check
-    const isWin = this.state.every((v, i) => (this.solution[i] === 'x') ? v === 'star' : v !== 'star');
-    if (isWin && errorIndices.size === 0 && !suppressWinToast) {
+
+    if (this.isSolved() && errorIndices.size === 0 && !suppressWinToast) {
       this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
       this.markAsSolved();
     }
@@ -429,10 +436,8 @@ class StarBattleGame {
   }
 
   updateVisuals() {
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => {
-      const val = this.state[cell.dataset.index];
-      cell.innerHTML = val === 'star' ? '<span class="star">★</span>' : (val === 'dot' ? '<div class="dot"></div>' : '');
+    document.querySelectorAll('.cell').forEach(cell => {
+      this.updateCellVisual(cell, this.state[cell.dataset.index]);
     });
   }
 
@@ -511,7 +516,6 @@ class StarBattleGame {
   checkCorrectness() {
     let errorCount = 0;
     let filledCount = 0;
-    let userStarCount = 0;
 
     for (let i = 0; i < this.n * this.n; i++) {
       const userState = this.state[i]; // 'none', 'star', or 'dot'
@@ -520,8 +524,6 @@ class StarBattleGame {
       if (userState === 'none') continue;
 
       filledCount++;
-      if (userState === 'star') userStarCount++;
-
       if ((userState === 'star' && !isSolutionStar) || (userState === 'dot' && isSolutionStar)) {
         errorCount++;
       }
@@ -532,7 +534,7 @@ class StarBattleGame {
     } else if (errorCount > 0) {
       const squareText = errorCount === 1 ? "square is" : "squares are";
       this.showToast(`${errorCount} ${squareText} incorrect.`, "error");
-    } else if (userStarCount === this.n) {
+    } else if (this.isSolved()) {
       this.showToast("You already solved the puzzle!", "win");
     } else {
       this.showToast("So far so good!", "success");
@@ -548,11 +550,6 @@ class StarBattleGame {
       }
       this.clearHintUI();
     });
-    document.getElementById('undo-btn').onclick = () => this.undo();
-    document.getElementById('redo-btn').onclick = () => this.redo();
-    document.getElementById('reset-btn').onclick = () => this.reset();
-    document.getElementById('check-btn').onclick = () => this.checkCorrectness();
-    document.getElementById('hint-btn').onclick = () => this.getHint();
   }
 
   updateControls() {
