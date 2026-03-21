@@ -277,12 +277,11 @@ STAR BATTLE RULES:
   handleStart(idx, isRightClick) {
     this.hideToast();
     this.isDragging = true;
-    this.hasChangedDuringDrag = true;
 
     if (isRightClick) {
       this.applyState(idx, this.state[idx] === 'star' ? 'none' : 'star');
-      this.saveHistory(); // Immediate commit for right click
-      this.isDragging = false; // Don't drag-paint after a right-click
+      this.saveHistory();
+      this.isDragging = false;
     } else {
       const current = this.state[idx];
       const next = current === 'none' ? 'dot' : (current === 'dot' ? 'star' : 'none');
@@ -297,19 +296,10 @@ STAR BATTLE RULES:
     }
   }
 
-  handleEnd() {
-    if (this.isDragging) {
-      if (this.hasChangedDuringDrag) {
-        this.saveHistory();
-      }
-      this.isDragging = false;
-      this.hasChangedDuringDrag = false;
-    }
-  }
-
   applyState(idx, type) {
     if (this.state[idx] === type) return;
     this.state[idx] = type;
+    this.hasChangedDuringDrag = true;
     this.updateVisuals();
     this.validate();
     this.saveCurrentState();
@@ -408,8 +398,26 @@ STAR BATTLE RULES:
     this.updateControls()
   }
 
-  undo() { if (this.historyIdx > 0) { this.historyIdx--; this.state = JSON.parse(this.history[this.historyIdx]); this.updateVisuals(); this.validate(); } }
-  redo() { if (this.historyIdx < this.history.length - 1) { this.historyIdx++; this.state = JSON.parse(this.history[this.historyIdx]); this.updateVisuals(); this.validate(); } }
+  undo() {
+    if (this.historyIdx > 0) {
+      this.historyIdx--;
+      this.state = JSON.parse(this.history[this.historyIdx]);
+      this.updateVisuals();
+      this.validate();
+      this.updateControls();
+    }
+  }
+
+  redo() {
+    if (this.historyIdx < this.history.length - 1) {
+      this.historyIdx++;
+      this.state = JSON.parse(this.history[this.historyIdx]);
+      this.updateVisuals();
+      this.validate();
+      this.updateControls();
+    }
+  }
+
   reset() {
     if (confirm("Clear the entire board?")) {
       this.state.fill('none');
@@ -487,14 +495,8 @@ STAR BATTLE RULES:
       }
       this.clearHintUI();
     });
-    document.getElementById('undo-btn').onclick = () => {
-      this.undo();
-      this.updateControls();
-    }
-    document.getElementById('redo-btn').onclick = () => {
-      this.redo();
-      this.updateControls();
-    }
+    document.getElementById('undo-btn').onclick = () => this.undo();
+    document.getElementById('redo-btn').onclick = () => this.redo();
     document.getElementById('reset-btn').onclick = () => this.reset();
     document.getElementById('check-btn').onclick = () => this.checkCorrectness();
     document.getElementById('hint-btn').onclick = () => this.getHint();
