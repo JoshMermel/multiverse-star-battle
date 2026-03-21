@@ -5,6 +5,7 @@ class StarBattleGame {
   constructor() {
     this.categories = []; // From manifest
     this.loadedPuzzles = []; // Current category puzzles
+    this.setupGlobalListeners();
     this.initGame();
   }
 
@@ -50,6 +51,22 @@ class StarBattleGame {
       if (e.key === 'Escape') modal.classList.add('modal-hidden');
     });
 
+    const resetModal = document.getElementById('reset-modal');
+    const resetConfirmBtn = document.getElementById('reset-modal-confirm-btn');
+    const resetCancelBtn = document.getElementById('reset-modal-cancel-btn');
+    const resetCloseBtn = document.getElementById('reset-modal-close-btn');
+
+    const closeResetModal = () => resetModal.classList.add('modal-hidden');
+    const openResetModal = () => resetModal.classList.remove('modal-hidden');
+
+    resetCancelBtn.onclick = closeResetModal;
+    resetCloseBtn.onclick = closeResetModal;
+    resetModal.addEventListener('click', (e) => { if (e.target === resetModal) closeResetModal(); });
+    resetConfirmBtn.onclick = () => {
+      closeResetModal();
+      this.doReset();
+    };
+
     this.lastLoadedSelection = {
       catId: null,
       puzNum: null
@@ -79,7 +96,7 @@ class StarBattleGame {
         await this.loadPuzzle(this.loadedPuzzles[0], catId);
       } catch (err) {
         this.showToast("Could not load category", "error");
-        console.log(err);
+        console.error(err);
       } finally {
         this.setLoading(false);
       }
@@ -184,11 +201,10 @@ class StarBattleGame {
     document.getElementById('board2').innerHTML = '';
 
     // Re-run the board creation logic
+    document.documentElement.style.setProperty('--grid-n', this.n);
     this.init();
     this.showToast(`Playing Puzzle ${puzzleData.id}`, "info");
-    this.justLoaded = true;
-    this.loadProgress();
-    this.justLoaded = false;
+    this.loadProgress({ suppressWinToast: true });
     this.solver = new PuzzleSolver(this);
   }
 
@@ -201,7 +217,6 @@ class StarBattleGame {
 
   renderBoard(id, regionMap, boardIdx) {
     const wrapper = document.getElementById(id);
-    document.documentElement.style.setProperty('--grid-n', this.n);
 
     const grid = document.createElement('div');
     grid.className = 'star-battle-grid';
@@ -321,7 +336,6 @@ class StarBattleGame {
   handleDrag(idx) {
     if (this.isDragging && this.state[idx] === 'none') {
       this.applyState(idx, 'dot');
-      this.hasChangedDuringDrag = true;
     }
   }
 
@@ -329,12 +343,14 @@ class StarBattleGame {
     if (this.state[idx] === type) return;
     this.state[idx] = type;
     this.hasChangedDuringDrag = true;
-    this.updateVisuals();
+    document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+      this.updateCellVisual(cell, type);
+    });
     this.validate();
     this.saveCurrentState();
   }
 
-  validate() {
+  validate({ suppressWinToast = false } = {}) {
     const n = this.n;
     const errorIndices = new Set();
 
@@ -402,10 +418,16 @@ class StarBattleGame {
 
     // 6. Win Check
     const isWin = this.state.every((v, i) => (this.solution[i] === 'x') ? v === 'star' : v !== 'star');
-    if (isWin && errorIndices.size === 0 && !this.justLoaded) {
+    if (isWin && errorIndices.size === 0 && !suppressWinToast) {
       this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
       this.markAsSolved();
     }
+  }
+
+  updateCellVisual(cell, val) {
+    cell.innerHTML = val === 'star' ? '<span class="star">★</span>'
+      : val === 'dot' ? '<div class="dot"></div>'
+      : '';
   }
 
   updateVisuals() {
@@ -428,6 +450,7 @@ class StarBattleGame {
   }
 
   undo() {
+    this.hideToast();
     if (this.historyIdx > 0) {
       this.historyIdx--;
       this.state = JSON.parse(this.history[this.historyIdx]);
@@ -438,6 +461,7 @@ class StarBattleGame {
   }
 
   redo() {
+    this.hideToast();
     if (this.historyIdx < this.history.length - 1) {
       this.historyIdx++;
       this.state = JSON.parse(this.history[this.historyIdx]);
@@ -448,16 +472,19 @@ class StarBattleGame {
   }
 
   reset() {
-    if (confirm("Clear the entire board?")) {
-      this.state.fill('none');
-      this.history = [JSON.stringify(this.state)];
-      this.historyIdx = 0;
-      this.clearHintUI();
-      this.updateVisuals();
-      this.updateControls();
-      this.validate();
-      this.saveCurrentState();
-    }
+    // Called by the Reset button — just opens the modal
+    document.getElementById('reset-modal').classList.remove('modal-hidden');
+  }
+
+  doReset() {
+    this.state.fill('none');
+    this.history = [JSON.stringify(this.state)];
+    this.historyIdx = 0;
+    this.clearHintUI();
+    this.updateVisuals();
+    this.updateControls();
+    this.validate();
+    this.saveCurrentState();
   }
 
   showToast(message, type = 'info', duration = 2000) {
@@ -514,23 +541,25 @@ class StarBattleGame {
     }
   }
 
-  attachListeners() {
+  setupGlobalListeners() {
     window.addEventListener('pointerup', () => {
       if (this.isDragging) {
-        if (this.hasChangedDuringDrag) {
-          this.saveHistory();
-        }
+        if (this.hasChangedDuringDrag) this.saveHistory();
         this.isDragging = false;
         this.hasChangedDuringDrag = false;
       }
       this.clearHintUI();
     });
+  }
+
+  attachListeners() {
     document.getElementById('undo-btn').onclick = () => this.undo();
     document.getElementById('redo-btn').onclick = () => this.redo();
     document.getElementById('reset-btn').onclick = () => this.reset();
     document.getElementById('check-btn').onclick = () => this.checkCorrectness();
     document.getElementById('hint-btn').onclick = () => this.getHint();
   }
+
   updateControls() {
     const undoBtn = document.getElementById('undo-btn');
     const redoBtn = document.getElementById('redo-btn');
@@ -550,16 +579,15 @@ class StarBattleGame {
     }
     this.updateSolvedUI();
   }
-  loadProgress() {
+  loadProgress({ suppressWinToast = false } = {}) {
     const savedState = localStorage.getItem(`sb_state_${this.currentPuzzleUniqueId}`);
     if (savedState) {
       this.state = JSON.parse(savedState);
       this.history = [JSON.stringify(this.state)];
       this.historyIdx = 0;
       this.updateVisuals();
-      this.validate(); 
+      this.validate({ suppressWinToast });
     }
-
     this.updateControls();
     this.updateSolvedUI();
   }

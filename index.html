@@ -52,6 +52,21 @@
 
     <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
 
+    <div id="reset-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 id="reset-modal-title">Clear the board?</h2>
+          <button id="reset-modal-close-btn" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <p>This will erase all your progress on this puzzle.</p>
+          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;">
+            <button id="reset-modal-cancel-btn">Cancel</button>
+            <button id="reset-modal-confirm-btn">Yes, really clear the puzzle</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="help-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div class="modal-box">
         <div class="modal-header">
