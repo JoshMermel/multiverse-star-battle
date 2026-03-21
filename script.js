@@ -36,8 +36,8 @@ class StarBattleGame {
     const helpBtn = document.getElementById('help-btn');
 
     this.lastLoadedSelection = {
-        catId: null,
-        puzNum: null
+      catId: null,
+      puzNum: null
     };
 
     // Populate Categories
@@ -51,71 +51,66 @@ class StarBattleGame {
     catSelect.onchange = async (e) => {
       const catId = e.target.value;
       if (!catId) return;
-
+      this.setLoading(true);
       try {
         const resp = await fetch(`data/${catId}.json`);
         this.loadedPuzzles = await resp.json();
-
-        // Update the UI range
         const total = this.loadedPuzzles.length;
         puzInput.max = total;
         countLabel.textContent = `of ${total}`;
-
-        // Auto-load the first one on category change
         puzInput.value = 1;
         this.lastLoadedSelection.catId = catId;
         this.lastLoadedSelection.puzNum = 1;
-        this.loadPuzzle(this.loadedPuzzles[0], catId);
+        await this.loadPuzzle(this.loadedPuzzles[0], catId);
       } catch (err) {
         this.showToast("Could not load category", "error");
         console.log(err);
+      } finally {
+        this.setLoading(false);
       }
     };
 
-    const commitPuzzleSelection = () => {
+    const commitPuzzleSelection = async () => {
       let val = parseInt(puzInput.value);
       const max = this.loadedPuzzles.length;
       const catId = catSelect.value;
-
-      // Validation & Clamping
       if (isNaN(val)) val = 1;
       if (val < 1) val = 1;
       if (val > max) val = max;
       puzInput.value = val;
-
-      // ignore this if nothing changed. Dunno why this happens.
-      if (this.lastLoadedSelection.catId === catId && 
-        this.lastLoadedSelection.puzNum === val) {
-        return; 
-      }
+      if (this.lastLoadedSelection.catId === catId &&
+        this.lastLoadedSelection.puzNum === val) return;
       this.lastLoadedSelection.catId = catId;
       this.lastLoadedSelection.puzNum = val;
-
-      // Load the puzzle
-      this.loadPuzzle(this.loadedPuzzles[val - 1], catId);
+      this.setLoading(true);
+      try {
+        await this.loadPuzzle(this.loadedPuzzles[val - 1], catId);
+      } finally {
+        this.setLoading(false);
+      }
     };
 
     const stepPuzzle = (delta) => {
-        let val = parseInt(puzInput.value) || 1;
-        puzInput.value = val + delta;
-        commitPuzzleSelection(); // Reuses your existing validation/load logic
+      let val = parseInt(puzInput.value) || 1;
+      puzInput.value = val + delta;
+      commitPuzzleSelection(); // Reuses your existing validation/load logic
     };
     prevBtn.onpointerdown = (e) => {
       e.preventDefault();
       stepPuzzle(-1);
     };
     nextBtn.onpointerdown = (e) => {
-        e.preventDefault();
-        stepPuzzle(1);
+      e.preventDefault();
+      stepPuzzle(1);
     };
 
     puzInput.addEventListener('input', (e) => {
-        // 'inputType' is null or 'insertReplacementText' when arrows are clicked
-        // If the user is typing, we wait for Enter.
-        // If they click the arrows, it triggers immediately.
-        if (e.inputType === undefined || e.inputType === 'insertReplacementText') {
-            commitPuzzleSelection();
-        }
+      // 'inputType' is null or 'insertReplacementText' when arrows are clicked
+      // If the user is typing, we wait for Enter.
+      // If they click the arrows, it triggers immediately.
+      if (e.inputType === undefined || e.inputType === 'insertReplacementText') {
+        commitPuzzleSelection();
+      }
     });
 
     puzInput.addEventListener('keydown', (e) => {
@@ -128,7 +123,7 @@ class StarBattleGame {
 
     // Optional: Also commit if the user clicks out of the box
     puzInput.addEventListener('blur', () => {
-        commitPuzzleSelection();
+      commitPuzzleSelection();
     });
 
     helpBtn.onclick = () => {
@@ -143,9 +138,31 @@ STAR BATTLE RULES:
     };
   }
 
-  loadPuzzle(puzzleData, categoryId) {
+  setLoading(isLoading) {
+    const ids = ['prev-puz', 'next-puz', 'puzzle-input', 'category-select',
+      'hint-btn', 'check-btn', 'undo-btn', 'redo-btn', 'reset-btn'];
+    ids.forEach(id => document.getElementById(id).disabled = isLoading);
+    document.getElementById('boards-wrapper').style.opacity = isLoading ? '0.4' : '1';
+  }
+
+  async computePuzzleId(puzzleData) {
+    const stable = JSON.stringify({
+      board1: puzzleData.board1,
+      board2: puzzleData.board2,
+      solution: puzzleData.solution,
+    });
+    const hashBuffer = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(stable)
+    );
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex.slice(0, 16); // 16 hex chars = 64 bits, plenty unique
+  }
+
+  async loadPuzzle(puzzleData, categoryId) {
     // Save the reference to the current puzzle data
-    this.currentPuzzleUniqueId = `${categoryId}_${puzzleData.id}_v3`;
+    this.currentPuzzleUniqueId = await this.computePuzzleId(puzzleData);
     this.currentPuzzle = puzzleData;
 
     // Map data to game properties
@@ -190,52 +207,52 @@ STAR BATTLE RULES:
     grid.oncontextmenu = (e) => e.preventDefault();
 
     for (let i = 0; i < this.n * this.n; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.dataset.index = i;
-        grid.appendChild(cell);
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.index = i;
+      grid.appendChild(cell);
     }
 
     grid.onpointerdown = (e) => {
-        // Find the closest element with class 'cell'
-        const cell = e.target.closest('.cell');
-        if (!cell) return;
+      // Find the closest element with class 'cell'
+      const cell = e.target.closest('.cell');
+      if (!cell) return;
 
-        e.preventDefault();
-        cell.setPointerCapture(e.pointerId);
-        
-        const idx = parseInt(cell.dataset.index);
-        this.lastDraggedIndex = idx;
-        this.handleStart(idx, e.button === 2);
+      e.preventDefault();
+      cell.setPointerCapture(e.pointerId);
+
+      const idx = parseInt(cell.dataset.index);
+      this.lastDraggedIndex = idx;
+      this.handleStart(idx, e.button === 2);
     };
 
     grid.onpointerover = (e) => {
-        // 'pointerover' is the delegation equivalent of 'pointerenter'
-        const cell = e.target.closest('.cell');
-        if (!cell || !this.isDragging) return;
+      // 'pointerover' is the delegation equivalent of 'pointerenter'
+      const cell = e.target.closest('.cell');
+      if (!cell || !this.isDragging) return;
 
-        const idx = parseInt(cell.dataset.index);
-        if (idx !== this.lastDraggedIndex) {
-            this.lastDraggedIndex = idx;
-            this.handleDrag(idx);
-        }
+      const idx = parseInt(cell.dataset.index);
+      if (idx !== this.lastDraggedIndex) {
+        this.lastDraggedIndex = idx;
+        this.handleDrag(idx);
+      }
     };
 
     grid.onpointermove = (e) => {
-        if (!this.isDragging) return;
+      if (!this.isDragging) return;
 
-        // On touch devices, 'pointerover' doesn't fire during a drag,
-        // so we still use elementFromPoint for finger-sliding.
-        const target = document.elementFromPoint(e.clientX, e.clientY);
-        const cell = target?.closest('.cell');
-        
-        if (cell) {
-            const idx = parseInt(cell.dataset.index);
-            if (idx !== this.lastDraggedIndex) {
-                this.lastDraggedIndex = idx;
-                this.handleDrag(idx);
-            }
+      // On touch devices, 'pointerover' doesn't fire during a drag,
+      // so we still use elementFromPoint for finger-sliding.
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      const cell = target?.closest('.cell');
+
+      if (cell) {
+        const idx = parseInt(cell.dataset.index);
+        if (idx !== this.lastDraggedIndex) {
+          this.lastDraggedIndex = idx;
+          this.handleDrag(idx);
         }
+      }
     };
 
     wrapper.appendChild(grid);
@@ -513,28 +530,28 @@ STAR BATTLE RULES:
     const redoBtn = document.getElementById('redo-btn');
     undoBtn.disabled = (this.historyIdx === 0);
     redoBtn.disabled = (this.historyIdx >= this.history.length - 1);
-}
+  }
 
   saveCurrentState() {
-      const key = `sb_state_${this.currentPuzzleUniqueId}`;
-      localStorage.setItem(key, JSON.stringify(this.state));
+    const key = `sb_state_${this.currentPuzzleUniqueId}`;
+    localStorage.setItem(key, JSON.stringify(this.state));
   }
   markAsSolved() {
-      const solved = JSON.parse(localStorage.getItem('sb_solved') || '[]');
-      if (!solved.includes(this.currentPuzzleUniqueId)) {
-          solved.push(this.currentPuzzleUniqueId);
-          localStorage.setItem('sb_solved', JSON.stringify(solved));
-      }
-      this.updateSolvedUI();
+    const solved = JSON.parse(localStorage.getItem('sb_solved') || '[]');
+    if (!solved.includes(this.currentPuzzleUniqueId)) {
+      solved.push(this.currentPuzzleUniqueId);
+      localStorage.setItem('sb_solved', JSON.stringify(solved));
+    }
+    this.updateSolvedUI();
   }
   loadProgress() {
     const savedState = localStorage.getItem(`sb_state_${this.currentPuzzleUniqueId}`);
     if (savedState) {
-        this.state = JSON.parse(savedState);
-        this.history = [JSON.stringify(this.state)];
-        this.historyIdx = 0;
-        this.updateVisuals();
-        this.validate(); 
+      this.state = JSON.parse(savedState);
+      this.history = [JSON.stringify(this.state)];
+      this.historyIdx = 0;
+      this.updateVisuals();
+      this.validate(); 
     }
 
     this.updateControls();
