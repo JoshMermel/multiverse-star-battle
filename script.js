@@ -181,16 +181,6 @@ STAR BATTLE RULES:
     const wrapper = document.getElementById(id);
     document.documentElement.style.setProperty('--grid-n', this.n);
 
-    // Get the actual pixel size for SVG math
-    const measure = document.createElement('div');
-    measure.style.width = 'var(--cell-size)';
-    measure.style.position = 'absolute';
-    document.body.appendChild(measure);
-    const cellSize = measure.getBoundingClientRect().width;
-    document.body.removeChild(measure);
-
-    const totalSize = this.n * cellSize;
-
     const grid = document.createElement('div');
     grid.className = 'star-battle-grid';
     grid.style.width = 'fit-content';
@@ -252,21 +242,38 @@ STAR BATTLE RULES:
     wrapper.appendChild(grid);
 
     // SVG Borders logic
+    const COORD = 100; // virtual units per cell
+    const totalCoord = this.n * COORD;
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("class", "region-svg");
-    svg.setAttribute("width", totalSize);
-    svg.setAttribute("height", totalSize);
+    const STROKE = COORD * 0.07;
+    const HALF = STROKE / 2;
+    svg.setAttribute("viewBox", `${-HALF} ${-HALF} ${totalCoord + STROKE} ${totalCoord + STROKE}`);
+
     let paths = "";
     for (let i = 0; i < this.n * this.n; i++) {
       const r = Math.floor(i / this.n), c = i % this.n;
-      const x2 = (c + 1) * cellSize, y2 = (r + 1) * cellSize;
-      if (c < this.n - 1 && regionMap[i] !== regionMap[i+1]) paths += `M ${x2} ${r*cellSize} L ${x2} ${y2} `;
-      if (r < this.n - 1 && regionMap[i] !== regionMap[i+this.n]) paths += `M ${c*cellSize} ${y2} L ${x2} ${y2} `;
+      const x2 = (c + 1) * COORD, y2 = (r + 1) * COORD;
+      if (c < this.n - 1 && regionMap[i] !== regionMap[i+1])
+        paths += `M ${x2} ${r*COORD} L ${x2} ${y2} `;
+      if (r < this.n - 1 && regionMap[i] !== regionMap[i+this.n])
+        paths += `M ${c*COORD} ${y2} L ${x2} ${y2} `;
     }
+
+    const borderEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    borderEl.setAttribute("x", "0");
+    borderEl.setAttribute("y", "0");
+    borderEl.setAttribute("width", totalCoord);
+    borderEl.setAttribute("height", totalCoord);
+    borderEl.setAttribute("fill", "none");
+    borderEl.setAttribute("stroke", "black");
+    borderEl.setAttribute("stroke-width", String(STROKE));
+    svg.appendChild(borderEl);
+
     const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
     pathEl.setAttribute("d", paths);
     pathEl.setAttribute("stroke", "black");
-    pathEl.setAttribute("stroke-width", "3");
+    pathEl.setAttribute("stroke-width", String(STROKE));
     pathEl.setAttribute("stroke-linecap", "round");
     pathEl.setAttribute("stroke-linejoin", "round");
     pathEl.setAttribute("fill", "none");
