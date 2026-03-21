@@ -1,79 +1,83 @@
-<body>
-  <head>
-    <meta charset="UTF-8">
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Multiverse Star Battle</title>
     <link rel="stylesheet" href="style.css">
   </head>
-  <header class="menu-container">
-    <div class="menu-group">
-      <label for="category-select">Book</label>
-      <select id="category-select"></select>
-    </div>
-    
-    <div class="menu-group puzzle-nav">
-      <button id="prev-puz" class="step-btn" aria-label="Previous Puzzle">←</button>
-      <div class="input-wrapper">
-        <span class="label-top">Puzzle #</span>
-        <div class="input-relative-box">
-          <input type="number" id="puzzle-input" value="1" inputmode="numeric">
-          <span id="solved-badge">✅</span>
+  <body>
+    <nav class="menu-container" aria-label="Puzzle navigation">
+      <div class="menu-group">
+        <label for="category-select">Book</label>
+        <select id="category-select"></select>
+      </div>
+
+      <div class="menu-group puzzle-nav">
+        <button id="prev-puz" class="step-btn" aria-label="Previous Puzzle">←</button>
+        <div class="input-wrapper">
+          <span class="label-top">Puzzle #</span>
+          <div class="input-relative-box">
+            <input type="number" id="puzzle-input" value="1" min="1" inputmode="numeric">
+            <span id="solved-badge" aria-label="Solved">✅</span>
+          </div>
+          <span class="label-bottom" id="puzzle-count-label">of —</span>
         </div>
-        <span class="label-bottom" id="puzzle-count-label">of 100</span>
+        <button id="next-puz" class="step-btn" aria-label="Next Puzzle">→</button>
       </div>
-      <button id="next-puz" class="step-btn" aria-label="Next Puzzle">→</button>
-    </div>
-  </header>
+    </nav>
 
-  <main id="game-container">
-    <h1>Multiverse Star Battle</h1>
-    
-    <section id="controls">
-      <button id="undo-btn">Undo</button>
-      <button id="redo-btn">Redo</button>
-      <button id="reset-btn">Reset</button>
-      <button id="check-btn">Correct so far?</button>
-      <button id="hint-btn" class="accent-btn">Hint</button>
-      <button id="help-btn" class="secondary-btn">Instructions</button>
-    </section>
+    <main id="game-container">
+      <h1 class="sr-only">Multiverse Star Battle</h1>
 
-    <div id="boards-wrapper">
-      <article class="board-container">
-        <h3>Board 1</h3>
-        <div id="board1" class="grid-wrapper"></div>
-      </article>
-      <article class="board-container">
-        <h3>Board 2</h3>
-        <div id="board2" class="grid-wrapper"></div>
-      </article>
-    </div>
-  </main>
+      <section id="controls" aria-label="Game controls">
+        <button id="undo-btn">Undo</button>
+        <button id="redo-btn">Redo</button>
+        <button id="reset-btn">Reset</button>
+        <button id="check-btn">Correct so far?</button>
+        <button id="hint-btn">Hint</button>
+        <button id="help-btn">Instructions</button>
+      </section>
 
-  <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
-  <div id="help-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h2 id="modal-title">How to Play</h2>
-        <button id="modal-close-btn" aria-label="Close">✕</button>
+      <div id="boards-wrapper">
+        <section class="board-container" aria-label="Board 1">
+          <h2>Board 1</h2>
+          <div id="board1" class="grid-wrapper"></div>
+        </section>
+        <section class="board-container" aria-label="Board 2">
+          <h2>Board 2</h2>
+          <div id="board2" class="grid-wrapper"></div>
+        </section>
       </div>
-      <div class="modal-body">
-        <p>Place stars on the boards so that:</p>
-        <ul>
-          <li>Every <strong>row</strong> contains exactly one star.</li>
-          <li>Every <strong>column</strong> contains exactly one star.</li>
-          <li>Every <strong>bold region</strong> contains exactly one star.</li>
-          <li>Stars cannot touch each other, even diagonally.</li>
-        </ul>
-        <p>Both boards share the same rows and columns, so a star placed on one board satisfies that row and column for both.</p>
-        <h3>Controls</h3>
-        <ul>
-          <li><strong>Left click</strong> — cycle empty → dot → star</li>
-          <li><strong>Right click</strong> — toggle star directly</li>
-          <li><strong>Click and drag</strong> — paint dots across multiple cells</li>
-        </ul>
+    </main>
+
+    <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
+
+    <div id="help-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 id="modal-title">How to Play</h2>
+          <button id="modal-close-btn" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <p>Place stars on the boards so that:</p>
+          <ul>
+            <li>Every <strong>row</strong> contains exactly one star.</li>
+            <li>Every <strong>column</strong> contains exactly one star.</li>
+            <li>Every <strong>bold region</strong> contains exactly one star.</li>
+            <li>Stars cannot touch each other, even diagonally.</li>
+          </ul>
+          <p>Both boards share the same rows and columns, so a star placed on one board satisfies that row and column for both.</p>
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>Left click</strong> — cycle empty → dot → star</li>
+            <li><strong>Right click</strong> — toggle star directly</li>
+            <li><strong>Click and drag</strong> — paint dots across multiple cells</li>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
+
+    <script type="module" src="script.js"></script>
   
-  <script type="module" src="script.js"></script>
-</body>
+
+</body></html>

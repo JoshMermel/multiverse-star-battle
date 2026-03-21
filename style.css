@@ -3,7 +3,6 @@
   --grid-n: 8; /* Updated by JS */
   --cell-size: min(60px, 85vw / var(--grid-n));
   --line-thin: 1px solid #ccc;
-  --color-thick: #000;
   --primary-blue: #1976d2;
   --bg-light: #f8f9fa;
 }
@@ -29,16 +28,16 @@ button {
 button:hover { background: #ddd; }
 
 button:disabled {
-    background: #f0f0f0;
-    color: #bbb;
-    border-color: #ddd;
-    cursor: not-allowed;
-    opacity: 0.6;
+  background: #f0f0f0;
+  color: #bbb;
+  border-color: #ddd;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 button:disabled:hover {
-    background: #f0f0f0;
-  }
+  background: #f0f0f0;
+}
 
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
@@ -214,25 +213,11 @@ input[type="number"]::-webkit-inner-spin-button {
   transition: opacity 0.3s, transform 0.3s;
 }
 
-.border-top, .border-bottom, .border-left, .border-right {
-  position: relative;
-  z-index: 20 !important;
-}
-
 .toast-hidden {
   opacity: 0;
   transform: translate(-50%, 20px) !important;
   pointer-events: none;
 }
-
-.toast:hover {
-  transform: scale(1.02);
-  filter: brightness(1.1);
-}
-.toast:active {
-  transform: scale(0.98);
-}
-
 
 .toast-info { background-color: #1976d2; }
 .toast-hint { background-color: #1976d2; }
@@ -267,9 +252,6 @@ input[type="number"]::-webkit-inner-spin-button {
   .step-btn {
     padding: 12px 20px; /* Larger hit targets for mobile */
   }
-  #help-btn {
-    margin-left: 0; /* Center it on mobile */
-  }
   #controls {
     flex-wrap: wrap;
     justify-content: center;
@@ -301,32 +283,18 @@ input[type="number"]::-webkit-inner-spin-button {
 .hint-target-yellow {
   /* This creates a yellow circle as a background image */
   background-image: radial-gradient(
-    circle, 
-    rgba(255, 255, 0, 0.6) 70%, 
-    transparent 71%
+  circle, 
+  rgba(255, 255, 0, 0.6) 70%, 
+  transparent 71%
   );
   background-repeat: no-repeat;
   background-position: center;
   background-size: 75% 75%; 
 }
 
-.hint-target-yellow::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 70%;
-  height: 70%;
-  background-color: rgba(255, 255, 0, 0.6);
-  border-radius: 50%;
-  /* Ensure it is behind the dot but above the cell background */
-  z-index: -1; 
-  pointer-events: none;
-}
 
 /* Ensure the dots/stars have a higher z-index than the circle */
-.cell .dot, .cell .star-icon {
+.cell .dot {
   pointer-events: none;
 }
 
