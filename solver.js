@@ -545,7 +545,7 @@ export class PuzzleSolver {
             return {
               success: true,
               boardIdx: bIdx,
-              description: `${unitLabel} can only place its star within ${regPhrase}. Other cells in ${regPhrase} must be dots.`
+              description: `${unitLabel} can only place its star within ${regPhrase}. Other cells in ${regPhrase} must be dots.`,
               highlights: [
                 ...availInUnits.filter(idx => regUnion.has(idx)).map(idx => ({ idx, color: 'hint-source-blue' })),
               ],
@@ -700,7 +700,7 @@ export class PuzzleSolver {
     return {
       success: true,
       boardIdx: undefined,
-      `Cross-board: Regions ${labels} must place their stars in ${axis}s ${unitNums}. Empty cells in those ${axis.toLowerCase()}s outside these regions must be dots.`
+      description: `Cross-board: Regions ${labels} must place their stars in ${axis}s ${unitNums}. Empty cells in those ${axis.toLowerCase()}s outside these regions must be dots.`,
       highlights: sourceHighlights,
       marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
     };
