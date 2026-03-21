@@ -459,14 +459,8 @@ STAR BATTLE RULES:
       filledCount++;
       if (userState === 'star') userStarCount++;
 
-      const isWrongStar = (userState === 'star' && !isSolutionStar);
-      const isWrongDot = (userState === 'dot' && isSolutionStar);
-
-      if (isWrongStar || isWrongDot) {
+      if ((userState === 'star' && !isSolutionStar) || (userState === 'dot' && isSolutionStar)) {
         errorCount++;
-        const cell = document.querySelector(`[data-index="${i}"]`);
-        cell.classList.add('error-blink');
-        setTimeout(() => cell.classList.remove('error-blink'), 1500);
       }
     }
 
