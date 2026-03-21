@@ -533,9 +533,8 @@ STAR BATTLE RULES:
   updateSolvedUI() {
     const solved = JSON.parse(localStorage.getItem('sb_solved') || '[]');
     const badge = document.getElementById('solved-badge');
-
     const isSolved = solved.includes(this.currentPuzzleUniqueId);
-    badge.style.visibility = isSolved ? 'visible' : 'hidden';
+    badge.style.opacity = isSolved ? '1' : '0';
   }
 
   applyHintUI(hint) {
