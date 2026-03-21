@@ -35,6 +35,21 @@ class StarBattleGame {
     const countLabel = document.getElementById('puzzle-count-label');
     const helpBtn = document.getElementById('help-btn');
 
+    const modal = document.getElementById('help-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    helpBtn.onclick = () => modal.classList.remove('modal-hidden');
+    modalCloseBtn.onclick = () => modal.classList.add('modal-hidden');
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.add('modal-hidden');
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') modal.classList.add('modal-hidden');
+    });
+
     this.lastLoadedSelection = {
       catId: null,
       puzNum: null
@@ -125,17 +140,6 @@ class StarBattleGame {
     puzInput.addEventListener('blur', () => {
       commitPuzzleSelection();
     });
-
-    helpBtn.onclick = () => {
-      const instructions = `
-STAR BATTLE RULES:
-1. Place stars in cells so that each row, column, and bolded region contains exactly one star.
-2. Stars cannot touch each other, even diagonally.
-3. Use 'Dots' to mark cells where stars cannot possibly go.
-    `;
-
-      alert(instructions);
-    };
   }
 
   setLoading(isLoading) {

@@ -50,6 +50,30 @@
   </main>
 
   <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
+  <div id="help-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modal-title">How to Play</h2>
+        <button id="modal-close-btn" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Place stars on the boards so that:</p>
+        <ul>
+          <li>Every <strong>row</strong> contains exactly one star.</li>
+          <li>Every <strong>column</strong> contains exactly one star.</li>
+          <li>Every <strong>bold region</strong> contains exactly one star.</li>
+          <li>Stars cannot touch each other, even diagonally.</li>
+        </ul>
+        <p>Both boards share the same rows and columns, so a star placed on one board satisfies that row and column for both.</p>
+        <h3>Controls</h3>
+        <ul>
+          <li><strong>Left click</strong> — cycle empty → dot → star</li>
+          <li><strong>Right click</strong> — toggle star directly</li>
+          <li><strong>Click and drag</strong> — paint dots across multiple cells</li>
+        </ul>
+      </div>
+    </div>
+  </div>
   
   <script type="module" src="script.js"></script>
 </body>
