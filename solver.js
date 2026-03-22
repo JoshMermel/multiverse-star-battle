@@ -436,7 +436,7 @@ export class PuzzleSolver {
   }
 
   // Core logic for the "N regions are trapped inside N units" deduction.
-  _hintRegionsTrappedinUnits(windowIndices, bIdx, axis) {
+  _hintRegionsTrappedInUnits(windowIndices, bIdx, axis) {
     const windowSet = new Set(windowIndices.flat());
     const allIndices = windowIndices.flat();
 
