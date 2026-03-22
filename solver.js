@@ -91,6 +91,31 @@ export class PuzzleSolver {
     return map;
   }
 
+  getNeighbors(idx) {
+    const n = this.n;
+    const boardSize = n * n;
+    const bIdx = idx < boardSize ? 0 : 1;
+    const offset = bIdx * boardSize;
+    const relativeIdx = idx % boardSize;
+
+    const row = Math.floor(relativeIdx / n);
+    const col = relativeIdx % n;
+    const neighbors = [];
+
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = row + dr;
+        const nc = col + dc;
+
+        if (nr >= 0 && nr < n && nc >= 0 && nc < n) {
+          neighbors.push((nr * n + nc) + offset);
+        }
+      }
+    }
+    return neighbors;
+  }
+
   getHint() {
     const rules = [
       () => this.hintCheckForErrors(),
@@ -907,30 +932,4 @@ export class PuzzleSolver {
       }
     }
   }
-
-  getNeighbors(idx) {
-    const n = this.n;
-    const boardSize = n * n;
-    const bIdx = idx < boardSize ? 0 : 1;
-    const offset = bIdx * boardSize;
-    const relativeIdx = idx % boardSize;
-
-    const row = Math.floor(relativeIdx / n);
-    const col = relativeIdx % n;
-    const neighbors = [];
-
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
-        if (dr === 0 && dc === 0) continue;
-        const nr = row + dr;
-        const nc = col + dc;
-
-        if (nr >= 0 && nr < n && nc >= 0 && nc < n) {
-          neighbors.push((nr * n + nc) + offset);
-        }
-      }
-    }
-    return neighbors;
-  }
 }
-

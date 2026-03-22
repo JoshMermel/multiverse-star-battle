@@ -1,28 +1,21 @@
 import { PuzzleSolver } from './solver.js';
 
 class StarBattleGame {
+  // ────────────────────── 
+  // ─── Initialisation ─── 
+  // ────────────────────── 
+
+  // Bootstraps the game: sets up global input handling then fetches puzzle data
   constructor() {
-    this.categories = []; // From manifest
-    this.loadedPuzzles = []; // Current category puzzles
+    this.categories = [];
+    this.loadedPuzzles = [];
+    // Listener setup must run before initGame so they exist during puzzle load
     this.setupGlobalListeners();
     this.initGame();
   }
 
-  readUrlParams() {
-    const params = new URLSearchParams(window.location.search);
-    return {
-      catId: params.get('book'),
-      puzNum: parseInt(params.get('puzzle')) || 1,
-    };
-  }
-
-  updateUrlParams(catId, puzNum) {
-    const params = new URLSearchParams();
-    params.set('book', catId);
-    params.set('puzzle', puzNum);
-    window.history.replaceState(null, '', `?${params.toString()}`);
-  }
-
+  // Fetches the manifest, populates the category menu, and loads the initial
+  // puzzle.
   async initGame() {
     try {
       const resp = await fetch('data/manifest.json');
@@ -30,10 +23,11 @@ class StarBattleGame {
       this.categories = data.categories;
 
       this.setupMenu();
+      this.setupControls();
+      this.setupHelpModal();
+      this.setupResetModal();
 
       const catSelect = document.getElementById('category-select');
-      const puzInput = document.getElementById('puzzle-input');
-
       if (this.categories.length > 0) {
         const { catId, puzNum } = this.readUrlParams();
 
@@ -52,53 +46,69 @@ class StarBattleGame {
     }
   }
 
+  setupControls() {
+    document.getElementById('undo-btn').onclick = () => this.undo();
+    document.getElementById('redo-btn').onclick = () => this.redo();
+    document.getElementById('check-btn').onclick = () => this.checkCorrectness();
+    document.getElementById('hint-btn').onclick = () => this.getHint();
+  }
+
+  // Creates open/close behaviour for a modal: close button(s), backdrop click,
+  // Escape key, and an optional confirm action. Returns { open, close } handles.
+  setupModal(modalId, { onConfirm } = {}) {
+    const modal = document.getElementById(modalId);
+    const close = () => modal.classList.add('modal-hidden');
+    const open  = () => modal.classList.remove('modal-hidden');
+
+    modal.querySelectorAll('[data-close]').forEach(btn => btn.onclick = close);
+    modal.addEventListener('click', e => { if (e.target === modal) close(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !modal.classList.contains('modal-hidden')) close();
+    });
+    if (onConfirm) {
+      document.getElementById(`${modalId}-confirm-btn`).onclick = () => {
+        close();
+        onConfirm();
+      };
+    }
+    return { open, close };
+  }
+
+  setupHelpModal() {
+    const { open } = this.setupModal('help-modal');
+    document.getElementById('help-btn').onclick = open;
+  }
+
+  setupResetModal() {
+    const { open } = this.setupModal('reset-modal', { onConfirm: () => this.doReset() });
+    document.getElementById('reset-btn').onclick = open;
+  }
+
+  // Fetches puzzles for a category, updates the nav UI, and loads the target puzzle.
+  // targetPuz is clamped to the valid range automatically.
+  async loadCategory(catId, targetPuz = 1) {
+    const puzInput = document.getElementById('puzzle-input');
+    const countLabel = document.getElementById('puzzle-count-label');
+
+    const resp = await fetch(`data/${catId}.json`);
+    this.loadedPuzzles = await resp.json();
+    const total = this.loadedPuzzles.length;
+
+    puzInput.max = total;
+    countLabel.textContent = `of ${total}`;
+
+    const clampedPuz = Math.max(1, Math.min(targetPuz, total));
+    puzInput.value = clampedPuz;
+
+    await this.loadPuzzle(this.loadedPuzzles[clampedPuz - 1], catId);
+  }
+
   setupMenu() {
     const catSelect = document.getElementById('category-select');
     const puzInput = document.getElementById('puzzle-input');
     const prevBtn = document.getElementById('prev-puz');
     const nextBtn = document.getElementById('next-puz');
     const countLabel = document.getElementById('puzzle-count-label');
-    const helpBtn = document.getElementById('help-btn');
-
-    document.getElementById('undo-btn').onclick = () => this.undo();
-    document.getElementById('redo-btn').onclick = () => this.redo();
-    document.getElementById('reset-btn').onclick = () => this.reset();
-    document.getElementById('check-btn').onclick = () => this.checkCorrectness();
-    document.getElementById('hint-btn').onclick = () => this.getHint();
-
-    const modal = document.getElementById('help-modal');
-    const modalCloseBtn = document.getElementById('modal-close-btn');
-    helpBtn.onclick = () => modal.classList.remove('modal-hidden');
-    modalCloseBtn.onclick = () => modal.classList.add('modal-hidden');
-
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.classList.add('modal-hidden');
-    });
-
-    // Close on Escape
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') modal.classList.add('modal-hidden');
-    });
-
-    const resetModal = document.getElementById('reset-modal');
-    const resetConfirmBtn = document.getElementById('reset-modal-confirm-btn');
-    const resetCancelBtn = document.getElementById('reset-modal-cancel-btn');
-    const resetCloseBtn = document.getElementById('reset-modal-close-btn');
-
-    const closeResetModal = () => resetModal.classList.add('modal-hidden');
-    resetCancelBtn.onclick = closeResetModal;
-    resetCloseBtn.onclick = closeResetModal;
-    resetModal.addEventListener('click', (e) => { if (e.target === resetModal) closeResetModal(); });
-    resetConfirmBtn.onclick = () => {
-      closeResetModal();
-      this.doReset();
-    };
-
-    this.lastLoadedSelection = {
-      catId: null,
-      puzNum: null
-    };
 
     // Populate Categories
     this.categories.forEach(cat => {
@@ -112,22 +122,8 @@ class StarBattleGame {
       if (!catId) return;
       this.setLoading(true);
       try {
-        const resp = await fetch(`data/${catId}.json`);
-        this.loadedPuzzles = await resp.json();
-        const total = this.loadedPuzzles.length;
-        puzInput.max = total;
-        countLabel.textContent = `of ${total}`;
-
-        // Use pending puzzle number on initial load, otherwise reset to 1
-        const targetPuz = this._pendingPuzNum ?? 1;
+        await this.loadCategory(catId, this._pendingPuzNum ?? 1);
         this._pendingPuzNum = null;
-
-        // Clamp to valid range
-        puzInput.value = Math.max(1, Math.min(targetPuz, total));
-
-        this.lastLoadedSelection.catId = catId;
-        this.lastLoadedSelection.puzNum = parseInt(puzInput.value);
-        await this.loadPuzzle(this.loadedPuzzles[parseInt(puzInput.value) - 1], catId);
       } catch (err) {
         this.showToast("Could not load category", "error");
         console.error(err);
@@ -137,20 +133,17 @@ class StarBattleGame {
     };
 
     const commitPuzzleSelection = async () => {
-      let val = parseInt(puzInput.value);
-      const max = this.loadedPuzzles.length;
+      let val = parseInt(puzInput.value, 10);
       const catId = catSelect.value;
       if (isNaN(val)) val = 1;
-      if (val < 1) val = 1;
-      if (val > max) val = max;
-      puzInput.value = val;
-      if (this.lastLoadedSelection.catId === catId &&
-        this.lastLoadedSelection.puzNum === val) return;
-      this.lastLoadedSelection.catId = catId;
-      this.lastLoadedSelection.puzNum = val;
+
+      // Skip if the requested puzzle is already loaded
+      if (this.currentCategoryId === catId &&
+        this.currentPuzzle?.id === val) return;
+
       this.setLoading(true);
       try {
-        await this.loadPuzzle(this.loadedPuzzles[val - 1], catId);
+        await this.loadCategory(catId, val);
       } finally {
         this.setLoading(false);
       }
@@ -159,7 +152,7 @@ class StarBattleGame {
     const stepPuzzle = (delta) => {
       let val = parseInt(puzInput.value) || 1;
       puzInput.value = val + delta;
-      commitPuzzleSelection(); // Reuses your existing validation/load logic
+      commitPuzzleSelection();
     };
     prevBtn.onpointerdown = (e) => {
       e.preventDefault();
@@ -171,9 +164,7 @@ class StarBattleGame {
     };
 
     puzInput.addEventListener('input', (e) => {
-      // 'inputType' is null or 'insertReplacementText' when arrows are clicked
-      // If the user is typing, we wait for Enter.
-      // If they click the arrows, it triggers immediately.
+      // Fire immediately for spinner arrow clicks; wait for Enter when typing.
       if (e.inputType === undefined || e.inputType === 'insertReplacementText') {
         commitPuzzleSelection();
       }
@@ -181,18 +172,33 @@ class StarBattleGame {
 
     puzInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        e.preventDefault(); // Stop form submission if inside a form
+        e.preventDefault();
         commitPuzzleSelection();
-        puzInput.blur(); // Optional: remove focus after selection
+        puzInput.blur(); // Remove focus after selection
       }
     });
 
-    // Optional: Also commit if the user clicks out of the box
+    // Also commit if the user clicks out of the box
     puzInput.addEventListener('blur', () => {
       commitPuzzleSelection();
     });
   }
 
+  // Attaches window-level listeners that persist for the lifetime of the app.
+  // Must be called before any puzzle loads.
+  setupGlobalListeners() {
+    window.addEventListener('pointerup', () => {
+      if (this.isDragging) {
+        if (this.hasChangedDuringDrag) this.saveHistory();
+        this.isDragging = false;
+        this.hasChangedDuringDrag = false;
+      }
+      this.clearHintUI();
+    });
+  }
+
+  // Disables navigation controls and fades the boards while a puzzle fetch is
+  // in flight.
   setLoading(isLoading) {
     const ids = ['prev-puz', 'next-puz', 'puzzle-input', 'category-select',
       'hint-btn', 'check-btn', 'reset-btn'];
@@ -200,6 +206,13 @@ class StarBattleGame {
     document.getElementById('boards-wrapper').style.opacity = isLoading ? '0.4' : '1';
   }
 
+  // ────────────────────── 
+  // ─── Puzzle Loading ─── 
+  // ────────────────────── 
+
+  // Hashes puzzle content to a stable 16-char hex ID for localStorage keying.
+  // Using content rather than puzzle name means renamed puzzles don't lose
+  // progress.
   async computePuzzleId(puzzleData) {
     const stable = JSON.stringify({
       board1: puzzleData.board1,
@@ -215,9 +228,11 @@ class StarBattleGame {
     return hashHex.slice(0, 16); // 16 hex chars = 64 bits, plenty unique
   }
 
+  // Initialises all game state for a new puzzle and re-renders both boards.
   async loadPuzzle(puzzleData, categoryId) {
     // Save the reference to the current puzzle data
     this.currentPuzzleUniqueId = await this.computePuzzleId(puzzleData);
+    this.currentCategoryId = categoryId;
     this.currentPuzzle = puzzleData;
 
     // Map data to game properties
@@ -248,16 +263,14 @@ class StarBattleGame {
     this.updateUrlParams(categoryId, puzzleData.id);
   }
 
+  // Builds the cell grid and SVG region borders for one board.
   renderBoard(id, regionMap, boardIdx) {
     const wrapper = document.getElementById(id);
 
     const grid = document.createElement('div');
     grid.className = 'star-battle-grid';
     grid.style.width = 'fit-content';
-    // Use the variable directly in the style for perfect sync
     grid.style.gridTemplateColumns = `repeat(${this.n}, var(--cell-size))`;
-
-    // Prevent default right-click menu on the board
     grid.oncontextmenu = (e) => e.preventDefault();
 
     for (let i = 0; i < this.n * this.n; i++) {
@@ -268,7 +281,6 @@ class StarBattleGame {
     }
 
     grid.onpointerdown = (e) => {
-      // Find the closest element with class 'cell'
       const cell = e.target.closest('.cell');
       if (!cell) return;
 
@@ -281,7 +293,6 @@ class StarBattleGame {
     };
 
     grid.onpointerover = (e) => {
-      // 'pointerover' is the delegation equivalent of 'pointerenter'
       const cell = e.target.closest('.cell');
       if (!cell || !this.isDragging) return;
 
@@ -295,8 +306,8 @@ class StarBattleGame {
     grid.onpointermove = (e) => {
       if (!this.isDragging) return;
 
-      // On touch devices, 'pointerover' doesn't fire during a drag,
-      // so we still use elementFromPoint for finger-sliding.
+      // pointerover doesn't fire on touch during drag, so fall back to
+      // elementFromPoint.
       const target = document.elementFromPoint(e.clientX, e.clientY);
       const cell = target?.closest('.cell');
 
@@ -320,6 +331,7 @@ class StarBattleGame {
     const HALF = STROKE / 2;
     svg.setAttribute("viewBox", `${-HALF} ${-HALF} ${totalCoord + STROKE} ${totalCoord + STROKE}`);
 
+    // Walk every cell; draw a thick border segment wherever the region changes.
     let paths = "";
     for (let i = 0; i < this.n * this.n; i++) {
       const r = Math.floor(i / this.n), c = i % this.n;
@@ -351,6 +363,14 @@ class StarBattleGame {
     wrapper.appendChild(svg);
   }
 
+
+  // ────────────────── 
+  // ─── Game State ─── 
+  // ────────────────── 
+
+  // Handles the initial pointer-down on a cell. Right-click toggles a star
+  // directly; left-click cycles none -> dot -> star -> none and begins a drag
+  // session.
   handleStart(idx, isRightClick) {
     this.hideToast();
     this.isDragging = true;
@@ -366,12 +386,15 @@ class StarBattleGame {
     }
   }
 
+  // Paints a dot on any empty cell the pointer passes over during a drag.
   handleDrag(idx) {
     if (this.isDragging && this.state[idx] === 'none') {
       this.applyState(idx, 'dot');
     }
   }
 
+  // Applies a state change to one cell, updates its visual, validates the
+  // board, and persists to localStorage.
   applyState(idx, type) {
     if (this.state[idx] === type) return;
     this.state[idx] = type;
@@ -383,10 +406,35 @@ class StarBattleGame {
     this.saveCurrentState();
   }
 
+  // Returns true if every solution star is placed and no extra stars exist.
+  // Empty cells and dots are ignored — the puzzle is solved even with blank
+  // squares.
   isSolved() {
     return this.state.every((v, i) => (this.solution[i] === 'x') ? v === 'star' : v !== 'star');
   }
 
+  // Returns the set of cell indices involved in adjacency violations.
+  _getAdjacentErrorIndices() {
+    const n = this.n;
+    const errors = new Set();
+    for (let i = 0; i < n * n; i++) {
+      if (this.state[i] !== 'star') continue;
+      const r = Math.floor(i / n), c = i % n;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < n && nc >= 0 && nc < n) {
+            const nb = nr * n + nc;
+            if (this.state[nb] === 'star') { errors.add(i); errors.add(nb); }
+          }
+        }
+      }
+    }
+    return errors;
+  }
+
+  // Highlights obvious rule violations in real time.
   validate({ suppressWinToast = false } = {}) {
     const n = this.n;
     const errorIndices = new Set();
@@ -394,88 +442,58 @@ class StarBattleGame {
     const checkGroup = (indices) => {
       const stars = indices.filter(i => this.state[i] === 'star');
       const allDots = indices.every(i => this.state[i] === 'dot');
-
       // Highlight if more than 1 star or if group is impossible (all dots)
       if (stars.length > 1 || allDots) {
         indices.forEach(i => errorIndices.add(i));
       }
     };
 
-    // Check Rows & Columns
+    // Check rows and columns
     for (let i = 0; i < n; i++) {
-      checkGroup(Array.from({length: n}, (_, k) => i * n + k)); // Row
-      checkGroup(Array.from({length: n}, (_, k) => k * n + i)); // Col
+      checkGroup(Array.from({length: n}, (_, k) => i * n + k));
+      checkGroup(Array.from({length: n}, (_, k) => k * n + i));
     }
 
-    // Check Regions (for both boards)
+    // Check regions for both boards
     this.regions.forEach(regionString => {
       const regionIds = [...new Set(regionString.split(''))];
       regionIds.forEach(id => {
         const indices = [];
-        for(let j=0; j<regionString.length; j++) if(regionString[j] === id) indices.push(j);
+        for (let j = 0; j < regionString.length; j++) {
+          if (regionString[j] === id) indices.push(j);
+        }
         checkGroup(indices);
       });
     });
 
-    // Check Star Adjacency (8-way)
-    for (let i = 0; i < n * n; i++) {
-      if (this.state[i] === 'star') {
-        const r = Math.floor(i / n);
-        const c = i % n;
-
-        // Look at all 8 neighbors
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            if (dr === 0 && dc === 0) continue; // Skip self
-
-            const nr = r + dr;
-            const nc = c + dc;
-
-            if (nr >= 0 && nr < n && nc >= 0 && nc < n) {
-              const neighborIdx = nr * n + nc;
-              if (this.state[neighborIdx] === 'star') {
-                errorIndices.add(i);
-                errorIndices.add(neighborIdx);
-              }
-            }
-          }
-        }
-      }
+    // Check adjacency
+    for (const idx of this._getAdjacentErrorIndices()) {
+      errorIndices.add(idx);
     }
 
-    // 5. Update DOM
+    // Update error highlights
     document.querySelectorAll('.cell').forEach(cell => {
       const idx = parseInt(cell.dataset.index);
-      if (errorIndices.has(idx)) {
-        cell.classList.add('error-cell');
-      } else {
-        cell.classList.remove('error-cell');
-      }
+      cell.classList.toggle('error-cell', errorIndices.has(idx));
     });
 
-    // 6. Win Check
-
-    if (this.isSolved() && errorIndices.size === 0 && !suppressWinToast) {
-      this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
+    // Win check
+    if (this.isSolved() && errorIndices.size === 0) {
       this.markAsSolved();
+      if (!suppressWinToast) {
+        this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
+      }
     }
   }
 
-  updateCellVisual(cell, val) {
-    cell.innerHTML = val === 'star' ? '<span class="star">★</span>'
-      : val === 'dot' ? '<div class="dot"></div>'
-      : '';
-  }
+  // ─────────────── 
+  // ─── History ─── 
+  // ─────────────── 
 
-  updateVisuals() {
-    document.querySelectorAll('.cell').forEach(cell => {
-      this.updateCellVisual(cell, this.state[cell.dataset.index]);
-    });
-  }
-
+  // Appends the current state to the undo history, truncating any undone future
   saveHistory() {
     const snap = JSON.stringify(this.state);
-    // Safety check: don't save if it's identical to the last point in history
+    // Deduplicate: skip if state hasn't actually changed since the last snapshot.
     if (snap === this.history[this.historyIdx]) return;
 
     this.history = this.history.slice(0, this.historyIdx + 1);
@@ -484,6 +502,7 @@ class StarBattleGame {
     this.updateControls()
   }
 
+  // Steps back one entry in undo history.
   undo() {
     this.hideToast();
     if (this.historyIdx > 0) {
@@ -495,6 +514,7 @@ class StarBattleGame {
     }
   }
 
+  // Steps forward one entry in undo history.
   redo() {
     this.hideToast();
     if (this.historyIdx < this.history.length - 1) {
@@ -506,11 +526,82 @@ class StarBattleGame {
     }
   }
 
-  reset() {
-    // Called by the Reset button — just opens the modal
-    document.getElementById('reset-modal').classList.remove('modal-hidden');
+
+  // ─────────────────── 
+  // ─── Persistence ─── 
+  // ─────────────────── 
+
+  // Stable localStorage key for this puzzle's cell state.
+  get stateKey() { return `sb_state_${this.currentPuzzleUniqueId}`; }
+
+  // Shared localStorage key for the set of all solved puzzle IDs.
+  get solvedKey() { return 'sb_solved'; }
+
+  // Persists the current cell state to localStorage under the puzzle's unique
+  // ID.
+  saveCurrentState() {
+    localStorage.setItem(this.stateKey, JSON.stringify(this.state));
   }
 
+  // Restores saved cell state from localStorage if it exists, then syncs all UI
+  loadProgress({ suppressWinToast = false } = {}) {
+    const savedState = localStorage.getItem(this.stateKey);
+    if (savedState) {
+      this.state = JSON.parse(savedState);
+      this.history = [JSON.stringify(this.state)];
+      this.historyIdx = 0;
+      this.updateVisuals();
+      this.validate({ suppressWinToast });
+    }
+    this.updateControls();
+    this.updateSolvedUI();
+  }
+
+  // Records this puzzle as solved in localStorage and updates the solved badge.
+  markAsSolved() {
+    const solved = JSON.parse(localStorage.getItem(this.solvedKey) || '[]');
+    if (!solved.includes(this.currentPuzzleUniqueId)) {
+      solved.push(this.currentPuzzleUniqueId);
+      localStorage.setItem(this.solvedKey, JSON.stringify(solved));
+    }
+    this.updateSolvedUI();
+  }
+
+  // Shows or hides the ✅ badge based on whether this puzzle is recorded as
+  // solved.
+  updateSolvedUI() {
+    const solved = JSON.parse(localStorage.getItem(this.solvedKey) || '[]');
+    const badge = document.getElementById('solved-badge');
+    badge.style.opacity = solved.includes(this.currentPuzzleUniqueId) ? '1' : '0';
+  }
+
+  // ────────────────────── 
+  // ─── UI & Rendering ─── 
+  // ────────────────────── 
+
+  // Updates a single cell's DOM to reflect its current state value.
+  updateCellVisual(cell, val) {
+    cell.innerHTML = val === 'star' ? '<span class="star">★</span>'
+      : val === 'dot' ? '<div class="dot"></div>'
+      : '';
+  }
+
+  // Re-renders all cells on both boards to match the current state array.
+  updateVisuals() {
+    document.querySelectorAll('.cell').forEach(cell => {
+      this.updateCellVisual(cell, this.state[cell.dataset.index]);
+    });
+  }
+
+  // Enables or disables undo/redo buttons based on current history position.
+  updateControls() {
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    undoBtn.disabled = (this.historyIdx === 0);
+    redoBtn.disabled = (this.historyIdx >= this.history.length - 1);
+  }
+
+  // Clears all cell state and resets history after the user confirms reset.
   doReset() {
     this.state.fill('none');
     this.history = [JSON.stringify(this.state)];
@@ -522,6 +613,52 @@ class StarBattleGame {
     this.saveCurrentState();
   }
 
+  // ──────────────
+  // ─── Hints ─── 
+  // ──────────────
+
+  // Asks the solver for the next hint and either displays it or shows a
+  // fallback toast.
+  getHint() {
+    const hint = this.solver.getHint();
+    if (hint) {
+      this.applyHintUI(hint);
+    } else {
+      this.showToast("No hints found!", "info");
+    }
+  }
+
+  // Applies highlight and mark classes to cells based on a hint object,
+  // and shows the hint description as a toast.
+  applyHintUI(hint) {
+    const selectors = (hint.boardIdx !== undefined)
+      ? [`#board${hint.boardIdx + 1}`]
+      : ['#board1', '#board2'];
+
+    // Unified loop — highlights and marks both just add a CSS class to a cell
+    for (const { idx, color } of [...hint.highlights, ...hint.marks]) {
+      for (const sel of selectors) {
+        const cell = document.querySelector(`${sel} [data-index="${idx}"]`);
+        if (cell) cell.classList.add(color);
+      }
+    }
+
+    this.showToast(hint.description, "hint", 30000);
+  }
+
+  // Removes all hint highlight classes from every cell on both boards.
+  clearHintUI() {
+    document.querySelectorAll('.cell').forEach(cell => {
+      cell.classList.remove('hint-source-blue', 'hint-target-yellow', 'hint-target-green', 'hint-error-red');
+    });
+  }
+
+  // ─────────────────
+  // ─── Feedback ─── 
+  // ─────────────────
+
+  // Displays a dismissible notification at the bottom of the screen.
+  // Clears any previous toast type before applying the new one.
   showToast(message, type = 'info', duration = 2000) {
     const toast = document.getElementById('toast');
     toast.textContent = message;
@@ -545,6 +682,9 @@ class StarBattleGame {
     document.getElementById('toast').classList.add('toast-hidden');
   }
 
+  // Checks the user's current placements against the solution and shows a toast
+  // with the result. Only considers filled cells (dots and stars), not empty
+  // ones.
   checkCorrectness() {
     let errorCount = 0;
     let filledCount = 0;
@@ -573,92 +713,27 @@ class StarBattleGame {
     }
   }
 
-  setupGlobalListeners() {
-    window.addEventListener('pointerup', () => {
-      if (this.isDragging) {
-        if (this.hasChangedDuringDrag) this.saveHistory();
-        this.isDragging = false;
-        this.hasChangedDuringDrag = false;
-      }
-      this.clearHintUI();
-    });
+  // ────────────
+  // ─── URL ─── 
+  // ────────────
+
+  // Reads ?book= and ?puzzle= from the URL.
+  // Returns safe defaults if absent or invalid.
+  readUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      catId: params.get('book'),
+      puzNum: parseInt(params.get('puzzle'), 10) || 1,
+    };
   }
 
-  updateControls() {
-    const undoBtn = document.getElementById('undo-btn');
-    const redoBtn = document.getElementById('redo-btn');
-    undoBtn.disabled = (this.historyIdx === 0);
-    redoBtn.disabled = (this.historyIdx >= this.history.length - 1);
-  }
-
-  saveCurrentState() {
-    const key = `sb_state_${this.currentPuzzleUniqueId}`;
-    localStorage.setItem(key, JSON.stringify(this.state));
-  }
-  markAsSolved() {
-    const solved = JSON.parse(localStorage.getItem('sb_solved') || '[]');
-    if (!solved.includes(this.currentPuzzleUniqueId)) {
-      solved.push(this.currentPuzzleUniqueId);
-      localStorage.setItem('sb_solved', JSON.stringify(solved));
-    }
-    this.updateSolvedUI();
-  }
-  loadProgress({ suppressWinToast = false } = {}) {
-    const savedState = localStorage.getItem(`sb_state_${this.currentPuzzleUniqueId}`);
-    if (savedState) {
-      this.state = JSON.parse(savedState);
-      this.history = [JSON.stringify(this.state)];
-      this.historyIdx = 0;
-      this.updateVisuals();
-      this.validate({ suppressWinToast });
-    }
-    this.updateControls();
-    this.updateSolvedUI();
-  }
-  updateSolvedUI() {
-    const solved = JSON.parse(localStorage.getItem('sb_solved') || '[]');
-    const badge = document.getElementById('solved-badge');
-    const isSolved = solved.includes(this.currentPuzzleUniqueId);
-    badge.style.opacity = isSolved ? '1' : '0';
-  }
-
-  applyHintUI(hint) {
-    const selectors = (hint.boardIdx !== undefined) 
-      ? [`#board${hint.boardIdx + 1}`] 
-      : ['#board1', '#board2'];
-
-    // Apply Highlights (Blue Star)
-    hint.highlights.forEach(h => {
-      selectors.forEach(sel => {
-        const cell = document.querySelector(`${sel} [data-index="${h.idx}"]`);
-        if (cell) cell.classList.add(h.color);
-      });
-    });
-
-    // Apply Marks (Yellow Outlines)
-    hint.marks.forEach(m => {
-      selectors.forEach(sel => {
-        const cell = document.querySelector(`${sel} [data-index="${m.idx}"]`);
-        if (cell) cell.classList.add(m.color); // Use the color defined in the hint object
-      });
-    });
-
-    this.showToast(hint.description, "hint", 30000);
-  }
-
-  clearHintUI() {
-    document.querySelectorAll('.cell').forEach(cell => {
-      cell.classList.remove('hint-source-blue', 'hint-target-yellow', 'hint-target-green', 'hint-error-red');
-    });
-  }
-
-  getHint() {
-    const hint = this.solver.getHint();
-    if (hint) {
-      this.applyHintUI(hint);
-    } else {
-      this.showToast("No hints found!", "info");
-    }
+  // Updates the URL bar to reflect the current puzzle without adding a browser
+  // history entry.
+  updateUrlParams(catId, puzNum) {
+    const params = new URLSearchParams();
+    params.set('book', catId);
+    params.set('puzzle', puzNum);
+    window.history.replaceState(null, '', `?${params.toString()}`);
   }
 }
 
