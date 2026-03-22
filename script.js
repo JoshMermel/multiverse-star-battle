@@ -1,4 +1,5 @@
 import { PuzzleSolver } from './solver.js';
+import { CELL } from './constants.js';
 
 class StarBattleGame {
   // ────────────────────── 
@@ -35,17 +36,17 @@ class StarBattleGame {
         const validCat = this.categories.find(c => c.id === catId);
         catSelect.value = validCat ? validCat.id : this.categories[0].id;
 
-        // Store the desired puzzle number — commitPuzzleSelection will clamp it
-        // to the valid range after the category loads
-        this._pendingPuzNum = puzNum;
+        // Dispatch with the desired puzzle number attached so
+        // catSelect.onchange can read it.
+        catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: puzNum } }));
 
-        catSelect.dispatchEvent(new Event('change'));
       }
     } catch (e) {
       this.showToast("Failed to load game data", "error");
     }
   }
 
+  // Wires up the main game action buttons. Called once after the DOM is ready.
   setupControls() {
     document.getElementById('undo-btn').onclick = () => this.undo();
     document.getElementById('redo-btn').onclick = () => this.redo();
@@ -74,11 +75,13 @@ class StarBattleGame {
     return { open, close };
   }
 
+  // Sets up open/close behaviour for the instructions modal.
   setupHelpModal() {
     const { open } = this.setupModal('help-modal');
     document.getElementById('help-btn').onclick = open;
   }
 
+  // Sets up open/close behaviour for the board-clearing confirmation modal.
   setupResetModal() {
     const { open } = this.setupModal('reset-modal', { onConfirm: () => this.doReset() });
     document.getElementById('reset-btn').onclick = open;
@@ -108,7 +111,6 @@ class StarBattleGame {
     const puzInput = document.getElementById('puzzle-input');
     const prevBtn = document.getElementById('prev-puz');
     const nextBtn = document.getElementById('next-puz');
-    const countLabel = document.getElementById('puzzle-count-label');
 
     // Populate Categories
     this.categories.forEach(cat => {
@@ -122,8 +124,7 @@ class StarBattleGame {
       if (!catId) return;
       this.setLoading(true);
       try {
-        await this.loadCategory(catId, this._pendingPuzNum ?? 1);
-        this._pendingPuzNum = null;
+        await this.loadCategory(catId, e.detail?.targetPuz ?? 1);
       } catch (err) {
         this.showToast("Could not load category", "error");
         console.error(err);
@@ -230,43 +231,43 @@ class StarBattleGame {
 
   // Initialises all game state for a new puzzle and re-renders both boards.
   async loadPuzzle(puzzleData, categoryId) {
-    // Save the reference to the current puzzle data
     this.currentPuzzleUniqueId = await this.computePuzzleId(puzzleData);
     this.currentCategoryId = categoryId;
     this.currentPuzzle = puzzleData;
 
-    // Map data to game properties
     this.n = puzzleData.N;
     this.solution = puzzleData.solution;
     this.regions = [puzzleData.board1, puzzleData.board2];
 
-    // Reset game state for a fresh start
-    this.state = new Array(this.n * this.n).fill('none');
+    this.state = new Array(this.n * this.n).fill(CELL.NONE);
     this.history = [JSON.stringify(this.state)];
     this.historyIdx = 0;
 
-    // Wipe the HTML clean before re-rendering
     document.getElementById('board1').innerHTML = '';
     document.getElementById('board2').innerHTML = '';
-
-    // Re-run the board creation logic
     document.documentElement.style.setProperty('--grid-n', this.n);
 
-    this.renderBoard('board1', this.regions[0], 0);
-    this.renderBoard('board2', this.regions[1], 1);
+    this.renderBoard('board1', this.regions[0]);
+    this.renderBoard('board2', this.regions[1]);
     this.updateVisuals();
 
     this.showToast(`Playing Puzzle ${puzzleData.id}`, "info");
-    this.solver = new PuzzleSolver(this);
     this.loadProgress({ suppressWinToast: true });
     this.updateControls();
     this.updateUrlParams(categoryId, puzzleData.id);
+
+    this.solver = new PuzzleSolver(this);
   }
 
   // Builds the cell grid and SVG region borders for one board.
-  renderBoard(id, regionMap, boardIdx) {
+  renderBoard(id, regionMap) {
     const wrapper = document.getElementById(id);
+    wrapper.appendChild(this._buildGrid());
+    wrapper.appendChild(this._buildRegionSvg(regionMap));
+  }
 
+  // Creates the interactive grid div with all pointer event handlers attached.
+  _buildGrid() {
     const grid = document.createElement('div');
     grid.className = 'star-battle-grid';
     grid.style.width = 'fit-content';
@@ -283,10 +284,8 @@ class StarBattleGame {
     grid.onpointerdown = (e) => {
       const cell = e.target.closest('.cell');
       if (!cell) return;
-
       e.preventDefault();
       cell.setPointerCapture(e.pointerId);
-
       const idx = parseInt(cell.dataset.index);
       this.lastDraggedIndex = idx;
       this.handleStart(idx, e.button === 2);
@@ -295,7 +294,6 @@ class StarBattleGame {
     grid.onpointerover = (e) => {
       const cell = e.target.closest('.cell');
       if (!cell || !this.isDragging) return;
-
       const idx = parseInt(cell.dataset.index);
       if (idx !== this.lastDraggedIndex) {
         this.lastDraggedIndex = idx;
@@ -305,12 +303,8 @@ class StarBattleGame {
 
     grid.onpointermove = (e) => {
       if (!this.isDragging) return;
-
-      // pointerover doesn't fire on touch during drag, so fall back to
-      // elementFromPoint.
-      const target = document.elementFromPoint(e.clientX, e.clientY);
-      const cell = target?.closest('.cell');
-
+      // pointerover doesn't fire on touch during drag, so fall back to elementFromPoint.
+      const cell = document.elementFromPoint(e.clientX, e.clientY)?.closest('.cell');
       if (cell) {
         const idx = parseInt(cell.dataset.index);
         if (idx !== this.lastDraggedIndex) {
@@ -320,33 +314,36 @@ class StarBattleGame {
       }
     };
 
-    wrapper.appendChild(grid);
+    return grid;
+  }
 
-    // SVG Borders logic
+  // Creates the SVG overlay that draws thick borders between regions.
+  _buildRegionSvg(regionMap) {
     const COORD = 100; // virtual units per cell
     const totalCoord = this.n * COORD;
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "region-svg");
     const STROKE = COORD * 0.07;
     const HALF = STROKE / 2;
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "region-svg");
     svg.setAttribute("viewBox", `${-HALF} ${-HALF} ${totalCoord + STROKE} ${totalCoord + STROKE}`);
 
-    // Walk every cell; draw a thick border segment wherever the region changes.
+    // Walk every cell; draw a border segment wherever the region changes.
     let paths = "";
     for (let i = 0; i < this.n * this.n; i++) {
       const r = Math.floor(i / this.n), c = i % this.n;
       const x2 = (c + 1) * COORD, y2 = (r + 1) * COORD;
-      if (c < this.n - 1 && regionMap[i] !== regionMap[i+1])
-        paths += `M ${x2} ${r*COORD} L ${x2} ${y2} `;
-      if (r < this.n - 1 && regionMap[i] !== regionMap[i+this.n])
-        paths += `M ${c*COORD} ${y2} L ${x2} ${y2} `;
+      if (c < this.n - 1 && regionMap[i] !== regionMap[i + 1])
+        paths += `M ${x2} ${r * COORD} L ${x2} ${y2} `;
+      if (r < this.n - 1 && regionMap[i] !== regionMap[i + this.n])
+        paths += `M ${c * COORD} ${y2} L ${x2} ${y2} `;
     }
 
     const borderEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     borderEl.setAttribute("x", "0");
     borderEl.setAttribute("y", "0");
-    borderEl.setAttribute("width", totalCoord);
-    borderEl.setAttribute("height", totalCoord);
+    borderEl.setAttribute("width", String(totalCoord));
+    borderEl.setAttribute("height", String(totalCoord));
     borderEl.setAttribute("fill", "none");
     borderEl.setAttribute("stroke", "black");
     borderEl.setAttribute("stroke-width", String(STROKE));
@@ -360,9 +357,9 @@ class StarBattleGame {
     pathEl.setAttribute("stroke-linejoin", "round");
     pathEl.setAttribute("fill", "none");
     svg.appendChild(pathEl);
-    wrapper.appendChild(svg);
-  }
 
+    return svg;
+  }
 
   // ────────────────── 
   // ─── Game State ─── 
@@ -376,20 +373,20 @@ class StarBattleGame {
     this.isDragging = true;
 
     if (isRightClick) {
-      this.applyState(idx, this.state[idx] === 'star' ? 'none' : 'star');
+      this.applyState(idx, this.state[idx] === CELL.STAR ? CELL.NONE : CELL.STAR);
       this.saveHistory();
       this.isDragging = false;
     } else {
       const current = this.state[idx];
-      const next = current === 'none' ? 'dot' : (current === 'dot' ? 'star' : 'none');
+      const next = current === CELL.NONE ? CELL.DOT : (current === CELL.DOT ? CELL.STAR : CELL.NONE);
       this.applyState(idx, next);
     }
   }
 
   // Paints a dot on any empty cell the pointer passes over during a drag.
   handleDrag(idx) {
-    if (this.isDragging && this.state[idx] === 'none') {
-      this.applyState(idx, 'dot');
+    if (this.isDragging && this.state[idx] === CELL.NONE) {
+      this.applyState(idx, CELL.DOT);
     }
   }
 
@@ -410,7 +407,7 @@ class StarBattleGame {
   // Empty cells and dots are ignored — the puzzle is solved even with blank
   // squares.
   isSolved() {
-    return this.state.every((v, i) => (this.solution[i] === 'x') ? v === 'star' : v !== 'star');
+    return this.state.every((v, i) => (this.solution[i] === 'x') ? v === CELL.STAR : v !== CELL.STAR);
   }
 
   // Returns the set of cell indices involved in adjacency violations.
@@ -418,7 +415,7 @@ class StarBattleGame {
     const n = this.n;
     const errors = new Set();
     for (let i = 0; i < n * n; i++) {
-      if (this.state[i] !== 'star') continue;
+      if (this.state[i] !== CELL.STAR) continue;
       const r = Math.floor(i / n), c = i % n;
       for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
@@ -426,7 +423,7 @@ class StarBattleGame {
           const nr = r + dr, nc = c + dc;
           if (nr >= 0 && nr < n && nc >= 0 && nc < n) {
             const nb = nr * n + nc;
-            if (this.state[nb] === 'star') { errors.add(i); errors.add(nb); }
+            if (this.state[nb] === CELL.STAR) { errors.add(i); errors.add(nb); }
           }
         }
       }
@@ -440,8 +437,8 @@ class StarBattleGame {
     const errorIndices = new Set();
 
     const checkGroup = (indices) => {
-      const stars = indices.filter(i => this.state[i] === 'star');
-      const allDots = indices.every(i => this.state[i] === 'dot');
+      const stars = indices.filter(i => this.state[i] === CELL.STAR);
+      const allDots = indices.every(i => this.state[i] === CELL.DOT);
       // Highlight if more than 1 star or if group is impossible (all dots)
       if (stars.length > 1 || allDots) {
         indices.forEach(i => errorIndices.add(i));
@@ -564,13 +561,17 @@ class StarBattleGame {
       solved.push(this.currentPuzzleUniqueId);
       localStorage.setItem(this.solvedKey, JSON.stringify(solved));
     }
-    this.updateSolvedUI();
+    this._updateSolvedBadge(solved);
   }
 
-  // Shows or hides the ✅ badge based on whether this puzzle is recorded as
-  // solved.
+  // Shows or hides the ✅ badge based on whether this puzzle is recorded as solved.
   updateSolvedUI() {
     const solved = JSON.parse(localStorage.getItem(this.solvedKey) || '[]');
+    this._updateSolvedBadge(solved);
+  }
+
+  // Sets the solved badge opacity from an already-fetched solved list.
+  _updateSolvedBadge(solved) {
     const badge = document.getElementById('solved-badge');
     badge.style.opacity = solved.includes(this.currentPuzzleUniqueId) ? '1' : '0';
   }
@@ -581,8 +582,8 @@ class StarBattleGame {
 
   // Updates a single cell's DOM to reflect its current state value.
   updateCellVisual(cell, val) {
-    cell.innerHTML = val === 'star' ? '<span class="star">★</span>'
-      : val === 'dot' ? '<div class="dot"></div>'
+    cell.innerHTML = val === CELL.STAR ? '<span class="star">★</span>'
+      : val === CELL.DOT ? '<div class="dot"></div>'
       : '';
   }
 
@@ -603,7 +604,7 @@ class StarBattleGame {
 
   // Clears all cell state and resets history after the user confirms reset.
   doReset() {
-    this.state.fill('none');
+    this.state.fill(CELL.NONE);
     this.history = [JSON.stringify(this.state)];
     this.historyIdx = 0;
     this.clearHintUI();
@@ -690,13 +691,13 @@ class StarBattleGame {
     let filledCount = 0;
 
     for (let i = 0; i < this.n * this.n; i++) {
-      const userState = this.state[i]; // 'none', 'star', or 'dot'
+      const userState = this.state[i]; // CELL.NONE, CELL.STAR, or CELL.DOT
       const isSolutionStar = (this.solution[i] === 'x');
 
-      if (userState === 'none') continue;
+      if (userState === CELL.NONE) continue;
 
       filledCount++;
-      if ((userState === 'star' && !isSolutionStar) || (userState === 'dot' && isSolutionStar)) {
+      if ((userState === CELL.STAR && !isSolutionStar) || (userState === CELL.DOT && isSolutionStar)) {
         errorCount++;
       }
     }

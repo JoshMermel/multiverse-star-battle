@@ -1,4 +1,5 @@
-// solver.js
+import { CELL } from './constants.js';
+
 export class PuzzleSolver {
   constructor(game) {
     this.game = game;
@@ -56,7 +57,7 @@ export class PuzzleSolver {
     return this.units.filter(u =>
       u.label.includes("Region") &&
       u.boardIdx === boardIdx &&
-      !u.indices.some(i => this.game.state[i] === 'star')
+      !u.indices.some(i => this.game.state[i] === CELL.STAR)
     );
   }
 
@@ -166,12 +167,12 @@ export class PuzzleSolver {
       const correctChoice = this.game.solution[i]; // 'x' for star, '.' for dot
 
       // Check for misplaced stars
-      if (userChoice === 'star' && correctChoice !== 'x') {
+      if (userChoice === CELL.STAR && correctChoice !== 'x') {
         highlights.push({ idx: i, color: 'hint-error-red' });
       }
 
       // Check for misplaced dots
-      if (userChoice === 'dot' && correctChoice === 'x') {
+      if (userChoice === CELL.DOT && correctChoice === 'x') {
         highlights.push({ idx: i, color: 'hint-error-red' });
       }
     }
@@ -191,7 +192,7 @@ export class PuzzleSolver {
 
   hintAlreadySolved() {
     const isSolved = this.game.state.every((v, i) => 
-      (this.game.solution[i] === 'x') ? v === 'star' : v !== 'star'
+      (this.game.solution[i] === 'x') ? v === CELL.STAR : v !== CELL.STAR
     );
     if (!isSolved) return null;
 
@@ -207,7 +208,7 @@ export class PuzzleSolver {
   hintSingleCellRegion() {
     for (let bIdx = 0; bIdx < 2; bIdx++) {
       for (const region of this.getUnsolvedRegions(bIdx)) {
-        if (region.indices.length === 1 && this.game.state[region.indices[0]] === 'none') {
+        if (region.indices.length === 1 && this.game.state[region.indices[0]] === CELL.NONE) {
           return {
             success: true,
             description: `Every region must contain a star.`,
@@ -223,8 +224,8 @@ export class PuzzleSolver {
 
   hintOnlyEmpty() {
     for (const unit of this.units) {
-      const empty = unit.indices.filter(i => this.game.state[i] === 'none');
-      const hasStar = unit.indices.some(i => this.game.state[i] === 'star');
+      const empty = unit.indices.filter(i => this.game.state[i] === CELL.NONE);
+      const hasStar = unit.indices.some(i => this.game.state[i] === CELL.STAR);
       if (hasStar || empty.length !== 1) continue;
 
       const unitType = unit.label.includes("Row") ? "row"
@@ -246,8 +247,8 @@ export class PuzzleSolver {
 
   getBlockedByStars(unitType) {
     for (const unit of this.units.filter(u => u.label.includes(unitType))) {
-      const stars = unit.indices.filter(idx => this.game.state[idx] === 'star');
-      const empty = unit.indices.filter(idx => this.game.state[idx] === 'none');
+      const stars = unit.indices.filter(idx => this.game.state[idx] === CELL.STAR);
+      const empty = unit.indices.filter(idx => this.game.state[idx] === CELL.NONE);
 
       // If this unit has its star but still has empty cells to dot...
       if (stars.length > 0 && empty.length > 0) {
@@ -277,10 +278,10 @@ export class PuzzleSolver {
 
   hintExcludeAdjacency() {
     for (let i = 0; i < this.n * this.n; i++) {
-      if (this.game.state[i] !== 'star') continue;
+      if (this.game.state[i] !== CELL.STAR) continue;
 
       const marks = this.getNeighbors(i)
-        .filter(nb => this.game.state[nb] === 'none')
+        .filter(nb => this.game.state[nb] === CELL.NONE)
         .map(nb => ({ idx: nb, color: 'hint-target-yellow' }));
 
       if (marks.length > 0) {
@@ -301,7 +302,7 @@ export class PuzzleSolver {
 
     for (let bIdx = 0; bIdx < 2; bIdx++) {
       for (const region of this.getUnsolvedRegions(bIdx)) {
-        const empty = region.indices.filter(i => this.game.state[i] === 'none');
+        const empty = region.indices.filter(i => this.game.state[i] === CELL.NONE);
         if (empty.length !== 2) continue;
 
         const [idxA, idxB] = empty;
@@ -330,7 +331,7 @@ export class PuzzleSolver {
         blockedIndices.delete(idxB);
 
         const targets = Array.from(blockedIndices)
-          .filter(idx => this.game.state[idx] === 'none');
+          .filter(idx => this.game.state[idx] === CELL.NONE);
 
         if (targets.length > 0) {
           return {
@@ -363,23 +364,23 @@ export class PuzzleSolver {
           const windowIndices = Array.from({length: N}, (_, i) => axisIndices[startU + i]).flat();
           const windowSet = new Set(windowIndices);
 
-          const starsInWindow = windowIndices.filter(i => this.game.state[i] === 'star').length;
+          const starsInWindow = windowIndices.filter(i => this.game.state[i] === CELL.STAR).length;
           const requiredCount = N - starsInWindow;
           if (requiredCount <= 0) continue;
 
-          const availInUnits = windowIndices.filter(i => this.game.state[i] === 'none');
+          const availInUnits = windowIndices.filter(i => this.game.state[i] === CELL.NONE);
           if (availInUnits.length === 0) continue;
 
           // STANDARD: N regions trapped inside the window
           const pinnedRegs = unsolvedRegs.filter(reg => {
-            const regAvail = reg.indices.filter(i => this.game.state[i] === 'none');
+            const regAvail = reg.indices.filter(i => this.game.state[i] === CELL.NONE);
             return regAvail.length > 0 && regAvail.every(idx => windowSet.has(idx));
           });
 
           if (pinnedRegs.length === requiredCount) {
             const regUnion = new Set(pinnedRegs.flatMap(r => r.indices));
             const targets = windowIndices.filter(idx =>
-              this.game.state[idx] === 'none' && !regUnion.has(idx)
+              this.game.state[idx] === CELL.NONE && !regUnion.has(idx)
             );
             if (targets.length > 0) return this.formatHint(pinnedRegs, targets, axis, N, bIdx, "Standard");
           }
@@ -393,7 +394,7 @@ export class PuzzleSolver {
           if (coveringUnsolved.length === requiredCount) {
             const regUnion = new Set(coveringUnsolved.flatMap(r => r.indices));
             const targets = Array.from(regUnion).filter(idx =>
-              !windowSet.has(idx) && this.game.state[idx] === 'none'
+              !windowSet.has(idx) && this.game.state[idx] === CELL.NONE
             );
             if (targets.length > 0) return this.formatHint(coveringUnsolved, targets, axis, N, bIdx, "Inverse");
           }
@@ -418,7 +419,7 @@ export class PuzzleSolver {
 
     // 1. Identify all empty cells in the involved regions
     const allRegEmpty = sourceRegs.flatMap(r => 
-      r.indices.filter(i => this.game.state[i] === 'none')
+      r.indices.filter(i => this.game.state[i] === CELL.NONE)
     );
 
     // 2. EXCLUSIVE FILTER:
@@ -446,9 +447,9 @@ export class PuzzleSolver {
     for (const unit of this.units) {
       // Only consider unsolved rows and columns
       if (unit.label.includes("Region")) continue;
-      if (unit.indices.some(i => this.game.state[i] === 'star')) continue;
+      if (unit.indices.some(i => this.game.state[i] === CELL.STAR)) continue;
 
-      const candidates = unit.indices.filter(i => this.game.state[i] === 'none');
+      const candidates = unit.indices.filter(i => this.game.state[i] === CELL.NONE);
       if (candidates.length === 0) continue;
 
       // Precompute coordinates for each candidate
@@ -457,7 +458,7 @@ export class PuzzleSolver {
       // Check every empty cell not in this unit
       const targets = [];
       for (let i = 0; i < n * n; i++) {
-        if (this.game.state[i] !== 'none' || unit.indices.includes(i)) continue;
+        if (this.game.state[i] !== CELL.NONE || unit.indices.includes(i)) continue;
 
         const ir = Math.floor(i / n);
         const ic = i % n;
@@ -488,7 +489,7 @@ export class PuzzleSolver {
 
     for (let bIdx = 0; bIdx < 2; bIdx++) {
       for (const region of this.getUnsolvedRegions(bIdx)) {
-        const candidates = region.indices.filter(i => this.game.state[i] === 'none');
+        const candidates = region.indices.filter(i => this.game.state[i] === CELL.NONE);
 
         if (candidates.length === 0) continue;
         if (nTarget !== null && candidates.length !== nTarget) continue;
@@ -498,7 +499,7 @@ export class PuzzleSolver {
 
         const targets = [];
         for (let i = 0; i < n * n; i++) {
-          if (this.game.state[i] !== 'none' || region.indices.includes(i)) continue;
+          if (this.game.state[i] !== CELL.NONE || region.indices.includes(i)) continue;
 
           const ir = Math.floor(i / n);
           const ic = i % n;
@@ -539,11 +540,11 @@ export class PuzzleSolver {
           const windowIndices = combo.flatMap(u => axisIndices[u]);
           const windowSet = new Set(windowIndices);
 
-          const starsInWindow = windowIndices.filter(i => this.game.state[i] === 'star').length;
+          const starsInWindow = windowIndices.filter(i => this.game.state[i] === CELL.STAR).length;
           const requiredCount = N - starsInWindow;
           if (requiredCount <= 0) continue;
 
-          const availInUnits = windowIndices.filter(i => this.game.state[i] === 'none');
+          const availInUnits = windowIndices.filter(i => this.game.state[i] === CELL.NONE);
           if (availInUnits.length === 0) continue;
 
           const coveringRegLabels = new Set(availInUnits.map(idx => cellToRegionMap[idx]).filter(Boolean));
@@ -555,7 +556,7 @@ export class PuzzleSolver {
 
           const regUnion = new Set(coveringUnsolved.flatMap(r => r.indices));
           const targets = Array.from(regUnion)
-            .filter(idx => !windowSet.has(idx) && this.game.state[idx] === 'none');
+            .filter(idx => !windowSet.has(idx) && this.game.state[idx] === CELL.NONE);
 
           if (targets.length > 0) {
             const unitLabel = N === 1
@@ -602,7 +603,7 @@ export class PuzzleSolver {
       for (const combo of this.getCombinations(this.getUnsolvedRegions(bIdx), N)) {
         comboSets.push({
           label: `Board ${bIdx + 1} Combo (${combo.map(r => r.label.split(' ').pop()).join(',')})`,
-          indices: new Set(combo.flatMap(r => r.indices.filter(i => this.game.state[i] !== 'dot'))),  // only available cells
+          indices: new Set(combo.flatMap(r => r.indices.filter(i => this.game.state[i] !== CELL.DOT))),  // only available cells
           boardIdx: bIdx,
           regions: combo
         });
@@ -620,7 +621,7 @@ export class PuzzleSolver {
         if (!isSubset) continue;
 
         const targets = Array.from(setB.indices)
-          .filter(idx => !setA.indices.has(idx) && this.game.state[idx] === 'none');
+          .filter(idx => !setA.indices.has(idx) && this.game.state[idx] === CELL.NONE);
 
         if (targets.length > 0) {
           return this.formatSubsetHint(setA.regions, targets, setA.boardIdx, setA.label, setB.label);
@@ -633,7 +634,7 @@ export class PuzzleSolver {
   formatSubsetHint(sourceRegs, targets, bIdx, labelA, labelB) {
     const targetSet = new Set(targets);
     const sourceHighlights = sourceRegs.flatMap(r =>
-      r.indices.filter(i => this.game.state[i] === 'none' && !targetSet.has(i))
+      r.indices.filter(i => this.game.state[i] === CELL.NONE && !targetSet.has(i))
     ).map(idx => ({ idx, color: 'hint-source-blue' }));
 
     const description = sourceRegs.length === 1
@@ -655,11 +656,11 @@ export class PuzzleSolver {
     // Build unsolved region descriptors from both boards
     const unsolvedRegions = [0, 1].flatMap(bIdx =>
       this.getUnsolvedRegions(bIdx)
-      .filter(reg => reg.indices.some(i => this.game.state[i] === 'none'))
+      .filter(reg => reg.indices.some(i => this.game.state[i] === CELL.NONE))
       .map(reg => ({
         label: `B${bIdx + 1}-${reg.label.split(' ').pop()}`,
         allIdxs: new Set(reg.indices),
-        availableIdxs: reg.indices.filter(i => this.game.state[i] === 'none'),
+        availableIdxs: reg.indices.filter(i => this.game.state[i] === CELL.NONE),
         original: reg
       }))
     );
@@ -687,7 +688,7 @@ export class PuzzleSolver {
           const boardOffset = b * (n * n);
           for (let i = 0; i < n; i++) {
             const absoluteIdx = (axis === "Row" ? u * n + i : i * n + u) + boardOffset;
-            if (!regionUnion.has(absoluteIdx) && this.game.state[absoluteIdx] === 'none') {
+            if (!regionUnion.has(absoluteIdx) && this.game.state[absoluteIdx] === CELL.NONE) {
               targets.push(absoluteIdx);
             }
           }
@@ -737,8 +738,8 @@ export class PuzzleSolver {
 
     for (const regA of board0Regions) {
       for (const regB of board1Regions) {
-        const setA = new Set(regA.indices.filter(i => this.game.state[i] !== 'dot'));
-        const setB = new Set(regB.indices.filter(i => this.game.state[i] !== 'dot'));
+        const setA = new Set(regA.indices.filter(i => this.game.state[i] !== CELL.DOT));
+        const setB = new Set(regB.indices.filter(i => this.game.state[i] !== CELL.DOT));
 
         const shared  = [...setA].filter(i => setB.has(i));
         const onlyA   = [...setA].filter(i => !setB.has(i));
@@ -754,7 +755,7 @@ export class PuzzleSolver {
 
         if (!allInOneUnit(disjoint, 'row') && !allInOneUnit(disjoint, 'col')) continue;
 
-        const targets = shared.filter(i => this.game.state[i] === 'none');
+        const targets = shared.filter(i => this.game.state[i] === CELL.NONE);
         if (targets.length === 0) continue;
 
         return {
@@ -762,11 +763,11 @@ export class PuzzleSolver {
           boardIdx: undefined,
           description: `These two regions overlap everywhere except one row or column. A star anywhere in any non-shared cell would make one region unsolvable.`,
           highlights: shared
-          .filter(i => this.game.state[i] === 'none')
+          .filter(i => this.game.state[i] === CELL.NONE)
           .map(i => ({ idx: i, color: 'hint-source-blue' })),
           marks: [
-            ...onlyA.filter(i => this.game.state[i] === 'none').map(i => ({ idx: i, color: 'hint-target-yellow' })),
-            ...onlyB.filter(i => this.game.state[i] === 'none').map(i => ({ idx: i, color: 'hint-target-yellow' })),
+            ...onlyA.filter(i => this.game.state[i] === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
+            ...onlyB.filter(i => this.game.state[i] === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
           ]
         };
       }
@@ -779,11 +780,11 @@ export class PuzzleSolver {
     const boardSize = n * n;
 
     const emptyIndices = this.game.state
-      .flatMap((val, idx) => val === 'none' ? [idx] : []);
+      .flatMap((val, idx) => val === CELL.NONE ? [idx] : []);
 
     for (const testIdx of emptyIndices) {
       const sandboxState = [...this.game.state];
-      sandboxState[testIdx] = 'star';
+      sandboxState[testIdx] = CELL.STAR;
 
       // Half stage: only apply sees-star consequences, no forced-star pass
       const row = Math.floor(testIdx / n);
@@ -793,21 +794,21 @@ export class PuzzleSolver {
       for (let j = 0; j < n; j++) {
         const rIdx = row * n + j;
         const cIdx = j * n + col;
-        if (sandboxState[rIdx] === 'none' && rIdx !== testIdx) sandboxState[rIdx] = 'dot';
-        if (sandboxState[cIdx] === 'none' && cIdx !== testIdx) sandboxState[cIdx] = 'dot';
+        if (sandboxState[rIdx] === CELL.NONE && rIdx !== testIdx) sandboxState[rIdx] = CELL.DOT;
+        if (sandboxState[cIdx] === CELL.NONE && cIdx !== testIdx) sandboxState[cIdx] = CELL.DOT;
       }
 
       // Eliminate neighbors
       this.getNeighbors(testIdx).forEach(nb => {
-        if (sandboxState[nb] === 'none') sandboxState[nb] = 'dot';
+        if (sandboxState[nb] === CELL.NONE) sandboxState[nb] = CELL.DOT;
       });
 
       // Eliminate rest of each region containing testIdx
       for (let bIdx = 0; bIdx < 2; bIdx++) {
         const regChar = this.game.regions[bIdx][testIdx];
         for (let i = 0; i < n * n; i++) {
-          if (this.game.regions[bIdx][i] === regChar && sandboxState[i] === 'none') {
-            sandboxState[i] = 'dot';
+          if (this.game.regions[bIdx][i] === regChar && sandboxState[i] === CELL.NONE) {
+            sandboxState[i] = CELL.DOT;
           }
         }
       }
@@ -831,12 +832,12 @@ export class PuzzleSolver {
 
     // Find all empty cells to test
     const emptyIndices = this.game.state
-      .flatMap((val, idx) => val === 'none' ? [idx] : []);
+      .flatMap((val, idx) => val === CELL.NONE ? [idx] : []);
 
     for (const testIdx of emptyIndices) {
       // 1. Create a sandbox
       let sandboxState = [...this.game.state];
-      sandboxState[testIdx] = 'star';
+      sandboxState[testIdx] = CELL.STAR;
 
       // 2. Cascade consequences for n stages
       let broken = false;
@@ -873,8 +874,8 @@ export class PuzzleSolver {
     const allUnitIndices = this.units.map(u => u.indices);
 
     for (const indices of allUnitIndices) {
-      const hasStar = indices.some(i => state[i] === 'star');
-      const hasEmpty = indices.some(i => state[i] === 'none');
+      const hasStar = indices.some(i => state[i] === CELL.STAR);
+      const hasEmpty = indices.some(i => state[i] === CELL.NONE);
 
       // Contradiction: Unit needs a star but has no stars and no empty spots 
       //
@@ -883,9 +884,9 @@ export class PuzzleSolver {
 
     // Check for Adjacency: Two stars touching
     for (let i = 0; i < state.length; i++) {
-      if (state[i] === 'star') {
+      if (state[i] === CELL.STAR) {
         const neighbors = this.getNeighbors(i);
-        if (neighbors.some(nb => state[nb] === 'star')) return true;
+        if (neighbors.some(nb => state[nb] === CELL.STAR)) return true;
       }
     }
 
@@ -898,26 +899,26 @@ export class PuzzleSolver {
 
     // 1. If a cell sees a star, it must be a dot (Sees Star)
     for (let i = 0; i < state.length; i++) {
-      if (state[i] === 'star') {
+      if (state[i] === CELL.STAR) {
         const row = Math.floor(i / n);
         const col = i % n;
         for (let j = 0; j < n; j++) {
           const rIdx = row * n + j;
           const cIdx = j * n + col;
-          if (state[rIdx] === 'none' && rIdx !== i) state[rIdx] = 'dot';
-          if (state[cIdx] === 'none' && cIdx !== i) state[cIdx] = 'dot';
+          if (state[rIdx] === CELL.NONE && rIdx !== i) state[rIdx] = CELL.DOT;
+          if (state[cIdx] === CELL.NONE && cIdx !== i) state[cIdx] = CELL.DOT;
         }
         this.getNeighbors(i).forEach(nb => {
-          if (state[nb] === 'none') state[nb] = 'dot';
+          if (state[nb] === CELL.NONE) state[nb] = CELL.DOT;
         });
       }
     }
     const regions = this.units.filter(u => u.label.includes("Region"));
     for (const reg of regions) {
-      const hasStar = reg.indices.some(idx => state[idx] === 'star');
+      const hasStar = reg.indices.some(idx => state[idx] === CELL.STAR);
       if (hasStar) {
         reg.indices.forEach(idx => {
-          if (state[idx] === 'none') state[idx] = 'dot';
+          if (state[idx] === CELL.NONE) state[idx] = CELL.DOT;
         });
       }
     }
@@ -925,10 +926,10 @@ export class PuzzleSolver {
     // 2. If a unit has only one empty spot left, it must be a star (Only Empty) 
     //
     for (const u of this.units) {
-      const noneIndices = u.indices.filter(i => state[i] === 'none');
-      const starIndices = u.indices.filter(i => state[i] === 'star');
+      const noneIndices = u.indices.filter(i => state[i] === CELL.NONE);
+      const starIndices = u.indices.filter(i => state[i] === CELL.STAR);
       if (starIndices.length === 0 && noneIndices.length === 1) {
-        state[noneIndices[0]] = 'star';
+        state[noneIndices[0]] = CELL.STAR;
       }
     }
   }
