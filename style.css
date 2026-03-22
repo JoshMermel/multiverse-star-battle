@@ -23,6 +23,8 @@ button {
   border: 1px solid #999; 
   border-radius: 4px; 
   transition: background 0.2s;
+  --btn-font-size: 1rem;
+  font-size: var(--btn-font-size);
 }
 
 button:hover { background: #ddd; }
@@ -197,7 +199,10 @@ input[type="number"]::-webkit-inner-spin-button {
   margin: 20px auto;
 }
 
-#help-btn { margin-left: auto; }
+/* Only push Instructions to the right on desktop */
+@media (min-width: 601px) {
+  #help-btn { margin-left: auto; }
+}
 
 /* 7. TOASTS & FEEDBACK */
 #toast {
@@ -254,7 +259,25 @@ input[type="number"]::-webkit-inner-spin-button {
   }
   #controls {
     flex-wrap: wrap;
-    justify-content: center;
+    gap: 8px;
+  }
+
+  /* Row 1: board state actions */
+  #undo-btn, #redo-btn, #reset-btn {
+    flex: 1 1 30%;
+  }
+
+  /* Row 2: help and checking tools */
+  #check-btn, #hint-btn, #help-btn {
+    flex: 1 1 30%;
+  }
+  /* Make text shorter on mobile */
+  #check-btn {
+    font-size: 0;
+  }
+  #check-btn::after {
+    content: attr(data-mobile-label);
+    font-size: var(--btn-font-size);
   }
 }
 

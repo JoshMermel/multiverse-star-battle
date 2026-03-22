@@ -427,7 +427,7 @@ export class PuzzleSolver {
 
     return {
       boardIdx: bIdx,
-      description: `All empty cells in ${unitsPhrase} are covered by the blue regions. Circled squares must be dots.`,
+      description: `All empty cells in ${unitsPhrase} are covered by the blue regions.`,
       highlights: coveringUnsolved.flatMap(r =>
         r.indices.filter(i => this.game.state[i] === CELL.NONE && !targetSet.has(i))
       ).map(idx => ({ idx, color: 'hint-source-blue' })),
@@ -465,7 +465,7 @@ export class PuzzleSolver {
 
     return {
       boardIdx: bIdx,
-      description: `The star for ${unitsPhrase} must fall in one of the blue regions. Circled squares must be dots.`,
+      description: `The star for ${unitsPhrase} must fall in one of the blue regions.`,
       highlights: pinnedRegs.flatMap(r =>
         r.indices.filter(i => this.game.state[i] === CELL.NONE && !targetSet.has(i))
       ).map(idx => ({ idx, color: 'hint-source-blue' })),
