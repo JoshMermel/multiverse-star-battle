@@ -1,11 +1,14 @@
 import { CELL } from './constants.js';
 
 export class PuzzleSolver {
+  // ───────────────────── 
+  // ─── Setup & Utils ─── 
+  // ───────────────────── 
   constructor(game) {
     this.game = game;
     this.n = game.n;
 
-    // precompute some useful values that many hint functions need.
+    // Precompute some useful values that many hint functions need.
     this.units = this.getAllUnits();
     this.axisIndices = {
       Row: this.getAxisIndices("Row"),
@@ -35,6 +38,8 @@ export class PuzzleSolver {
       return units;
     }
 
+    // Regions: indices are board-local (0..n²-1), boardIdx distinguishes which
+    // board.
     this.game.regions.forEach((regionString, boardIdx) => {
       const regionIds = [...new Set(regionString.split(''))];
       regionIds.forEach(id => {
@@ -53,6 +58,7 @@ export class PuzzleSolver {
     return units;
   }
 
+  // Returns all regions on the given board that don't yet have a star placed.
   getUnsolvedRegions(boardIdx) {
     return this.units.filter(u =>
       u.label.includes("Region") &&
@@ -61,29 +67,23 @@ export class PuzzleSolver {
     );
   }
 
+  // Returns an array of n index-lists, one per row (or column), for the given
+  // axis.
   getAxisIndices(axis) {
     const n = this.n;
-    const axisIndices = [];
+    const result = [];
     for (let i = 0; i < n; i++) {
       const unitIdxs = [];
       for (let j = 0; j < n; j++) {
         unitIdxs.push(axis === "Row" ? i * n + j : j * n + i);
       }
-      axisIndices.push(unitIdxs);
+      result.push(unitIdxs);
     }
-    return axisIndices;
+    return result;
   }
 
-
-  // Get the region of |boardIdx| which contains |idx|.
-  getRegionAt(idx, boardIdx) {
-    return this.units.find(u => 
-      u.boardIdx === boardIdx && 
-      u.label.toLowerCase().includes("region") && 
-      u.indices.includes(idx)
-    );
-  }
-
+  // Builds a map from cell index to region label for the given board.
+  // Used to quickly look up which region a cell belongs to.
   buildCellToRegionMap(boardIdx) {
     const map = {};
     this.units
@@ -92,35 +92,66 @@ export class PuzzleSolver {
     return map;
   }
 
+  // Returns the 8-way (king's move) neighbors of the given cell index.
   getNeighbors(idx) {
     const n = this.n;
-    const boardSize = n * n;
-    const bIdx = idx < boardSize ? 0 : 1;
-    const offset = bIdx * boardSize;
-    const relativeIdx = idx % boardSize;
-
-    const row = Math.floor(relativeIdx / n);
-    const col = relativeIdx % n;
+    const row = Math.floor(idx / n);
+    const col = idx % n;
     const neighbors = [];
-
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
         if (dr === 0 && dc === 0) continue;
-        const nr = row + dr;
-        const nc = col + dc;
-
+        const nr = row + dr, nc = col + dc;
         if (nr >= 0 && nr < n && nc >= 0 && nc < n) {
-          neighbors.push((nr * n + nc) + offset);
+          neighbors.push(nr * n + nc);
         }
       }
     }
     return neighbors;
   }
 
+  // Helper to get all combinations of an array of size k
+  getCombinations(array, k) {
+    const result = [];
+    const fn = (start, prev) => {
+      if (prev.length === k) {
+        result.push(prev);
+        return;
+      }
+      for (let i = start; i < array.length; i++) {
+        fn(i + 1, [...prev, array[i]]);
+      }
+    };
+    fn(0, []);
+    return result;
+  }
+
+  _areDisjoint(sets) {
+    const seen = new Set();
+    for (const s of sets) {
+      for (const item of s) {
+        if (seen.has(item)) return false;
+        seen.add(item);
+      }
+    }
+    return true;
+  }
+
+  // Returns all region units that contain the given cell index.
+  _getRegionsContaining(idx) {
+    return this.units.filter(u => u.label.includes("Region") && u.indices.includes(idx));
+  }
+
+  // ───────────────────── 
+  // ─── Hint Dispatch ─── 
+  // ───────────────────── 
+
   getHint() {
     const rules = [
+      // Error checking
       () => this.hintCheckForErrors(),
       () => this.hintAlreadySolved(),
+      // Beginner
       () => this.hintSingleCellRegion(),
       () => this.hintOnlyEmpty(),
       () => this.hintExcludeAdjacency(),
@@ -128,22 +159,26 @@ export class PuzzleSolver {
       () => this.hintDomino(),
       () => this.hintUnitSeesTooMuch(),
       () => this.hintUnitRegionSync(1),
+      // Medium
       () => this.hintSeesTooMuch(2),
       () => this.hintSeesTooMuch(3),
       () => this.hintSeesTooMuch(null),
       () => this.hintUnitRegionSync(2),
+      // Hard
       () => this.hintUnitRegionSync(3),
       () => this.hintDisjointUnitRegionSync(2),
       () => this.hintManyRegionsSync(),
       () => this.hintRegionSubsetSync(1),
+      // Expert
       () => this.hintDisjointUnitRegionSync(3),
       () => this.hintCrossBoardRegionPinned(2, "Row"),
       () => this.hintCrossBoardRegionPinned(2, "Col"),
       () => this.hintCrossBoardRegionPinned(3, "Row"),
       () => this.hintCrossBoardRegionPinned(3, "Col"),
       () => this.hintPartialOverlap(),
-      () => this.hintRegionSubsetSync(2),
       () => this.hintLookaheadHalf(),
+      () => this.hintRegionSubsetSync(2),
+      // Grandmaster
       () => this.hintLookahead(1),
       () => this.hintLookahead(2),
       () => this.hintLookahead(3),
@@ -151,37 +186,34 @@ export class PuzzleSolver {
       () => this.hintLookahead(8),
     ];
 
-    for (let rule of rules) {
+    for (const rule of rules) {
       const hint = rule();
       if (hint) return hint;
     }
     return null;
   }
 
+
+  // ────────────────── 
+  // ─── Hint Rules ─── 
+  // ────────────────── 
+
+  // MATCH: Any cell where the user's placement contradicts the solution.
+  // ACTION: Highlights all incorrect cells in red before providing other hints.
   hintCheckForErrors() {
     const n = this.n;
     const highlights = [];
 
     for (let i = 0; i < n * n; i++) {
-      const userChoice = this.game.state[i];
-      const correctChoice = this.game.solution[i]; // 'x' for star, '.' for dot
-
-      // Check for misplaced stars
-      if (userChoice === CELL.STAR && correctChoice !== 'x') {
-        highlights.push({ idx: i, color: 'hint-error-red' });
-      }
-
-      // Check for misplaced dots
-      if (userChoice === CELL.DOT && correctChoice === 'x') {
-        highlights.push({ idx: i, color: 'hint-error-red' });
-      }
+      const isWrong = (this.game.state[i] === CELL.STAR && this.game.solution[i] !== 'x')
+                   || (this.game.state[i] === CELL.DOT  && this.game.solution[i] === 'x');
+      if (isWrong) highlights.push({ idx: i, color: 'hint-error-red' });
     }
 
     if (highlights.length > 0) {
       return {
-        success: true,
         description: "Can't provide a hint, fix the errors marked in red first",
-        highlights: highlights,
+        highlights,
         marks: [],
         boardIdx: undefined
       };
@@ -190,6 +222,8 @@ export class PuzzleSolver {
     return null;
   }
 
+  // MATCH: The puzzle is already in a solved state.
+  // ACTION: Returns an informational hint so the user knows no moves are needed.
   hintAlreadySolved() {
     const isSolved = this.game.state.every((v, i) => 
       (this.game.solution[i] === 'x') ? v === CELL.STAR : v !== CELL.STAR
@@ -197,7 +231,6 @@ export class PuzzleSolver {
     if (!isSolved) return null;
 
     return {
-      success: true,
       description: "The puzzle is already solved!",
       highlights: [],
       marks: [],
@@ -205,12 +238,13 @@ export class PuzzleSolver {
     };
   }
 
+  // MATCH: A region with exactly one cell and no star.
+  // ACTION: Points to that cell as a forced star.
   hintSingleCellRegion() {
     for (let bIdx = 0; bIdx < 2; bIdx++) {
       for (const region of this.getUnsolvedRegions(bIdx)) {
         if (region.indices.length === 1 && this.game.state[region.indices[0]] === CELL.NONE) {
           return {
-            success: true,
             description: `Every region must contain a star.`,
             highlights: [{ idx: region.indices[0], color: 'hint-target-green' }],
             marks: [],
@@ -222,6 +256,9 @@ export class PuzzleSolver {
     return null;
   }
 
+  // MATCH: A unit (row, column, or region) with no star and exactly one empty
+  //   cell.
+  // ACTION: Points to that cell as the forced star location.
   hintOnlyEmpty() {
     for (const unit of this.units) {
       const empty = unit.indices.filter(i => this.game.state[i] === CELL.NONE);
@@ -233,8 +270,7 @@ export class PuzzleSolver {
         : "region";
 
       return {
-        success: true,
-        description: `Only one spot is left for a star in this ${unitType}. `,
+        description: `Only one spot is left for a star in this ${unitType}.`,
         highlights: unit.indices
         .filter(i => i !== empty[0])
         .map(idx => ({ idx, color: 'hint-source-blue' })),
@@ -245,6 +281,8 @@ export class PuzzleSolver {
     return null;
   }
 
+  // Returns highlight/mark data for the first unit of the given type that has
+  // a star but still has empty cells, or null if none found.
   getBlockedByStars(unitType) {
     for (const unit of this.units.filter(u => u.label.includes(unitType))) {
       const stars = unit.indices.filter(idx => this.game.state[idx] === CELL.STAR);
@@ -263,6 +301,8 @@ export class PuzzleSolver {
     return null;
   }
 
+  // MATCH: A row, column, or region that already has its star.
+  // ACTION: Marks all remaining empty cells in that unit as dots.
   hintExcludeSolvedUnit() {
     const types = [
       { key: "Row",    desc: "This row already has its star." },
@@ -271,11 +311,13 @@ export class PuzzleSolver {
     ];
     for (const { key, desc } of types) {
       const result = this.getBlockedByStars(key);
-      if (result) return { success: true, description: desc, ...result, boardIdx: result.boardIdx ?? undefined };
+      if (result) return { description: desc, ...result, boardIdx: result.boardIdx ?? undefined };
     }
     return null;
   }
 
+  // MATCH: A placed star with empty neighbors.
+  // ACTION: Marks those neighbors as dots since stars cannot touch.
   hintExcludeAdjacency() {
     for (let i = 0; i < this.n * this.n; i++) {
       if (this.game.state[i] !== CELL.STAR) continue;
@@ -286,7 +328,6 @@ export class PuzzleSolver {
 
       if (marks.length > 0) {
         return {
-          success: true,
           description: "Stars cannot touch each other.",
           highlights: [{ idx: i, color: 'hint-source-blue' }],
           marks,
@@ -297,6 +338,8 @@ export class PuzzleSolver {
     return null;
   }
 
+  // MATCH: An unsolved region with exactly two orthogonally adjacent empty cells.
+  // ACTION: Marks cells that would be blocked regardless of which cell gets the star.
   hintDomino() {
     const n = this.n;
 
@@ -335,7 +378,6 @@ export class PuzzleSolver {
 
         if (targets.length > 0) {
           return {
-            success: true,
             description: "A star must be in the blue domino.",
             highlights: [
               { idx: idxA, color: 'hint-source-blue' },
@@ -350,60 +392,130 @@ export class PuzzleSolver {
     return null;
   }
 
-  hintUnitRegionSync(N) {
+  // Core logic for the "N units are covered by exactly N regions" deduction.
+  // Works for any set of unit index-lists, adjacent or not.
+  _hintUnitsCoveredByRegions(unitCombo, bIdx, axis) {
+    const windowIndices = unitCombo.flat();
+    const windowSet = new Set(windowIndices);
+
+    const starsInWindow = windowIndices.filter(i => this.game.state[i] === CELL.STAR).length;
+    const requiredCount = unitCombo.length - starsInWindow;
+    if (requiredCount <= 0) return null;
+
+    const availInUnits = windowIndices.filter(i => this.game.state[i] === CELL.NONE);
+    if (availInUnits.length === 0) return null;
+
+    const unsolvedRegs = this.getUnsolvedRegions(bIdx);
+    const cellToRegionMap = this.buildCellToRegionMap(bIdx);
+
+    const coveringRegLabels = new Set(availInUnits.map(idx => cellToRegionMap[idx]).filter(Boolean));
+    const coveringUnsolved = Array.from(coveringRegLabels)
+      .map(label => unsolvedRegs.find(r => r.label === label))
+      .filter(Boolean);
+
+    if (coveringUnsolved.length !== requiredCount) return null;
+
+    const regUnion = new Set(coveringUnsolved.flatMap(r => r.indices));
+    const targets = Array.from(regUnion)
+      .filter(idx => !windowSet.has(idx) && this.game.state[idx] === CELL.NONE);
+
+    if (targets.length === 0) return null;
+
+    const targetSet = new Set(targets);
+    const N = unitCombo.length;
+    const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
+
+    return {
+      boardIdx: bIdx,
+      description: `All empty cells in ${unitsPhrase} are covered by the blue regions. Circled squares must be dots.`,
+      highlights: coveringUnsolved.flatMap(r =>
+        r.indices.filter(i => this.game.state[i] === CELL.NONE && !targetSet.has(i))
+      ).map(idx => ({ idx, color: 'hint-source-blue' })),
+      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
+    };
+  }
+
+  // Core logic for the "N regions are trapped inside N units" deduction.
+  _hintRegionsTrappedinUnits(windowIndices, bIdx, axis) {
+    const windowSet = new Set(windowIndices.flat());
+    const allIndices = windowIndices.flat();
+
+    const starsInWindow = allIndices.filter(i => this.game.state[i] === CELL.STAR).length;
+    const requiredCount = windowIndices.length - starsInWindow;
+    if (requiredCount <= 0) return null;
+
+    const unsolvedRegs = this.getUnsolvedRegions(bIdx);
+    const pinnedRegs = unsolvedRegs.filter(reg => {
+      const regAvail = reg.indices.filter(i => this.game.state[i] === CELL.NONE);
+      return regAvail.length > 0 && regAvail.every(idx => windowSet.has(idx));
+    });
+
+    if (pinnedRegs.length !== requiredCount) return null;
+
+    const regUnion = new Set(pinnedRegs.flatMap(r => r.indices));
+    const targets = allIndices.filter(idx =>
+      this.game.state[idx] === CELL.NONE && !regUnion.has(idx)
+    );
+
+    if (targets.length === 0) return null;
+
+    const targetSet = new Set(targets);
+    const N = windowIndices.length;
+    const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
+
+    return {
+      boardIdx: bIdx,
+      description: `The star for ${unitsPhrase} must fall in one of the blue regions. Circled squares must be dots.`,
+      highlights: pinnedRegs.flatMap(r =>
+        r.indices.filter(i => this.game.state[i] === CELL.NONE && !targetSet.has(i))
+      ).map(idx => ({ idx, color: 'hint-source-blue' })),
+      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
+    };
+  }
+
+  // MATCH: N rows/cols (adjacent or disjoint) where either:
+  //   - N regions are trapped inside the window (standard), or
+  //   - The window's available cells are covered by N regions (inverse).
+  // ACTION: In both cases, cells in the window outside the relevant regions
+  //   must be dots.
+  // When adjacent=true, only considers contiguous windows (cheaper).
+  _hintWindowRegionSync(N, axis, adjacent) {
     const n = this.n;
+    const axisIndices = this.axisIndices[axis];
 
-    for (const axis of ["Row", "Column"]) {
-      const axisIndices = this.axisIndices[axis];
+    const windows = adjacent
+      ? Array.from({length: n - N + 1}, (_, startU) =>
+          Array.from({length: N}, (_, i) => axisIndices[startU + i]))
+        : this.getCombinations(Array.from({length: n}, (_, i) => i), N)
+          .map(combo => combo.map(u => axisIndices[u]));
 
-      for (let bIdx = 0; bIdx < 2; bIdx++) {
-        const unsolvedRegs = this.getUnsolvedRegions(bIdx);
-        const cellToRegionMap = this.buildCellToRegionMap(bIdx);
+    for (let bIdx = 0; bIdx < 2; bIdx++) {
+      for (const windowIndices of windows) {
+        const standard = this._hintRegionsTrappedInUnits(windowIndices, bIdx, axis);
+        if (standard) return standard;
 
-        for (let startU = 0; startU <= n - N; startU++) {
-          const windowIndices = Array.from({length: N}, (_, i) => axisIndices[startU + i]).flat();
-          const windowSet = new Set(windowIndices);
-
-          const starsInWindow = windowIndices.filter(i => this.game.state[i] === CELL.STAR).length;
-          const requiredCount = N - starsInWindow;
-          if (requiredCount <= 0) continue;
-
-          const availInUnits = windowIndices.filter(i => this.game.state[i] === CELL.NONE);
-          if (availInUnits.length === 0) continue;
-
-          // STANDARD: N regions trapped inside the window
-          const pinnedRegs = unsolvedRegs.filter(reg => {
-            const regAvail = reg.indices.filter(i => this.game.state[i] === CELL.NONE);
-            return regAvail.length > 0 && regAvail.every(idx => windowSet.has(idx));
-          });
-
-          if (pinnedRegs.length === requiredCount) {
-            const regUnion = new Set(pinnedRegs.flatMap(r => r.indices));
-            const targets = windowIndices.filter(idx =>
-              this.game.state[idx] === CELL.NONE && !regUnion.has(idx)
-            );
-            if (targets.length > 0) return this.formatHint(pinnedRegs, targets, axis, N, bIdx, "Standard");
-          }
-
-          // INVERSE: window trapped inside N regions
-          const coveringRegLabels = new Set(availInUnits.map(idx => cellToRegionMap[idx]).filter(Boolean));
-          const coveringUnsolved = Array.from(coveringRegLabels)
-            .map(label => unsolvedRegs.find(r => r.label === label))
-            .filter(Boolean);
-
-          if (coveringUnsolved.length === requiredCount) {
-            const regUnion = new Set(coveringUnsolved.flatMap(r => r.indices));
-            const targets = Array.from(regUnion).filter(idx =>
-              !windowSet.has(idx) && this.game.state[idx] === CELL.NONE
-            );
-            if (targets.length > 0) return this.formatHint(coveringUnsolved, targets, axis, N, bIdx, "Inverse");
-          }
-        }
+        const inverse = this._hintUnitsCoveredByRegions(windowIndices, bIdx, axis);
+        if (inverse) return inverse;
       }
     }
     return null;
   }
 
+  // MATCH (Standard): N adjacent rows/cols whose only available cells belong to
+  //   exactly N unsolved regions — those regions are "pinned" to this window.
+  // MATCH (Inverse): N adjacent rows/cols whose available cells are all covered
+  //   by exactly N unsolved regions.
+  // ACTION: In both cases, cells in the window outside the relevant regions
+  //   must be dots.
+  hintUnitRegionSync(N) {
+    for (const axis of ["Row", "Column"]) {
+      const hint = this._hintWindowRegionSync(N, axis, true);
+      if (hint) return hint;
+    }
+    return null;
+  }
+
+  // Extends hintUnitRegionSync to windows of 4 or more rows/cols.
   hintManyRegionsSync() {
     for (let n = 4; n < this.n; n++) {
       const result = this.hintUnitRegionSync(n);
@@ -412,190 +524,76 @@ export class PuzzleSolver {
     return null;
   }
 
-  formatHint(sourceRegs, targets, axis, N, bIdx, type) {
+  // Core logic shared by hintUnitSeesTooMuch and hintSeesTooMuch.
+  // MATCH: A unit where every empty cell is "seen" by some external empty cell
+  //   (same row, col, or diagonally adjacent).
+  // ACTION: Marks that external cell as a dot — it would block the unit's star
+  //   regardless of where in the unit it lands.
+  _hintSeesTooMuchForUnits(units) {
     const n = this.n;
-    // Ensure we are working with a clean set of target indices
-    const targetSet = new Set(targets);
-
-    // 1. Identify all empty cells in the involved regions
-    const allRegEmpty = sourceRegs.flatMap(r => 
-      r.indices.filter(i => this.game.state[i] === CELL.NONE)
-    );
-
-    // 2. EXCLUSIVE FILTER:
-    // A square gets a blue background ONLY if it is NOT a target circle
-    const sourceHighlights = allRegEmpty
-      .filter(idx => !targetSet.has(idx))
-      .map(idx => ({ idx, color: 'hint-source-blue' }));
-
-    const description = N === 1
-      ? `The blue cells must contain a star.`
-      : `The blue cells must contain ${N} stars.`
-
-    return {
-      success: true,
-      boardIdx: bIdx,
-      description: description,
-      highlights: sourceHighlights,
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
-    };
-  }
-
-  hintUnitSeesTooMuch() {
-    const n = this.n;
-
-    for (const unit of this.units) {
-      // Only consider unsolved rows and columns
-      if (unit.label.includes("Region")) continue;
-      if (unit.indices.some(i => this.game.state[i] === CELL.STAR)) continue;
-
+    for (const unit of units) {
       const candidates = unit.indices.filter(i => this.game.state[i] === CELL.NONE);
       if (candidates.length === 0) continue;
 
-      // Precompute coordinates for each candidate
-      const candCoords = candidates.map(i => ({ i, r: Math.floor(i / n), c: i % n }));
-
-      // Check every empty cell not in this unit
+      const candCoords = candidates.map(i => ({ r: Math.floor(i / n), c: i % n }));
       const targets = [];
+
       for (let i = 0; i < n * n; i++) {
         if (this.game.state[i] !== CELL.NONE || unit.indices.includes(i)) continue;
-
-        const ir = Math.floor(i / n);
-        const ic = i % n;
-
+        const ir = Math.floor(i / n), ic = i % n;
         const canSeeAll = candCoords.every(({ r, c }) =>
           ir === r || ic === c || (Math.abs(ir - r) <= 1 && Math.abs(ic - c) <= 1)
         );
-
         if (canSeeAll) targets.push({ idx: i, color: 'hint-target-yellow' });
       }
 
-      if (targets.length > 0) {
-        const unitType = unit.label.includes("Row") ? "row" : "column";
-        return {
-          success: true,
-          boardIdx: undefined,
-          description: `The blue cells must contain a star.`,
-          highlights: candidates.map(i => ({ idx: i, color: 'hint-source-blue' })),
-          marks: targets,
-        };
-      }
+      if (targets.length > 0) return {
+        boardIdx: unit.boardIdx,
+        description: `The blue cells must contain a star.`,
+        highlights: candidates.map(i => ({ idx: i, color: 'hint-source-blue' })),
+        marks: targets,
+      };
     }
     return null;
   }
 
+  // MATCH: An unsolved row or column where every empty cell is "seen" by some
+  //   external cell (same row, col, or adjacent).
+  // ACTION: Marks that external cell as a dot since the row/col star would
+  //   block it.
+  hintUnitSeesTooMuch() {
+    const rowColUnits = this.units.filter(u =>
+      !u.label.includes("Region") &&
+      !u.indices.some(i => this.game.state[i] === CELL.STAR)
+    );
+    return this._hintSeesTooMuchForUnits(rowColUnits);
+  }
+
+  // MATCH: An unsolved region where every empty cell is seen by some external
+  //   cell.
+  // ACTION: Marks that external cell as a dot.
+  // nTarget filters to regions with exactly that many candidates (null = any).
   hintSeesTooMuch(nTarget = null) {
-    const n = this.n;
-
-    for (let bIdx = 0; bIdx < 2; bIdx++) {
-      for (const region of this.getUnsolvedRegions(bIdx)) {
-        const candidates = region.indices.filter(i => this.game.state[i] === CELL.NONE);
-
-        if (candidates.length === 0) continue;
-        if (nTarget !== null && candidates.length !== nTarget) continue;
-
-        // Precompute row/col for each candidate
-        const candCoords = candidates.map(i => ({ i, r: Math.floor(i / n), c: i % n }));
-
-        const targets = [];
-        for (let i = 0; i < n * n; i++) {
-          if (this.game.state[i] !== CELL.NONE || region.indices.includes(i)) continue;
-
-          const ir = Math.floor(i / n);
-          const ic = i % n;
-
-          const canSeeAll = candCoords.every(({ r, c }) =>
-            ir === r || ic === c || (Math.abs(ir - r) <= 1 && Math.abs(ic - c) <= 1)
-          );
-
-          if (canSeeAll) targets.push({ idx: i, color: 'hint-target-yellow' });
-        }
-
-        if (targets.length > 0) {
-          return {
-            success: true,
-            description: `The blue cells must contain a star.`,
-            highlights: candidates.map(idx => ({ idx, color: 'hint-source-blue' })),
-            marks: targets,
-            boardIdx: bIdx,
-          };
-        }
-      }
-    }
-    return null;
+    const regionUnits = [0, 1].flatMap(bIdx => this.getUnsolvedRegions(bIdx))
+      .filter(u => nTarget === null || u.indices.filter(i => this.game.state[i] === CELL.NONE).length === nTarget);
+    return this._hintSeesTooMuchForUnits(regionUnits);
   }
 
   // 7788 notable example
+  // MATCH: N disjoint (not necessarily adjacent) rows/cols whose available cells
+  //   are covered by exactly N unsolved regions.
+  // ACTION: Cells in those regions outside the N rows/cols must be dots.
   hintDisjointUnitRegionSync(N) {
-    const n = this.n;
-
     for (const axis of ["Row", "Column"]) {
-      const axisIndices = this.axisIndices[axis];
-
-      for (let bIdx = 0; bIdx < 2; bIdx++) {
-        const unsolvedRegs = this.getUnsolvedRegions(bIdx);
-        const cellToRegionMap = this.buildCellToRegionMap(bIdx);
-
-        for (const combo of this.getCombinations(Array.from({length: n}, (_, i) => i), N)) {
-          const windowIndices = combo.flatMap(u => axisIndices[u]);
-          const windowSet = new Set(windowIndices);
-
-          const starsInWindow = windowIndices.filter(i => this.game.state[i] === CELL.STAR).length;
-          const requiredCount = N - starsInWindow;
-          if (requiredCount <= 0) continue;
-
-          const availInUnits = windowIndices.filter(i => this.game.state[i] === CELL.NONE);
-          if (availInUnits.length === 0) continue;
-
-          const coveringRegLabels = new Set(availInUnits.map(idx => cellToRegionMap[idx]).filter(Boolean));
-          const coveringUnsolved = Array.from(coveringRegLabels)
-            .map(label => unsolvedRegs.find(r => r.label === label))
-            .filter(Boolean);
-
-          if (coveringUnsolved.length !== requiredCount) continue;
-
-          const regUnion = new Set(coveringUnsolved.flatMap(r => r.indices));
-          const targets = Array.from(regUnion)
-            .filter(idx => !windowSet.has(idx) && this.game.state[idx] === CELL.NONE);
-
-          if (targets.length > 0) {
-            const unitLabel = N === 1
-              ? `${axis} ${combo[0] + 1}`
-              : `${axis}s ${combo.map(u => u + 1).join(", ")}`;
-            const regPhrase = N === 1 ? "this region" : `these ${N} regions`;
-
-            return {
-              success: true,
-              boardIdx: bIdx,
-              description: `These ${combo.length} regions provide all stars for ${combo.length} ${axis.toLowerCase()}s.`,
-              highlights: [
-                ...availInUnits.filter(idx => regUnion.has(idx)).map(idx => ({ idx, color: 'hint-source-blue' })),
-              ],
-              marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
-            };
-          }
-        }
-      }
+      const hint = this._hintWindowRegionSync(N, axis, false);
+      if (hint) return hint;
     }
     return null;
   }
 
-  // Simple helper to get all combinations of an array of size k
-  getCombinations(array, k) {
-    const result = [];
-    const fn = (start, prev) => {
-      if (prev.length === k) {
-        result.push(prev);
-        return;
-      }
-      for (let i = start; i < array.length; i++) {
-        fn(i + 1, [...prev, array[i]]);
-      }
-    };
-    fn(0, []);
-    return result;
-  }
-
+  // MATCH: N regions whose combined available cells are a subset of N other
+  //   regions' combined available cells (both needing the same star count).
+  // ACTION: Cells in the larger set but not the smaller must be dots.
   hintRegionSubsetSync(N) {
     const comboSets = [];
 
@@ -624,32 +622,16 @@ export class PuzzleSolver {
           .filter(idx => !setA.indices.has(idx) && this.game.state[idx] === CELL.NONE);
 
         if (targets.length > 0) {
-          return this.formatSubsetHint(setA.regions, targets, setA.boardIdx, setA.label, setB.label);
+          return this.formatSubsetHint(setA.regions, targets, setA.boardIdx);
         }
       }
     }
     return null;
   }
 
-  formatSubsetHint(sourceRegs, targets, bIdx, labelA, labelB) {
-    const targetSet = new Set(targets);
-    const sourceHighlights = sourceRegs.flatMap(r =>
-      r.indices.filter(i => this.game.state[i] === CELL.NONE && !targetSet.has(i))
-    ).map(idx => ({ idx, color: 'hint-source-blue' }));
-
-    const description = sourceRegs.length === 1
-      ? `One region is a subset of another.`
-      : `${sourceRegs.length} regions are a subset of ${sourceRegs.length} other regions.`;
-
-    return {
-      success: true,
-      boardIdx: undefined,
-      description,
-      highlights: sourceHighlights,
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
-    };
-  }
-
+  // MATCH: N disjoint regions (potentially from different boards) whose
+  //   available cells all fall in the same N adjacent rows or columns.
+  // ACTION: Cells in those rows/cols outside the N regions must be dots.
   hintCrossBoardRegionPinned(N, axis = "Row") {
     const n = this.n;
 
@@ -684,52 +666,23 @@ export class PuzzleSolver {
       const targets = [];
 
       for (const u of uList) {
-        for (let b = 0; b < 2; b++) {
-          const boardOffset = b * (n * n);
-          for (let i = 0; i < n; i++) {
-            const absoluteIdx = (axis === "Row" ? u * n + i : i * n + u) + boardOffset;
-            if (!regionUnion.has(absoluteIdx) && this.game.state[absoluteIdx] === CELL.NONE) {
-              targets.push(absoluteIdx);
-            }
+        for (let i = 0; i < n; i++) {
+          const idx = axis === "Row" ? u * n + i : i * n + u;
+          if (!regionUnion.has(idx) && this.game.state[idx] === CELL.NONE) {
+            targets.push(idx);
           }
         }
       }
-
       if (targets.length > 0) return this.formatCrossBoardHint(combo, targets, axis, uList);
     }
     return null;
   }
 
-  _areDisjoint(sets) {
-    const seen = new Set();
-    for (const s of sets) {
-      for (const item of s) {
-        if (seen.has(item)) return false;
-        seen.add(item);
-      }
-    }
-    return true;
-  }
 
-  formatCrossBoardHint(combo, targets, axis, uList) {
-    const targetSet = new Set(targets);
-    const labels = combo.map(r => r.label).join(", ");
-    const unitNums = uList.map(u => u + 1).join(", ");
-
-    // Source highlights: Empty squares in regions that aren't targets
-    const sourceHighlights = combo.flatMap(r => 
-      r.availableIdxs.filter(idx => !targetSet.has(idx))
-    ).map(idx => ({ idx, color: 'hint-source-blue' }));
-
-    return {
-      success: true,
-      boardIdx: undefined,
-      description: `Cross-board: These ${combo.length} regions must place their stars in the same ${combo.length} ${axis.toLowerCase()}s.`,
-      highlights: sourceHighlights,
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
-    };
-  }
-
+  // MATCH: Two regions (one per board) where the union of their non-shared
+  //   cells all fall in a single row or column.
+  // ACTION: Those non-shared cells must be dots — a star there would block both
+  //   regions.
   hintPartialOverlap() {
     const n = this.n;
 
@@ -759,7 +712,6 @@ export class PuzzleSolver {
         if (targets.length === 0) continue;
 
         return {
-          success: true,
           boardIdx: undefined,
           description: `These two regions overlap everywhere except one row or column. A star anywhere in any non-shared cell would make one region unsolvable.`,
           highlights: shared
@@ -775,9 +727,12 @@ export class PuzzleSolver {
     return null;
   }
 
+  // MATCH: An empty cell where placing a star immediately creates a
+  //   contradiction (after propagating just row/col/adjacency/region
+  //   eliminations).
+  // ACTION: That cell must be a dot.
   hintLookaheadHalf() {
     const n = this.n;
-    const boardSize = n * n;
 
     const emptyIndices = this.game.state
       .flatMap((val, idx) => val === CELL.NONE ? [idx] : []);
@@ -804,18 +759,14 @@ export class PuzzleSolver {
       });
 
       // Eliminate rest of each region containing testIdx
-      for (let bIdx = 0; bIdx < 2; bIdx++) {
-        const regChar = this.game.regions[bIdx][testIdx];
-        for (let i = 0; i < n * n; i++) {
-          if (this.game.regions[bIdx][i] === regChar && sandboxState[i] === CELL.NONE) {
-            sandboxState[i] = CELL.DOT;
-          }
-        }
+      for (const reg of this._getRegionsContaining(testIdx)) {
+        reg.indices.forEach(i => {
+          if (sandboxState[i] === CELL.NONE) sandboxState[i] = CELL.DOT;
+        });
       }
 
       if (this._isBoardBroken(sandboxState)) {
         return {
-          success: true,
           boardIdx: undefined,
           description: `Placing a star here would make the puzzle unsolvable.`,
           highlights: [],
@@ -826,9 +777,11 @@ export class PuzzleSolver {
     return null;
   }
 
+  // MATCH: An empty cell where placing a star leads to a contradiction within
+  //   nStages rounds of rule propagation.
+  // ACTION: That cell must be a dot.
   hintLookahead(nStages) {
     const n = this.n;
-    const boardSize = n * n;
 
     // Find all empty cells to test
     const emptyIndices = this.game.state
@@ -854,7 +807,6 @@ export class PuzzleSolver {
       // 3. If broken, the test cell must be a dot
       if (broken) {
         return {
-          success: true,
           boardIdx: undefined,
           description: `Placing a star here would make the puzzle unsolvable. Seeing why requires some lookahead.`,
           highlights: [],
@@ -865,10 +817,95 @@ export class PuzzleSolver {
     return null;
   }
 
+  // ─────────────────────── 
+  // ─── Hint Formatters ─── 
+  // ─────────────────────── 
+
+  // Formats a hint result for the region subset family of hints.
+  formatSubsetHint(sourceRegs, targets, bIdx) {
+    const targetSet = new Set(targets);
+    const sourceHighlights = sourceRegs.flatMap(r =>
+      r.indices.filter(i => this.game.state[i] === CELL.NONE && !targetSet.has(i))
+    ).map(idx => ({ idx, color: 'hint-source-blue' }));
+
+    const description = sourceRegs.length === 1
+      ? `One region is a subset of another.`
+      : `${sourceRegs.length} regions are a subset of ${sourceRegs.length} other regions.`;
+
+    return {
+      boardIdx: undefined,
+      description,
+      highlights: sourceHighlights,
+      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
+    };
+  }
+
+  // Formats a hint result for the cross-board region pinned hint.
+  formatCrossBoardHint(combo, targets, axis, uList) {
+    const targetSet = new Set(targets);
+
+    // Source highlights: Empty squares in regions that aren't targets
+    const sourceHighlights = combo.flatMap(r => 
+      r.availableIdxs.filter(idx => !targetSet.has(idx))
+    ).map(idx => ({ idx, color: 'hint-source-blue' }));
+
+    return {
+      boardIdx: undefined,
+      description: `Cross-board: These ${combo.length} regions must place their stars in the same ${combo.length} ${axis.toLowerCase()}s.`,
+      highlights: sourceHighlights,
+      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
+    };
+  }
+
+  // ────────────────── 
+  // ─── Simulation ─── 
+  // ────────────────── 
+
+   // Simulates basic "Sees Star" and "Only Empty" logic 
+  _applySimulatedRules(state) {
+    const n = this.n;
+
+    // 1. Sees Star: propagate consequences of each placed star
+    for (let i = 0; i < state.length; i++) {
+      if (state[i] !== CELL.STAR) continue;
+
+      const row = Math.floor(i / n);
+      const col = i % n;
+
+      // Eliminate rest of row and column
+      for (let j = 0; j < n; j++) {
+        const rIdx = row * n + j;
+        const cIdx = j * n + col;
+        if (state[rIdx] === CELL.NONE && rIdx !== i) state[rIdx] = CELL.DOT;
+        if (state[cIdx] === CELL.NONE && cIdx !== i) state[cIdx] = CELL.DOT;
+      }
+
+      // Eliminate neighbors
+      for (const nb of this.getNeighbors(i)) {
+        if (state[nb] === CELL.NONE) state[nb] = CELL.DOT;
+      }
+
+      // Eliminate rest of each region containing this star
+      for (const reg of this._getRegionsContaining(i)) {
+        reg.indices.forEach(idx => {
+          if (state[idx] === CELL.NONE) state[idx] = CELL.DOT;
+        });
+      }
+    }
+
+    // 2. Only Empty: if a unit has one empty spot left, it must be the star
+    for (const u of this.units) {
+      const noneIndices = u.indices.filter(i => state[i] === CELL.NONE);
+      const starIndices = u.indices.filter(i => state[i] === CELL.STAR);
+      if (starIndices.length === 0 && noneIndices.length === 1) {
+        state[noneIndices[0]] = CELL.STAR;
+      }
+    }
+  }
+
   // Checks for rule violations: empty rows/cols/regions or touching stars 
   _isBoardBroken(state) {
     const n = this.n;
-    const boardSize = n * n;
 
     // Check Rows, Columns, and Regions
     const allUnitIndices = this.units.map(u => u.indices);
@@ -878,7 +915,6 @@ export class PuzzleSolver {
       const hasEmpty = indices.some(i => state[i] === CELL.NONE);
 
       // Contradiction: Unit needs a star but has no stars and no empty spots 
-      //
       if (!hasStar && !hasEmpty) return true;
     }
 
@@ -891,46 +927,5 @@ export class PuzzleSolver {
     }
 
     return false;
-  }
-
-   // Simulates basic "Sees Star" and "Only Empty" logic 
-  _applySimulatedRules(state) {
-    const n = this.n;
-
-    // 1. If a cell sees a star, it must be a dot (Sees Star)
-    for (let i = 0; i < state.length; i++) {
-      if (state[i] === CELL.STAR) {
-        const row = Math.floor(i / n);
-        const col = i % n;
-        for (let j = 0; j < n; j++) {
-          const rIdx = row * n + j;
-          const cIdx = j * n + col;
-          if (state[rIdx] === CELL.NONE && rIdx !== i) state[rIdx] = CELL.DOT;
-          if (state[cIdx] === CELL.NONE && cIdx !== i) state[cIdx] = CELL.DOT;
-        }
-        this.getNeighbors(i).forEach(nb => {
-          if (state[nb] === CELL.NONE) state[nb] = CELL.DOT;
-        });
-      }
-    }
-    const regions = this.units.filter(u => u.label.includes("Region"));
-    for (const reg of regions) {
-      const hasStar = reg.indices.some(idx => state[idx] === CELL.STAR);
-      if (hasStar) {
-        reg.indices.forEach(idx => {
-          if (state[idx] === CELL.NONE) state[idx] = CELL.DOT;
-        });
-      }
-    }
-
-    // 2. If a unit has only one empty spot left, it must be a star (Only Empty) 
-    //
-    for (const u of this.units) {
-      const noneIndices = u.indices.filter(i => state[i] === CELL.NONE);
-      const starIndices = u.indices.filter(i => state[i] === CELL.STAR);
-      if (starIndices.length === 0 && noneIndices.length === 1) {
-        state[noneIndices[0]] = CELL.STAR;
-      }
-    }
   }
 }
