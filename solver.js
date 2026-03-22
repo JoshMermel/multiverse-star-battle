@@ -136,9 +136,8 @@ export class PuzzleSolver {
     const n = this.n;
     const highlights = [];
 
-    // We must loop through the state stored in the game instance
     for (let i = 0; i < n * n; i++) {
-      const userChoice = this.game.state[i]; // Point to this.game
+      const userChoice = this.game.state[i];
       const correctChoice = this.game.solution[i]; // 'x' for star, '.' for dot
 
       // Check for misplaced stars
@@ -146,7 +145,7 @@ export class PuzzleSolver {
         highlights.push({ idx: i, color: 'hint-error-red' });
       }
 
-      // Check for dots that should be stars
+      // Check for misplaced dots
       if (userChoice === 'dot' && correctChoice === 'x') {
         highlights.push({ idx: i, color: 'hint-error-red' });
       }
@@ -158,7 +157,7 @@ export class PuzzleSolver {
         description: "Can't provide a hint, fix the errors marked in red first",
         highlights: highlights,
         marks: [],
-        boardIdx: undefined // Highlight across both boards
+        boardIdx: undefined
       };
     }
 
@@ -186,7 +185,7 @@ export class PuzzleSolver {
         if (region.indices.length === 1 && this.game.state[region.indices[0]] === 'none') {
           return {
             success: true,
-            description: `This region only has one square, so it must contain a star`,
+            description: `Every region must contain a star.`,
             highlights: [{ idx: region.indices[0], color: 'hint-target-green' }],
             marks: [],
             boardIdx: region.boardIdx
@@ -209,7 +208,7 @@ export class PuzzleSolver {
 
       return {
         success: true,
-        description: `In this ${unitType}, only one spot is left for a star.`,
+        description: `Only one spot is left for a star in this ${unitType}. `,
         highlights: unit.indices
         .filter(i => i !== empty[0])
         .map(idx => ({ idx, color: 'hint-source-blue' })),
@@ -240,9 +239,9 @@ export class PuzzleSolver {
 
   hintExcludeSolvedUnit() {
     const types = [
-      { key: "Row",    desc: "This row already has its star, so the remaining empty cells must be dots." },
-      { key: "Column", desc: "This column already has its star, so the remaining empty cells must be dots." },
-      { key: "Region", desc: "This region already has its star, so all other cells must be dots." },
+      { key: "Row",    desc: "This row already has its star." },
+      { key: "Column", desc: "This column already has its star." },
+      { key: "Region", desc: "This region already has its star." },
     ];
     for (const { key, desc } of types) {
       const result = this.getBlockedByStars(key);
@@ -262,7 +261,7 @@ export class PuzzleSolver {
       if (marks.length > 0) {
         return {
           success: true,
-          description: "Stars cannot touch each other so the marked cells must be dots",
+          description: "Stars cannot touch each other.",
           highlights: [{ idx: i, color: 'hint-source-blue' }],
           marks,
           boardIdx: undefined
@@ -311,7 +310,7 @@ export class PuzzleSolver {
         if (targets.length > 0) {
           return {
             success: true,
-            description: "A star must be in the blue domino, so the circled cells must contain dots.",
+            description: "A star must be in the blue domino.",
             highlights: [
               { idx: idxA, color: 'hint-source-blue' },
               { idx: idxB, color: 'hint-source-blue' }
@@ -407,8 +406,8 @@ export class PuzzleSolver {
     const unitsPhrase = N === 1 ? `this ${unitType}` : `these ${N} ${unitType}s`;
 
     const description = type === "Standard"
-      ? `The star for ${unitsPhrase} must fall in one of the blue regions. Circled squares must be dots.`
-      : `All empty cells in ${unitsPhrase} are covered by the blue regions. Circled squares must be dots.`;
+      ? `The star for ${unitsPhrase} must fall in one of the blue regions.`
+      : `All empty cells in ${unitsPhrase} are covered by the blue regions.`;
 
     return {
       success: true,
@@ -453,7 +452,7 @@ export class PuzzleSolver {
         return {
           success: true,
           boardIdx: undefined,
-          description: `No matter where the star goes in this ${unitType}, it would block the circled cell. So the circled cell must be a dot.`,
+          description: `The blue squares must contain a star.`,
           highlights: candidates.map(i => ({ idx: i, color: 'hint-source-blue' })),
           marks: targets,
         };
@@ -492,7 +491,7 @@ export class PuzzleSolver {
         if (targets.length > 0) {
           return {
             success: true,
-            description: `No matter where the star goes in the blue region, it would block the circled cells. So they must be dots.`,
+            description: `The blue squares must contain a star.`,
             highlights: candidates.map(idx => ({ idx, color: 'hint-source-blue' })),
             marks: targets,
             boardIdx: bIdx,
@@ -545,7 +544,7 @@ export class PuzzleSolver {
             return {
               success: true,
               boardIdx: bIdx,
-              description: `These ${combo.length} ${axis.toLowerCase()}s can only be satisfied by stars in the highlighted regions. Other cells in those ${axis.toLowerCase()}s must be dots.`,
+              description: `These ${combo.length} regions provide all stars for ${combo.length} ${axis.toLowerCase()}s.`,
               highlights: [
                 ...availInUnits.filter(idx => regUnion.has(idx)).map(idx => ({ idx, color: 'hint-source-blue' })),
               ],
@@ -616,8 +615,8 @@ export class PuzzleSolver {
     ).map(idx => ({ idx, color: 'hint-source-blue' }));
 
     const description = sourceRegs.length === 1
-      ? `One region is a subset of another. Yellow circles must be dots.`
-      : `${sourceRegs.length} regions are a subset of ${sourceRegs.length} other regions. Yellow circles must be dots.`;
+      ? `One region is a subset of another.`
+      : `${sourceRegs.length} regions are a subset of ${sourceRegs.length} other regions.`;
 
     return {
       success: true,
@@ -702,7 +701,7 @@ export class PuzzleSolver {
     return {
       success: true,
       boardIdx: undefined,
-      description: `Cross-board: These ${combo.length} regions must place their stars in the same ${combo.length} ${axis.toLowerCase()}s. Empty cells in those ${axis.toLowerCase()}s outside these regions must be dots.`,
+      description: `Cross-board: These ${combo.length} regions must place their stars in the same ${combo.length} ${axis.toLowerCase()}s.`,
       highlights: sourceHighlights,
       marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
     };
@@ -739,7 +738,7 @@ export class PuzzleSolver {
         return {
           success: true,
           boardIdx: undefined,
-          description: `These two regions overlap everywhere except one row or column. A star anywhere in that line would block both regions, so those cells must be dots.`,
+          description: `These two regions overlap everywhere except one row or column. A star anywhere in that line would block both regions.`,
           highlights: shared
           .filter(i => this.game.state[i] === 'none')
           .map(i => ({ idx: i, color: 'hint-source-blue' })),
@@ -795,7 +794,7 @@ export class PuzzleSolver {
         return {
           success: true,
           boardIdx: undefined,
-          description: `Placing a star here would make the puzzle unsolvable. This square must be a dot.`,
+          description: `Placing a star here would make the puzzle unsolvable.`,
           highlights: [],
           marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
         };
@@ -834,7 +833,7 @@ export class PuzzleSolver {
         return {
           success: true,
           boardIdx: undefined,
-          description: `Placing a star here would make the puzzle unsolvable. This square must be a dot.`,
+          description: `Placing a star here would make the puzzle unsolvable. Seeing why requires some lookahead.`,
           highlights: [],
           marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
         };
