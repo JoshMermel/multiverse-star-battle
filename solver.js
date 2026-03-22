@@ -91,7 +91,6 @@ export class PuzzleSolver {
     return map;
   }
 
-  // TODO(jmerm): lookahead half stage and partial-overlap.
   getHint() {
     const rules = [
       () => this.hintCheckForErrors(),
@@ -118,6 +117,7 @@ export class PuzzleSolver {
       () => this.hintCrossBoardRegionPinned(3, "Col"),
       () => this.hintPartialOverlap(),
       () => this.hintRegionSubsetSync(2),
+      () => this.hintLookaheadHalf(),
       () => this.hintLookahead(1),
       () => this.hintLookahead(2),
       () => this.hintLookahead(3),
@@ -453,7 +453,7 @@ export class PuzzleSolver {
         return {
           success: true,
           boardIdx: undefined,
-          description: `Every candidate in this ${unitType} is seen by the circled cell. Since one of them must be a star, the circled cell must be a dot.`,
+          description: `No matter where the star goes in this ${unitType}, it would block the circled cell. So the circled cell must be a dot.`,
           highlights: candidates.map(i => ({ idx: i, color: 'hint-source-blue' })),
           marks: targets,
         };
@@ -492,7 +492,7 @@ export class PuzzleSolver {
         if (targets.length > 0) {
           return {
             success: true,
-            description: 'The circles must be dots, or the blue region would be unsolvable.',
+            description: `No matter where the star goes in the blue region, it would block the circled cells. So they must be dots.`,
             highlights: candidates.map(idx => ({ idx, color: 'hint-source-blue' })),
             marks: targets,
             boardIdx: bIdx,
@@ -545,7 +545,7 @@ export class PuzzleSolver {
             return {
               success: true,
               boardIdx: bIdx,
-              description: `${unitLabel} can only place its star within ${regPhrase}. Other cells in ${regPhrase} must be dots.`,
+              description: `These ${combo.length} ${axis.toLowerCase()}s can only be satisfied by stars in the highlighted regions. Other cells in those ${axis.toLowerCase()}s must be dots.`,
               highlights: [
                 ...availInUnits.filter(idx => regUnion.has(idx)).map(idx => ({ idx, color: 'hint-source-blue' })),
               ],
@@ -611,16 +611,18 @@ export class PuzzleSolver {
 
   formatSubsetHint(sourceRegs, targets, bIdx, labelA, labelB) {
     const targetSet = new Set(targets);
-
-    // Highlights: Empty cells in the inner subset (A) get the blue background
-    const sourceHighlights = sourceRegs.flatMap(r => 
+    const sourceHighlights = sourceRegs.flatMap(r =>
       r.indices.filter(i => this.game.state[i] === 'none' && !targetSet.has(i))
     ).map(idx => ({ idx, color: 'hint-source-blue' }));
+
+    const description = sourceRegs.length === 1
+      ? `One region is a subset of another. Yellow circles must be dots.`
+      : `${sourceRegs.length} regions are a subset of ${sourceRegs.length} other regions. Yellow circles must be dots.`;
 
     return {
       success: true,
       boardIdx: undefined,
-      description: `Since these regions entirely overlap a smaller set that needs the same number of stars, the extra squares must be dots.`,
+      description,
       highlights: sourceHighlights,
       marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
     };
@@ -700,7 +702,7 @@ export class PuzzleSolver {
     return {
       success: true,
       boardIdx: undefined,
-      description: `Cross-board: Regions ${labels} must place their stars in ${axis}s ${unitNums}. Empty cells in those ${axis.toLowerCase()}s outside these regions must be dots.`,
+      description: `Cross-board: These ${combo.length} regions must place their stars in the same ${combo.length} ${axis.toLowerCase()}s. Empty cells in those ${axis.toLowerCase()}s outside these regions must be dots.`,
       highlights: sourceHighlights,
       marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
     };
@@ -714,16 +716,15 @@ export class PuzzleSolver {
 
     for (const regA of board0Regions) {
       for (const regB of board1Regions) {
-        const setB = new Set(regB.indices);
+        const setA = new Set(regA.indices.filter(i => this.game.state[i] !== 'dot'));
+        const setB = new Set(regB.indices.filter(i => this.game.state[i] !== 'dot'));
 
-        const shared = regA.indices.filter(i => setB.has(i));
-        const onlyA  = regA.indices.filter(i => !setB.has(i));
-        const onlyB  = regB.indices.filter(i => !new Set(regA.indices).has(i));
-
-        if (shared.length === 0) continue;
-
+        const shared  = [...setA].filter(i => setB.has(i));
+        const onlyA   = [...setA].filter(i => !setB.has(i));
+        const onlyB   = [...setB].filter(i => !setA.has(i));
         const disjoint = [...onlyA, ...onlyB];
-        if (disjoint.length === 0) continue;
+
+        if (shared.length === 0 || disjoint.length === 0) continue;
 
         const allInOneUnit = (indices, axis) => {
           const vals = indices.map(i => axis === 'row' ? Math.floor(i / n) : i % n);
@@ -738,12 +739,65 @@ export class PuzzleSolver {
         return {
           success: true,
           boardIdx: undefined,
-          description: `The non-overlapping parts of these two regions (circled) all fall in one line. A star there would block both regions, so the star must be in the overlapping area (yellow).`,
-          highlights: [
-            ...onlyA.filter(i => this.game.state[i] === 'none').map(i => ({ idx: i, color: 'hint-source-blue' })),
-            ...onlyB.filter(i => this.game.state[i] === 'none').map(i => ({ idx: i, color: 'hint-source-blue' })),
-          ],
-          marks: targets.map(i => ({ idx: i, color: 'hint-target-green' }))
+          description: `These two regions overlap everywhere except one row or column. A star anywhere in that line would block both regions, so those cells must be dots.`,
+          highlights: shared
+          .filter(i => this.game.state[i] === 'none')
+          .map(i => ({ idx: i, color: 'hint-source-blue' })),
+          marks: [
+            ...onlyA.filter(i => this.game.state[i] === 'none').map(i => ({ idx: i, color: 'hint-target-yellow' })),
+            ...onlyB.filter(i => this.game.state[i] === 'none').map(i => ({ idx: i, color: 'hint-target-yellow' })),
+          ]
+        };
+      }
+    }
+    return null;
+  }
+
+  hintLookaheadHalf() {
+    const n = this.n;
+    const boardSize = n * n;
+
+    const emptyIndices = this.game.state
+      .flatMap((val, idx) => val === 'none' ? [idx] : []);
+
+    for (const testIdx of emptyIndices) {
+      const sandboxState = [...this.game.state];
+      sandboxState[testIdx] = 'star';
+
+      // Half stage: only apply sees-star consequences, no forced-star pass
+      const row = Math.floor(testIdx / n);
+      const col = testIdx % n;
+
+      // Eliminate rest of row and column
+      for (let j = 0; j < n; j++) {
+        const rIdx = row * n + j;
+        const cIdx = j * n + col;
+        if (sandboxState[rIdx] === 'none' && rIdx !== testIdx) sandboxState[rIdx] = 'dot';
+        if (sandboxState[cIdx] === 'none' && cIdx !== testIdx) sandboxState[cIdx] = 'dot';
+      }
+
+      // Eliminate neighbors
+      this.getNeighbors(testIdx).forEach(nb => {
+        if (sandboxState[nb] === 'none') sandboxState[nb] = 'dot';
+      });
+
+      // Eliminate rest of each region containing testIdx
+      for (let bIdx = 0; bIdx < 2; bIdx++) {
+        const regChar = this.game.regions[bIdx][testIdx];
+        for (let i = 0; i < n * n; i++) {
+          if (this.game.regions[bIdx][i] === regChar && sandboxState[i] === 'none') {
+            sandboxState[i] = 'dot';
+          }
+        }
+      }
+
+      if (this._isBoardBroken(sandboxState)) {
+        return {
+          success: true,
+          boardIdx: undefined,
+          description: `Placing a star here would make the puzzle unsolvable. This square must be a dot.`,
+          highlights: [],
+          marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
         };
       }
     }
