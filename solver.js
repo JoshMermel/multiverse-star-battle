@@ -104,8 +104,8 @@ export class PuzzleSolver {
       () => this.hintUnitRegionSync(1),
       () => this.hintSeesTooMuch(2),
       () => this.hintSeesTooMuch(3),
-      () => this.hintUnitRegionSync(2),
       () => this.hintSeesTooMuch(null),
+      () => this.hintUnitRegionSync(2),
       () => this.hintUnitRegionSync(3),
       () => this.hintDisjointUnitRegionSync(2),
       () => this.hintManyRegionsSync(),
@@ -402,12 +402,9 @@ export class PuzzleSolver {
       .filter(idx => !targetSet.has(idx))
       .map(idx => ({ idx, color: 'hint-source-blue' }));
 
-    const unitType = axis.toLowerCase();
-    const unitsPhrase = N === 1 ? `this ${unitType}` : `these ${N} ${unitType}s`;
-
-    const description = type === "Standard"
-      ? `The star for ${unitsPhrase} must fall in one of the blue regions.`
-      : `All empty cells in ${unitsPhrase} are covered by the blue regions.`;
+    const description = N === 1
+      ? `The blue cells must contain a star.`
+      : `The blue cells must contain ${N} stars.`
 
     return {
       success: true,
@@ -452,7 +449,7 @@ export class PuzzleSolver {
         return {
           success: true,
           boardIdx: undefined,
-          description: `The blue squares must contain a star.`,
+          description: `The blue cells must contain a star.`,
           highlights: candidates.map(i => ({ idx: i, color: 'hint-source-blue' })),
           marks: targets,
         };
@@ -491,7 +488,7 @@ export class PuzzleSolver {
         if (targets.length > 0) {
           return {
             success: true,
-            description: `The blue squares must contain a star.`,
+            description: `The blue cells must contain a star.`,
             highlights: candidates.map(idx => ({ idx, color: 'hint-source-blue' })),
             marks: targets,
             boardIdx: bIdx,
@@ -580,7 +577,7 @@ export class PuzzleSolver {
       for (const combo of this.getCombinations(this.getUnsolvedRegions(bIdx), N)) {
         comboSets.push({
           label: `Board ${bIdx + 1} Combo (${combo.map(r => r.label.split(' ').pop()).join(',')})`,
-          indices: new Set(combo.flatMap(r => r.indices)),
+          indices: new Set(combo.flatMap(r => r.indices.filter(i => this.game.state[i] !== 'dot'))),  // only available cells
           boardIdx: bIdx,
           regions: combo
         });
@@ -738,7 +735,7 @@ export class PuzzleSolver {
         return {
           success: true,
           boardIdx: undefined,
-          description: `These two regions overlap everywhere except one row or column. A star anywhere in that line would block both regions.`,
+          description: `These two regions overlap everywhere except one row or column. A star anywhere in any non-shared cell would make one region unsolvable.`,
           highlights: shared
           .filter(i => this.game.state[i] === 'none')
           .map(i => ({ idx: i, color: 'hint-source-blue' })),
