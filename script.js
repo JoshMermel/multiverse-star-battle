@@ -8,6 +8,21 @@ class StarBattleGame {
     this.initGame();
   }
 
+  readUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      catId: params.get('book'),
+      puzNum: parseInt(params.get('puzzle')) || 1,
+    };
+  }
+
+  updateUrlParams(catId, puzNum) {
+    const params = new URLSearchParams();
+    params.set('book', catId);
+    params.set('puzzle', puzNum);
+    window.history.replaceState(null, '', `?${params.toString()}`);
+  }
+
   async initGame() {
     try {
       const resp = await fetch('data/manifest.json');
@@ -17,9 +32,19 @@ class StarBattleGame {
       this.setupMenu();
 
       const catSelect = document.getElementById('category-select');
+      const puzInput = document.getElementById('puzzle-input');
+
       if (this.categories.length > 0) {
-        catSelect.value = this.categories[0].id;
-        // Manually trigger the change event to load the puzzles
+        const { catId, puzNum } = this.readUrlParams();
+
+        // Use URL cat if it exists in the manifest, otherwise fall back to first
+        const validCat = this.categories.find(c => c.id === catId);
+        catSelect.value = validCat ? validCat.id : this.categories[0].id;
+
+        // Store the desired puzzle number — commitPuzzleSelection will clamp it
+        // to the valid range after the category loads
+        this._pendingPuzNum = puzNum;
+
         catSelect.dispatchEvent(new Event('change'));
       }
     } catch (e) {
@@ -82,7 +107,6 @@ class StarBattleGame {
       opt.textContent = cat.label;
       catSelect.appendChild(opt);
     });
-
     catSelect.onchange = async (e) => {
       const catId = e.target.value;
       if (!catId) return;
@@ -93,10 +117,17 @@ class StarBattleGame {
         const total = this.loadedPuzzles.length;
         puzInput.max = total;
         countLabel.textContent = `of ${total}`;
-        puzInput.value = 1;
+
+        // Use pending puzzle number on initial load, otherwise reset to 1
+        const targetPuz = this._pendingPuzNum ?? 1;
+        this._pendingPuzNum = null;
+
+        // Clamp to valid range
+        puzInput.value = Math.max(1, Math.min(targetPuz, total));
+
         this.lastLoadedSelection.catId = catId;
-        this.lastLoadedSelection.puzNum = 1;
-        await this.loadPuzzle(this.loadedPuzzles[0], catId);
+        this.lastLoadedSelection.puzNum = parseInt(puzInput.value);
+        await this.loadPuzzle(this.loadedPuzzles[parseInt(puzInput.value) - 1], catId);
       } catch (err) {
         this.showToast("Could not load category", "error");
         console.error(err);
@@ -214,6 +245,7 @@ class StarBattleGame {
     this.solver = new PuzzleSolver(this);
     this.loadProgress({ suppressWinToast: true });
     this.updateControls();
+    this.updateUrlParams(categoryId, puzzleData.id);
   }
 
   renderBoard(id, regionMap, boardIdx) {
