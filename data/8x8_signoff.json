@@ -1,0 +1,66 @@
+[
+  {
+    "id": "1",
+    "N": 8,
+    "board1": "FAAAAADDFFCADDDDFGCADDDDFGCADDHHGGCADBBBGGEABBBBEEEABBBBEEEEEEBB",
+    "board2": "GAEEEABBGAEEEABBGAEEEABBGAAAAABFGADDCAFFGADDCAFFHADCCAFFHHHHHHFF",
+    "solution": "x...........x....x............x...x............x...x.........x..",
+    "unused_metadata": "304 puzzle_910_TH"
+  },
+  {
+    "id": "2",
+    "N": 8,
+    "board1": "FFFAAAABDDFAEEABDDDAEEABDDDAAAABDDDAHHABGGGAHHABGGGCHHHBGGGCCCBB",
+    "board2": "DAFFFABEDAAFFABEDAAAFABEDAGAAABBDAGGAABBDAHCCABBDAHCCABBHHHCCCCB",
+    "solution": "x..............x....x.........x...x..........x.....x.....x......",
+    "unused_metadata": "259 puzzle_508_AN"
+  },
+  {
+    "id": "3",
+    "N": 8,
+    "board1": "BAFFFAEEBAFFAAEEBAFAAGGGBAAACCCGBAAAACCCBADDAACCBADHHACCBHHHHHHH",
+    "board2": "CCAAAADDCAABBBBDCAABBGBDCHAAAGGGHHHHAAGGHHHHAAGGEAAAAFFGEEEFFFFF",
+    "solution": ".......x...x.........x..x...........x.....x...........x..x......",
+    "unused_metadata": "471 puzzle_438_KS"
+  },
+  {
+    "id": "4",
+    "N": 8,
+    "board1": "HAAAAACCHACCCCCCHABBBBBFHAAAAGGFHAEEEGGGHADEEEGGHADEEEGGDDDDDEGG",
+    "board2": "BBAAAEEEBAACAAEEBADCCAFFBADDCAFFBADDDAFFHAADAAGGHHAAAGGGHHHHGGGG",
+    "solution": ".....x....x.........x..........xx..........x..........x..x......",
+    "unused_metadata": "473 puzzle_354_FO"
+  },
+  {
+    "id": "5",
+    "N": 8,
+    "board1": "FAAAAHHHFAGGAAHBFAGGAABBFAAAAEEEFAAAEEEECACAAEEECACCAAEDCCCCDDDD",
+    "board2": "BAAAAEEEBADDAAEEBADDAAFFBAAAAFFFBAHHHFCFBAGHHCCCGAGHHHCCGGGHHHCC",
+    "solution": ".....x.....x..........x.x...........x....x.............x..x.....",
+    "unused_metadata": "255 puzzle_711_RP"
+  },
+  {
+    "id": "6",
+    "N": 8,
+    "board1": "HAGGGBFFHAGGGBBFHADGBBBBHADDDBBBHADDDDCCHACCCCCCHAAAAACCHEEEEECC",
+    "board2": "GGGAAAAHGBBADDAHGBBADDAHEBBAAAAHEEBACCAHEEEACCAFEEECCFFFEEECCFFF",
+    "solution": "..x............x.....x...x.........x....x.............x.....x...",
+    "unused_metadata": "649 puzzle_483_LA"
+  },
+  {
+    "id": "7",
+    "N": 8,
+    "board1": "CADDDAGFCADDDAGFCAADAAGFCEAAAGGFCEEAGGBBCEHAHBBBEEHAHHBBEEHHHHHB",
+    "board2": "BAAAAAHHBBBACHHHBBBACCDDEEEACDDDFEEADDDDFEEADDGGFAAAAAGGFFGGGGGG",
+    "solution": ".......x....x...x..........x.........x....x...........x..x......",
+    "unused_metadata": "661 puzzle_213_YI"
+  },
+  {
+    "id": "8",
+    "N": 8,
+    "board1": "DAEEEAHHDAAEEAHHDAAAEAHFDAGAAAFFDAGCAAFFDACCCAFFDABBCAFFBBBBBBBF",
+    "board2": "HHAAAAFFHAAFFFFFEAFFFFGGEADDAAGGEADDCAGGEAACCAGGEEAAAABBEEEEEBBB",
+    "solution": "x...........x.........x...x..........x.....x...........x.x......",
+    "unused_metadata": "455 puzzle_691_NG"
+  }
+]

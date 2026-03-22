@@ -11,6 +11,7 @@
         {"id": "8x8_symmetric", "label": "8x8 Symmetric Boards"},
         {"id": "8x8_self_symmetric", "label": "8x8 Self Symmetric"},
         {"id": "8x8_super_symmetric", "label": "8x8 Super Symmetric"},
-        {"id": "pranks", "label": "Guessing Required?"}
+        {"id": "pranks", "label": "Guessing Required?"},
+        {"id": "8x8_signoff", "label": "Signoff"}
     ]
 }
