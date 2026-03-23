@@ -62,5 +62,12 @@
     "board2": "HHAAAAFFHAAFFFFFEAFFFFGGEADDAAGGEADDCAGGEAACCAGGEEAAAABBEEEEEBBB",
     "solution": "x...........x.........x...x..........x.....x...........x.x......",
     "unused_metadata": "455 puzzle_691_NG"
+  },
+  {
+    "id": "9",
+    "N": 8,
+    "board1": "AAAAABBBAFFGGBBBFFFGGBEBDDFGGGEEDDFCGEEEDCCCCEHEDCHCHHHHDHHHHHHH",
+    "board2": "AAAHHCCCAAAHHCCCAAAAGGGGFFFEGGGGFFFEEGGGFEEEEDDDBEEEEDDDBBBDDDDD",
+    "solution": "....x.........x...x..........x..x..............x...x.....x......"
   }
 ]
