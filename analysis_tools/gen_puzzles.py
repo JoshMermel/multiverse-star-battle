@@ -870,18 +870,22 @@ class CompositeScorer:
         return p.validate_and_set(idx, val, reason, self.verbose)
 
     def is_board_broken(self, p):
-        """Returns True if the board state contains a logical contradiction."""
-        for unit in p.row_indices + p.col_indices:
-            if not any(p.grid[i] == 'x' for i in unit) and not any(p.grid[i] is None for i in unit):
+        for unit in p.row_indices + p.col_indices + \
+                    [idxs for b in p.regions for idxs in b.values()]:
+            stars = sum(1 for i in unit if p.grid[i] == 'x')
+            has_empty = any(p.grid[i] is None for i in unit)
+            # Contradiction: unit has more than one star
+            if stars > 1:
                 return True
-        for b_idx in range(2):
-            for idxs in p.regions[b_idx].values():
-                if not any(p.grid[i] == 'x' for i in idxs) and not any(p.grid[i] is None for i in idxs):
-                    return True
+            # Contradiction: unit needs a star but has nowhere to put one
+            if stars == 0 and not has_empty:
+                return True
+
         for i, val in enumerate(p.grid):
             if val == 'x':
                 if any(p.grid[nb] == 'x' for nb in p._neighbor_map[i]):
                     return True
+
         return False
 
     # ── Rules ─────────────────────────────────────────────────────────────────
@@ -1334,16 +1338,19 @@ class CompositeScorer:
             sandbox = copy.deepcopy(p)
             sandbox.grid[test_idx] = 'x'
             broken = False
+
             for _ in range(n_stages):
                 self.rule_sees_star(sandbox, silent=True)
                 self.rule_only_empty(sandbox, silent=True)
                 if self.is_board_broken(sandbox):
                     broken = True
                     break
+
             if not broken and extra_half_stage:
                 self.rule_sees_star(sandbox, silent=True)
                 if self.is_board_broken(sandbox):
                     broken = True
+
             if broken:
                 changes = p.validate_and_set(
                     test_idx, '.', f"{n_stages}-stage Lookahead contradiction", self.verbose

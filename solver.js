@@ -940,6 +940,17 @@ export class PuzzleSolver {
   }
 
   _isBoardBroken(state) {
-    return this._findBrokenUnit(state) !== null;
+    for (const indices of this.units.map(u => u.indices)) {
+      const starCount = indices.filter(i => state[i] === CELL.STAR).length;
+      const hasEmpty = indices.some(i => state[i] === CELL.NONE);
+      if (starCount > 1) return true;
+      if (starCount === 0 && !hasEmpty) return true;
+    }
+    for (let i = 0; i < state.length; i++) {
+      if (state[i] === CELL.STAR) {
+        if (this.getNeighbors(i).some(nb => state[nb] === CELL.STAR)) return true;
+      }
+    }
+    return false;
   }
 }
