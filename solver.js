@@ -741,11 +741,9 @@ export class PuzzleSolver {
       const sandboxState = [...this.game.state];
       sandboxState[testIdx] = CELL.STAR;
 
-      // Half stage: only apply sees-star consequences, no forced-star pass
       const row = Math.floor(testIdx / n);
       const col = testIdx % n;
 
-      // Eliminate rest of row and column
       for (let j = 0; j < n; j++) {
         const rIdx = row * n + j;
         const cIdx = j * n + col;
@@ -753,26 +751,25 @@ export class PuzzleSolver {
         if (sandboxState[cIdx] === CELL.NONE && cIdx !== testIdx) sandboxState[cIdx] = CELL.DOT;
       }
 
-      // Eliminate neighbors
-      this.getNeighbors(testIdx).forEach(nb => {
+      for (const nb of this.getNeighbors(testIdx)) {
         if (sandboxState[nb] === CELL.NONE) sandboxState[nb] = CELL.DOT;
-      });
+      }
 
-      // Eliminate rest of each region containing testIdx
       for (const reg of this._getRegionsContaining(testIdx)) {
         reg.indices.forEach(i => {
           if (sandboxState[i] === CELL.NONE) sandboxState[i] = CELL.DOT;
         });
       }
 
-      if (this._isBoardBroken(sandboxState)) {
-        return {
-          boardIdx: undefined,
-          description: `Placing a star here would make the puzzle unsolvable.`,
-          highlights: [],
-          marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
-        };
-      }
+      const broken = this._findBrokenUnit(sandboxState);
+      if (!broken) continue;
+
+      return {
+        boardIdx: broken.type === 'region' ? broken.boardIdx : undefined,
+        description: `The blue cells must contain a star. This is impossible if the circled cell holds a star.`,
+        highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
+        marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
+      };
     }
     return null;
   }
@@ -904,28 +901,45 @@ export class PuzzleSolver {
   }
 
   // Checks for rule violations: empty rows/cols/regions or touching stars 
-  _isBoardBroken(state) {
+  // Returns a descriptor of the first broken unit, or null if the board is valid.
+  // { type: 'row'|'col'|'region', label, indices, boardIdx? }
+  _findBrokenUnit(state) {
     const n = this.n;
 
-    // Check Rows, Columns, and Regions
-    const allUnitIndices = this.units.map(u => u.indices);
-
-    for (const indices of allUnitIndices) {
-      const hasStar = indices.some(i => state[i] === CELL.STAR);
-      const hasEmpty = indices.some(i => state[i] === CELL.NONE);
-
-      // Contradiction: Unit needs a star but has no stars and no empty spots 
-      if (!hasStar && !hasEmpty) return true;
+    for (let r = 0; r < n; r++) {
+      const indices = this.axisIndices.Row[r];
+      if (!indices.some(i => state[i] === CELL.STAR) &&
+        !indices.some(i => state[i] === CELL.NONE)) {
+        return { type: 'row', label: `Row ${r + 1}`, indices };
+      }
     }
-
-    // Check for Adjacency: Two stars touching
-    for (let i = 0; i < state.length; i++) {
-      if (state[i] === CELL.STAR) {
-        const neighbors = this.getNeighbors(i);
-        if (neighbors.some(nb => state[nb] === CELL.STAR)) return true;
+    for (let c = 0; c < n; c++) {
+      const indices = this.axisIndices.Column[c];
+      if (!indices.some(i => state[i] === CELL.STAR) &&
+        !indices.some(i => state[i] === CELL.NONE)) {
+        return { type: 'col', label: `Column ${String.fromCharCode(65 + c)}`, indices };
+      }
+    }
+    for (const unit of this.units.filter(u => u.label.includes('Region'))) {
+      if (!unit.indices.some(i => state[i] === CELL.STAR) &&
+        !unit.indices.some(i => state[i] === CELL.NONE)) {
+        return { type: 'region', label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx };
       }
     }
 
-    return false;
+    // Adjacency check — two stars touching. No unit to highlight in this case.
+    for (let i = 0; i < state.length; i++) {
+      if (state[i] === CELL.STAR) {
+        if (this.getNeighbors(i).some(nb => state[nb] === CELL.STAR)) {
+          return { type: 'adjacency', label: 'adjacency', indices: [] };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  _isBoardBroken(state) {
+    return this._findBrokenUnit(state) !== null;
   }
 }
