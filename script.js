@@ -87,9 +87,42 @@ class StarBattleGame {
     document.getElementById('reset-btn').onclick = open;
   }
 
+  // Returns true if catId refers to the special daily puzzle category.
+  isDailyCategory(catId) {
+    return catId === 'daily';
+  }
+
+  // Returns today's 0-based puzzle index by counting days since the Unix epoch
+  // and wrapping around the available pool. This is stable for the whole day
+  // regardless of when the page is loaded, and cycles forever as new puzzles
+  // are added.
+  getDailyPuzzleIndex(total) {
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysSinceEpoch = Math.floor(Date.now() / msPerDay);
+    return daysSinceEpoch % total;
+  }
+
+  // Fetches daily.json, selects today's puzzle by date, loads it, and hides
+  // the puzzle-navigation controls (prev/next/input) since there is only one
+  // puzzle to show.
+  async loadDailyCategory() {
+    const resp = await fetch('data/daily.json');
+    this.loadedPuzzles = await resp.json();
+    const total = this.loadedPuzzles.length;
+    const idx = this.getDailyPuzzleIndex(total);
+
+    this._setPuzzleNavVisible(false);
+    await this.loadPuzzle(this.loadedPuzzles[idx], 'daily');
+  }
+
   // Fetches puzzles for a category, updates the nav UI, and loads the target puzzle.
   // targetPuz is clamped to the valid range automatically.
   async loadCategory(catId, targetPuz = 1) {
+    if (this.isDailyCategory(catId)) {
+      await this.loadDailyCategory();
+      return;
+    }
+
     const puzInput = document.getElementById('puzzle-input');
     const countLabel = document.getElementById('puzzle-count-label');
 
@@ -103,7 +136,14 @@ class StarBattleGame {
     const clampedPuz = Math.max(1, Math.min(targetPuz, total));
     puzInput.value = clampedPuz;
 
+    this._setPuzzleNavVisible(true);
     await this.loadPuzzle(this.loadedPuzzles[clampedPuz - 1], catId);
+  }
+
+  // Shows or hides the puzzle number input and prev/next buttons.
+  // Called when switching between the daily category (no nav) and normal books.
+  _setPuzzleNavVisible(visible) {
+    document.querySelector('.puzzle-nav').style.visibility = visible ? '' : 'hidden';
   }
 
   setupMenu() {
@@ -112,12 +152,26 @@ class StarBattleGame {
     const prevBtn = document.getElementById('prev-puz');
     const nextBtn = document.getElementById('next-puz');
 
-    // Populate Categories
+    // Populate Categories.
+    // Categories with no "group" field (e.g. Daily) are appended first as plain
+    // options. The rest are grouped into <optgroup> elements, one per unique
+    // group label, preserving manifest order within each group.
+    const groups = new Map(); // group label -> <optgroup>
     this.categories.forEach(cat => {
       const opt = document.createElement('option');
       opt.value = cat.id;
       opt.textContent = cat.label;
-      catSelect.appendChild(opt);
+      if (!cat.group) {
+        catSelect.appendChild(opt);
+      } else {
+        if (!groups.has(cat.group)) {
+          const og = document.createElement('optgroup');
+          og.label = cat.group;
+          catSelect.appendChild(og);
+          groups.set(cat.group, og);
+        }
+        groups.get(cat.group).appendChild(opt);
+      }
     });
     catSelect.onchange = async (e) => {
       const catId = e.target.value;
@@ -229,50 +283,8 @@ class StarBattleGame {
     return hashHex.slice(0, 16); // 16 hex chars = 64 bits, plenty unique
   }
 
-  // Throws a descriptive Error if puzzleData is structurally invalid.
-  // Called before any state is mutated so a bad puzzle never partially loads.
-  validatePuzzleData(puzzleData) {
-    const { N, board1, board2, solution } = puzzleData;
-
-    // N must be a positive integer
-    if (!Number.isInteger(N) || N < 1)
-      throw new Error(`Puzzle "${puzzleData.id}": N must be a positive integer, got ${JSON.stringify(N)}`);
-
-    const expected = N * N;
-
-    // All three strings must actually be strings
-    for (const [name, val] of [['board1', board1], ['board2', board2], ['solution', solution]]) {
-      if (typeof val !== 'string')
-        throw new Error(`Puzzle "${puzzleData.id}": "${name}" must be a string, got ${typeof val}`);
-    }
-
-    // Length checks
-    if (board1.length !== expected)
-      throw new Error(`Puzzle "${puzzleData.id}": board1 length is ${board1.length}, expected ${expected} (${N}×${N})`);
-    if (board2.length !== expected)
-      throw new Error(`Puzzle "${puzzleData.id}": board2 length is ${board2.length}, expected ${expected} (${N}×${N})`);
-    if (solution.length !== expected)
-      throw new Error(`Puzzle "${puzzleData.id}": solution length is ${solution.length}, expected ${expected} (${N}×${N})`);
-
-    // Each board must have exactly N distinct region characters
-    const regions1 = new Set(board1);
-    if (regions1.size !== N)
-      throw new Error(`Puzzle "${puzzleData.id}": board1 has ${regions1.size} region(s), expected ${N}`);
-    const regions2 = new Set(board2);
-    if (regions2.size !== N)
-      throw new Error(`Puzzle "${puzzleData.id}": board2 has ${regions2.size} region(s), expected ${N}`);
-
-    // Solution must contain only 'x' and '.', with exactly N stars
-    if (!/^[x.]+$/.test(solution))
-      throw new Error(`Puzzle "${puzzleData.id}": solution contains invalid characters (only 'x' and '.' are allowed)`);
-    const starCount = solution.split('').filter(c => c === 'x').length;
-    if (starCount !== N)
-      throw new Error(`Puzzle "${puzzleData.id}": solution has ${starCount} star(s), expected ${N}`);
-  }
-
   // Initialises all game state for a new puzzle and re-renders both boards.
   async loadPuzzle(puzzleData, categoryId) {
-    this.validatePuzzleData(puzzleData);
     this.currentPuzzleUniqueId = await this.computePuzzleId(puzzleData);
     this.currentCategoryId = categoryId;
     this.currentPuzzle = puzzleData;
@@ -771,11 +783,12 @@ class StarBattleGame {
   }
 
   // Updates the URL bar to reflect the current puzzle without adding a browser
-  // history entry.
+  // history entry. For the daily category, omits ?puzzle= since the date is
+  // the implicit selector and a puzzle number in the URL would be misleading.
   updateUrlParams(catId, puzNum) {
     const params = new URLSearchParams();
     params.set('book', catId);
-    params.set('puzzle', puzNum);
+    if (!this.isDailyCategory(catId)) params.set('puzzle', puzNum);
     window.history.replaceState(null, '', `?${params.toString()}`);
   }
 }
