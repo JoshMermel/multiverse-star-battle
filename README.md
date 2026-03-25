@@ -53,9 +53,9 @@ Describes the available puzzle books:
 ```json
 {
   "categories": [
-      {"id": "8x8_beginner", "label": "8x8 Beginner"},
-      {"id": "8x8_medium", "label": "8x8 Medium"},
-      ...
+    {"id": "8x8_beginner",        "label": "Beginner",        "group": "8x8"},
+    {"id": "8x8_medium",          "label": "Medium",          "group": "8x8"},
+    ...
   ]
 }
 ```
@@ -104,6 +104,8 @@ boards.
 | `self_entangled` | One random board paired with its own rotation or reflection |
 | `super_symmetric` | One symmetric board paired with its own rotation or reflection |
 | `letter_pair` | Two boards whose regions form letter shapes (requires `--char1` and `--char2`) |
+| `voting_district_pair` | Two boards where all regions contain the same number
+of cells |
 
 ### Generation Usage
 
