@@ -9,9 +9,10 @@
     {"id": "6x6_medium",          "label": "Medium",          "group": "6x6"},
     {"id": "6x6_hard",            "label": "Hard",            "group": "6x6"},
     {"id": "12x12",               "label": "12x12 Puzzles",   "group": "Other Sizes"},
-    {"id": "8x8_symmetric",       "label": "Symmetric Boards","group": "Special"},
-    {"id": "8x8_self_symmetric",  "label": "Self Symmetric",  "group": "Special"},
-    {"id": "8x8_super_symmetric", "label": "Super Symmetric", "group": "Special"},
+    {"id": "8x8_symmetric",       "label": "Symmetric Boards","group": "Symmetric"},
+    {"id": "8x8_self_symmetric",  "label": "Self Symmetric",  "group": "Symmetric"},
+    {"id": "8x8_super_symmetric", "label": "Super Symmetric", "group": "Symmetric"},
+    {"id": "6x6_gerrymandered",   "label": "Gerrymandered",   "group": "Special"},
     {"id": "8x8_signoff",         "label": "Signoff",         "group": "Special"}
   ]
 }

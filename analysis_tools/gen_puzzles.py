@@ -32,7 +32,7 @@ import random
 import statistics
 import string
 from abc import ABC, abstractmethod
-from collections import defaultdict, Counter, dequeue
+from collections import defaultdict, Counter, deque
 from itertools import combinations
 from ortools.sat.python import cp_model
 
@@ -161,9 +161,8 @@ def flood_fill(grid, n, excluded_region=None):
     expansion sources (used by LetterGenerator to preserve the letter shape).
     Returns the filled grid or None if fill fails or produces singletons.
     """
-    temp_list = [i for i in range(n * n) if grid[i] is None]
-    random.shuffle(temp_list)
-    unfilled = deque(temp_list)
+    unfilled = [i for i in range(n * n) if grid[i] is None]
+    random.shuffle(unfilled)
 
     max_iters = len(unfilled) * 4
     iters = 0
@@ -172,7 +171,7 @@ def flood_fill(grid, n, excluded_region=None):
         if iters > max_iters:
             return None
 
-        idx = unfilled.popleft()
+        idx = unfilled.pop(0)
         if grid[idx] is not None:
             continue
 
@@ -209,14 +208,25 @@ class BoardGenerator(ABC):
     Base class for board generators. Each generator produces a flat board
     string and its set of valid solutions.
     """
-    def __init__(self, n, reject_singletons=False):
+    def __init__(self, n, reject_singletons=False, min_solutions=2, max_solutions=None):
         self.n = n
         # When True, boards where any region has only 1 cell are rejected.
         self.reject_singletons = reject_singletons
+        self.min_solutions = min_solutions
+        self.max_solutions = max_solutions
 
     def _has_singleton_region(self, grid):
         counts = Counter(grid)
         return any(c == 1 for c in counts.values())
+
+    def _solutions_in_range(self, solutions):
+        """Returns True if the solution count satisfies min/max_solutions."""
+        n = len(solutions)
+        if n < self.min_solutions:
+            return False
+        if self.max_solutions is not None and n > self.max_solutions:
+            return False
+        return True
 
     @abstractmethod
     def generate(self):
@@ -244,7 +254,7 @@ class RandomGenerator(BoardGenerator):
 
             flat = "".join(ALPHABET[v] for v in grid)
             solutions = get_all_solutions(grid, n)
-            if len(solutions) >= 2:
+            if self._solutions_in_range(solutions):
                 return flat, solutions
 
         raise RuntimeError(f"RandomGenerator failed after {max_attempts} attempts")
@@ -345,8 +355,8 @@ class SymmetricGenerator(BoardGenerator):
 
         flat = "".join(ALPHABET[v] for v in flat_grid)
         solutions = get_all_solutions(flat_grid, n)
-        if len(solutions) < 2:
-            raise RuntimeError("Board has fewer than 2 solutions")
+        if not self._solutions_in_range(solutions):
+            raise RuntimeError("Board rejected: solution count outside allowed range")
 
         return flat, solutions
 
@@ -532,13 +542,244 @@ class LetterGenerator(BoardGenerator):
                 continue
 
             solutions = get_all_solutions(grid, n)
-            if len(solutions) >= 2:
+            if self._solutions_in_range(solutions):
                 return "".join(ALPHABET[v] for v in grid), solutions
 
         raise RuntimeError(
             f"LetterGenerator failed for '{self.char}' after {max_attempts} attempts"
         )
 
+
+
+
+class VotingDistrictGenerator(BoardGenerator):
+    """
+    Generates a board where every region contains exactly N cells.
+
+    Method (ReCom-inspired):
+      1. Seed with a striped partition: region k gets all cells in row k,
+         giving N contiguous regions of exactly N cells each.
+      2. Repeatedly pick two adjacent regions, merge them into a 2N-cell
+         blob, build a random spanning tree of that blob, and cut a
+         "balance edge" — one whose removal yields two subtrees of size N.
+         If no balance edge exists for this spanning tree, retry with a
+         fresh tree (up to a small limit).
+      3. After enough accepted moves the board is well-shuffled; solve and
+         return if the solution count passes the range check.
+
+    Because every region always has exactly N cells, the reject_singletons
+    flag has no effect (regions can never be size 1 for N >= 2).
+    """
+
+    # How many ReCom moves to attempt per generation attempt.
+    # 4*n^2 gives enough shuffling without being slow.
+    _MOVES_PER_ATTEMPT = None  # set to 4*n*n in __init__
+
+    def __init__(self, n, reject_singletons=False, min_solutions=2, max_solutions=None):
+        super().__init__(n, reject_singletons=reject_singletons,
+                         min_solutions=min_solutions, max_solutions=max_solutions)
+        self._MOVES_PER_ATTEMPT = 4 * n * n
+
+    # ── grid helpers ──────────────────────────────────────────────────────────
+
+    def _orthogonal_neighbors(self, idx):
+        """Returns the (up to 4) orthogonal neighbours of cell idx."""
+        n = self.n
+        r, c = divmod(idx, n)
+        neighbors = []
+        if r > 0:     neighbors.append((r - 1) * n + c)
+        if r < n - 1: neighbors.append((r + 1) * n + c)
+        if c > 0:     neighbors.append(r * n + c - 1)
+        if c < n - 1: neighbors.append(r * n + c + 1)
+        return neighbors
+
+    def _region_adjacency(self, grid):
+        """
+        Returns a set of frozensets {a, b} for every pair of distinct
+        neighbouring regions in grid.
+        """
+        n = self.n
+        adj = set()
+        for idx in range(n * n):
+            for nb in self._orthogonal_neighbors(idx):
+                a, b = grid[idx], grid[nb]
+                if a != b:
+                    adj.add(frozenset((a, b)))
+        return adj
+
+    # ── spanning-tree helpers ─────────────────────────────────────────────────
+
+    def _random_spanning_tree(self, cells, adj_in_blob):
+        """
+        Builds a random spanning tree of the induced subgraph on `cells`
+        using Wilson's loop-erased random walk algorithm.
+        Returns the tree as an adjacency dict {cell: [neighbour, ...]}.
+        """
+        cells_set = set(cells)
+        in_tree = set()
+        tree_adj = {c: [] for c in cells}
+
+        # Pick root
+        root = random.choice(cells)
+        in_tree.add(root)
+
+        for start in cells:
+            if start in in_tree:
+                continue
+            # Loop-erased random walk from start to the tree
+            path = [start]
+            visited_in_walk = {start: 0}
+            cur = start
+            while cur not in in_tree:
+                # Neighbours of cur that are in the blob
+                nbrs = [nb for nb in adj_in_blob.get(cur, []) if nb in cells_set]
+                if not nbrs:
+                    break
+                nxt = random.choice(nbrs)
+                if nxt in visited_in_walk:
+                    # Erase the loop
+                    loop_start = visited_in_walk[nxt]
+                    path = path[:loop_start + 1]
+                    visited_in_walk = {c: i for i, c in enumerate(path)}
+                else:
+                    visited_in_walk[nxt] = len(path)
+                    path.append(nxt)
+                cur = nxt
+
+            # Add path to tree
+            for i in range(len(path) - 1):
+                a, b = path[i], path[i + 1]
+                tree_adj[a].append(b)
+                tree_adj[b].append(a)
+                in_tree.add(a)
+            in_tree.add(cur)
+
+        return tree_adj
+
+    def _find_balance_edges(self, tree_adj, cells):
+        """
+        Returns a list of (u, v) edges in the spanning tree whose removal
+        produces two subtrees of equal size (len(cells) // 2 each).
+        Uses a single DFS to compute subtree sizes.
+        """
+        n_half = len(cells) // 2
+        root = next(iter(cells))
+        parent = {root: None}
+        order = []
+        stack = [root]
+        visited = {root}
+        while stack:
+            node = stack.pop()
+            order.append(node)
+            for nb in tree_adj.get(node, []):
+                if nb not in visited:
+                    visited.add(nb)
+                    parent[nb] = node
+                    stack.append(nb)
+
+        subtree_size = {c: 1 for c in cells}
+        for node in reversed(order):
+            p = parent[node]
+            if p is not None:
+                subtree_size[p] += subtree_size[node]
+
+        balance_edges = []
+        for node in cells:
+            p = parent[node]
+            if p is not None and subtree_size[node] == n_half:
+                balance_edges.append((node, p))
+
+        return balance_edges
+
+    # ── ReCom move ────────────────────────────────────────────────────────────
+
+    def _recom_move(self, grid, region_cells):
+        """
+        Attempts one ReCom move on grid in-place.
+        Picks a random adjacent region pair, merges them, builds a random
+        spanning tree, and cuts a balance edge. Returns True on success.
+        """
+        adj_pairs = list(self._region_adjacency(grid))
+        random.shuffle(adj_pairs)
+
+        n = self.n
+        # Build the full adjacency list once for the grid (orthogonal only)
+        grid_adj = {}
+        for idx in range(n * n):
+            grid_adj[idx] = self._orthogonal_neighbors(idx)
+
+        for pair in adj_pairs:
+            ra, rb = tuple(pair)
+            blob = region_cells[ra] | region_cells[rb]
+            blob_list = list(blob)
+
+            # Restrict adjacency to within the blob
+            blob_adj = {c: [nb for nb in grid_adj[c] if nb in blob]
+                        for c in blob_list}
+
+            # Try a few spanning trees to find one with a balance edge
+            for _ in range(10):
+                tree = self._random_spanning_tree(blob_list, blob_adj)
+                balance_edges = self._find_balance_edges(tree, blob)
+                if balance_edges:
+                    break
+            else:
+                continue  # no luck with this pair; try another
+
+            # Cut a random balance edge and reassign regions
+            cut_u, cut_v = random.choice(balance_edges)
+
+            # BFS from cut_u (without crossing cut_u<->cut_v) to find new ra
+            new_ra = set()
+            q = deque([cut_u])
+            while q:
+                node = q.popleft()
+                if node in new_ra:
+                    continue
+                new_ra.add(node)
+                for nb in tree.get(node, []):
+                    if nb not in new_ra and not (node == cut_u and nb == cut_v)                                         and not (node == cut_v and nb == cut_u):
+                        q.append(nb)
+
+            new_rb = blob - new_ra
+
+            # Update grid and region_cells
+            for cell in new_ra:
+                grid[cell] = ra
+            for cell in new_rb:
+                grid[cell] = rb
+            region_cells[ra] = new_ra
+            region_cells[rb] = new_rb
+            return True
+
+        return False  # no adjacent pair had a usable spanning tree
+
+    # ── main generate ─────────────────────────────────────────────────────────
+
+    def generate(self, max_attempts=50):
+        n = self.n
+        for _ in range(max_attempts):
+            # Seed: row-striped partition (region k = row k)
+            grid = [r for r in range(n) for _ in range(n)]
+            region_cells = {r: set(range(r * n, (r + 1) * n)) for r in range(n)}
+
+            # Shuffle via ReCom moves
+            moves_done = 0
+            for _ in range(self._MOVES_PER_ATTEMPT):
+                if self._recom_move(grid, region_cells):
+                    moves_done += 1
+
+            if moves_done == 0:
+                continue  # pathological; shouldn't happen for n >= 2
+
+            flat = "".join(ALPHABET[v] for v in grid)
+            solutions = get_all_solutions(grid, n)
+            if self._solutions_in_range(solutions):
+                return flat, solutions
+
+        raise RuntimeError(
+            f"VotingDistrictGenerator failed after {max_attempts} attempts"
+        )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Comparators
@@ -1368,15 +1609,17 @@ class CompositeScorer:
 def _build_letter_pair(args, n, output_rows):
     if not args.char1 or not args.char2:
         raise ValueError("--char1 and --char2 are required for letter_pair mode")
-    rs = args.reject_singletons
-    gen_a = LetterGenerator(n, args.char1[0].upper(), reject_singletons=rs)
-    gen_b = LetterGenerator(n, args.char2[0].upper(), reject_singletons=rs)
+    kwargs = dict(reject_singletons=args.reject_singletons,
+                  min_solutions=args.min_solutions, max_solutions=args.max_solutions)
+    gen_a = LetterGenerator(n, args.char1[0].upper(), **kwargs)
+    gen_b = LetterGenerator(n, args.char2[0].upper(), **kwargs)
     return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows)
 
 
 def _make_gen(cls, args, n):
-    """Instantiates a generator class with the shared reject_singletons flag."""
-    return cls(n, reject_singletons=args.reject_singletons)
+    """Instantiates a generator class with the shared generation flags."""
+    return cls(n, reject_singletons=args.reject_singletons,
+               min_solutions=args.min_solutions, max_solutions=args.max_solutions)
 
 
 # Maps mode names to factory lambdas.
@@ -1387,7 +1630,8 @@ MODES = {
     'symmetric_pair': lambda a, n, r: SymmetricPoolComparator(_make_gen(SymmetricGenerator, a, n), n, r),
     'self_entangled': lambda a, n, r: SelfComparator(_make_gen(RandomGenerator, a, n), n, r),
     'super_symmetric':lambda a, n, r: SelfComparator(_make_gen(SymmetricGenerator, a, n), n, r),
-    'letter_pair':    lambda a, n, r: _build_letter_pair(a, n, r),
+    'letter_pair':         lambda a, n, r: _build_letter_pair(a, n, r),
+    'voting_district_pair': lambda a, n, r: SymmetricPoolComparator(_make_gen(VotingDistrictGenerator, a, n), n, r),
 }
 
 
@@ -1400,7 +1644,9 @@ def build_comparator(args, output_rows):
 
 def run_generation(args):
     output_rows = []
-    flags = f"reject_singletons={'yes' if args.reject_singletons else 'no'}"
+    sol_range = f"{args.min_solutions}..{args.max_solutions if args.max_solutions is not None else '∞'}"
+    flags = (f"reject_singletons={'yes' if args.reject_singletons else 'no'}"
+             f" | solutions={sol_range}")
     print(f"# Mode: {args.mode} | n={args.n} | count={args.count} | {flags}", flush=True)
     print("name,N,board_1,board_2,solution", flush=True)
 
@@ -1520,7 +1766,8 @@ Generation modes:
   symmetric_pair   Two symmetric boards sharing exactly one solution
   self_entangled   One random board paired with its own rotation/reflection
   super_symmetric  One symmetric board paired with its own rotation/reflection
-  letter_pair      Two letter-shaped boards (requires --char1 and --char2)
+  letter_pair            Two letter-shaped boards (requires --char1 and --char2)
+  voting_district_pair   Two boards where every region contains exactly N cells
 
 Examples:
   python3 gen_puzzles.py --mode random_pair --n 8 --count 100
@@ -1548,6 +1795,12 @@ Examples:
     parser.add_argument("--reject-singletons", action="store_true",
                         dest="reject_singletons",
                         help="Reject boards where any region contains only one cell")
+    parser.add_argument("--min-solutions", type=int, default=2,
+                        dest="min_solutions",
+                        help="Minimum number of single-board solutions required (default: 2)")
+    parser.add_argument("--max-solutions", type=int, default=None,
+                        dest="max_solutions",
+                        help="Maximum number of single-board solutions allowed (default: unlimited)")
     parser.add_argument("--score-after", action="store_true",
                         dest="score_after",
                         help="Automatically score generated puzzles after generation completes")
