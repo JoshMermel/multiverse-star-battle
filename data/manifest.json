@@ -12,7 +12,7 @@
     {"id": "8x8_symmetric",       "label": "Symmetric Boards","group": "Symmetric"},
     {"id": "8x8_self_symmetric",  "label": "Self Symmetric",  "group": "Symmetric"},
     {"id": "8x8_super_symmetric", "label": "Super Symmetric", "group": "Symmetric"},
-    {"id": "6x6_gerrymandered",   "label": "Gerrymandered",   "group": "Special"},
+    {"id": "gerrymandered",       "label": "Gerrymandered",   "group": "Special"},
     {"id": "8x8_signoff",         "label": "Signoff",         "group": "Special"}
   ]
 }
