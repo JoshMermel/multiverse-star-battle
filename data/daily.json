@@ -1,0 +1,803 @@
+[
+  {
+    "id": "1",
+    "N": 8,
+    "board1": "DDDAAABBDDDDACBBDDDDABBBDDDDAAABFEEEHHHHFFFEHHHHFFGEHHHHFFEEEHHH",
+    "board2": "FFFFDDDDFFFEDDDDEGFEDDDDEEEEDDDAEHHHAAAAHHHHABCAHHHHABBBHHHHBBBB",
+    "solution": "...x.........x...x.............xx.............x...x.........x...",
+    "unused_metadata": "rot90,3 self_puzz_14,8"
+  },
+  {
+    "id": "2",
+    "N": 8,
+    "board1": "DDDBBBBBDDBBACCCDDBBBCCCDBBBBCCCGGGFFFFHGGGFFFHHGGGEFFHHFFFFFHHH",
+    "board2": "FGGGDDDDFGGGBDDDFGGGBBBDFEFFBBBBFFFFBBABHFFFCCCBHHHFCCCBHHHHCCCB",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,3 self_puzz_16,8"
+  },
+  {
+    "id": "3",
+    "N": 8,
+    "board1": "DDDDDBAADDDDDAAACCCCCCAACCCCCCAAEEGGGGGGEEGGGGGGEEEHHHHHEEFHHHHH",
+    "board2": "EEEECCDDEEEECCDDFEGGCCDDHHGGCCDDHHGGCCDDHHGGCCABHHGGAAAAHHGGAAAA",
+    "solution": ".....x.....x....x.............x..x.............x....x.....x.....",
+    "unused_metadata": "rot90,3 self_puzz_17,8"
+  },
+  {
+    "id": "4",
+    "N": 8,
+    "board1": "DDBBBABBDDDBBBBBDDDDDBBBDDDDDCCCGGGHHHHHFFFHHHHHFFFFFHHHFFEFFFHH",
+    "board2": "FFFGDDDDFFFGDDDDEFFGDDDBFFHHDDBBFFHHDDBBFHHHCBBAHHHHCBBBHHHHCBBB",
+    "solution": ".....x.....x....x.............x..x.............x....x.....x.....",
+    "unused_metadata": "rot90,3 self_puzz_32,8"
+  },
+  {
+    "id": "5",
+    "N": 8,
+    "board1": "CDDDDBAACCDDDDAACCCDDDDACCCCDDAAEEHHGGGGEHHHHGGGEEHHHHGGEEFHHHHG",
+    "board2": "EEEECCCCEEHECCCDFHHHCCDDHHHHCDDDHHHGDDDDHHGGDDDBHGGGADAAGGGGAAAA",
+    "solution": ".....x.....x....x.............x..x.............x....x.....x.....",
+    "unused_metadata": "rot90,3 self_puzz_45,8"
+  },
+  {
+    "id": "6",
+    "N": 8,
+    "board1": "BBBCCCCABBBCCCCABBBCCCCABBBCCDCAEGHGGFFFEGGGGFFFEGGGGFFFEGGGGFFF",
+    "board2": "EEEEBBBBGGGGBBBBGGGHBBBBGGGGCCCCGGGGCCCCFFFFDCCCFFFFCCCCFFFFAAAA",
+    "solution": ".x.............x...x.........x....x.........x...x.............x.",
+    "unused_metadata": "rot90,4 self_puzz_23,8"
+  },
+  {
+    "id": "7",
+    "N": 8,
+    "board1": "BBBBAAAADBBDDAAADDDDDDDDCDDDDDDDHHHHHHHGHHHHHHHHEEEHHFFHEEEEFFFF",
+    "board2": "EEHHCDDBEEHHDDBBEEHHDDBBEHHHDDDBFHHHDDDAFFHHDDAAFFHHDDAAFHHGDDAA",
+    "solution": "....x.....x...........x.x..............x.x...........x.....x....",
+    "unused_metadata": "rot90,4 self_puzz_46,8"
+  },
+  {
+    "id": "8",
+    "N": 8,
+    "board1": "BBBBBAAABBBDAAAADBDDDAACDDDDDDDDHHHHHHHHGEEHHHFHEEEEHFFFEEEFFFFF",
+    "board2": "EEGHDDBBEEEHDBBBEEEHDDBBFEHHDDDBFHHHDDABFFHHDAAAFFFHDAAAFFHHDCAA",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,4 self_puzz_61,8"
+  },
+  {
+    "id": "9",
+    "N": 8,
+    "board1": "CCCCCCCBCACCCCCBAAAACBBBAAAAABBDHFFEEEEEFFFGEEEEFGGGGGEGFGGGGGGG",
+    "board2": "GGEEDBBBGEEEBBCCGGEEBBCCGGEEACCCGGGEAACCGGFFAACCGGFFAAACFFFHAACC",
+    "solution": "....x....x...........x.........xx.........x...........x....x....",
+    "unused_metadata": "flip_h_rot90,4 self_puzz_66,8"
+  },
+  {
+    "id": "10",
+    "N": 8,
+    "board1": "AADDDCCCAADDDCCCDDDCCCCCDDCCCCCBFGGGGGHHGGGGGHHHGGGHHHEEGGGHHHEE",
+    "board2": "EEHHBCCCEEHHCCCCHHHGCCCCHHGGCCDDHHGGCCDDGGGGCDDDGGGGDDAAGGGFDDAA",
+    "solution": "....x....x...........x.........xx.........x...........x....x....",
+    "unused_metadata": "flip_h_rot90,4 self_puzz_83,8"
+  },
+  {
+    "id": "11",
+    "N": 8,
+    "board1": "BBBACCCCBDAAACCCBCCACCCCBCCCCCCCGGGGGGGFGGGGEGGFGGGEEEHFGGGGEFFF",
+    "board2": "FFFFCCCCFHGGCCCCFEGGCCCCEEEGCCACGEGGCAAAGGGGCCABGGGGCCDBGGGGBBBB",
+    "solution": "...x.....x...........x..x..............x..x...........x.....x...",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_6,8"
+  },
+  {
+    "id": "12",
+    "N": 8,
+    "board1": "BBBBCCCCDBBACCCCDDDDCCCCDDDDDCCCGGGHHHHHGGGGHHHHGGGGEFFHGGGGFFFF",
+    "board2": "FHHHCCCCFFHHCCCCFFHHCCCCFEHHDCCCGGGHDDABGGGGDDBBGGGGDDBBGGGGDDDB",
+    "solution": "x..........x.........x...x............x...x.........x..........x",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_9,8"
+  },
+  {
+    "id": "13",
+    "N": 8,
+    "board1": "CCBDDDDDCCBADDDDBBBBBDDDBBBBBDDDHHHFFFFFHHHFFFFFHHHHEFGGHHHHHFGG",
+    "board2": "GGFFDDDDGGFFDDDDFFFFDDDDHEFFBBDDHHFFBBADHHHHBBBBHHHHBBCCHHHHBBCC",
+    "solution": "x..........x.........x...x............x...x.........x..........x",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_10,8"
+  },
+  {
+    "id": "14",
+    "N": 8,
+    "board1": "DDDBDDCCADDDDCCCAAAAACCCAAAAACCCGGGEEEEEGGGEEEEEGGGHHHHEGGHHFHHH",
+    "board2": "HEEECCCCHHEECCCCHHEECCCDFHEEAADDHHEEAADBHGGGAADDGGGGAADDGGGGAAAD",
+    "solution": "...x.....x...........x..x..............x..x...........x.....x...",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_22,8"
+  },
+  {
+    "id": "15",
+    "N": 8,
+    "board1": "DDDDCCCCDAACCCCCDAACCCCCDAACCCBCGFGGGEEHGGGGGEEHGGGGGEEHGGGGHHHH",
+    "board2": "HHHHCCCCHEEEBCCCHEEECCCCHGGGCCCCGGGGCCCDGGGGAAADGGGFAAADGGGGDDDD",
+    "solution": "x...........x.....x...........x..x...........x.....x...........x",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_26,8"
+  },
+  {
+    "id": "16",
+    "N": 8,
+    "board1": "BBDDCCCCDBDDDCCCDDDDDCCCDADDCCCCGGGGHHEHGGGHHHHHGGGHHHFHGGGGHHFF",
+    "board2": "FHHHCCCCFFHECCCCHHHHCCCCHHHHCDDCGHHGDDDDGGGGDDDDGGGGADBBGGGGDDDB",
+    "solution": "x..........x.........x...x............x...x.........x..........x",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_38,8"
+  },
+  {
+    "id": "17",
+    "N": 8,
+    "board1": "ACCCCCDDBCCCCCDDBCCDDDDDBBDDDDDDHHHHHHFFHHHHHGGFHHGGGGGFHHGGGGGE",
+    "board2": "EFFFDDDDGGGFDDDDGGGHDDCCGGHHDDCCGGHHDDCCGGHHDCCCHHHHBCCCHHHHBBBA",
+    "solution": "x..........x.........x...x............x...x.........x..........x",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_39,8"
+  },
+  {
+    "id": "18",
+    "N": 8,
+    "board1": "CBBDAAAACBBBAAAACCCAAAAACCCAAAAAEEEEEGGGEEEEEGGGEEEEFFFGEEEEHFFG",
+    "board2": "GGGGAAAAFFGGAAAAFFGGAAAAHFEEAAAAEEEEAABDEEEECCBBEEEECCBBEEEECCCC",
+    "solution": "...x.....x...........x..x..............x..x...........x.....x...",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_40,8"
+  },
+  {
+    "id": "19",
+    "N": 8,
+    "board1": "AAAADDCCAAADDDCCAAADDDDCAADDDDDBFHHHHHEEGHHHHEEEGGHHHEEEGGHHEEEE",
+    "board2": "EEEEBCCCEEEEDDCCEEEHDDDDEHHHDDDDHHHHDDDAHHHHDAAAGGHHAAAAGGGFAAAA",
+    "solution": "....x.........x...x............xx............x...x.........x....",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_50,8"
+  },
+  {
+    "id": "20",
+    "N": 8,
+    "board1": "BBBBAAAABBBCAAAADDDDAAAADDDDAAAAEEEEHHHHEEEEHHHHEEEEGFFFEEEEFFFF",
+    "board2": "FFHHAAAAFFHHAAAAFFHHAAAAFGHHAAAAEEEEDDCBEEEEDDBBEEEEDDBBEEEEDDBB",
+    "solution": "x..........x.........x...x............x...x.........x..........x",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_57,8"
+  },
+  {
+    "id": "21",
+    "N": 8,
+    "board1": "BBBAAAAABBBBAAADBBBAADDDBBBADDDCGHHHEFFFHHHEEFFFHEEEFFFFEEEEEFFF",
+    "board2": "FFFFCDDAFFFFDDAAFFFFDDAAEFEEDAAAEEEHAABAEEHHBBBBEEHHBBBBEHHGBBBB",
+    "solution": "....x....x...........x.........xx.........x...........x....x....",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_89,8"
+  },
+  {
+    "id": "22",
+    "N": 8,
+    "board1": "AABBCCCCAABBDCCCBBBBBCCCBBBBBCCCGGGFFFFFGGGFFFFFGGGHFFEEGGGGFFEE",
+    "board2": "EEFFCCCCEEFFCCCCFFFFCCCCFFFFBBDCGHFFBBBBGGGGBBBBGGGGBBAAGGGGBBAA",
+    "solution": "x...........x.....x...........x..x...........x.....x...........x",
+    "unused_metadata": "flip_h_rot90,5 self_puzz_98,8"
+  },
+  {
+    "id": "23",
+    "N": 8,
+    "board1": "AADDAAAAAAAAAAAACBBBAABBCCBBBBBBFFFFFFGGFFEEFFFGEEEEEEEEEEEEHHEE",
+    "board2": "EEFFCCAAEEFFCBAAEEEFBBADEEEFBBADHEFFBAAAHEFFBAAAEEFGBBAAEEGGBBAA",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,8 self_puzz_13,8"
+  },
+  {
+    "id": "24",
+    "N": 8,
+    "board1": "CCCCAABBCCCCAABBCCCAAABDCCCAAAADHEEEEGGGHFEEEGGGFFEEGGGGFFEEGGGG",
+    "board2": "GGGGDDBBGGGGABBBGGGGAAAAGGEEAAAAEEEEAACCEEEECCCCFFFECCCCFFHHCCCC",
+    "solution": "....x.........x...x............xx............x...x.........x....",
+    "unused_metadata": "flip_h_rot90,10 self_puzz_1,8"
+  },
+  {
+    "id": "25",
+    "N": 8,
+    "board1": "BBDDDDDDBBBBDDDDBBBBBAAABBBBBBCCGGFFFFFFEEEFFFFFHHHHFFFFHHHHHHFF",
+    "board2": "FFFFCADDFFFFCADDHFFFBADDHFFFBBDDHHFFBBBDHHEFBBBDHHEGBBBBHHEGBBBB",
+    "solution": "....x....x...........x.........xx.........x...........x....x....",
+    "unused_metadata": "flip_h_rot90,10 self_puzz_18,8"
+  },
+  {
+    "id": "26",
+    "N": 8,
+    "board1": "DDDBBBBADDDDBBBADDDDBBBCDDDDBBCCGGFFHHHHGFFFHHHHEFFFHHHHEFFFFHHH",
+    "board2": "HHHHCCAAHHHHCBBBHHHHBBBBFHHHBBBBFFFFDDDBFFFFDDDDFFFGDDDDEEGGDDDD",
+    "solution": ".......x....x.....x...........x..x...........x.....x....x.......",
+    "unused_metadata": "flip_h_rot90,10 self_puzz_28,8"
+  },
+  {
+    "id": "27",
+    "N": 8,
+    "board1": "AAABBBBCAAAABCCCAAADCCCCAAADCCCCGGGGHEEEGGGGHEEEGGGFEEEEGFFFFEEE",
+    "board2": "GGGGAAAAFGGGAAAAFGGGAAAAFFGGDDABFEHHCCBBEEEECCCBEEEECCCBEEEECCCC",
+    "solution": "......x.x..........x.........x....x.........x..........x.x......",
+    "unused_metadata": "rot90,10 self_puzz_42,8"
+  },
+  {
+    "id": "28",
+    "N": 8,
+    "board1": "AAACCCCCAAAAACDDAAAAAABBAAAAAABBFFEEEEEEFFEEEEEEHHGEEEEEGGGGGEEE",
+    "board2": "EEEEBBDCEEEEBBDCEEEEAACCGEEEAAACGEEEAAACGGEEAAAAGHFFAAAAGHFFAAAA",
+    "solution": "....x.........x...x............xx............x...x.........x....",
+    "unused_metadata": "flip_h_rot90,10 self_puzz_43,8"
+  },
+  {
+    "id": "29",
+    "N": 8,
+    "board1": "DDDDDDBBDDDDABBBDDCDABBBDDCCCBBBFFFGGGHHFFFEHGHHFFFEHHHHFFHHHHHH",
+    "board2": "HHHHBBBBHHHHBBBBHHGGBBBDHHHGCAADHEEGCDDDHFFFCCDDFFFFDDDDFFFFDDDD",
+    "solution": "x...........x.....x...........x..x...........x.....x...........x",
+    "unused_metadata": "flip_h_rot90,10 self_puzz_75,8"
+  },
+  {
+    "id": "30",
+    "N": 8,
+    "board1": "CCCCCCCDCCCCCCCDCCCBBBAACCCBAAAAEEEEFGGGEEFFFGGGHGGGGGGGHGGGGGGG",
+    "board2": "HHEECCCCGGEECCCCGGFECCCCGGFEBBCCGGFFABCCGGGGABCCGGGGAACCGGGGAADD",
+    "solution": ".x.............x...x.........x....x.........x...x.............x.",
+    "unused_metadata": "rot90,11 self_puzz_65,8"
+  },
+  {
+    "id": "31",
+    "N": 8,
+    "board1": "BBBDDBBABBBBBBBABBBAACAABAAAAAAAEEEEEEEFEEGEEFFFEFFFFFFFEFFHHFFF",
+    "board2": "FFFFAAAAFFFEAABBFFFEACBBHFEEAABDHFEEAABDFFGEABBBFFEEABBBEEEEBBBB",
+    "solution": "....x....x...........x.........xx.........x...........x....x....",
+    "unused_metadata": "flip_h_rot90,11 self_puzz_74,8"
+  },
+  {
+    "id": "32",
+    "N": 8,
+    "board1": "CCCBBDDDCCCCDDDDADDDDDDDAAAADDDDHHHHEEEEHHHHHHHEHHHHGGGGHHHFFGGG",
+    "board2": "HHHHAACCHHHHADCCHHHHADCCFHHHADCBFGHEDDDBGGHEDDDDGGHEDDDDGGEEDDDD",
+    "solution": "....x.....x...........x.x..............x.x...........x.....x....",
+    "unused_metadata": "rot90,12 self_puzz_11,8"
+  },
+  {
+    "id": "33",
+    "N": 8,
+    "board1": "ACCCCCDDBCCCCCDDBBCCCDDDBBCCCDDDHHHGGGFFHHHGGGFFHHGGGGGFHHGGGGGE",
+    "board2": "EFFFDDDDGGFFDDDDGGGGDDCCGGGGCCCCGGGGCCCCGGHHCCCCHHHHBBCCHHHHBBBA",
+    "solution": "x..........x.........x...x............x...x.........x..........x",
+    "unused_metadata": "flip_h_rot90,12 self_puzz_55,8"
+  },
+  {
+    "id": "34",
+    "N": 8,
+    "board1": "DDDDDDDDCCDDDBDDCCDDDBAADDDDDBAAEEFHHHHHEEFHHHGGHHFHHHGGHHHHHHHH",
+    "board2": "HHEEDCCDHHEEDCCDHFFFDDDDHHHHDDDDHHHHDDDDHHHHBBBDHGGHAADDHGGHAADD",
+    "solution": "...x.........x...x.............xx.............x...x.........x...",
+    "unused_metadata": "rot90,12 self_puzz_80,8"
+  },
+  {
+    "id": "35",
+    "N": 8,
+    "board1": "DDDDDBBBDDDDDBBBCDDDDDDBCCDDAAABFEEEHHGGFHHHHHHGFFFHHHHHFFFHHHHH",
+    "board2": "FFFFCCDDFFHECDDDFFHEDDDDHHHEDDDDHHHHADDDHHHHADBBHHHGADBBHHGGBBBB",
+    "solution": ".....x.....x....x.............x..x.............x....x.....x.....",
+    "unused_metadata": "rot90,14 self_puzz_47,8"
+  },
+  {
+    "id": "36",
+    "N": 8,
+    "board1": "BBBBAAACBBBDDDCCBBBDDCCCBBBDDDCCGGHHHFFFGGGHHFFFGGHHHFFFGEEEFFFF",
+    "board2": "GGGGBBBBEGGGBBBBEHGHBBBBEHHHDDDBFHHHDDDAFFFFDCDAFFFFCCCAFFFFCCCC",
+    "solution": ".....x.....x....x.............x..x.............x....x.....x.....",
+    "unused_metadata": "rot90,15 self_puzz_64,8"
+  },
+  {
+    "id": "37",
+    "N": 8,
+    "board1": "BBBDDDAACCDDDDDACCDDDDAACCDDDDDAEHHHHHGGEEHHHHGGEHHHHHGGEEHHHFFF",
+    "board2": "EEEECCCBEHEHCCCBHHHHDDDBHHHHDDDDHHHHDDDDFHHHDDDDFGGGDADAFGGGAAAA",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,16 self_puzz_68,8"
+  },
+  {
+    "id": "38",
+    "N": 8,
+    "board1": "BBBADDDDCCBADDDDCCCCDDDDCCCCCCDDHHGGGGGGHHHHGGGGHHHHEFGGHHHHEFFF",
+    "board2": "FGGGDDDDFGGGDDDDFFGGCDDDEEGGCDDDHHHGCCAAHHHGCCBBHHHHCCCBHHHHCCCB",
+    "solution": "x..........x.........x...x............x...x.........x..........x",
+    "unused_metadata": "flip_h_rot90,18 self_puzz_41,8"
+  },
+  {
+    "id": "39",
+    "N": 8,
+    "board1": "DAAAAAAADAAAAAAADBBBBBBBCCBBBBBBFFFFFFGGFFFFFFFHEEEEEEEHEEEEEEEH",
+    "board2": "HHHGBBAAEEFGBBAAEEFFBBAAEEFFBBAAEEFFBBAAEEFFBBAAEEFFCBAAEEFFCDDD",
+    "solution": "x..........x.........x...x............x...x.........x..........x",
+    "unused_metadata": "flip_h_rot90,18 self_puzz_51,8"
+  },
+  {
+    "id": "40",
+    "N": 8,
+    "board1": "DCCBBAAADDDBBAAADDDBAAAADDDDAAAAEEEEHHHHEEEEFHHHEEEFFHHHEEEFFGGH",
+    "board2": "EEEEDDDDEEEEDDDCEEEEDDDCFFEEDBBBFFFHAABBGHHHAAAAGHHHAAAAHHHHAAAA",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,18 self_puzz_60,8"
+  },
+  {
+    "id": "41",
+    "N": 8,
+    "board1": "BBBDDAAACCDDDAAACCDDAAAACCCDDAAAEEEHHGGGEEEEHHGGEEEHHHGGEEEHHFFF",
+    "board2": "EEEECCCBEEEECCCBEEEECDDBHHEHDDDDHHHHDADDFHHGAAAAFGGGAAAAFGGGAAAA",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,18 self_puzz_82,8"
+  },
+  {
+    "id": "42",
+    "N": 8,
+    "board1": "AAAABBCCAAADBBCCAAADBCCCAAAABCCCGGGFEEEEGGGFHEEEGGFFHEEEGGFFEEEE",
+    "board2": "GGGGAAAAGGGGAAAAFFGGAAAAFFFFADDAEHHEBBBBEEEECCBBEEEECCCCEEEECCCC",
+    "solution": ".....x.....x....x.............x..x.............x....x.....x.....",
+    "unused_metadata": "rot90,19 self_puzz_77,8"
+  },
+  {
+    "id": "43",
+    "N": 8,
+    "board1": "AACCBBDDAABBBDDDAAAABDDDAAAABDDDHHHFEEEEHHHFEEEEHHHFFFEEHHFFGGEE",
+    "board2": "HHHHAAAAHHHHAAAAFHHHAABCFFFFAABCGFEEBBBBGFEEDDDBEEEEDDDDEEEEDDDD",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,19 self_puzz_93,8"
+  },
+  {
+    "id": "44",
+    "N": 8,
+    "board1": "AAAAACCDAAACCCCDAAACCCCDBBACCCCCGGGGGEFFHGGGGEEEHGGGGEEEHGGEEEEE",
+    "board2": "HHHGBAAAGGGGBAAAGGGGAAAAEGGGCCCAEGGGCCCAEEEECCCCEEEFCCCCEEEFCDDD",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,20 self_puzz_15,8"
+  },
+  {
+    "id": "45",
+    "N": 8,
+    "board1": "AADCCCCCAADCCCCBAACCCCBBACCCCBBBFFFGGGGEFFGGGGEEFGGGGHEEGGGGGHEE",
+    "board2": "GFFFAAAAGGFFCAAAGGGFCCDDGGGGCCCCGGGGCCCCHHGGBCCCEEEGBBCCEEEEBBBC",
+    "solution": "....x.....x...........x.x..............x.x...........x.....x....",
+    "unused_metadata": "rot90,21 self_puzz_95,8"
+  },
+  {
+    "id": "46",
+    "N": 8,
+    "board1": "BBBBCCAADDDCCAAADDDDAAAADDDDAAAAEEEEHHHHEEEEHHHHEEEGGHHHEEGGFFFF",
+    "board2": "EEEEDDDBEEEEDDDBGEEEDDDBGGEEDDCBFGHHAACCFHHHAAACFHHHAAAAFHHHAAAA",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,22 self_puzz_3,8"
+  },
+  {
+    "id": "47",
+    "N": 8,
+    "board1": "BBBBAADDBAAAAADDBAAAAADDCCAAAADDHHEEEEGGHHEEEEEFHHEEEEEFHHEEFFFF",
+    "board2": "HHHHCBBBHHHHCAABEEEEAAABEEEEAAABFEEEAAAAFEEEAAAAFEEGDDDDFFFGDDDD",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,22 self_puzz_36,8"
+  },
+  {
+    "id": "48",
+    "N": 8,
+    "board1": "BBBAAADDBBBCDDDDCCCCCDDDCCCCDDDDHHHHGGGGHHHGGGGGHHHHGFFFHHEEEFFF",
+    "board2": "HHHHCCBBHHHHCCBBEHHHCCBBEHGHCCCAEGGGDCDAFFGGDDDAFFGGDDDDFFGGDDDD",
+    "solution": "....x.....x...........x.x..............x.x...........x.....x....",
+    "unused_metadata": "rot90,22 self_puzz_59,8"
+  },
+  {
+    "id": "49",
+    "N": 8,
+    "board1": "BCCCCADDBBBBBADDBBBBBAAABBBBBAAAEEEFFFFFEEEFFFFFHHEFFFFFHHEGGGGF",
+    "board2": "HHEEBBBBHHEEBBBCEEEEBBBCGFFFBBBCGFFFBBBCGFFFAAAAGFFFAADDFFFFAADD",
+    "solution": ".x.............x...x.........x....x.........x...x.............x.",
+    "unused_metadata": "rot90,24 self_puzz_5,8"
+  },
+  {
+    "id": "50",
+    "N": 8,
+    "board1": "AAACCCCCAAAAACCCBBAACCCCBBAACDDDHHHGEEFFGGGGEEFFGGGEEEEEGGGGGEEE",
+    "board2": "GGGHBBAAGGGHBBAAGGGHAAAAGEGGAAACGEEECCACEEEEDCCCEEFFDCCCEEFFDCCC",
+    "solution": ".....x.....x....x.............x..x.............x....x.....x.....",
+    "unused_metadata": "rot90,24 self_puzz_86,8"
+  },
+  {
+    "id": "51",
+    "N": 8,
+    "board1": "AACCCDDDAAACCCCCAAACCCCCAAABBBCCGGFFFEEEGGGGGEEEGGGGGEEEHHHGGGEE",
+    "board2": "HGGGAAAAHGGGAAAAHGGFAAACGGGFBCCCGGGFBCCCGEEEBCCDEEEECCCDEEEECCCD",
+    "solution": "......x.x..........x.........x....x.........x..........x.x......",
+    "unused_metadata": "rot90,25 self_puzz_24,8"
+  },
+  {
+    "id": "52",
+    "N": 8,
+    "board1": "CCCAAAADBBBAAADDBBBBBDDDBBBBBDDDHHHFFFFFHHHFFFFFHHEEEFFFHEEEEGGG",
+    "board2": "HHHHBBBCEHHHBBBCEEHHBBBCEEFFBBAAEEFFBBAAGFFFDDAAGFFFDDDAGFFFDDDD",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,25 self_puzz_94,8"
+  },
+  {
+    "id": "53",
+    "N": 8,
+    "board1": "BBBBDDDDBBBAADDDBBBADDDDCCCADDDDHHHHEGGGHHHHEFFFHHHEEFFFHHHHFFFF",
+    "board2": "HHHHCBBBHHHHCBBBHHHHCBBBHEHHAAABFEEEDDADFFFGDDDDFFFGDDDDFFFGDDDD",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,26 self_puzz_12,8"
+  },
+  {
+    "id": "54",
+    "N": 8,
+    "board1": "BBBCCAAABBBBBAAABBBBBBBADDDDDDDAEHHHHHHHEFFFFFFFEEEFFFFFEEEGGFFF",
+    "board2": "FFFHAAAAFFFHDBAAFFFHDBAAGFFHDBBCGFFHDBBCEEFHDBBBEEFHDBBBEEEEDBBB",
+    "solution": "...x..........x...x.....x..............x.....x...x..........x...",
+    "unused_metadata": "flip_h_rot90,26 self_puzz_48,8"
+  },
+  {
+    "id": "55",
+    "N": 8,
+    "board1": "BBBAAAAABBBAAAAACBBAAADDCBBBDDDDHHHHFFFGHHEEEFFGEEEEEFFFEEEEEFFF",
+    "board2": "EEHHCCBBEEHHBBBBEEEHBBBBEEEHBAAAEEEFDAAAFFFFDAAAFFFFDDAAFFGGDDAA",
+    "solution": "....x.....x...........x.x..............x.x...........x.....x....",
+    "unused_metadata": "rot90,26 self_puzz_71,8"
+  },
+  {
+    "id": "56",
+    "N": 8,
+    "board1": "CCBBFFGGCCCBFGGGCCCCGGGGCCCCGGGGCCCAEGGGDAAAEEEHDAAAEEEHDAAAEEEH",
+    "board2": "DDDCCCCCAAACCCCCAAACCCCBAAAACCBBEEEEGGFFEEEGGGGFEEEGGGGGHHHGGGGG",
+    "solution": "..x.........x....x............x....x...........x.....x..x.......",
+    "unused_metadata": "rot90,27 self_puzz_21,8"
+  },
+  {
+    "id": "57",
+    "N": 8,
+    "board1": "CCCCAAADCCCCCDDDCCCCCCBBCCCCCCBBFFGGGGGGFFGGGGGGHHHGGGGGHEEEGGGG",
+    "board2": "GGGGBBDDGGGGBBDAGGGGCCDAGGGGCCCAEGGGCCCCEHGGCCCCEHFFCCCCHHFFCCCC",
+    "solution": "....x.........x...x............xx............x...x.........x....",
+    "unused_metadata": "flip_h_rot90,27 self_puzz_49,8"
+  },
+  {
+    "id": "58",
+    "N": 8,
+    "board1": "BBBBDAAABBBDDDCABBBCCCCCBCCCCCCCGGGGGGGFGGGGGFFFEGHHHFFFEEEHFFFF",
+    "board2": "EEGGBBBBEGGGCBBBEHGGCBBBHHGGCCDBFHGGCCDDFFFGCCDAFFFGCCCAFFFFCCAA",
+    "solution": ".....x.....x....x.............x..x.............x....x.....x.....",
+    "unused_metadata": "rot90,27 self_puzz_87,8"
+  },
+  {
+    "id": "59",
+    "N": 8,
+    "board1": "ADDDHHHEAAADHEEEAAAAEEEECAABFEEGCCBBFFGGCCBBFFGGCCCCGGGGCCCCGGGG",
+    "board2": "CCCCCAAACCCCAAADCCBBAAADCCBBBADDGGFFFEHHGGFFEEEHGGGGEEEHGGGGGEEE",
+    "solution": ".x..........x.....x...........x....x.........x.........xx.......",
+    "unused_metadata": "rot90,30 self_puzz_35,8"
+  },
+  {
+    "id": "60",
+    "N": 8,
+    "board1": "CCCCCBBDCCCBBBBDCCCCBBDDAACBBBDDHHFFFGEEHHFFGGGGHFFFFGGGHFFGGGGG",
+    "board2": "HHHHACCCFFHHACCCFFFFCCCCGFFFBCBCGFGFBBBCGGGGBBBBGGGEDDBBGGGEDDDD",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,34 self_puzz_30,8"
+  },
+  {
+    "id": "61",
+    "N": 8,
+    "board1": "DDDDCCBBDDDDDBBBDDAAAABBAAAAAABBFFEEEEEEFFEEEEHHFFFHHHHHFFGGHHHH",
+    "board2": "FFFFADDDFFFFADDDGFEEAADDGHEEAADDHHEEAADCHHEEAABCHHHEBBBBHHHEBBBB",
+    "solution": "....x.....x...........x.x..............x.x...........x.....x....",
+    "unused_metadata": "rot90,34 self_puzz_79,8"
+  },
+  {
+    "id": "62",
+    "N": 8,
+    "board1": "CCCCCAAACBCCDAAABBCCDAAABBCCCAAAEEEGGGFFEEEHGGFFEEEHGGFGEEEGGGGG",
+    "board2": "GGFFAAAAGFFFAAAAGGGGAAAAGGGGCDDCGHHGCCCCEEEECCCCEEEEBBBCEEEEBBCC",
+    "solution": "..x.........x...x.............x..x.............x...x.........x..",
+    "unused_metadata": "flip_h_rot90,35 self_puzz_27,8"
+  },
+  {
+    "id": "63",
+    "N": 8,
+    "board1": "DDDDAAAACDAAAAAACCAAAAABCAAAABBBGEEEEFFFGGEEEEEFGHEEEEEEHHHHEEEE",
+    "board2": "HGGGCCCDHHGEACDDHEEEAAADHEEEAAADEEEEAAAAEEEFBAAAEEEFBAAAEEFFBBAA",
+    "solution": "...x.........x.........xx.............x..x..........x.....x.....",
+    "unused_metadata": "rot90,38 self_puzz_69,8"
+  },
+  {
+    "id": "64",
+    "N": 8,
+    "board1": "AAADDDCCAAADCCCCBACCCCCCBBCCCCCCGGGGGGFFGGGGGGEFGGGGHEEEGGHHHEEE",
+    "board2": "GGGGBBAAGGGGBAAAHGGGCCAAHGGGCCDDHHGGCCCDEEGGCCCDEEEFCCCCEEFFCCCC",
+    "solution": "....x.....x...........x.x..............x.x...........x.....x....",
+    "unused_metadata": "rot90,40 self_puzz_76,8"
+  },
+  {
+    "id": "65",
+    "N": 8,
+    "board1": "CCCCCDDDBBACDDDDABADDDDDAAADDDDDHHHHHEEEHHHHHEFEHHHHGEFFHHHGGGGG",
+    "board2": "GFEEDDDDGFFEDDDDGEEEDDDDGGHHDDDCGHHHDDCCHHHHAAACHHHHABBCHHHHAABC",
+    "solution": "...x.....x...........x..x..............x..x...........x.....x...",
+    "unused_metadata": "flip_h_rot90,42 self_puzz_81,8"
+  },
+  {
+    "id": "66",
+    "N": 8,
+    "board1": "BBBCCAAABBCCCAAADCCCAAAADDDDAAAAEEEEHHHHEEEEGGGHEEEGGGFFEEEGGFFF",
+    "board2": "EEEEDDBBEEEEDCBBEEEEDCCBGGEEDCCCGGGHAACCFGGHAAAAFFGHAAAAFFHHAAAA",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,43 self_puzz_73,8"
+  },
+  {
+    "id": "67",
+    "N": 8,
+    "board1": "BDDDDDCCBDDDDACCBDDDDAAABBDDDAAAEEEHHHFFEEEHHHHFGGEHHHHFGGHHHHHF",
+    "board2": "GGEEBBBBGGEEBDDDHEEEDDDDHHHHDDDDHHHHDDDDHHHHAAADHHHFAACCFFFFAACC",
+    "solution": "......x.x..........x.........x....x.........x..........x.x......",
+    "unused_metadata": "rot90,44 self_puzz_92,8"
+  },
+  {
+    "id": "68",
+    "N": 8,
+    "board1": "DDDDAAAADDDDAABBDDDDBBBBDDCCCBBBFFFGGGHHFFFFHHHHFFEEHHHHEEEEHHHH",
+    "board2": "EFFFDDDDEFFFDDDDEEFFCDDDEEFGCDDDHHHGCBAAHHHGBBAAHHHHBBBAHHHHBBBA",
+    "solution": "......x.x...........x.....x..........x.....x...........x.x......",
+    "unused_metadata": "rot90,45 self_puzz_97,8"
+  },
+  {
+    "id": "69",
+    "N": 8,
+    "board1": "AABBBBDDAABBBDDDAAAABCCCAAAACCCCGGGGEEEEGGGFEEEEHHHFFFEEHHFFFFEE",
+    "board2": "HHGGAAAAHHGGAAAAFHGGAABBFFFGAABBFFEECBBBFFEECCDBEEEECCDDEEEECCDD",
+    "solution": "...x.........x...x.............xx.............x...x.........x...",
+    "unused_metadata": "rot90,48 self_puzz_19,8"
+  },
+  {
+    "id": "70",
+    "N": 8,
+    "board1": "BBBAAADDBBAAAADDCCADDDDDCCDDDDDDHHHHHHGGHHHHHEGGHHEEEEFFHHEEEFFF",
+    "board2": "HHHHCCBBHHHHCCBBEEHHDAABEEHHDDAAEEHHDDAAFEEHDDAAFFGGDDDDFFGGDDDD",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,48 self_puzz_52,8"
+  },
+  {
+    "id": "71",
+    "N": 8,
+    "board1": "CCCBBDDDCCCCCDDDCCAAADDDCCAAAADDHHEEEEGGHHHEEEGGHHHGGGGGHHHFFGGG",
+    "board2": "GGGGDDDDGGGGDDDDGGEEADDDFGEEAACBFGEEAACBHHHEAACCHHHHCCCCHHHHCCCC",
+    "solution": "...x..........x...x.....x..............x.....x...x..........x...",
+    "unused_metadata": "flip_h_rot90,49 self_puzz_20,8"
+  },
+  {
+    "id": "72",
+    "N": 8,
+    "board1": "CCBBAAAACBBBAADDBBBBBDDDBBBBBDDDHHHFFFFFHHHFFFFFHHEEFFFGEEEEFFGG",
+    "board2": "EHHHBBCCEHHHBBBCEEHHBBBBEEFFBBBBFFFFBBAAFFFFDDAAGFFFDDDAGGFFDDDA",
+    "solution": "......x.x..........x.........x....x.........x..........x.x......",
+    "unused_metadata": "rot90,52 self_puzz_37,8"
+  },
+  {
+    "id": "73",
+    "N": 8,
+    "board1": "DDCCCBAADDDDBBAADDDDDBBADDDDDBBAEFFHHHHHEFFHHHHHEEFFHHHHEEFGGGHH",
+    "board2": "HHHHAAAAHHHHBBAAGHHHBBBBGHHHDDBCGFHHDDDCFFFFDDDCEEFFDDDDEEEEDDDD",
+    "solution": "....x....x...........x.........xx.........x...........x....x....",
+    "unused_metadata": "flip_h_rot90,54 self_puzz_90,8"
+  },
+  {
+    "id": "74",
+    "N": 8,
+    "board1": "DBBBBBCCDDDDBBCCDDDDDAAADDDAAAAAEEEEEHHHEEEHHHHHGGFFHHHHGGFFFFFH",
+    "board2": "GGEEDDDDGGEEDDDBFFEEDDDBFFHEADDBFHHEADBBFHHHAABBFHHHAACCHHHHAACC",
+    "solution": ".x.............x...x.........x....x.........x...x.............x.",
+    "unused_metadata": "rot90,54 self_puzz_96,8"
+  },
+  {
+    "id": "75",
+    "N": 8,
+    "board1": "CCCBBBBACCDDDBAACCCDDDAACCDDDDDDHHHHHHGGEEHHHGGGEEFHHHGGEFFFFGGG",
+    "board2": "EEEHCCCCFEEHCCCCFFHHDCDCFHHHDDDBFHHHDDDBGHGHDDBBGGGGDAABGGGGDAAA",
+    "solution": "....x.....x...........x.x..............x.x...........x.....x....",
+    "unused_metadata": "rot90,60 self_puzz_29,8"
+  },
+  {
+    "id": "76",
+    "N": 8,
+    "board1": "CCCCDDDDCCCCCDDBCCCCCCBBAAACCCBBFFGGGEEEFFGGGGGGFHHGGGGGHHHHGGGG",
+    "board2": "HFFFACCCHHFFACCCHHGGACCCHGGGCCCCGGGGCCCDGGGECCDDGGGEBBDDGGGEBBBD",
+    "solution": "....x.....x...........x.x..............x.x...........x.....x....",
+    "unused_metadata": "rot90,64 self_puzz_84,8"
+  },
+  {
+    "id": "77",
+    "N": 8,
+    "board1": "BBBBFFFFABBBFFFEAACCGGEEAAACGEEEAADCGHEEADDDHHHEDDDDHHHHDDDDHHHH",
+    "board2": "DDAAAAABDDDAAABBDDDDACBBDDDCCCBBHHHGGGFFHHHHEGFFHHHEEEFFHHEEEEEF",
+    "solution": "....x....x...........x.........x...x....x.............x...x.....",
+    "unused_metadata": "rot90,66 self_puzz_4,8"
+  },
+  {
+    "id": "78",
+    "N": 8,
+    "board1": "DAAAAAAADDDCAAAADDDCCCAABBDCCCAAEEGGGHFFEEGGGHHHEEEEGHHHEEEEEEEH",
+    "board2": "HHHFAAAAEHHFAAAAEHHHCCAAEGGGCCAAEEGGCCCAEEGGDDDAEEEEBDDAEEEEBDDD",
+    "solution": "...x.....x...........x..x..............x..x...........x.....x...",
+    "unused_metadata": "flip_h_rot90,68 self_puzz_56,8"
+  },
+  {
+    "id": "79",
+    "N": 8,
+    "board1": "BBBBDAACBBDDDAACBBBBAACCBBBBACCCGGGEFFFFGGEEFFFFGEEHHHFFGEEHFFFF",
+    "board2": "GGGGBBBBEEGGBBBBEEEGBBDBHHEEBBDBFHFFAADDFHFFCAAAFFFFCCAAFFFFCCCC",
+    "solution": ".....x.....x....x.............x..x.............x....x.....x.....",
+    "unused_metadata": "rot90,70 self_puzz_2,8"
+  },
+  {
+    "id": "80",
+    "N": 8,
+    "board1": "AAAAEEEEAAAAEEEEAABBFFEEADBBFFHEDDBBFFHHDCCBFGGHCCCCGGGGCCCCGGGG",
+    "board2": "CCDDAAAACCCDDAAACCCBBBAACCBBBBAAGGFFFFEEGGGFFFEEGGGHHEEEGGHHEEEE",
+    "solution": "..x...........x....x.....x...........x.........x....x...x.......",
+    "unused_metadata": "rot90,77 self_puzz_34,8"
+  },
+  {
+    "id": "81",
+    "N": 8,
+    "board1": "CCAAEEGGCCAAEEGGBAAAEEEFBBDAEHFFBBDDHHFFBDDDHHHFBDDDHHHFDDDDHHHH",
+    "board2": "DBBBBBCCDDDBBACCDDDDDAAADDDDAAAAHHHHEEEEHHHHHEEEHHHFFEGGHFFFFFGG",
+    "solution": ".x............x...x.........x...x............x.........x...x....",
+    "unused_metadata": "rot90,88 self_puzz_72,8"
+  },
+  {
+    "id": "82",
+    "N": 8,
+    "board1": "CCCCCCCCDCCCBBBBDDABBBBBDDAABBBBFFFFEEHHFFFFFEHHFFFFGGGHGGGGGGGG",
+    "board2": "GFFFDDDCGFFFDDCCGFFFAACCGFFFABCCGGFEBBBCGGEEBBBCGGHHBBBCGHHHBBBC",
+    "solution": "......x.x...........x.....x..........x.....x...........x.x......",
+    "unused_metadata": "rot90,90 self_puzz_91,8"
+  },
+  {
+    "id": "83",
+    "N": 8,
+    "board1": "CCCBBBBBCCBBBBBBCDBAAAAADDAAAAAAEEEEEEHHEEEEEFHGFFFFFFGGFFFFFGGG",
+    "board2": "FFEEDCCCFFEEDDCCFFEEABBCFFEEAABBFFEEAABBGFFEAABBGGHHAABBGGGHAABB",
+    "solution": "..x.........x..........x.x............x.x..........x.........x..",
+    "unused_metadata": "rot90,98 self_puzz_54,8"
+  },
+  {
+    "id": "84",
+    "N": 8,
+    "board1": "AADDHHEECADDHHEGCDDDHHHGCCCDHGGGCCCDHGGGCCCDHGGGCCBBFFGGBBBBFFFF",
+    "board2": "BCCCCCCABCCCCDAABBCCCDDDBBDDDDDDFFHHHHHHFFGGGHHHFGGGGHEEFGGGGGGE",
+    "solution": "x.............x...x.........x....x...........x.....x...........x",
+    "unused_metadata": "rot90,100 self_puzz_53,8"
+  },
+  {
+    "id": "85",
+    "N": 8,
+    "board1": "CCCDDDABCCCDDAABCCCDDDABCCCDDDBBFFHHHGGGFEHHHGGGFEEHHGGGFEHHHGGG",
+    "board2": "FFFFCCCCEEEFCCCCHEHHCCCCHHHHDDDDHHHHDDDDGGGGDDADGGGGBAAAGGGGBBBB",
+    "solution": "...x.........x...x.............xx.............x...x.........x...",
+    "unused_metadata": "rot90,110 self_puzz_8,8"
+  },
+  {
+    "id": "86",
+    "N": 8,
+    "board1": "CBBBBBDDCBBBBBBDCCABBBDDCCAABBDDHHFFEEGGHHFFFEGGHFFFFFFGHHFFFFFG",
+    "board2": "HHHHCCCCHFHHCCBBFFFFAABBFFFFABBBFFFEBBBBFFEEBBBBFFGGDDBDGGGGDDDD",
+    "solution": "......x.x...........x.....x..........x.....x...........x.x......",
+    "unused_metadata": "rot90,110 self_puzz_25,8"
+  },
+  {
+    "id": "87",
+    "N": 8,
+    "board1": "CCAAAAAACCADADDDCCDDDDDDCBBBDDDDHHHHFFFGHHHHHHGGHHHEHEGGEEEEEEGG",
+    "board2": "EHHHCCCCEHHHBCCCEHHHBDAAEEHHBDDAEHHFDDAAEEHFDDDAGGGFDDDAGGGGDDDA",
+    "solution": "......x.x...........x.....x..........x.....x...........x.x......",
+    "unused_metadata": "rot90,114 self_puzz_88,8"
+  },
+  {
+    "id": "88",
+    "N": 8,
+    "board1": "CCCCCCCACCBDCCCABBBDDDDABBBBDDDAEHHHFFFFEHHHHFFFEGGGHFGGEGGGGGGG",
+    "board2": "EEEEBBCCGGHHBBCCGGHHBBBCGGHHBDDCGHHFDDCCGFFFDDCCGGFFDDCCGGFFAAAA",
+    "solution": ".x.............x....x.....x..........x.....x....x.............x.",
+    "unused_metadata": "rot90,117 self_puzz_7,8"
+  },
+  {
+    "id": "89",
+    "N": 8,
+    "board1": "ABBBBDDDABBBBDCCAAADBDCCAADDDDDCGHHHHHEEGGHFHEEEGGHFFFFEHHHFFFFE",
+    "board2": "HGGGAAAAHGGHAABBHHHHDABBFFFHDDBBFFHHDBBBFFEHDDDDFFEEDCCDEEEECCCD",
+    "solution": "...x.........x...x.............xx.............x...x.........x...",
+    "unused_metadata": "rot90,141 self_puzz_100,8"
+  },
+  {
+    "id": "90",
+    "N": 8,
+    "board1": "CCCCAAAACCCCCAAACCCCDDDACCCBBBBBFFFFFGGGEHHHGGGGEEEGGGGGEEEEGGGG",
+    "board2": "GGGGBAAAGGGGBDAAGGGGBDAAGGGFBDCAEGHFBCCCEEHFCCCCEEHFCCCCEEEFCCCC",
+    "solution": "....x....x...........x.........xx.........x...........x....x....",
+    "unused_metadata": "flip_h_rot90,339 self_puzz_99,8"
+  },
+  {
+    "id": "91",
+    "N": 8,
+    "board1": "CCCCDDDDCCCCCDDDAAAADDDDAAAADDBBFFHHEEEEHHHHEEEEHHHGGGGGHHHHGGGG",
+    "board2": "GGEEBDDDGGEEBDDDGGEEDDDDGGEEDDCDHGHHAACCHHHHAACCHHHFAACCHHHFAACC",
+    "solution": ".......x....x.....x...........x..x...........x.....x....x.......",
+    "unused_metadata": "flip_h_rot90,371 self_puzz_33,8"
+  },
+  {
+    "id": "92",
+    "N": 8,
+    "board1": "BBBDAAAABBBDDACCBBCCCACCBBCCCCCCFFGGGGGGFFGGGEGGFFFHHEGGFFFHEEEE",
+    "board2": "FFFFBBBBFFFFBBBBFFGGCCBBHHGGCCDDEHGGCCDAEEEGCAAAEGGGCCCAEGGGCCCA",
+    "solution": "...x.........x....x.....x.............x..x..........x..........x",
+    "unused_metadata": "rot90,489 self_puzz_44,8"
+  },
+  {
+    "id": "93",
+    "N": 8,
+    "board1": "DAAAAACCDDDACCCCDDDCCCCCDBBCCCCCGGGGGFFHGGGGGHHHGGGGEHHHGGEEEEEH",
+    "board2": "HHHHCCCCEHHFCCCCEHHFCCCAEEGGCCCAEGGGCCAAEGGGBDDAGGGGBDDAGGGGDDDD",
+    "solution": "x..........x.........x...x............x...x.........x..........x",
+    "unused_metadata": "flip_h_rot90,801 self_puzz_70,8"
+  },
+  {
+    "id": "94",
+    "N": 8,
+    "board1": "BDDDAAAABBBDDDAABBBCCCAABBCCCCCAEGGGGGFFEEGGGFFFEEHHHFFFEEEEHHHF",
+    "board2": "EEEEBBBBEEEGBBBDEHGGCBBDEHGGCCDDHHGGCCDAHFFGCCDAHFFFCAAAFFFFAAAA",
+    "solution": ".....x.....x....x.............x..x.............x....x.....x.....",
+    "unused_metadata": "rot90,1113 self_puzz_78,8"
+  },
+  {
+    "id": "95",
+    "N": 8,
+    "board1": "CCCCAAAACCCAAADDAAAAADDBAAAABBBBFFFFEEEEFHHEEEEEHHEEEGGGEEEEGGGG",
+    "board2": "GGEEBBDAGGEEBDDAGGEEBDAAGEEEBAAAEEEFAAACEEHFAACCEHHFAACCEHFFAACC",
+    "solution": "....x....x...........x.........xx.........x...........x....x....",
+    "unused_metadata": "flip_h_rot90,1297 self_puzz_85,8"
+  },
+  {
+    "id": "96",
+    "N": 8,
+    "board1": "DDDDDDAACCDBBAABCCDBBBBBCCCCBBBBFFFFGGGGFFFFFHGGFEEFFHGGEEHHHHHH",
+    "board2": "EFFFCCCDEEFFCCCDHEFFCDDDHFFFCBBDHFFGBBBDHHHGBBADHGGGBBAAHGGGBBBA",
+    "solution": "...x.........x...x.............xx.............x...x.........x...",
+    "unused_metadata": "rot90,1843 self_puzz_63,8"
+  },
+  {
+    "id": "97",
+    "N": 8,
+    "board1": "CCCDDAAACCBDDDAACCBBDDDDCCCBDDDDHHHHFGGGHHHHFFGGEEHHHFGGEEEHHGGG",
+    "board2": "GGGGDDAAGGGGDDAAGFFGDDDAHHFFDDDDHHHHBBDDEHHHCBBCEEHHCCCCEEHHCCCC",
+    "solution": "...x..........x...x.....x..............x.....x...x..........x...",
+    "unused_metadata": "flip_h_rot90,2533 self_puzz_58,8"
+  },
+  {
+    "id": "98",
+    "N": 8,
+    "board1": "CCCDDDDDCCCCCADBCCCCAABBCCCAAABBFFEEEGGGFFEEGGGGFHEGGGGGHHHHHGGG",
+    "board2": "HFFFCCCCHHFFCCCCHEEECCCCHGEEACCDHGGEAACDGGGGAAADGGGGBBDDGGGGBBBD",
+    "solution": "...x.........x...x.............xx.............x...x.........x...",
+    "unused_metadata": "rot90,2929 self_puzz_67,8"
+  },
+  {
+    "id": "99",
+    "N": 8,
+    "board1": "CCCCGGGGCBBBFFFGBBBBFFFFBBBAEFFFAAAAEEEEAADAEHEEAADDHHEEAADDHHEE",
+    "board2": "AAAABBCCAAAABBBCDDDABBBCDDAAABBCHHEEEFFGHHHEFFFGEEEEFFFGEEEEFFGG",
+    "solution": "....x...x.........x............x.x...........x.....x..........x.",
+    "unused_metadata": "rot90,3550 self_puzz_31,8"
+  },
+  {
+    "id": "100",
+    "N": 8,
+    "board1": "ADDDDDBBADDDDDBBAAADDCCBAAAACCCBFGGGEEEEFGGHHEEEFFHHHHHEFFHHHHHE",
+    "board2": "FFFFAAAAFFGGAADDHHGGAADDHHHGADDDHHHECDDDHHEECCDDHHEECCBBEEEEBBBB",
+    "solution": "......x.x..........x.........x....x.........x..........x.x......",
+    "unused_metadata": "rot90,75 self_puzz_62,8"
+  }
+]
+

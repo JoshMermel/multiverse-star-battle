@@ -1,0 +1,874 @@
+[
+  {
+    "id": "1",
+    "N": 6,
+    "board1": "CCCBBDCCCBBDEEABDDEEABDFEEAFDFAAAFFF",
+    "board2": "EEEDDDECCDDDEACCCCEAAABBAAFFBBFFFFBB",
+    "solution": "...x..x.........x..x.........x..x...",
+    "unused metadata": "71,Medium,True puzzle_24,6"
+  },
+  {
+    "id": "2",
+    "N": 6,
+    "board1": "FFFFFFDDDEAADBDEAADBEEAABBECCCBBECCC",
+    "board2": "EEEECCEECCCCABBBBBABFFDDAAFFDDAAFFDD",
+    "solution": "x.......x........x...x...x........x.",
+    "unused metadata": "141,Medium,True puzzle_39,6"
+  },
+  {
+    "id": "3",
+    "N": 6,
+    "board1": "BBBDDDBBBADECAAADECCAADECCCFFEFFFFEE",
+    "board2": "FFCCCBFFFCCBAAFCBBEAAABBEEADDDEEEDDD",
+    "solution": "....x..x.........x..x...x........x..",
+    "unused metadata": "196,Hard,True puzzle_87,6"
+  },
+  {
+    "id": "4",
+    "N": 6,
+    "board1": "FCCCCCFCFBBBFFFBBBAAAADDAEEEDDAEEEDD",
+    "board2": "EEDDDDAEDDBBAEEEBBAAAABBFFFCCCFFFCCC",
+    "solution": "...x.......x..x...x.........x..x....",
+    "unused metadata": "104,Expert,True puzzle_32,6"
+  },
+  {
+    "id": "5",
+    "N": 6,
+    "board1": "EAAAAAEEFFFAEEFBFFEBBBBDCBDDDDCCCCCD",
+    "board2": "EEECCCEEEBDCBBBBDCAAFBDCAAFFDDAAFFFD",
+    "solution": "..x.......x.x..........x.x.......x..",
+    "unused metadata": "202,Expert,True puzzle_8,6"
+  },
+  {
+    "id": "6",
+    "N": 6,
+    "board1": "FFFCCDFFFCDDAACCCDAAABBDEAEBBDEEEEBB",
+    "board2": "EEEEEDCCEDDDCCCDDABCBBAABBBFFAFFFFAA",
+    "solution": "x..........x..x.......x..x.......x..",
+    "unused metadata": "203,Expert,True puzzle_5,6"
+  },
+  {
+    "id": "7",
+    "N": 6,
+    "board1": "EEEFFFEAEFFFEAACCCDDABBCDDABCCDDABBB",
+    "board2": "FDDDDDFFFDCCFBBBCCFABBCEAAABCEAAEEEE",
+    "solution": ".x.........x...x..x.......x.......x.",
+    "unused metadata": "216,Expert,True puzzle_3,6"
+  },
+  {
+    "id": "8",
+    "N": 6,
+    "board1": "EEECCCDDECACDEEAACDDAAABDFFFBBFFFBBB",
+    "board2": "FFFBBBFFBBBCFAADDCAAAADCEEEDDCEEEDCC",
+    "solution": "...x..x.......x.......x..x.........x",
+    "unused metadata": "269,Expert,True puzzle_53,6"
+  },
+  {
+    "id": "9",
+    "N": 6,
+    "board1": "CAAAFFCAAAFFCCCBBFEECBBFEEEBBDEDDDDD",
+    "board2": "FFFDDDFFFDDDBAAAACBBEAACBBEECCBEEECC",
+    "solution": ".x........x...x...x........x.......x",
+    "unused metadata": "300,Expert,True puzzle_36,6"
+  },
+  {
+    "id": "10",
+    "N": 6,
+    "board1": "AAAAEEFFFAEEFFFAEEDDDBBBDCCBCBDDCCCB",
+    "board2": "FFFAAAFFBAAABFBDDDBBBCCDEEECCDEEECCD",
+    "solution": ".x........x...x........xx........x..",
+    "unused metadata": "310,Expert,True puzzle_68,6"
+  },
+  {
+    "id": "11",
+    "N": 6,
+    "board1": "FFFDDDFFAAADFCCADDCCEABBCCEABBEEEEBB",
+    "board2": "FFDDDDFFDCCDFFBBCCAABBCCAABBEEAAEEEE",
+    "solution": "....x..x.......x.......xx.......x...",
+    "unused metadata": "311,Expert,True puzzle_52,6"
+  },
+  {
+    "id": "12",
+    "N": 6,
+    "board1": "FFFBBBFFFBABDDEBAADDECAADEECCADEECCC",
+    "board2": "FFCCBBFFCCBBFFCCBDAAAEBDAAAEDDEEEEDD",
+    "solution": "....x...x...x..........x.x.......x..",
+    "unused metadata": "331,Expert,True puzzle_44,6"
+  },
+  {
+    "id": "13",
+    "N": 6,
+    "board1": "DFFFAADDDFAACDDFFACBBBBACCBBEECCEEEE",
+    "board2": "EEECCCEBECCCBBEAAABBFAAABFFDDDFFFDDD",
+    "solution": "..x.......x..x.......x.......xx.....",
+    "unused metadata": "337,Expert,True puzzle_60,6"
+  },
+  {
+    "id": "14",
+    "N": 6,
+    "board1": "EEEAFFEBEAAFEBBAFFBBBAFDCCCADDCCCDDD",
+    "board2": "FFCCDDFFCAADFFCAADBCCEADBBBEADBBEEEE",
+    "solution": ".x.......x.......x..x...x.........x.",
+    "unused metadata": "340,Expert,True puzzle_17,6"
+  },
+  {
+    "id": "15",
+    "N": 6,
+    "board1": "EBBFFFEBBBBFEEEEFFDDDCCCDADCCCDAAAAA",
+    "board2": "EEECCCEEECCCFAADDBFAADDBFAADBBFFFDBB",
+    "solution": "..x........x.x.......x..x.........x.",
+    "unused metadata": "342,Expert,True puzzle_84,6"
+  },
+  {
+    "id": "16",
+    "N": 6,
+    "board1": "AAAAEEAFCAEEFFCCCEFFDCCEFDDBBBDDDBBB",
+    "board2": "EECCCBEECCCBEEAABBAAAABBFFFDDDFFFDDD",
+    "solution": "..x........xx........x...x........x.",
+    "unused metadata": "343,Expert,True puzzle_40,6"
+  },
+  {
+    "id": "17",
+    "N": 6,
+    "board1": "BCCCCCBBCADDBBBADDEAAADDEEAFFFEEEFFF",
+    "board2": "EEEDDDEEEBDDAAABBDFAAABBFCCCCBFFFFCC",
+    "solution": "...x...x........x...x...x..........x",
+    "unused metadata": "352,Expert,True puzzle_30,6"
+  },
+  {
+    "id": "18",
+    "N": 6,
+    "board1": "AFFFBBAFFBBBAFDDEBAAADEECCCDDECCCDEE",
+    "board2": "EEEAAAEEEDAABDDDDABDFCCCBBFCCCBBFFFF",
+    "solution": "....x..x.......x..x..........x..x...",
+    "unused metadata": "356,Expert,True puzzle_34,6"
+  },
+  {
+    "id": "19",
+    "N": 6,
+    "board1": "FFEEEEFFBBEEFBBCCCFBBCCCDDDDAADDAAAA",
+    "board2": "EEEEDDEEBBDDAAABBDAAABCDFFFBCCFFFCCC",
+    "solution": ".....x.x........x...x...x........x..",
+    "unused metadata": "357,Expert,True puzzle_20,6"
+  },
+  {
+    "id": "20",
+    "N": 6,
+    "board1": "FFDDDDFFCCDDAFFCBBACCCBBAAEEBBAAEEEE",
+    "board2": "EEECCCEEBCCCEBBBBDFABADDFAAAADFFFFDD",
+    "solution": "....x..x.......x.......x..x...x.....",
+    "unused metadata": "357,Expert,True puzzle_95,6"
+  },
+  {
+    "id": "21",
+    "N": 6,
+    "board1": "EECCCFEBBBCFEEBCCFEBBAAFDDDAAFDDDAAF",
+    "board2": "EEEEEDECAADDCCCADDBBCAADBBCAFFBBFFFF",
+    "solution": "....x...x...x..........x.x.......x..",
+    "unused metadata": "360,Expert,True puzzle_72,6"
+  },
+  {
+    "id": "22",
+    "N": 6,
+    "board1": "EEECCCEEECAAFFBCCAFFBBBAFDDDBAFDDDBA",
+    "board2": "EEEEDCEEBDDCBBBBDCAABDDCAAFFFCAAFFFC",
+    "solution": "....x..x.........x..x...x........x..",
+    "unused metadata": "363,Expert,True puzzle_37,6"
+  },
+  {
+    "id": "23",
+    "N": 6,
+    "board1": "FDDDDDFFFBBDFFABBCAAABBCEEAACCEEEECC",
+    "board2": "ECCABBEECABBEECAABEFCAABFFCDDDFFFDDD",
+    "solution": ".....x...x..x.......x.......x..x....",
+    "unused metadata": "369,Expert,True puzzle_47,6"
+  },
+  {
+    "id": "24",
+    "N": 6,
+    "board1": "DDDCFFEDCCFFEDCCCFEDAAAFEEAAABEBBBBB",
+    "board2": "FDDDAAFFDDAAFFDAACFBBBCCEEEBBCEEEBCC",
+    "solution": "x..........x..x.......x..x.......x..",
+    "unused metadata": "371,Expert,True puzzle_91,6"
+  },
+  {
+    "id": "25",
+    "N": 6,
+    "board1": "EECCCCEEAACCEAABBFEAABBFDDDBFFDDDBFF",
+    "board2": "EEEECCAEBBCCAEBBCCAFFBDDAFFBDDAAFFDD",
+    "solution": ".x........x...x........xx........x..",
+    "unused metadata": "395,Expert,True puzzle_86,6"
+  },
+  {
+    "id": "26",
+    "N": 6,
+    "board1": "EAAFFFEEAAFFEEAABFECDBBBCCDDBBCCCDDD",
+    "board2": "FFDDDDFFFBDDAAFBBBEAABBCEAACCCEEEECC",
+    "solution": "....x..x.......x.......x..x...x.....",
+    "unused metadata": "409,Expert,True puzzle_22,6"
+  },
+  {
+    "id": "27",
+    "N": 6,
+    "board1": "BBFDDDBBFFDDBFFFDABEEAAAEECCCAEECCCA",
+    "board2": "EEBBCCEEBBBCFEEBCCFAAADCFAAADDFFFDDD",
+    "solution": "....x.x........x...x.........x..x...",
+    "unused metadata": "419,Expert,True puzzle_42,6"
+  },
+  {
+    "id": "28",
+    "N": 6,
+    "board1": "BBEEEEBBAAEEDBAACCDBAACCDDFFFCDDFFFC",
+    "board2": "EEEDAAEDDDAAEDFDAAECFFBBCCCFBBCCFFBB",
+    "solution": "...x..x..........x..x.......x..x....",
+    "unused metadata": "426,Expert,True puzzle_7,6"
+  },
+  {
+    "id": "29",
+    "N": 6,
+    "board1": "AAFFFFAFFBBBAAABBBEEDDCCEEDDCCEEDDCC",
+    "board2": "ECBBBBECCCABECCAABEEEAAAFFFDDDFFFDDD",
+    "solution": "x.......x........x...x...x........x.",
+    "unused metadata": "436,Expert,True puzzle_98,6"
+  },
+  {
+    "id": "30",
+    "N": 6,
+    "board1": "CCCCBECCBBBEFFBBDEFFFFDEAAADDEAAADDE",
+    "board2": "FFDDDDFFFBDDFBBBBBCAAAAACCCEEACCEEEE",
+    "solution": "....x..x.........x..x...x........x..",
+    "unused metadata": "451,Expert,True puzzle_76,6"
+  },
+  {
+    "id": "31",
+    "N": 6,
+    "board1": "BFFFDDBBFFDDEBFCDDEBCCAAEBCCAAEEECAA",
+    "board2": "FFFFAAFFBBBADDBBAADDBCCADDEECCEEEECC",
+    "solution": "..x........x...x...x........x.x.....",
+    "unused metadata": "453,Expert,True puzzle_23,6"
+  },
+  {
+    "id": "32",
+    "N": 6,
+    "board1": "EEEBBBEEEBBBFFAAACFDADACFDDDACFFDCCC",
+    "board2": "EEEEAAEBCEAABBCCAAFBCCDDFBBCDDFFFFDD",
+    "solution": ".x.........x...x..x.......x.......x.",
+    "unused metadata": "463,Expert,True puzzle_66,6"
+  },
+  {
+    "id": "33",
+    "N": 6,
+    "board1": "EEEAAAEEEAAAFFCCCCFBCCDDFBBDDDFFBBBD",
+    "board2": "EEBBCCEEBBCCEEBACCFABADDFAAADDFFFFDD",
+    "solution": "...x...x........x.x.......x........x",
+    "unused metadata": "464,Expert,True puzzle_13,6"
+  },
+  {
+    "id": "34",
+    "N": 6,
+    "board1": "FFFDDDFFBDDDEFBBAAEBBBAAECCCAAEEECCC",
+    "board2": "FFCCCCFFCCAAFFBBBADDDEBADDEEBADEEEBA",
+    "solution": "....x..x.......x.......x..x...x.....",
+    "unused metadata": "484,Expert,True puzzle_9,6"
+  },
+  {
+    "id": "35",
+    "N": 6,
+    "board1": "ACCEEEACCEEEACCBBBAAFFBBDADFFBDDDDFF",
+    "board2": "EEDDBBEEDDBBEAFDBBEAFDCCAAFCCCAAFFFC",
+    "solution": "x.........x..x.......x.......x..x...",
+    "unused metadata": "498,Expert,True puzzle_49,6"
+  },
+  {
+    "id": "36",
+    "N": 6,
+    "board1": "DDEEEEDAAAAEDDCAAEDCCCFFBBBCFFBBBCFF",
+    "board2": "FFDDDDFFBBDDAFBBBCAFEEBCAAEECCAAEECC",
+    "solution": "...x..x.........x...x........x.x....",
+    "unused metadata": "505,Expert,True puzzle_81,6"
+  },
+  {
+    "id": "37",
+    "N": 6,
+    "board1": "AAEEECAAAEECABBECCFBBBDCFFFBDCFFDDDD",
+    "board2": "EEEEDDEEAADDBAAADDBBAFFCBBFFCCBFFCCC",
+    "solution": "...x.......xx.......x.......x..x....",
+    "unused metadata": "511,Expert,True puzzle_43,6"
+  },
+  {
+    "id": "38",
+    "N": 6,
+    "board1": "FFFFFFBBAADDBBAADDCBAAEDCBEEEDCCCCEE",
+    "board2": "FFFFCCDFCCCCDFBAAADBBBAADBBEEADDEEEE",
+    "solution": "..x........x...x...x........x.x.....",
+    "unused metadata": "566,Expert,True puzzle_31,6"
+  },
+  {
+    "id": "39",
+    "N": 6,
+    "board1": "CCCEEECCCEEEBBBBAADDBBAADDFAAFDDFFFF",
+    "board2": "EEECCCEEECCDAABBCDAAABBDFFABBDFFFFDD",
+    "solution": "....x..x.......x.......x..x...x.....",
+    "unused metadata": "581,Expert,True puzzle_12,6"
+  },
+  {
+    "id": "40",
+    "N": 6,
+    "board1": "EEDABBEDDABBEDAABBEDAACCEDFFCCFFFFCC",
+    "board2": "FFFFCCBFFCCCBAACDDBAAADDBAEEEDBBEEED",
+    "solution": "...x.......x.x........x.x.......x...",
+    "unused metadata": "585,Expert,True puzzle_65,6"
+  },
+  {
+    "id": "41",
+    "N": 6,
+    "board1": "FFFAAACFFAEECFAADECCCCDEBBBBDEBBDDDE",
+    "board2": "FFCDDDFFCCBDFFCCBDAACBBDAAEEBBAAEEEE",
+    "solution": "...x...x........x...x...x..........x",
+    "unused metadata": "586,Expert,True puzzle_19,6"
+  },
+  {
+    "id": "42",
+    "N": 6,
+    "board1": "DDFFFFDDAAAFDBAAAFDBBBEECBBEEECCCCCE",
+    "board2": "EEEDDDEEEADDBBAADCBAAACCBFFFFCBBFFCC",
+    "solution": "....x..x.......x.......x..x...x.....",
+    "unused metadata": "586,Expert,True puzzle_70,6"
+  },
+  {
+    "id": "43",
+    "N": 6,
+    "board1": "BCCCFFBCACFFBCAAAFBDDAAFBDDDEEBDEEEE",
+    "board2": "EEECCCEECCCBEAABBBAAABDBFFADDDFFFFDD",
+    "solution": "...x..x.......x........x.x........x.",
+    "unused metadata": "597,Expert,True puzzle_14,6"
+  },
+  {
+    "id": "44",
+    "N": 6,
+    "board1": "EEDDFFEDDDFFEDCCFFEECBAACCCBAABBBBAA",
+    "board2": "EEDDDBEEDDCBEEDCCBAAACCBAFFFCBAAFFFB",
+    "solution": "....x..x.......x..x..........x..x...",
+    "unused metadata": "661,Expert,True puzzle_59,6"
+  },
+  {
+    "id": "45",
+    "N": 6,
+    "board1": "EDDDAAECDDAAECDAAFECCCFFEBBCFFEBBBBF",
+    "board2": "DDDDAADBCCAADBCCAABBCCEEFBBEEEFFFFFE",
+    "solution": "x.......x.......x..x.........x...x..",
+    "unused metadata": "667,Expert,True puzzle_99,6"
+  },
+  {
+    "id": "46",
+    "N": 6,
+    "board1": "FFFFAAFDDAAAFDDDBACCDBBECCBBBECCEEEE",
+    "board2": "FFCCCCFFCCAAFDBBAAFDBBEADDBBEADDEEEE",
+    "solution": "x.......x........x...x...x........x.",
+    "unused metadata": "695,Expert,True puzzle_73,6"
+  },
+  {
+    "id": "47",
+    "N": 6,
+    "board1": "EEEEEEBBBDDDCCBDDDCCBAAACFBAAACFFFFF",
+    "board2": "FFFCCCBBFACCBBFAACBBFAADEEEADDEEEDDD",
+    "solution": ".....x...x..x.......x.......x..x....",
+    "unused metadata": "733,Expert,True puzzle_57,6"
+  },
+  {
+    "id": "48",
+    "N": 6,
+    "board1": "FFFFFFCCDDDDCAABDDCAABBBCAAEEBCEEEEB",
+    "board2": "FFDDDDFFADDBFFACBBAAACCBEEACCBEEEECB",
+    "solution": ".x........x...x........x...x..x.....",
+    "unused metadata": "883,Expert,True puzzle_94,6"
+  },
+  {
+    "id": "49",
+    "N": 6,
+    "board1": "BBBEEEFFBBBEFFFAEEFAAACCDAADCCDDDDCC",
+    "board2": "FFCCCCFFCCBBAFBBBBAFEEDDAAEEDDAAEEDD",
+    "solution": "..x........x.x.......x..x.........x.",
+    "unused metadata": "290,Grandmaster,True puzzle_77,6"
+  },
+  {
+    "id": "50",
+    "N": 6,
+    "board1": "CCCDDDCBBDFDCCBDFFBBBFFFEEEAAAEEEAAA",
+    "board2": "EECCCCEEEACCEDDABBDDAABBDDAABBFFFFFF",
+    "solution": "....x.x.......x........x...x...x....",
+    "unused metadata": "358,Grandmaster,True puzzle_83,6"
+  },
+  {
+    "id": "51",
+    "N": 6,
+    "board1": "DDBBBBDDDBBCEEDACCEEAACCEAAFFCEAFFFF",
+    "board2": "ECCCDDECCCDDEEEBBDEABBBDAAABFFAAFFFF",
+    "solution": ".....x..x...x.........x..x.......x..",
+    "unused metadata": "496,Grandmaster,True puzzle_100,6"
+  },
+  {
+    "id": "52",
+    "N": 6,
+    "board1": "EEECCCEEECAABBCCAABBBBDAFFFDDAFFFDDD",
+    "board2": "EEDDDBEEDBBBEEDBBCAADCCCAAFFCCAAFFFF",
+    "solution": ".x.......x.......x..x...x.........x.",
+    "unused metadata": "507,Grandmaster,True puzzle_26,6"
+  },
+  {
+    "id": "53",
+    "N": 6,
+    "board1": "FFFFFFCCCDBBCCCDDBAAAADBAAEEDBEEEEDB",
+    "board2": "EEEECBDEECCBDDCCCBDDDAABFFFAABFFFAAB",
+    "solution": "...x.......x..x...x.........x..x....",
+    "unused metadata": "516,Grandmaster,True puzzle_56,6"
+  },
+  {
+    "id": "54",
+    "N": 6,
+    "board1": "BBFFFFBBCFAFBBCAAAECCCAAEEECDDEEDDDD",
+    "board2": "FFDDAAFFDDAAFFDDAABBBCCCBEEECCBBEEEC",
+    "solution": ".x.........x..x.......x.x........x..",
+    "unused metadata": "530,Grandmaster,True puzzle_67,6"
+  },
+  {
+    "id": "55",
+    "N": 6,
+    "board1": "FFFBCCAAFBBCAFFBCCAAEBBCEAEDDDEEEDDD",
+    "board2": "EEEEEDBBBEDDBBBDDDAAFFCCAAFFCCAAFFCC",
+    "solution": "..x.......x.x..........x...x...x....",
+    "unused metadata": "548,Grandmaster,True puzzle_71,6"
+  },
+  {
+    "id": "56",
+    "N": 6,
+    "board1": "CCCCDDCCBBDDFFBBBDFABEEDFAAAEEFFAAEE",
+    "board2": "FFCCCBFFCCBBFACBBBFAAAAAEEEDDDEEEDDD",
+    "solution": ".x.........x..x.......x.x........x..",
+    "unused metadata": "554,Grandmaster,True puzzle_48,6"
+  },
+  {
+    "id": "57",
+    "N": 6,
+    "board1": "EEEEFFDEEFFFDAACCFDDAACCDDAABCBBBBBC",
+    "board2": "FFDDDBFFDDDBFFBBBBAAEEECAAEECCAAECCC",
+    "solution": "..x........x.x........x.x........x..",
+    "unused metadata": "559,Grandmaster,True puzzle_21,6"
+  },
+  {
+    "id": "58",
+    "N": 6,
+    "board1": "CCCFFACCFFFACBBFAADBBBAADBDEEEDDDEEE",
+    "board2": "FBBAAAFBBCAAFBBCCAFFCCCDFEEEDDEEEDDD",
+    "solution": "..x........x...x...x........x.x.....",
+    "unused metadata": "573,Grandmaster,True puzzle_80,6"
+  },
+  {
+    "id": "59",
+    "N": 6,
+    "board1": "CCBBFFCCBBBFCCDABFDDDAFFDDAAAAEEEEEE",
+    "board2": "FDDDCCFDDDCCFAAACCFAEBBBFAEEEBFAEEBB",
+    "solution": ".x........x...x........x...x..x.....",
+    "unused metadata": "587,Grandmaster,True puzzle_15,6"
+  },
+  {
+    "id": "60",
+    "N": 6,
+    "board1": "FFFFEEFCFAAECCCCAEDDDCAEDDBAAEDBBBBB",
+    "board2": "FFFFFFCCCBBBCCCBBBEAAADDEEAAADEEEDDD",
+    "solution": "...x.......x.x........x...x...x.....",
+    "unused metadata": "600,Grandmaster,True puzzle_50,6"
+  },
+  {
+    "id": "61",
+    "N": 6,
+    "board1": "FFFFEEFFCCEECCCDEEBBCDDDBBAAADBBAAAD",
+    "board2": "EEECCCDEECBBDEFCBBDFFCBBDFFAAADDFAAA",
+    "solution": "..x........xx........x...x........x.",
+    "unused metadata": "607,Grandmaster,True puzzle_1,6"
+  },
+  {
+    "id": "62",
+    "N": 6,
+    "board1": "EEEEDDCCEEDDBCCCDABBCFDABBBFAAFFFFAA",
+    "board2": "FFFCCCBFFCCCBBFAADBEEAADBEEAADBEEDDD",
+    "solution": "...x...x........x.x..........x..x...",
+    "unused metadata": "607,Grandmaster,True puzzle_46,6"
+  },
+  {
+    "id": "63",
+    "N": 6,
+    "board1": "FFFBBBFFFBABCCCBAACCDAAAECDDDDEEEEED",
+    "board2": "EEEEDDEEDDDDBBBBBBAACCCCAAFFFCAAFFFC",
+    "solution": "....x.x.......x........x...x...x....",
+    "unused metadata": "617,Grandmaster,True puzzle_90,6"
+  },
+  {
+    "id": "64",
+    "N": 6,
+    "board1": "EEBBBFEBBFBFEEEFFFCCAADDCCAADDCCAADD",
+    "board2": "FFFDDDFFFDDDBBCAAABBCCAABBCCCAEEEEEE",
+    "solution": "...x..x..........x.x........x...x...",
+    "unused metadata": "637,Grandmaster,True puzzle_79,6"
+  },
+  {
+    "id": "65",
+    "N": 6,
+    "board1": "FDDDDDFDAAAEFFAAAEFFCCCEBBBCCEBBBCEE",
+    "board2": "EEDDDDEEEDDCEBAAACBBAACCBBAFFCBFFFFC",
+    "solution": "....x.x.......x........x.x.......x..",
+    "unused metadata": "637,Grandmaster,True puzzle_93,6"
+  },
+  {
+    "id": "66",
+    "N": 6,
+    "board1": "AAAAACDDACCCDDDBCCEEDBBBEEBBFFEEFFFF",
+    "board2": "FFFCCCFFFCBBAAACCBAAADDBEEEDDBEEEDDB",
+    "solution": "...x...x.........xx.......x.......x.",
+    "unused metadata": "638,Grandmaster,True puzzle_45,6"
+  },
+  {
+    "id": "67",
+    "N": 6,
+    "board1": "DDDFFFDDDFFCBAAAFCBBAACCBEEACCBBEEEE",
+    "board2": "EDDCCCEDDCCCEEDBBBEEDBBBAAAAFFAAFFFF",
+    "solution": "..x.......x..x.........xx........x..",
+    "unused metadata": "647,Grandmaster,True puzzle_29,6"
+  },
+  {
+    "id": "68",
+    "N": 6,
+    "board1": "FFFBAAFDFBAADDFBAADEEBBCDEECBCDEECCC",
+    "board2": "EEDDDDEEDBBDEEBBBBAAFFCCAAAFCCAFFFCC",
+    "solution": "..x.......x.x........x...x.........x",
+    "unused metadata": "660,Grandmaster,True puzzle_82,6"
+  },
+  {
+    "id": "69",
+    "N": 6,
+    "board1": "EEEEAACCBEAACBBEAACBBDDDCFBFFDCFFFDD",
+    "board2": "EEEEEEDDAABBDDAABBDDAABBFFFCCCFFFCCC",
+    "solution": "...x..x.........x...x........x.x....",
+    "unused metadata": "666,Grandmaster,True puzzle_54,6"
+  },
+  {
+    "id": "70",
+    "N": 6,
+    "board1": "EEFFFFEFFCDDEEECCDBBBCCDBBAACDBAAAAD",
+    "board2": "EEEDDDEEBDDDEBBCAABBCCAABCCCAAFFFFFF",
+    "solution": "....x.x........x...x.........x..x...",
+    "unused metadata": "696,Grandmaster,True puzzle_18,6"
+  },
+  {
+    "id": "71",
+    "N": 6,
+    "board1": "EEEEEECAAAAACCABBDCCBBBDFCFFBDFFFDDD",
+    "board2": "FFCCCCFFBBCCFFBBDDAABBDDAAEEDDAAEEEE",
+    "solution": "....x..x.......x..x..........x..x...",
+    "unused metadata": "722,Grandmaster,True puzzle_4,6"
+  },
+  {
+    "id": "72",
+    "N": 6,
+    "board1": "CCCCDDAACCDDAAABDFEEABDFEEEBFFEBBBFF",
+    "board2": "EEDDDDEEEEBDAACCBDAACCBBAACCBBFFFFFF",
+    "solution": "..x...x.........x..x.......x.......x",
+    "unused metadata": "727,Grandmaster,True puzzle_10,6"
+  },
+  {
+    "id": "73",
+    "N": 6,
+    "board1": "EEEDDDCEEAADCCEAADFCCAADFCFBBBFFFBBB",
+    "board2": "FFFFBBCFFABBCCAABBCAAADDCCEEDDEEEEDD",
+    "solution": "....x...x...x........x.......x.x....",
+    "unused metadata": "731,Grandmaster,True puzzle_78,6"
+  },
+  {
+    "id": "74",
+    "N": 6,
+    "board1": "AEEECCAAEEECBAADDCBBADFCBDDDFCBBFFFF",
+    "board2": "FCCCAAFCCCAAFFDDAAFFDDBBEEEDBBEEEDBB",
+    "solution": "..x........x.x.......x..x.........x.",
+    "unused metadata": "732,Grandmaster,True puzzle_33,6"
+  },
+  {
+    "id": "75",
+    "N": 6,
+    "board1": "DDDEEEDDEEEBDAAAABCCAABBCCFFBBCCFFFF",
+    "board2": "FFFFBBDDFFBBDDDDABAAAAABEEECCCEEECCC",
+    "solution": "...x...x.........x..x...x.........x.",
+    "unused metadata": "751,Grandmaster,True puzzle_64,6"
+  },
+  {
+    "id": "76",
+    "N": 6,
+    "board1": "DDDDCCDFFCCCDFFCBBFFEEBBAAAEBBAAAEEE",
+    "board2": "FFDDDDFFDBBDFFABBBEAAABCEAACCCEEEECC",
+    "solution": "..x.......x..x.......x.......xx.....",
+    "unused metadata": "785,Grandmaster,True puzzle_38,6"
+  },
+  {
+    "id": "77",
+    "N": 6,
+    "board1": "FFEEEEFFAEEDFBAAADFBBAADBBBCDDCCCCCD",
+    "board2": "FFFCBBFCCCBBFCCAABFAAAABEEEDDDEEEDDD",
+    "solution": "x.........x..x.......x.......x..x...",
+    "unused metadata": "787,Grandmaster,True puzzle_75,6"
+  },
+  {
+    "id": "78",
+    "N": 6,
+    "board1": "CFFFFFCCBBBFCBBBAACCDDAAEEEDDAEEEDDA",
+    "board2": "DDDACCDDAACCDBBACCBBBAAEFFBEEEFFFFEE",
+    "solution": ".x.......x.......xx.........x...x...",
+    "unused metadata": "799,Grandmaster,True puzzle_55,6"
+  },
+  {
+    "id": "79",
+    "N": 6,
+    "board1": "CCCCCEAACAEEFAAAEEFFDDDEFFBBDDFBBBBD",
+    "board2": "EEEBBCDDEBBCDDEEBCDDAFBCAAAFCCAAFFFF",
+    "solution": "..x........x.x........x.x........x..",
+    "unused metadata": "802,Grandmaster,True puzzle_85,6"
+  },
+  {
+    "id": "80",
+    "N": 6,
+    "board1": "EEEEEEAAABBDACABBDFCABBDFCCCCDFFFFDD",
+    "board2": "FFFFBBDDFFBBDDAAABDDAAABEEECCCEEECCC",
+    "solution": "..x........xx.........x..x.......x..",
+    "unused metadata": "819,Grandmaster,True puzzle_41,6"
+  },
+  {
+    "id": "81",
+    "N": 6,
+    "board1": "FFFCCCFFACCBFAAACBEEAABBEEDDBBEEDDDD",
+    "board2": "ECCCAAEECCAAEECBDAEBBBDAFFBBDDFFFFDD",
+    "solution": "...x...x.........x..x...x.........x.",
+    "unused metadata": "822,Grandmaster,True puzzle_74,6"
+  },
+  {
+    "id": "82",
+    "N": 6,
+    "board1": "AAADEEAAADDEFFDDEEFFDBECFBBBCCFBBCCC",
+    "board2": "EEDAAAEEDAAAEDDBBBEFDBBBFFDCCCFFFCCC",
+    "solution": "..x........x...x..x.........x..x....",
+    "unused metadata": "829,Grandmaster,True puzzle_62,6"
+  },
+  {
+    "id": "83",
+    "N": 6,
+    "board1": "BBFAAABBFFACDBFFACDBDFACDDDEECEEEECC",
+    "board2": "FFFCCCFBBCCCFBBAAAFBBAAAEEDDDDEEEEDD",
+    "solution": "....x..x.......x..x..........x..x...",
+    "unused metadata": "838,Grandmaster,True puzzle_88,6"
+  },
+  {
+    "id": "84",
+    "N": 6,
+    "board1": "BBBDEEBDDDEEBCDDEABCCCEAFFCCAAFFFFAA",
+    "board2": "EEDDCCEEDDCCAEDDCCAEFBBBAAFBBBAAFFFF",
+    "solution": "...x..x.........x...x........x.x....",
+    "unused metadata": "848,Grandmaster,True puzzle_97,6"
+  },
+  {
+    "id": "85",
+    "N": 6,
+    "board1": "FFFEEEFDFAAEFDDAAEDDDAAECCCCBBCCBBBB",
+    "board2": "FCCBBBFCCBBDFCAABDFCEAADFFEAADEEEEDD",
+    "solution": ".x........x...x........xx........x..",
+    "unused metadata": "894,Grandmaster,True puzzle_16,6"
+  },
+  {
+    "id": "86",
+    "N": 6,
+    "board1": "BBBCEEBACCEEBACCCEBAAAFEDDDAFFDDDFFF",
+    "board2": "FFFFFFCCAAAACCCDAACBBDDDBBEEEDBBEEED",
+    "solution": ".....x..x...x........x...x........x.",
+    "unused metadata": "904,Grandmaster,True puzzle_63,6"
+  },
+  {
+    "id": "87",
+    "N": 6,
+    "board1": "CCCEBBCCCEBBAAAEBBADDEEFAADEFFDDDFFF",
+    "board2": "EDDDBBEEEDBBECDDBBECCAAACCCAAAFFFFFF",
+    "solution": "....x..x.......x.......xx.......x...",
+    "unused metadata": "905,Grandmaster,True puzzle_96,6"
+  },
+  {
+    "id": "88",
+    "N": 6,
+    "board1": "FFFFBBDDDFBBDDDFBBAACCCCAAAAECEEEEEC",
+    "board2": "EEDDDDCEEDBDCCEEBBCAABBBCAAAAFCFFFFF",
+    "solution": "...x...x.........x..x...x.........x.",
+    "unused metadata": "908,Grandmaster,True puzzle_27,6"
+  },
+  {
+    "id": "89",
+    "N": 6,
+    "board1": "DDDDEEADCCEEADCBEEACCBBBACFFBBAAFFFF",
+    "board2": "FFFBBBFFFBBBCCAADDECCADDECCAADEEEEAD",
+    "solution": "...x..x..........x.x........x...x...",
+    "unused metadata": "917,Grandmaster,True puzzle_28,6"
+  },
+  {
+    "id": "90",
+    "N": 6,
+    "board1": "FFCCCEDFCCCEDFFAAEDDFAAEDDAABEBBBBBE",
+    "board2": "FFCBBAFFCBBAFCCBBAFCCAAAEEEDDDEEEDDD",
+    "solution": "....x.x.......x........x...x...x....",
+    "unused metadata": "945,Grandmaster,True puzzle_25,6"
+  },
+  {
+    "id": "91",
+    "N": 6,
+    "board1": "BBBAAACCBAADCCBBADFCCEDDFFEEDDFFFEEE",
+    "board2": "ECCCCCEEEECBFEBBBBFAADDBFAAADDFFFADD",
+    "solution": ".x.......x.......x..x...x.........x.",
+    "unused metadata": "1000,Grandmaster,True puzzle_51,6"
+  },
+  {
+    "id": "92",
+    "N": 6,
+    "board1": "CEEEEBCECEBBCCCBBBAADDFFAADDFFAADDFF",
+    "board2": "EDCCCCEDDCBCEDDDBBEEAABBEAAAABFFFFFF",
+    "solution": "..x.......x..x.......x..x..........x",
+    "unused metadata": "1039,Grandmaster,True puzzle_69,6"
+  },
+  {
+    "id": "93",
+    "N": 6,
+    "board1": "FFFCCCFFCCCBFBBBBBAAEDDDAAEDEDAAEEED",
+    "board2": "EEEEAACCEEAACCBBBACCBBBAFFFDDDFFFDDD",
+    "solution": "...x..x.......x........x.x........x.",
+    "unused metadata": "1068,Grandmaster,True puzzle_11,6"
+  },
+  {
+    "id": "94",
+    "N": 6,
+    "board1": "DDDFFFDDBBBFADBBBFACCCCFAAECCEAAEEEE",
+    "board2": "EEEECCDDECCCDDECBBDDBBBBAAAAFFAAFFFF",
+    "solution": ".....xx.......x.......x..x.......x..",
+    "unused metadata": "1079,Grandmaster,True puzzle_6,6"
+  },
+  {
+    "id": "95",
+    "N": 6,
+    "board1": "FBBBEEFFBBEEFDDBEEFDAAACFDAAACDDCCCC",
+    "board2": "EEEBBBEEDBBBAEDDCCADDCCCAADFFCAAFFFF",
+    "solution": ".x.........x..x.......x.x........x..",
+    "unused metadata": "1128,Grandmaster,True puzzle_2,6"
+  },
+  {
+    "id": "96",
+    "N": 6,
+    "board1": "FFFFFDBBCFDDBBCDDDBBCCCAEEECAAEEEAAA",
+    "board2": "EECCCCEBBBDCEBBDDCEBFDAAEFFDAAFFFDAA",
+    "solution": "...x...x........x...x...x..........x",
+    "unused metadata": "1149,Grandmaster,True puzzle_89,6"
+  },
+  {
+    "id": "97",
+    "N": 6,
+    "board1": "ECCDDDECCDDDECCAFFEAAAAFEABBFFEBBBBF",
+    "board2": "EECCBBECCCBBEEECBBAAAFFDAAFFDDAFFDDD",
+    "solution": ".x.........x...x..x.........x...x...",
+    "unused metadata": "1216,Grandmaster,True puzzle_35,6"
+  },
+  {
+    "id": "98",
+    "N": 6,
+    "board1": "BDDDFFBDDDFFBBBBFFEAAACCEAAACCEEEECC",
+    "board2": "EEDDDDEEECDDEACCBBAACCBBAAFCBBAFFFFF",
+    "solution": "....x..x.......x.......x..x...x.....",
+    "unused metadata": "1327,Grandmaster,True puzzle_61,6"
+  },
+  {
+    "id": "99",
+    "N": 6,
+    "board1": "BBBAAABBBAAFDDDACFEEDDCFEEDCCFEECCFF",
+    "board2": "FFFDCCFFFDCCAAADCCADDDBBAEEEBBAEEEBB",
+    "solution": "...x...x........x.x.......x........x",
+    "unused metadata": "1443,Grandmaster,True puzzle_58,6"
+  },
+  {
+    "id": "100",
+    "N": 6,
+    "board1": "EEECCCEECCCFEAAFFFBAAAFFBBBADDBBDDDD",
+    "board2": "FCCBAAFCCBAAFCCBAAFEBBDDFEEBDDFEEEDD",
+    "solution": "x.......x........x...x...x........x.",
+    "unused metadata": "1452,Grandmaster,True puzzle_92,6"
+  },
+  {
+    "id": "101",
+    "N": 8,
+    "board1": "BGGGGHHHBGGFGGHHBBFFFHHHCBFFFEEECBFDDEEECBDDDDEECBCDAAAACCCDAAAA",
+    "board2": "GGGDEEEEGGDDEEEEGGDDDDBBHGFDFBBCHHFFFBBCHHFFFBBCHHAACCCCHAAAAAAC",
+    "solution": "...x..........x..x.............x..x..........x..x...........x...",
+    "unused metadata": "408,Expert,True puzzle_11,8"
+  },
+  {
+    "id": "102",
+    "N": 8,
+    "board1": "HHAAAAACHHEEAAACHHEEEECCHHFEECCBFFFDDCCBFFFGDDDBGGFGDDBBGGGGDBBB",
+    "board2": "GGGEEEAAGGGEEAAAGGEEEABAHFFFFABBHFFFFCBBHHHDDCCBHHDDCCCBHDDDDCCB",
+    "solution": "......x....x....x.........x..........x.........x.x..........x...",
+    "unused metadata": "431,Expert,True puzzle_15,8"
+  },
+  {
+    "id": "103",
+    "N": 8,
+    "board1": "HHHGGGGFHHGGFFFFHEGGBFFFHEDDBBBBHEDDDBBBEEDDCCAAEEDCCAAAECCCCAAA",
+    "board2": "GGGFFFFAEEGGFFFAEEGGGFAAEEEEAAAAHHHBBBBCHHHBBBBCDHHDDCCCDDDDDCCC",
+    "solution": ".....x.........x....x...x..........x.....x............x...x.....",
+    "unused metadata": "486,Expert,True puzzle_85,8"
+  },
+  {
+    "id": "104",
+    "N": 8,
+    "board1": "DDDDEEEEGDDDEEBBGDCEEBBBGCCCCBBBGFFCCCAAGFFFFHAAGGHFFHAAGHHHHHAA",
+    "board2": "HHFFFCCCHHHFFCCCHHFFFCCDHGGGDDDDGGEDDDBBGEEAAAABGEEAAAABGEEEBBBB",
+    "solution": ".x...........x....x...........x.x...........x..........x...x....",
+    "unused metadata": "567,Expert,True puzzle_50,8"
+  },
+  {
+    "id": "105",
+    "N": 8,
+    "board1": "CCCCCBBBCCCDDBBBGGDDFFABGGDFFFABGDDFFFAAGDEEEEEAGEEHHHEAGHHHHHAA",
+    "board2": "HHFFFFFFHHGCCCFFHHGGECCCHGGEEECDHGGEEECDBBGAEADDBBBAAADDBBBAAADD",
+    "solution": "......x..x...........x....x............x....x...x..........x....",
+    "unused metadata": "709,Expert,True puzzle_47,8"
+  },
+  {
+    "id": "106",
+    "N": 8,
+    "board1": "HHHHHHHGHFFEGGGGFFFEGGAAFEFEEGAAFEEEDDDABBBBDDDACCCBBBDACCCCCBDA",
+    "board2": "GGEEEEDDGGGEEEDAGGGFFEDAHHFFFFDAHHHFDDDAHHCFBBBAHCCCBBBACCCCBBAA",
+    "solution": ".x...........x.....x....x.............x...x............x....x...",
+    "unused metadata": "781,Expert,True puzzle_51,8"
+  },
+  {
+    "id": "107",
+    "N": 8,
+    "board1": "CCCCCEEEAACCCEEEAABBBHHEAABBBDHEAFBDDDHHAFBDDDDHFFFGGGGHFFFGGGGH",
+    "board2": "HHHEEEEEHHFEEEAAHHFFFAAAGHGFFAAAGGGFFDDCGGGDDDCCBBBDDDCCBBBBBCCC",
+    "solution": "...x..........x.x.........x.........x..........x.....x...x......",
+    "unused metadata": "881,Expert,True puzzle_34,8"
+  },
+  {
+    "id": "108",
+    "N": 8,
+    "board1": "AAAABBBBACAABHHHCCAEBHHHCCEEBGHHCCEEBGGGCDDEFFFGDDDEEFGGDDDFFFFG",
+    "board2": "GGEEEEEEGGDDEDCEGGGDDDCCGFFDDFCCHFFFFFCCHBBBAAACHHHBAAAAHHHBBBBA",
+    "solution": "x..............x....x....x............x....x.........x....x.....",
+    "unused metadata": "1247,Expert,True puzzle_93,8"
+  },
+  {
+    "id": "109",
+    "N": 8,
+    "board1": "ADDDDHHHAFFFDHGGAFFFDHHGAFFEDHHGAABEDEGGAABEEEGCBBBEECGCBBBCCCCC",
+    "board2": "HHHHHDDDHEHHBBBDEEEEBBDDEEEBBBDDGFFFFFCCGGGFFFCCGAAAACCCGGGAAAAC",
+    "solution": ".......xx...........x....x...........x....x...........x....x....",
+    "unused metadata": "1349,Expert,True puzzle_46,8"
+  }
+]
