@@ -229,8 +229,50 @@ class StarBattleGame {
     return hashHex.slice(0, 16); // 16 hex chars = 64 bits, plenty unique
   }
 
+  // Throws a descriptive Error if puzzleData is structurally invalid.
+  // Called before any state is mutated so a bad puzzle never partially loads.
+  validatePuzzleData(puzzleData) {
+    const { N, board1, board2, solution } = puzzleData;
+
+    // N must be a positive integer
+    if (!Number.isInteger(N) || N < 1)
+      throw new Error(`Puzzle "${puzzleData.id}": N must be a positive integer, got ${JSON.stringify(N)}`);
+
+    const expected = N * N;
+
+    // All three strings must actually be strings
+    for (const [name, val] of [['board1', board1], ['board2', board2], ['solution', solution]]) {
+      if (typeof val !== 'string')
+        throw new Error(`Puzzle "${puzzleData.id}": "${name}" must be a string, got ${typeof val}`);
+    }
+
+    // Length checks
+    if (board1.length !== expected)
+      throw new Error(`Puzzle "${puzzleData.id}": board1 length is ${board1.length}, expected ${expected} (${N}×${N})`);
+    if (board2.length !== expected)
+      throw new Error(`Puzzle "${puzzleData.id}": board2 length is ${board2.length}, expected ${expected} (${N}×${N})`);
+    if (solution.length !== expected)
+      throw new Error(`Puzzle "${puzzleData.id}": solution length is ${solution.length}, expected ${expected} (${N}×${N})`);
+
+    // Each board must have exactly N distinct region characters
+    const regions1 = new Set(board1);
+    if (regions1.size !== N)
+      throw new Error(`Puzzle "${puzzleData.id}": board1 has ${regions1.size} region(s), expected ${N}`);
+    const regions2 = new Set(board2);
+    if (regions2.size !== N)
+      throw new Error(`Puzzle "${puzzleData.id}": board2 has ${regions2.size} region(s), expected ${N}`);
+
+    // Solution must contain only 'x' and '.', with exactly N stars
+    if (!/^[x.]+$/.test(solution))
+      throw new Error(`Puzzle "${puzzleData.id}": solution contains invalid characters (only 'x' and '.' are allowed)`);
+    const starCount = solution.split('').filter(c => c === 'x').length;
+    if (starCount !== N)
+      throw new Error(`Puzzle "${puzzleData.id}": solution has ${starCount} star(s), expected ${N}`);
+  }
+
   // Initialises all game state for a new puzzle and re-renders both boards.
   async loadPuzzle(puzzleData, categoryId) {
+    this.validatePuzzleData(puzzleData);
     this.currentPuzzleUniqueId = await this.computePuzzleId(puzzleData);
     this.currentCategoryId = categoryId;
     this.currentPuzzle = puzzleData;
