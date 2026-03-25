@@ -32,7 +32,7 @@ import random
 import statistics
 import string
 from abc import ABC, abstractmethod
-from collections import defaultdict, Counter
+from collections import defaultdict, Counter, dequeue
 from itertools import combinations
 from ortools.sat.python import cp_model
 
@@ -161,8 +161,9 @@ def flood_fill(grid, n, excluded_region=None):
     expansion sources (used by LetterGenerator to preserve the letter shape).
     Returns the filled grid or None if fill fails or produces singletons.
     """
-    unfilled = [i for i in range(n * n) if grid[i] is None]
-    random.shuffle(unfilled)
+    temp_list = [i for i in range(n * n) if grid[i] is None]
+    random.shuffle(temp_list)
+    unfilled = deque(temp_list)
 
     max_iters = len(unfilled) * 4
     iters = 0
@@ -171,7 +172,7 @@ def flood_fill(grid, n, excluded_region=None):
         if iters > max_iters:
             return None
 
-        idx = unfilled.pop(0)
+        idx = unfilled.popleft()
         if grid[idx] is not None:
             continue
 
