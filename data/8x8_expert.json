@@ -1198,5 +1198,15 @@
     "board2": "FFFDDDDDFFFDDDCDFFBHHHCCBBBBHHECAAGHHEECAAGGGECCAAGEEECCAAGEEECC",
     "solution": "....x...x............x.....x..........x..x.............x..x.....",
     "unused_metadata": "856 puzzle_535"
+  },
+  {
+    "id": "151",
+    "N": 8,
+    "board1": "AAAHHHGGAAAHHHGGBBAHHGGGBBBHFGFGBBCCFFFECCCDFFEECCDDDFEECCDDDEEE",
+    "board2": "ABBBCCCCABBBBCCCAAAAHCHHGGGAHHHFGGGGHFFFGDDDEEFFGDDDEEFFDDDDEEEE",
+    "solution": "..x..........x...x.............x....x...x..........x..........x.",
+    "unused_metadata": "penpa"
   }
 ]
+
+
