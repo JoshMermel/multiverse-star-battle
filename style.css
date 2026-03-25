@@ -52,7 +52,8 @@ input[type="number"]::-webkit-inner-spin-button {
   display: flex; 
   flex-direction: column; 
   align-items: center; 
-  padding: 20px; 
+  padding: 20px;
+  position: relative;
 }
 
 .menu-container {
@@ -206,8 +207,8 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* 7. TOASTS & FEEDBACK */
 #toast {
-  position: fixed;
-  bottom: 30px;
+  position: absolute;
+  top: 180px;
   left: 50%;
   transform: translateX(-50%);
   padding: 12px 24px;
@@ -216,11 +217,12 @@ input[type="number"]::-webkit-inner-spin-button {
   z-index: 1000;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   transition: opacity 0.3s, transform 0.3s;
+  white-space: nowrap;
 }
 
 .toast-hidden {
   opacity: 0;
-  transform: translate(-50%, 20px) !important;
+  transform: translate(-50%, -20px) !important;
   pointer-events: none;
 }
 

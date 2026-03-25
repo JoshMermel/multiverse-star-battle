@@ -9,6 +9,7 @@ Generation usage:
     python3 gen_puzzles.py --mode self_entangled --n 8 --count 100
     python3 gen_puzzles.py --mode super_symmetric --n 8 --count 100
     python3 gen_puzzles.py --mode letter_pair --char1 T --char2 H --n 8 --count 10
+    python3 gen_puzzles.py --mode voting_district_pair --n 8 --count 100
     python3 gen_puzzles.py --mode random_pair --n 8 --count 100 --score-after
 
 
