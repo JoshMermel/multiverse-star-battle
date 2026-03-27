@@ -126,8 +126,13 @@ class StarBattleGame {
     const puzInput = document.getElementById('puzzle-input');
     const countLabel = document.getElementById('puzzle-count-label');
 
-    const resp = await fetch(`data/${catId}.json`);
-    this.loadedPuzzles = await resp.json();
+    const response = await fetch(`data/${catId}.json`);
+    const rawData = await response.json();
+
+    this.loadedPuzzles = this.puzzles = rawData.map((puz, index) => ({
+      ...puz,
+      id: index + 1 // This replaces the need for "id" in the JSON
+    }));
     const total = this.loadedPuzzles.length;
 
     puzInput.max = total;
