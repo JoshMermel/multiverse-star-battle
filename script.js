@@ -305,12 +305,24 @@ class StarBattleGame {
     this.renderBoard('board2', this.regions[1]);
     this.updateVisuals();
 
-    this.showToast(`Playing Puzzle ${puzzleData.id}`, "info");
+    this.showToastOnLoad(categoryId, puzzleData.id);
     this.loadProgress({ suppressWinToast: true });
     this.updateControls();
     this.updateUrlParams(categoryId, puzzleData.id);
 
     this.solver = new PuzzleSolver(this);
+  }
+
+  showToastOnLoad(catId, puzId) {
+    if (this.isDailyCategory(catId)) {
+      const today = new Date().toLocaleDateString(undefined, { 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      this.showToast(`Playing the Daily Puzzle for ${today}`);
+    } else {
+      this.showToast(`Playing Puzzle ${puzId}`, "info");
+    }
   }
 
   // Builds the cell grid and SVG region borders for one board.
