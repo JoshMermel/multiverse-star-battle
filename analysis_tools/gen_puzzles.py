@@ -173,8 +173,6 @@ def flood_fill(grid, n, excluded_region=None):
             return None
 
         idx = unfilled.pop(0)
-        if grid[idx] is not None:
-            continue
 
         r, c = divmod(idx, n)
         filled_neighbors = []

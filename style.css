@@ -54,6 +54,8 @@ input[type="number"]::-webkit-inner-spin-button {
   align-items: center; 
   padding: 20px;
   position: relative;
+  padding-bottom: 100px;
+  min-height: 100vh;
 }
 
 .menu-container {
@@ -207,17 +209,26 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* 7. TOASTS & FEEDBACK */
 #toast {
-  position: absolute;
-  top: 180px;
+  position: fixed;
+  bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 12px 24px;
-  border-radius: 25px;
+
+  /* Critical for Mobile Wrapping */
+  width: 90%;
+  max-width: 500px;
+  white-space: normal;   /* Allows text to wrap to multiple lines */
+  text-align: center;
+  line-height: 1.4;
+
+  /* Visuals */
   color: white;
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  padding: 12px 20px;
+  border-radius: 25px;
+  z-index: 3000;         /* Above the modal */
+  pointer-events: none;  /* Allows clicking "through" the toast to the board */
+  
   transition: opacity 0.3s, transform 0.3s;
-  white-space: nowrap;
 }
 
 .toast-hidden {
