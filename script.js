@@ -99,7 +99,7 @@ class StarBattleGame {
   getDailyPuzzleIndex(total) {
     const msPerDay = 24 * 60 * 60 * 1000;
     const daysSinceEpoch = Math.floor(Date.now() / msPerDay);
-    return daysSinceEpoch % total;
+    return 1+ daysSinceEpoch % total;
   }
 
   // Fetches daily.json, selects today's puzzle by date, loads it, and hides

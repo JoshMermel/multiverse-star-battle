@@ -511,8 +511,9 @@ class LetterGenerator(BoardGenerator):
     they are constant for a given (char, n).
     """
 
-    def __init__(self, n, char, reject_singletons=False):
-        super().__init__(n, reject_singletons)
+    def __init__(self, n, char, reject_singletons=False, min_solutions=2, max_solutions=None):
+        super().__init__(n, reject_singletons=reject_singletons,
+                         min_solutions=min_solutions, max_solutions=max_solutions)
         self.char = char.upper()
         self.partial = render_letter(self.char, n, letter_region_id=0)
         self.letter_cells = [i for i, v in enumerate(self.partial) if v == 0]

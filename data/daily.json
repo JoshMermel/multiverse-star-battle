@@ -322,10 +322,10 @@
   {
     "id": "41",
     "N": 8,
-    "board1": "BBBDDAAACCDDDAAACCDDAAAACCCDDAAAEEEHHGGGEEEEHHGGEEEHHHGGEEEHHFFF",
-    "board2": "EEEECCCBEEEECCCBEEEECDDBHHEHDDDDHHHHDADDFHHGAAAAFGGGAAAAFGGGAAAA",
-    "solution": "..x.........x..........x.x............x.x..........x.........x..",
-    "unused_metadata": "rot90,18 self_puzz_82,8"
+    "board1": "BBBAAAEEGBBBBAEEGGGBBAEEGGBBBAHEGGFFFAHHGAAAAAHHDDAAACCCDDDCCCCC",
+    "board2": "DAFFFACCDAAFAACCDAAAAACCDAEAEABBDAEEEABBDAHEEAGGDAHHHAGGHHHHHGGG",
+    "solution": ".......x...x.....x............x.....x.....x.....x............x..",
+    "unused metadata": "202,Medium,True puzzle_75,8"
   },
   {
     "id": "42",
