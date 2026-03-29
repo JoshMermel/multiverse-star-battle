@@ -97,8 +97,23 @@ class StarBattleGame {
   // regardless of when the page is loaded, and cycles forever as new puzzles
   // are added.
   getDailyPuzzleIndex(total) {
+    // 1. Get the current time in Boston as a string (YYYY-MM-DD)
+    const bostonDateStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+
+    // 2. Convert that date string into a timestamp representing 
+    // midnight of that day in the local system.
+    // Note: 'en-CA' gives YYYY-MM-DD which Date() parses reliably.
+    const midnightBoston = new Date(bostonDateStr).getTime();
+
+    // 3. Calculate days since epoch based on that specific midnight
     const msPerDay = 24 * 60 * 60 * 1000;
-    const daysSinceEpoch = Math.floor(Date.now() / msPerDay);
+    const daysSinceEpoch = Math.floor(midnightBoston / msPerDay);
+
     return daysSinceEpoch % total;
   }
 
@@ -106,13 +121,33 @@ class StarBattleGame {
   // the puzzle-navigation controls (prev/next/input) since there is only one
   // puzzle to show.
   async loadDailyCategory() {
-    const resp = await fetch('data/daily.json');
-    this.loadedPuzzles = await resp.json();
+    const resp = await fetch('data/daily.csv');
+    this.loadedPuzzles = this.parseCsv(await resp.text());
     const total = this.loadedPuzzles.length;
     const idx = this.getDailyPuzzleIndex(total);
 
     this._setPuzzleNavVisible(false);
     await this.loadPuzzle(this.loadedPuzzles[idx], 'daily');
+  }
+
+  // Parses the CSV format produced by gen_puzzles.py into an array of puzzle
+  // objects. Expects a header row of: name,N,board_1,board_2,solution
+  // Lines beginning with '#' (generator progress comments) are skipped.
+  parseCsv(text) {
+    const lines = text.split('\n');
+    const puzzles = [];
+    let id = 1;
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const cols = line.split(',');
+      // Skip the header row
+      if (cols[0] === 'name') continue;
+      const [name, N, board_1, board_2, solution, score, tier, is_solved] = cols;
+      if (!name || !N || !board_1 || !board_2 || !solution) continue;
+      puzzles.push({ id: id++, name, N: parseInt(N, 10), board1: board_1, board2: board_2, solution });
+    }
+    return puzzles;
   }
 
   // Fetches puzzles for a category, updates the nav UI, and loads the target puzzle.
@@ -126,13 +161,8 @@ class StarBattleGame {
     const puzInput = document.getElementById('puzzle-input');
     const countLabel = document.getElementById('puzzle-count-label');
 
-    const response = await fetch(`data/${catId}.json`);
-    const rawData = await response.json();
-
-    this.loadedPuzzles = this.puzzles = rawData.map((puz, index) => ({
-      ...puz,
-      id: index + 1 // This replaces the need for "id" in the JSON
-    }));
+    const response = await fetch(`data/${catId}.csv`);
+    this.loadedPuzzles = this.parseCsv(await response.text());
     const total = this.loadedPuzzles.length;
 
     puzInput.max = total;

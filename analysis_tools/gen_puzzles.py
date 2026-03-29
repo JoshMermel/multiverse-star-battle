@@ -191,10 +191,6 @@ def flood_fill(grid, n, excluded_region=None):
     if any(v is None for v in grid):
         return None
 
-    counts = Counter(grid)
-    if any(c <= 1 for c in counts.values()):
-        return None
-
     return grid
 
 
@@ -1056,6 +1052,7 @@ class CompositeScorer:
             (self.rule_3_region_pinned_crossboard_cols,     60, "Expert"),
             (self.rule_crossboard_partial_overlap,          75, "Expert"),
             (self.rule_lookahead_half_stage,                80, "Expert"),
+            (self.rule_region_pair_contains_pair,           90, "Expert"),
 
             # ── Grandmaster ───────────────────────────────────────────────────
             (self.rule_lookahead_1_stage,                   120, "Grandmaster"),
