@@ -298,17 +298,6 @@ class SymmetricGenerator(BoardGenerator):
             return (r, c) == min(get_orbit(r, c))
 
         control_cells = [(r, c) for r in range(n) for c in range(n) if in_control_zone(r, c)]
-        random.shuffle(control_cells)
-
-        reg_id_count = 0
-        for r, c in control_cells:
-            orbit = get_orbit(r, c)
-            if grid_2d[r][c] == -1 and len(set(orbit)) == order:
-                for i, (or_r, or_c) in enumerate(orbit):
-                    grid_2d[or_r][or_c] = reg_id_count + (i * num_masters)
-                reg_id_count += 1
-                if reg_id_count >= num_masters:
-                    break
 
         unfilled_control = [idx for idx in control_cells if grid_2d[idx[0]][idx[1]] == -1]
         random.shuffle(unfilled_control)

@@ -12,8 +12,10 @@
     {"id": "12x12_beginner",      "label": "12x12 Beginner",  "group": "12x12"},
     {"id": "12x12_medium",        "label": "12x12 Medium",    "group": "12x12"},
     {"id": "12x12_hard_plus",     "label": "12x12 Hard+",     "group": "12x12"},
-    {"id": "6x6_equal_area",      "label": "6x6 Equal Area",  "group": "Special"},
-    {"id": "8x8_equal_area",      "label": "8x8 Equal Area",  "group": "Special"},
+    {"id": "8x8_lattice",         "label": "8x8 Lattice",     "group": "Symmetry"},
+    {"id": "8x8_twin",            "label": "8x8 Twin",        "group": "Symmetry"},
+    {"id": "6x6_equal_area",      "label": "6x6",             "group": "Voting Districts"},
+    {"id": "8x8_equal_area",      "label": "8x8",             "group": "Voting Districts"},
     {"id": "signoff",             "label": "Signoff",         "group": "Special"}
   ]
 }
