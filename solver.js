@@ -182,7 +182,6 @@ export class PuzzleSolver {
       () => this.hintLookahead(1),
       () => this.hintLookahead(2),
       () => this.hintLookahead(3),
-      () => this.hintLookahead(4),
       () => this.hintLookahead(8),
     ];
 
