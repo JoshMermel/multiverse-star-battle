@@ -1559,7 +1559,7 @@ class CompositeScorer:
         return self._lookahead_n_stages(p, n_stages=2)
 
     def rule_lookahead_3_stages(self, p):
-        return self._lookahead_n_stages(p, n_stages=4)  # note: was 4 in original
+        return self._lookahead_n_stages(p, n_stages=5)  # note: was 4 in original
 
     def _lookahead_n_stages(self, p, n_stages, extra_half_stage=False):
         for test_idx in (i for i, val in enumerate(p.grid) if val is None):
