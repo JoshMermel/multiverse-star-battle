@@ -122,8 +122,10 @@ class StarBattleGame {
   // the puzzle-navigation controls (prev/next/input) since there is only one
   // puzzle to show.
   async loadDailyCategory() {
-    const resp = await fetch('data/daily.csv');
-    this.loadedPuzzles = this.parseCsv(await resp.text());
+    if (!this.puzzleCache.has('daily')) {
+      const resp = await fetch('data/daily.csv');
+      this.puzzleCache.set('daily', this.parseCsv(await resp.text()));
+    }
     const total = this.loadedPuzzles.length;
     const idx = this.getDailyPuzzleIndex(total);
 
