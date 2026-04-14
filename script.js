@@ -498,9 +498,12 @@ class StarBattleGame {
     } else {
       const current = this.state[idx];
 
-      // If the cell is a star, leave it untouched but allow dragging to
-      // paint dots on other empty cells as normal.
-      if (current === CELL.STAR) return;
+      if (current === CELL.STAR) {
+        this.applyState(idx, CELL.NONE);
+        this.saveHistory();
+        this.isDragging = false;
+        return;
+      }
 
       const next = current === CELL.NONE ? CELL.DOT : CELL.STAR;
       this.dragStartIdx = idx;

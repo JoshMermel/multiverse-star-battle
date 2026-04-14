@@ -169,6 +169,8 @@ export class PuzzleSolver {
       () => this.hintDisjointUnitRegionSync(2),
       () => this.hintManyRegionsSync(),
       () => this.hintRegionSubsetSync(1),
+      () => this.hintDiagonalReflection(),
+      () => this.hintRotation180(),
       // Expert
       () => this.hintDisjointUnitRegionSync(3),
       () => this.hintCrossBoardRegionPinned(2, "Row"),
@@ -183,6 +185,7 @@ export class PuzzleSolver {
       () => this.hintLookahead(2),
       () => this.hintLookahead(3),
       () => this.hintLookahead(8),
+      () => hintFromSolution(),
     ];
 
     for (const rule of rules) {
@@ -205,7 +208,7 @@ export class PuzzleSolver {
 
     for (let i = 0; i < n * n; i++) {
       const isWrong = (this.game.state[i] === CELL.STAR && this.game.solution[i] !== 'x')
-                   || (this.game.state[i] === CELL.DOT  && this.game.solution[i] === 'x');
+        || (this.game.state[i] === CELL.DOT  && this.game.solution[i] === 'x');
       if (isWrong) highlights.push({ idx: i, color: 'hint-error-red' });
     }
 
@@ -484,9 +487,9 @@ export class PuzzleSolver {
 
     const windows = adjacent
       ? Array.from({length: n - N + 1}, (_, startU) =>
-          Array.from({length: N}, (_, i) => axisIndices[startU + i]))
+        Array.from({length: N}, (_, i) => axisIndices[startU + i]))
         : this.getCombinations(Array.from({length: n}, (_, i) => i), N)
-          .map(combo => combo.map(u => axisIndices[u]));
+        .map(combo => combo.map(u => axisIndices[u]));
 
     for (let bIdx = 0; bIdx < 2; bIdx++) {
       for (const windowIndices of windows) {
@@ -807,6 +810,145 @@ export class PuzzleSolver {
           description: `Placing a star here would make the puzzle unsolvable. Seeing why requires some lookahead.`,
           highlights: [],
           marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
+        };
+      }
+    }
+    return null;
+  }
+
+  _isBoardSymmetric(mirrorFn) {
+    const n = this.n;
+    const [r1, r2] = this.game.regions;
+    for (let i = 0; i < n * n; i++) {
+      const mirror = mirrorFn(i);
+      // Cells i and j are in the same region on board 1 iff their mirrors
+      // are in the same region on board 2 — labels don't have to match.
+      for (let j = i + 1; j < n * n; j++) {
+        const mj = mirrorFn(j);
+        const sameRegionBoard1 = r1[i] === r1[j];
+        const sameRegionBoard2 = r2[mirror] === r2[mj];
+        if (sameRegionBoard1 !== sameRegionBoard2) return false;
+      }
+    }
+    return true;
+  }
+
+  _isDiagonalReflection()     { return this._isBoardSymmetric(i => (i % this.n) * this.n + Math.floor(i / this.n)); }
+  _isAntiDiagonalReflection() { return this._isBoardSymmetric(i => (this.n-1 - i%this.n) * this.n + (this.n-1 - Math.floor(i/this.n))); }
+  _isRotation180() { return this._isBoardSymmetric(i => (this.n * this.n - 1) - i); }
+  _isSelfRotation180() {
+    const n = this.n;
+    const [r1, r2] = this.game.regions;
+    const mirrorFn = i => n * n - 1 - i;
+
+    // Check each board against itself structurally
+    for (let i = 0; i < n * n; i++) {
+      for (let j = i + 1; j < n * n; j++) {
+        const sameRegion1 = r1[i] === r1[j];
+        const sameRegionMirrored1 = r1[mirrorFn(i)] === r1[mirrorFn(j)];
+        if (sameRegion1 !== sameRegionMirrored1) return false;
+
+        const sameRegion2 = r2[i] === r2[j];
+        const sameRegionMirrored2 = r2[mirrorFn(i)] === r2[mirrorFn(j)];
+        if (sameRegion2 !== sameRegionMirrored2) return false;
+      }
+    }
+    return true;
+  }
+
+  hintDiagonalReflection() {
+    const n = this.n;
+    const cellToRegion0 = this.buildCellToRegionMap(0);
+    const cellToRegion1 = this.buildCellToRegionMap(1);
+
+    const symmetries = [];
+    if (this._isDiagonalReflection())     symmetries.push(i => (i % n) * n + Math.floor(i / n));
+    if (this._isAntiDiagonalReflection()) symmetries.push(i => (n-1 - i%n) * n + (n-1 - Math.floor(i/n)));
+    if (symmetries.length === 0) return null;
+
+    const marks = [];
+    for (let i = 0; i < n * n; i++) {
+      if (this.game.state[i] !== CELL.NONE) continue;
+
+      const seesOwnMirror = symmetries.some(mirrorFn => {
+        const mirror = mirrorFn(i);
+        if (mirror === i) return false;
+
+        if (this.getNeighbors(i).includes(mirror)) return true;
+
+        const mr = Math.floor(mirror / n), mc = mirror % n;
+        const r  = Math.floor(i / n),      c  = i % n;
+        if (r === mr || c === mc) return true;
+
+        if (cellToRegion0[i] && cellToRegion0[i] === cellToRegion0[mirror]) return true;
+        if (cellToRegion1[i] && cellToRegion1[i] === cellToRegion1[mirror]) return true;
+
+        return false;
+      });
+
+      if (seesOwnMirror) marks.push({ idx: i, color: 'hint-target-yellow' });
+    }
+
+    if (marks.length === 0) return null;
+
+    const diagonalDesc = symmetries.length === 2
+      ? "both diagonals"
+      : this._isDiagonalReflection() ? "the main diagonal" : "the anti-diagonal";
+
+    return {
+      description: `The two boards are reflections of each other across ${diagonalDesc}. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`,
+      highlights: [],
+      marks,
+      boardIdx: undefined
+    };
+  }
+
+  hintRotation180() {
+    if (!this._isSelfRotation180()) return null;
+
+    const n = this.n;
+    const cellToRegion0 = this.buildCellToRegionMap(0);
+    const cellToRegion1 = this.buildCellToRegionMap(1);
+    const mirrorFn = i => (n * n - 1) - i;
+
+    const marks = [];
+    for (let i = 0; i < n * n; i++) {
+      if (this.game.state[i] !== CELL.NONE) continue;
+
+      const mirror = mirrorFn(i);
+      if (mirror === i) continue;
+
+      const mr = Math.floor(mirror / n), mc = mirror % n;
+      const r  = Math.floor(i / n),      c  = i % n;
+
+      const seesOwnMirror =
+        r === mr || c === mc ||
+        this.getNeighbors(i).includes(mirror) ||
+        (cellToRegion0[i] && cellToRegion0[i] === cellToRegion0[mirror]) ||
+        (cellToRegion1[i] && cellToRegion1[i] === cellToRegion1[mirror]);
+
+      if (seesOwnMirror) marks.push({ idx: i, color: 'hint-target-yellow' });
+    }
+
+    if (marks.length === 0) return null;
+
+    return {
+      description: `Each board is 180° rotationally symmetric. The solution must be too, so any cell that "sees" its own 180° rotation cannot be a star.`,
+      highlights: [],
+      marks,
+      boardIdx: undefined
+    };
+  }
+
+  hintFromSolution() {
+    const n = this.n;
+    for (let i = 0; i < n * n; i++) {
+      if (this.game.solution[i] !== 'x' && this.game.state[i] === CELL.NONE) {
+        return {
+          description: "No logical hint was found. Here's a nudge from the solution.",
+          highlights: [],
+          marks: [{ idx: i, color: 'hint-target-yellow' }],
+          boardIdx: undefined
         };
       }
     }
