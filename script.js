@@ -10,6 +10,7 @@ class StarBattleGame {
   constructor() {
     this.categories = [];
     this.loadedPuzzles = [];
+    this.puzzleCache = new Map();
     // Listener setup must run before initGame so they exist during puzzle load
     this.setupGlobalListeners();
     this.initGame();
@@ -161,8 +162,11 @@ class StarBattleGame {
     const puzInput = document.getElementById('puzzle-input');
     const countLabel = document.getElementById('puzzle-count-label');
 
-    const response = await fetch(`data/${catId}.csv`);
-    this.loadedPuzzles = this.parseCsv(await response.text());
+    if (!this.puzzleCache.has(catId)) {
+      const response = await fetch(`data/${catId}.csv`);
+      this.puzzleCache.set(catId, this.parseCsv(await response.text()));
+    }
+    this.loadedPuzzles = this.puzzleCache.get(catId);
     const total = this.loadedPuzzles.length;
 
     puzInput.max = total;
