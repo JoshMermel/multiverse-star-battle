@@ -301,7 +301,9 @@ class StarBattleGame {
     const ids = ['prev-puz', 'next-puz', 'puzzle-input', 'category-select',
       'hint-btn', 'check-btn', 'reset-btn'];
     ids.forEach(id => document.getElementById(id).disabled = isLoading);
-    document.getElementById('boards-wrapper').style.opacity = isLoading ? '0.4' : '1';
+    const boardsWrapper = document.getElementById('boards-wrapper');
+    boardsWrapper.style.opacity = isLoading ? '0.4' : '1';
+    boardsWrapper.style.pointerEvents = isLoading ? 'none' : '';
   }
 
   // ────────────────────── 
