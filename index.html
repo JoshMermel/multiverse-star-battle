@@ -73,23 +73,32 @@
           <button id="modal-close-btn" data-close aria-label="Close">✕</button>
         </div>
         <div class="modal-body">
-          <p>Place stars on the boards so that:</p>
-          <ul>
-            <li>Every <strong>row</strong> contains exactly one star.</li>
-            <li>Every <strong>column</strong> contains exactly one star.</li>
-            <li>Every <strong>bold region</strong> contains exactly one star.</li>
-            <li>Stars cannot touch each other, even diagonally.</li>
-          </ul>
-          <p>Both boards share the same rows and columns, so a star placed on one board satisfies that row and column for both.</p>
+          <p>Place exactly one star per row, column, and bold region on each board. Stars cannot touch each other, even diagonally.</p>
+
+          <p>The two boards always match — changes to one board take effect on the board one too.</p>
+
           <h3>Controls</h3>
           <ul>
-            <li><strong>Left click</strong> — cycle empty → dot → star</li>
-            <li><strong>Right click</strong> — toggle star directly</li>
-            <li><strong>Click and drag</strong> — paint dots across multiple cells</li>
+            <li><strong>Click</strong> — cycle empty → dot → star</li>
+            <li><strong>Right-click</strong> — toggle star directly</li>
+            <li><strong>Click and drag</strong> — paint dots across cells</li>
           </ul>
+
+          <h3>Books</h3>
+          <ul>
+            <li><strong>Daily</strong> — a new 7×7 puzzle each day</li>
+            <li><strong>6×6 / 8×8 / 12×12</strong> — puzzles by size and difficulty</li>
+            <li><strong>Lattice</strong> — each board has rotational or mirror symmetry</li>
+            <li><strong>Twin</strong> — both boards are the same, one flipped or rotated</li>
+            <li><strong>Kaleido</strong> — both Lattice and Twin</li>
+            <li><strong>Voting Districts</strong> — all regions have equal area</li>
+            <li><strong>Signoff</strong> — a message from the creator</li>
+          </ul>
+
           <p style="margin-top: 16px; font-size: 0.9rem; color: #555;">
-          This game is open source. View the code on
-          <a href="https://github.com/JoshMermel/multiverse-star-battle/tree/gh-pages" target="_blank" rel="noopener noreferrer">GitHub</a>.
+            This game is open source. View the code on
+            <a href="https://github.com/JoshMermel/multiverse-star-battle/tree/gh-pages" target="_blank" rel="noopener noreferrer">GitHub</a>.
+          </p>
         </div>
       </div>
     </div>

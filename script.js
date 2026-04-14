@@ -8,12 +8,12 @@ class StarBattleGame {
 
   // Bootstraps the game: sets up global input handling then fetches puzzle data
   constructor() {
+    this.puzzleCache = new Map();
     this.categories = [];
     this.loadedPuzzles = [];
-    this.puzzleCache = new Map();
     // Listener setup must run before initGame so they exist during puzzle load
     this.setupGlobalListeners();
-    this.initGame();
+    document.addEventListener('DOMContentLoaded', () => this.initGame());
   }
 
   // Fetches the manifest, populates the category menu, and loads the initial
@@ -43,6 +43,7 @@ class StarBattleGame {
 
       }
     } catch (e) {
+      console.error(e);
       this.showToast("Failed to load game data", "error");
     }
   }
@@ -126,6 +127,7 @@ class StarBattleGame {
       const resp = await fetch('data/daily.csv');
       this.puzzleCache.set('daily', this.parseCsv(await resp.text()));
     }
+    this.loadedPuzzles = this.puzzleCache.get('daily');
     const total = this.loadedPuzzles.length;
     const idx = this.getDailyPuzzleIndex(total);
 
