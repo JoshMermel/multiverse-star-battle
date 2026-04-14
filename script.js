@@ -487,13 +487,16 @@ class StarBattleGame {
       this.isDragging = false;
     } else {
       const current = this.state[idx];
-      const next = current === CELL.NONE ? CELL.DOT : (current === CELL.DOT ? CELL.STAR : CELL.NONE);
+
+      // If the cell is a star, leave it untouched but allow dragging to
+      // paint dots on other empty cells as normal.
+      if (current === CELL.STAR) return;
+
+      const next = current === CELL.NONE ? CELL.DOT : CELL.STAR;
       this.dragStartIdx = idx;
       this.dragStartPrev = current;
       this.dragStartNext = next;
 
-      // Only apply immediately if the result isn't a star — stars are
-      // committed on pointerup (if no drag occurred) to avoid a flash.
       if (next !== CELL.STAR) {
         this.applyState(idx, next);
       }
