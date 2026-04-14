@@ -279,10 +279,18 @@ class StarBattleGame {
   setupGlobalListeners() {
     window.addEventListener('pointerup', () => {
       if (this.isDragging) {
+        // If dragStartIdx is still set, the user never dragged off the cell,
+        // so commit the pending state change now.
+        if (this.dragStartIdx !== undefined && this.dragStartNext !== undefined) {
+          this.applyState(this.dragStartIdx, this.dragStartNext);
+        }
         if (this.hasChangedDuringDrag) this.saveHistory();
         this.isDragging = false;
         this.hasChangedDuringDrag = false;
       }
+      this.dragStartIdx = undefined;
+      this.dragStartPrev = undefined;
+      this.dragStartNext = undefined;
       this.clearHintUI();
     });
   }
@@ -480,13 +488,28 @@ class StarBattleGame {
     } else {
       const current = this.state[idx];
       const next = current === CELL.NONE ? CELL.DOT : (current === CELL.DOT ? CELL.STAR : CELL.NONE);
-      this.applyState(idx, next);
+      this.dragStartIdx = idx;
+      this.dragStartPrev = current;
+      this.dragStartNext = next;
+
+      // Only apply immediately if the result isn't a star — stars are
+      // committed on pointerup (if no drag occurred) to avoid a flash.
+      if (next !== CELL.STAR) {
+        this.applyState(idx, next);
+      }
     }
   }
 
   // Paints a dot on any empty cell the pointer passes over during a drag.
   handleDrag(idx) {
-    if (this.isDragging && this.state[idx] === CELL.NONE) {
+    if (!this.isDragging) return;
+
+    // If there's a pending star promotion and the user dragged elsewhere, cancel it.
+    if (this.dragStartIdx !== undefined && idx !== this.dragStartIdx) {
+      this.dragStartIdx = undefined;
+    }
+
+    if (this.state[idx] === CELL.NONE) {
       this.applyState(idx, CELL.DOT);
     }
   }
