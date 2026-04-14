@@ -728,6 +728,7 @@ class StarBattleGame {
 
   // Clears all cell state and resets history after the user confirms reset.
   doReset() {
+    this.hideToast();
     this.state.fill(CELL.NONE);
     this.history = [JSON.stringify(this.state)];
     this.historyIdx = 0;
