@@ -14,6 +14,12 @@ export class PuzzleSolver {
       Row: this.getAxisIndices("Row"),
       Column: this.getAxisIndices("Column"),
     };
+
+    // precompute and cache symmetry properties that are useful for niche rules,
+    // to avoid duplicating this work.
+    this.isMainDiagonalSymmetric   = this._isBoardSymmetric(i => (i % this.n) * this.n + Math.floor(i / this.n));
+    this.isAntiDiagonalSymmetric   = this._isBoardSymmetric(i => (this.n-1 - i%this.n) * this.n + (this.n-1 - Math.floor(i/this.n)));
+    this.selfRotation180 = this._computeSelfRotation180();
   }
 
   // Gets all "units" meaning rows, cols, and regions.
@@ -169,7 +175,8 @@ export class PuzzleSolver {
       () => this.hintDisjointUnitRegionSync(2),
       () => this.hintManyRegionsSync(),
       () => this.hintRegionSubsetSync(1),
-      () => this.hintDiagonalReflection(),
+      () => this.hintMainDiagonalReflection(),
+      () => this.hintAntiDiagonalReflection(),
       () => this.hintRotation180(),
       // Expert
       () => this.hintDisjointUnitRegionSync(3),
@@ -185,7 +192,7 @@ export class PuzzleSolver {
       () => this.hintLookahead(2),
       () => this.hintLookahead(3),
       () => this.hintLookahead(8),
-      () => hintFromSolution(),
+      () => this.hintFromSolution(),
     ];
 
     for (const rule of rules) {
@@ -833,83 +840,24 @@ export class PuzzleSolver {
     return true;
   }
 
-  _isDiagonalReflection()     { return this._isBoardSymmetric(i => (i % this.n) * this.n + Math.floor(i / this.n)); }
-  _isAntiDiagonalReflection() { return this._isBoardSymmetric(i => (this.n-1 - i%this.n) * this.n + (this.n-1 - Math.floor(i/this.n))); }
-  _isRotation180() { return this._isBoardSymmetric(i => (this.n * this.n - 1) - i); }
-  _isSelfRotation180() {
+  _computeSelfRotation180() {
     const n = this.n;
+    const total = n * n;
+    const mirrorFn = i => total - 1 - i;
     const [r1, r2] = this.game.regions;
-    const mirrorFn = i => n * n - 1 - i;
-
-    // Check each board against itself structurally
-    for (let i = 0; i < n * n; i++) {
-      for (let j = i + 1; j < n * n; j++) {
-        const sameRegion1 = r1[i] === r1[j];
-        const sameRegionMirrored1 = r1[mirrorFn(i)] === r1[mirrorFn(j)];
-        if (sameRegion1 !== sameRegionMirrored1) return false;
-
-        const sameRegion2 = r2[i] === r2[j];
-        const sameRegionMirrored2 = r2[mirrorFn(i)] === r2[mirrorFn(j)];
-        if (sameRegion2 !== sameRegionMirrored2) return false;
+    for (let i = 0; i < total; i++) {
+      for (let j = i + 1; j < total; j++) {
+        if ((r1[i] === r1[j]) !== (r1[mirrorFn(i)] === r1[mirrorFn(j)])) return false;
+        if ((r2[i] === r2[j]) !== (r2[mirrorFn(i)] === r2[mirrorFn(j)])) return false;
       }
     }
     return true;
   }
 
-  hintDiagonalReflection() {
+  _hintSymmetry(mirrorFn, description) {
     const n = this.n;
     const cellToRegion0 = this.buildCellToRegionMap(0);
     const cellToRegion1 = this.buildCellToRegionMap(1);
-
-    const symmetries = [];
-    if (this._isDiagonalReflection())     symmetries.push(i => (i % n) * n + Math.floor(i / n));
-    if (this._isAntiDiagonalReflection()) symmetries.push(i => (n-1 - i%n) * n + (n-1 - Math.floor(i/n)));
-    if (symmetries.length === 0) return null;
-
-    const marks = [];
-    for (let i = 0; i < n * n; i++) {
-      if (this.game.state[i] !== CELL.NONE) continue;
-
-      const seesOwnMirror = symmetries.some(mirrorFn => {
-        const mirror = mirrorFn(i);
-        if (mirror === i) return false;
-
-        if (this.getNeighbors(i).includes(mirror)) return true;
-
-        const mr = Math.floor(mirror / n), mc = mirror % n;
-        const r  = Math.floor(i / n),      c  = i % n;
-        if (r === mr || c === mc) return true;
-
-        if (cellToRegion0[i] && cellToRegion0[i] === cellToRegion0[mirror]) return true;
-        if (cellToRegion1[i] && cellToRegion1[i] === cellToRegion1[mirror]) return true;
-
-        return false;
-      });
-
-      if (seesOwnMirror) marks.push({ idx: i, color: 'hint-target-yellow' });
-    }
-
-    if (marks.length === 0) return null;
-
-    const diagonalDesc = symmetries.length === 2
-      ? "both diagonals"
-      : this._isDiagonalReflection() ? "the main diagonal" : "the anti-diagonal";
-
-    return {
-      description: `The two boards are reflections of each other across ${diagonalDesc}. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`,
-      highlights: [],
-      marks,
-      boardIdx: undefined
-    };
-  }
-
-  hintRotation180() {
-    if (!this._isSelfRotation180()) return null;
-
-    const n = this.n;
-    const cellToRegion0 = this.buildCellToRegionMap(0);
-    const cellToRegion1 = this.buildCellToRegionMap(1);
-    const mirrorFn = i => (n * n - 1) - i;
 
     const marks = [];
     for (let i = 0; i < n * n; i++) {
@@ -918,8 +866,8 @@ export class PuzzleSolver {
       const mirror = mirrorFn(i);
       if (mirror === i) continue;
 
-      const mr = Math.floor(mirror / n), mc = mirror % n;
       const r  = Math.floor(i / n),      c  = i % n;
+      const mr = Math.floor(mirror / n), mc = mirror % n;
 
       const seesOwnMirror =
         r === mr || c === mc ||
@@ -932,12 +880,34 @@ export class PuzzleSolver {
 
     if (marks.length === 0) return null;
 
-    return {
-      description: `Each board is 180° rotationally symmetric. The solution must be too, so any cell that "sees" its own 180° rotation cannot be a star.`,
-      highlights: [],
-      marks,
-      boardIdx: undefined
-    };
+    return { description, highlights: [], marks, boardIdx: undefined };
+  }
+
+  hintMainDiagonalReflection() {
+    if (!this.isMainDiagonalSymmetric) return null;
+    const n = this.n;
+    return this._hintSymmetry(
+      i => (i % n) * n + Math.floor(i / n),
+      `The two boards are reflections of each other across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+    );
+  }
+
+  hintAntiDiagonalReflection() {
+    if (!this.isAntiDiagonalSymmetric) return null;
+    const n = this.n;
+    return this._hintSymmetry(
+      i => (n-1 - i%n) * n + (n-1 - Math.floor(i/n)),
+      `The two boards are reflections of each other across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+    );
+  }
+
+  hintRotation180() {
+    if (!this.selfRotation180) return null;
+    const n = this.n;
+    return this._hintSymmetry(
+      i => (n * n - 1) - i,
+      `Each board is 180° rotationally symmetric. The solution must be too, so any cell that "sees" its own 180° rotation cannot be a star.`
+    );
   }
 
   hintFromSolution() {
