@@ -11,6 +11,7 @@ class StarBattleGame {
     this.puzzleCache = new Map();
     this.categories = [];
     this.loadedPuzzles = [];
+    this.draggedIndices = [];
     // Listener setup must run before initGame so they exist during puzzle load
     this.setupGlobalListeners();
     document.addEventListener('DOMContentLoaded', () => this.initGame());
@@ -287,18 +288,11 @@ class StarBattleGame {
   setupGlobalListeners() {
     window.addEventListener('pointerup', () => {
       if (this.isDragging) {
-        // If dragStartIdx is still set, the user never dragged off the cell,
-        // so commit the pending state change now.
-        if (this.dragStartIdx !== undefined && this.dragStartNext !== undefined) {
-          this.applyState(this.dragStartIdx, this.dragStartNext);
-        }
-        if (this.hasChangedDuringDrag) this.saveHistory();
+        this._commitDrag();
         this.isDragging = false;
-        this.hasChangedDuringDrag = false;
       }
-      this.dragStartIdx = undefined;
-      this.dragStartPrev = undefined;
-      this.dragStartNext = undefined;
+      this.clearDragHighlights();
+      this.draggedIndices = [];
       this.clearHintUI();
     });
   }
@@ -496,38 +490,53 @@ class StarBattleGame {
       this.saveHistory();
       this.isDragging = false;
     } else {
-      const current = this.state[idx];
-
-      if (current === CELL.STAR) {
-        this.applyState(idx, CELL.NONE);
-        this.saveHistory();
-        this.isDragging = false;
-        return;
-      }
-
-      const next = current === CELL.NONE ? CELL.DOT : CELL.STAR;
-      this.dragStartIdx = idx;
-      this.dragStartPrev = current;
-      this.dragStartNext = next;
-
-      if (next !== CELL.STAR) {
-        this.applyState(idx, next);
-      }
+      this.draggedIndices = [idx];
+      document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+        cell.classList.add('cell-drag-highlight');
+      });
     }
   }
 
   // Paints a dot on any empty cell the pointer passes over during a drag.
   handleDrag(idx) {
-    if (!this.isDragging) return;
+    if (!this.isDragging || this.draggedIndices.includes(idx)) return;
+    this.draggedIndices.push(idx);
+    document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+      cell.classList.add('cell-drag-highlight');
+    });
+  }
 
-    // If there's a pending star promotion and the user dragged elsewhere, cancel it.
-    if (this.dragStartIdx !== undefined && idx !== this.dragStartIdx) {
-      this.dragStartIdx = undefined;
+  _commitDrag() {
+    if (!this.draggedIndices || this.draggedIndices.length === 0) return;
+
+    if (this.draggedIndices.length === 1) {
+      // Single cell: normal cycle
+      const idx = this.draggedIndices[0];
+      const current = this.state[idx];
+      if (current === CELL.STAR) {
+        this.applyState(idx, CELL.NONE);
+      } else {
+        const next = current === CELL.NONE ? CELL.DOT : CELL.STAR;
+        this.applyState(idx, next);
+      }
+    } else {
+      // Multi-cell drag: dot all empty cells
+      for (const idx of this.draggedIndices) {
+        if (this.state[idx] === CELL.NONE) {
+          this.applyState(idx, CELL.DOT);
+        }
+      }
     }
 
-    if (this.state[idx] === CELL.NONE) {
-      this.applyState(idx, CELL.DOT);
-    }
+    this.saveHistory();
+    this.draggedIndices = [];
+  }
+
+
+  clearDragHighlights() {
+    document.querySelectorAll('.cell-drag-highlight').forEach(cell => {
+      cell.classList.remove('cell-drag-highlight');
+    });
   }
 
   // Applies a state change to one cell, updates its visual, validates the
@@ -535,7 +544,6 @@ class StarBattleGame {
   applyState(idx, type) {
     if (this.state[idx] === type) return;
     this.state[idx] = type;
-    this.hasChangedDuringDrag = true;
     document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
       this.updateCellVisual(cell, type);
     });
