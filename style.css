@@ -150,6 +150,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .cell {
+  font-size: calc(var(--cell-size) * 0.55);
   width: var(--cell-size);
   height: var(--cell-size);
   border: var(--line-thin);
@@ -166,6 +167,8 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .star { color: #000; font-weight: bold; pointer-events: none; }
 .dot {
+  width: calc(var(--cell-size) * 0.12);
+  height: calc(var(--cell-size) * 0.12);
   width: 6px;
   height: 6px;
   background: #444;
