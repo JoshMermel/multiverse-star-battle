@@ -251,7 +251,7 @@ input[type="number"]::-webkit-inner-spin-button {
   background-color: #6a1b9a;
   border: 2px solid #ffd700;
   animation: win-pulse 2s infinite;
-  transform-origin: center bottom;
+  transform-origin: center center;
   transition: opacity 0.3s;
 }
 
