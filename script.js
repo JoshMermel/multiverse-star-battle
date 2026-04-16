@@ -625,7 +625,10 @@ class StarBattleGame {
     // Win check
     if (this.isSolved() && errorIndices.size === 0) {
       this.markAsSolved();
-      if (!suppressWinToast) {
+      const toast = document.getElementById('toast');
+      const winToastAlreadyVisible = toast.classList.contains('toast-win') &&
+        !toast.classList.contains('toast-hidden');
+      if (!suppressWinToast && !winToastAlreadyVisible) {
         this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
       }
     }
