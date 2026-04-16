@@ -252,6 +252,7 @@ input[type="number"]::-webkit-inner-spin-button {
   border: 2px solid #ffd700;
   animation: win-pulse 2s infinite;
   transform-origin: center bottom;
+  transition: opacity 0.3s;
 }
 
 /* 8. RESPONSIVE DESIGN */
