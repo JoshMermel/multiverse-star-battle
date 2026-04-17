@@ -123,17 +123,72 @@ class StarBattleGame {
   // Fetches daily.json, selects today's puzzle by date, loads it, and hides
   // the puzzle-navigation controls (prev/next/input) since there is only one
   // puzzle to show.
-  async loadDailyCategory() {
+  async loadDailyCategory(targetSlot = 1) {
     if (!this.puzzleCache.has('daily')) {
-      const resp = await fetch('data/daily.csv');
-      this.puzzleCache.set('daily', this.parseCsv(await resp.text()));
-    }
-    this.loadedPuzzles = this.puzzleCache.get('daily');
-    const total = this.loadedPuzzles.length;
-    const idx = this.getDailyPuzzleIndex(total);
+      // Fetch all three tiers in parallel
+      const [beginnerText, medText, hardText] = await Promise.all([
+        fetch('data/daily_beginner.csv').then(r => r.text()),
+        fetch('data/daily_medium.csv').then(r => r.text()),
+        fetch('data/daily_hard.csv').then(r => r.text()),
+      ]);
 
-    this._setPuzzleNavVisible(false);
-    await this.loadPuzzle(this.loadedPuzzles[idx], 'daily');
+      const tiers = [
+        { label: 'Beginner', puzzles: this.parseCsv(beginnerText) },
+        { label: 'Medium',   puzzles: this.parseCsv(medText)  },
+        { label: 'Hard',     puzzles: this.parseCsv(hardText) },
+      ];
+
+      // Pick one puzzle per tier using the same stable daily index logic
+      const dailyPuzzles = tiers.map(({ label, puzzles }) => ({
+        ...puzzles[this.getDailyPuzzleIndex(puzzles.length)],
+        dailyLabel: label,   // carry the tier name through for the UI
+      }));
+
+      this.puzzleCache.set('daily', dailyPuzzles);
+    }
+
+    this.loadedPuzzles = this.puzzleCache.get('daily');
+
+    // Show nav so the user can step between beginner/medium/hard
+    this._setPuzzleNavVisible(true);
+    this._updateDailyNavLabels(1);
+    await this._loadDailyPuzzleBySlot(
+      Math.max(1, Math.min(targetSlot, 3))
+    );
+  }
+
+  _updateDailyNavLabels(slot) {
+    const puzInput  = document.getElementById('puzzle-input');
+    const labelSpan = document.getElementById('daily-label-display');
+    const puzzle    = this.loadedPuzzles[slot - 1];
+
+    // Replace number input with a read-only difficulty label
+    puzInput.style.display  = 'none';
+    labelSpan.style.display = 'inline';
+    labelSpan.textContent   = puzzle.dailyLabel;   // "Easy", "Medium", or "Hard"
+
+    // Keep the hidden input's value correct so stepPuzzle() still works
+    puzInput.value = slot;
+    puzInput.max   = 3;
+
+    // Update the "of N" counter to something meaningful
+    document.getElementById('puzzle-count-label').textContent = `of 3`;
+  }
+
+  _setPuzzleNavVisible(visible) {
+    document.querySelector('.puzzle-nav').style.visibility = visible ? '' : 'hidden';
+
+    // Always restore the normal number input when showing nav for non-daily
+    if (visible && this.currentCategoryId !== 'daily') {
+      document.getElementById('puzzle-input').style.display  = '';
+      document.getElementById('daily-label-display').style.display = 'none';
+    }
+  }
+
+  async _loadDailyPuzzleBySlot(slot) {
+    const puzzle = this.loadedPuzzles[slot - 1];
+    this._updateDailyNavLabels(slot);
+    await this.loadPuzzle(puzzle, 'daily');
   }
 
   // Parses the CSV format produced by gen_puzzles.py into an array of puzzle
@@ -160,7 +215,7 @@ class StarBattleGame {
   // targetPuz is clamped to the valid range automatically.
   async loadCategory(catId, targetPuz = 1) {
     if (this.isDailyCategory(catId)) {
-      await this.loadDailyCategory();
+      await this.loadDailyCategory(targetPuz);
       return;
     }
 
@@ -362,11 +417,11 @@ class StarBattleGame {
 
   showToastOnLoad(catId, puzId) {
     if (this.isDailyCategory(catId)) {
-      const today = new Date().toLocaleDateString(undefined, { 
-        month: 'long', 
-        day: 'numeric' 
+      const today = new Date().toLocaleDateString(undefined, {
+        month: 'long', day: 'numeric'
       });
-      this.showToast(`Playing the Daily Puzzle for ${today}`);
+      const label = this.currentPuzzle?.dailyLabel ?? '';
+      this.showToast(`Daily ${label} — ${today}`);
     } else {
       this.showToast(`Playing Puzzle ${puzId}`, "info");
     }
