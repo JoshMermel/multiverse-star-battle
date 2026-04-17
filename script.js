@@ -164,17 +164,6 @@ class StarBattleGame {
     return idx === -1 ? null : idx + 1;
   }
 
-  _setPuzzleNavVisible(visible) {
-    document.querySelector('.puzzle-nav').style.visibility = visible ? '' : 'hidden';
-    if (visible && this.currentCategoryId !== 'daily') {
-      document.getElementById('puzzle-input').style.display  = '';
-      document.getElementById('daily-label-display').style.display = 'none';
-    }
-    // Hide browse button for daily (only 3 puzzles, no need to browse)
-    const browseBtn = document.getElementById('browse-btn');
-    if (browseBtn) browseBtn.style.display = (visible && this.currentCategoryId !== 'daily') ? '' : 'none';
-  }
-
   // Returns true if catId refers to the special daily puzzle category.
   isDailyCategory(catId) {
     return catId === 'daily';
@@ -233,46 +222,21 @@ class StarBattleGame {
     }
 
     this.loadedPuzzles = this.puzzleCache.get('daily');
+    const total = this.loadedPuzzles.length;
 
-    // Show nav so the user can step between beginner/medium/hard
-    this._setPuzzleNavVisible(true);
-    this._updateDailyNavLabels(1);
+    const puzInput = document.getElementById('puzzle-input');
+    puzInput.max = total;
+    const clampedSlot = Math.max(1, Math.min(targetSlot, total));
+    puzInput.value = clampedSlot;
+    document.getElementById('puzzle-count-label').textContent = `of ${total}`;
+
     await this._loadDailyPuzzleBySlot(
       Math.max(1, Math.min(targetSlot, 3))
     );
   }
 
-  _updateDailyNavLabels(slot) {
-    const puzInput  = document.getElementById('puzzle-input');
-    const labelSpan = document.getElementById('daily-label-display');
-    const puzzle    = this.loadedPuzzles[slot - 1];
-
-    // Replace number input with a read-only difficulty label
-    puzInput.style.display  = 'none';
-    labelSpan.style.display = 'inline';
-    labelSpan.textContent   = puzzle.dailyLabel;   // "Easy", "Medium", or "Hard"
-
-    // Keep the hidden input's value correct so stepPuzzle() still works
-    puzInput.value = slot;
-    puzInput.max   = 3;
-
-    // Update the "of N" counter to something meaningful
-    document.getElementById('puzzle-count-label').textContent = `of 3`;
-  }
-
-  _setPuzzleNavVisible(visible) {
-    document.querySelector('.puzzle-nav').style.visibility = visible ? '' : 'hidden';
-
-    // Always restore the normal number input when showing nav for non-daily
-    if (visible && this.currentCategoryId !== 'daily') {
-      document.getElementById('puzzle-input').style.display  = '';
-      document.getElementById('daily-label-display').style.display = 'none';
-    }
-  }
-
   async _loadDailyPuzzleBySlot(slot) {
     const puzzle = this.loadedPuzzles[slot - 1];
-    this._updateDailyNavLabels(slot);
     await this.loadPuzzle(puzzle, 'daily');
   }
 
@@ -320,14 +284,7 @@ class StarBattleGame {
     const clampedPuz = Math.max(1, Math.min(targetPuz, total));
     puzInput.value = clampedPuz;
 
-    this._setPuzzleNavVisible(true);
     await this.loadPuzzle(this.loadedPuzzles[clampedPuz - 1], catId);
-  }
-
-  // Shows or hides the puzzle number input and prev/next buttons.
-  // Called when switching between the daily category (no nav) and normal books.
-  _setPuzzleNavVisible(visible) {
-    document.querySelector('.puzzle-nav').style.visibility = visible ? '' : 'hidden';
   }
 
   setupMenu() {
@@ -629,9 +586,17 @@ class StarBattleGame {
     this.isDragging = true;
 
     if (isRightClick) {
+      document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+        cell.classList.add('cell-drag-highlight');
+      });
       this.applyState(idx, this.state[idx] === CELL.STAR ? CELL.NONE : CELL.STAR);
       this.saveHistory();
       this.isDragging = false;
+      setTimeout(() => {
+        document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+          cell.classList.remove('cell-drag-highlight');
+        });
+      }, 80);
     } else {
       this.draggedIndices = [idx];
       document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
@@ -1024,19 +989,30 @@ class StarBattleGame {
   // Returns safe defaults if absent or invalid.
   readUrlParams() {
     const params = new URLSearchParams(window.location.search);
-    return {
-      catId: params.get('book'),
-      puzNum: parseInt(params.get('puzzle'), 10) || 1,
-    };
+    const catId = params.get('book');
+    const puzzleParam = params.get('puzzle');
+
+    // For daily, translate label → slot number; fall back to 1
+    const dailySlotMap = { beginner: 1, medium: 2, hard: 3 };
+    const puzNum = (catId === 'daily' && puzzleParam in dailySlotMap)
+      ? dailySlotMap[puzzleParam]
+      : parseInt(puzzleParam, 10) || 1;
+
+    return { catId, puzNum };
   }
 
   // Updates the URL bar to reflect the current puzzle without adding a browser
-  // history entry. For the daily category, omits ?puzzle= since the date is
-  // the implicit selector and a puzzle number in the URL would be misleading.
+  // history entry.
   updateUrlParams(catId, puzNum) {
     const params = new URLSearchParams();
     params.set('book', catId);
-    if (!this.isDailyCategory(catId)) params.set('puzzle', puzNum);
+    if (this.isDailyCategory(catId)) {
+      const dailyLabels = ['beginner', 'medium', 'hard'];
+      const slot = parseInt(document.getElementById('puzzle-input').value, 10);
+      params.set('puzzle', dailyLabels[slot - 1] ?? 'beginner');
+    } else {
+      params.set('puzzle', puzNum);
+    }
     window.history.replaceState(null, '', `?${params.toString()}`);
   }
 }
