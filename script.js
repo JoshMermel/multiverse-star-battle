@@ -55,6 +55,7 @@ class StarBattleGame {
     document.getElementById('redo-btn').onclick = () => this.redo();
     document.getElementById('check-btn').onclick = () => this.checkCorrectness();
     document.getElementById('hint-btn').onclick = () => this.getHint();
+    this.setupBrowseModal();
   }
 
   // Creates open/close behaviour for a modal: close button(s), backdrop click,
@@ -88,6 +89,90 @@ class StarBattleGame {
   setupResetModal() {
     const { open } = this.setupModal('reset-modal', { onConfirm: () => this.doReset() });
     document.getElementById('reset-btn').onclick = open;
+  }
+
+  setupBrowseModal() {
+    const { open, close } = this.setupModal('browse-modal');
+
+    document.getElementById('browse-btn').onclick = () => {
+      this._renderBrowseGrid();
+      open();
+    };
+
+    document.getElementById('browse-jump-btn').onclick = () => {
+      const firstUnsolved = this._findFirstUnsolvedPuzzleNum();
+      if (firstUnsolved === null) {
+        this.showToast("You've solved every puzzle in this book! 🎉", "success");
+        return;
+      }
+      close();
+      const puzInput = document.getElementById('puzzle-input');
+      puzInput.value = firstUnsolved;
+      this.commitPuzzleSelection();
+    };
+  }
+
+  // Builds (or rebuilds) the grid of browse tiles, marking solved/current state.
+  async _renderBrowseGrid() {
+    const grid = document.getElementById('browse-grid');
+    grid.innerHTML = '';
+
+    const puzzles = this.loadedPuzzles;
+    if (!puzzles?.length) return;
+
+    // Build a Set of hashes for all solved puzzles
+    const solvedIds = new Set(JSON.parse(localStorage.getItem(this.solvedKey) || '[]'));
+
+    // Pre-compute hashes for all puzzles in this book (cached on the puzzle objects)
+    await Promise.all(puzzles.map(async (puz) => {
+      if (!puz._cachedId) {
+        puz._cachedId = await this.computePuzzleId(puz);
+      }
+    }));
+
+    const currentId = this.currentPuzzleUniqueId;
+
+    puzzles.forEach((puz, i) => {
+      const num = i + 1;
+      const tile = document.createElement('button');
+      tile.className = 'browse-tile';
+      tile.textContent = num;
+      tile.setAttribute('aria-label', `Puzzle ${num}${solvedIds.has(puz._cachedId) ? ' (solved)' : ''}`);
+
+      if (solvedIds.has(puz._cachedId)) tile.classList.add('bt-solved');
+      if (puz._cachedId === currentId)  tile.classList.add('bt-current');
+
+      tile.onclick = () => {
+        document.getElementById('browse-modal').classList.add('modal-hidden');
+        const puzInput = document.getElementById('puzzle-input');
+        puzInput.value = num;
+        this.commitPuzzleSelection();
+      };
+
+      grid.appendChild(tile);
+    });
+
+    // Scroll the current tile into view
+    const currentTile = grid.querySelector('.bt-current');
+    if (currentTile) currentTile.scrollIntoView({ block: 'nearest' });
+  }
+
+  // Returns the 1-based puzzle number of the first unsolved puzzle, or null if all solved.
+  _findFirstUnsolvedPuzzleNum() {
+    const solvedIds = new Set(JSON.parse(localStorage.getItem(this.solvedKey) || '[]'));
+    const idx = this.loadedPuzzles.findIndex(puz => !solvedIds.has(puz._cachedId));
+    return idx === -1 ? null : idx + 1;
+  }
+
+  _setPuzzleNavVisible(visible) {
+    document.querySelector('.puzzle-nav').style.visibility = visible ? '' : 'hidden';
+    if (visible && this.currentCategoryId !== 'daily') {
+      document.getElementById('puzzle-input').style.display  = '';
+      document.getElementById('daily-label-display').style.display = 'none';
+    }
+    // Hide browse button for daily (only 3 puzzles, no need to browse)
+    const browseBtn = document.getElementById('browse-btn');
+    if (browseBtn) browseBtn.style.display = (visible && this.currentCategoryId !== 'daily') ? '' : 'none';
   }
 
   // Returns true if catId refers to the special daily puzzle category.
@@ -286,7 +371,7 @@ class StarBattleGame {
       }
     };
 
-    const commitPuzzleSelection = async () => {
+    this.commitPuzzleSelection = async () => {
       let val = parseInt(puzInput.value, 10);
       const catId = catSelect.value;
       if (isNaN(val)) val = 1;
@@ -306,7 +391,7 @@ class StarBattleGame {
     const stepPuzzle = (delta) => {
       let val = parseInt(puzInput.value) || 1;
       puzInput.value = val + delta;
-      commitPuzzleSelection();
+      this.commitPuzzleSelection();
     };
     prevBtn.onpointerdown = (e) => {
       e.preventDefault();
@@ -320,21 +405,21 @@ class StarBattleGame {
     puzInput.addEventListener('input', (e) => {
       // Fire immediately for spinner arrow clicks; wait for Enter when typing.
       if (e.inputType === undefined || e.inputType === 'insertReplacementText') {
-        commitPuzzleSelection();
+        this.commitPuzzleSelection();
       }
     });
 
     puzInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        commitPuzzleSelection();
+        this.commitPuzzleSelection();
         puzInput.blur(); // Remove focus after selection
       }
     });
 
     // Also commit if the user clicks out of the box
     puzInput.addEventListener('blur', () => {
-      commitPuzzleSelection();
+      this.commitPuzzleSelection();
     });
   }
 
