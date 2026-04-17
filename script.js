@@ -537,7 +537,10 @@ class StarBattleGame {
   // directly; left-click cycles none -> dot -> star -> none and begins a drag
   // session.
   handleStart(idx, isRightClick) {
-    this.hideToast();
+    const toast = document.getElementById('toast');
+    const isWinToast = toast.classList.contains('toast-win') && 
+      !toast.classList.contains('toast-hidden');
+    if (!isWinToast) this.hideToast();
     this.isDragging = true;
 
     if (isRightClick) {
@@ -565,7 +568,6 @@ class StarBattleGame {
     if (!this.draggedIndices || this.draggedIndices.length === 0) return;
 
     if (this.draggedIndices.length === 1) {
-      // Single cell: normal cycle
       const idx = this.draggedIndices[0];
       const current = this.state[idx];
       if (current === CELL.STAR) {
@@ -575,18 +577,18 @@ class StarBattleGame {
         this.applyState(idx, next);
       }
     } else {
-      // Multi-cell drag: dot all empty cells
       for (const idx of this.draggedIndices) {
         if (this.state[idx] === CELL.NONE) {
-          this.applyState(idx, CELL.DOT);
+          this.applyState(idx, CELL.DOT, { suppressWinToast: true }); // suppress mid-drag
         }
       }
+      // One final validate after all cells are committed, with win toast allowed
+      this.validate();
     }
 
     this.saveHistory();
     this.draggedIndices = [];
   }
-
 
   clearDragHighlights() {
     document.querySelectorAll('.cell-drag-highlight').forEach(cell => {
@@ -596,13 +598,13 @@ class StarBattleGame {
 
   // Applies a state change to one cell, updates its visual, validates the
   // board, and persists to localStorage.
-  applyState(idx, type) {
+  applyState(idx, type, { suppressWinToast = false } = {}) {
     if (this.state[idx] === type) return;
     this.state[idx] = type;
     document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
       this.updateCellVisual(cell, type);
     });
-    this.validate();
+    this.validate({ suppressWinToast });
     this.saveCurrentState();
   }
 
@@ -871,7 +873,9 @@ class StarBattleGame {
     const toast = document.getElementById('toast');
     toast.textContent = message;
     toast.className = '';
-    toast.classList.add(`toast-${type}`);
+    toast.classList.add(`toast-${type}`, 'toast-hidden');
+    void toast.offsetHeight;
+    toast.classList.remove('toast-hidden');
     this.toastBirthTime = Date.now();
 
     toast.classList.remove('toast-hidden');
