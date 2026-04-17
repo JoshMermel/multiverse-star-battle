@@ -773,6 +773,12 @@ class StarBattleGame {
       if (!suppressWinToast && !winToastAlreadyVisible) {
         this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
       }
+    } else {
+      // If the board is no longer solved, dismiss the win toast
+      const toast = document.getElementById('toast');
+      if (toast.classList.contains('toast-win') && !toast.classList.contains('toast-hidden')) {
+        this.hideToast();
+      }
     }
   }
 
