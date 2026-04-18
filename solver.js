@@ -19,7 +19,8 @@ export class PuzzleSolver {
     // to avoid duplicating this work.
     this.isMainDiagonalSymmetric   = this._isBoardSymmetric(i => (i % this.n) * this.n + Math.floor(i / this.n));
     this.isAntiDiagonalSymmetric   = this._isBoardSymmetric(i => (this.n-1 - i%this.n) * this.n + (this.n-1 - Math.floor(i/this.n)));
-    this.selfRotation180 = this._computeSelfRotation180();
+    this.internalRotation180   = this._computeInternalRotation180();
+    this.crossboardRotation180 = this._computeCrossboardRotation180();
   }
 
   // Gets all "units" meaning rows, cols, and regions.
@@ -154,6 +155,7 @@ export class PuzzleSolver {
 
   getHint() {
     const rules = [
+      () => this.hintRotation180(),
       // Error checking
       () => this.hintCheckForErrors(),
       () => this.hintAlreadySolved(),
@@ -177,7 +179,6 @@ export class PuzzleSolver {
       () => this.hintRegionSubsetSync(1),
       () => this.hintMainDiagonalReflection(),
       () => this.hintAntiDiagonalReflection(),
-      () => this.hintRotation180(),
       // Expert
       () => this.hintDisjointUnitRegionSync(3),
       () => this.hintCrossBoardRegionPinned(2, "Row"),
@@ -840,15 +841,28 @@ export class PuzzleSolver {
     return true;
   }
 
-  _computeSelfRotation180() {
-    const n = this.n;
-    const total = n * n;
+  _computeInternalRotation180() {
+    const total = this.n * this.n;
     const mirrorFn = i => total - 1 - i;
     const [r1, r2] = this.game.regions;
     for (let i = 0; i < total; i++) {
       for (let j = i + 1; j < total; j++) {
         if ((r1[i] === r1[j]) !== (r1[mirrorFn(i)] === r1[mirrorFn(j)])) return false;
         if ((r2[i] === r2[j]) !== (r2[mirrorFn(i)] === r2[mirrorFn(j)])) return false;
+      }
+    }
+    return true;
+  }
+
+  _computeCrossboardRotation180() {
+    const total = this.n * this.n;
+    const mirrorFn = i => total - 1 - i;
+    const [r1, r2] = this.game.regions;
+    for (let i = 0; i < total; i++) {
+      for (let j = i + 1; j < total; j++) {
+        const sameOnBoard1 = r1[i] === r1[j];
+        const sameOnBoard2Mirrored = r2[mirrorFn(i)] === r2[mirrorFn(j)];
+        if (sameOnBoard1 !== sameOnBoard2Mirrored) return false;
       }
     }
     return true;
@@ -902,12 +916,18 @@ export class PuzzleSolver {
   }
 
   hintRotation180() {
-    if (!this.selfRotation180) return null;
+    const hasInternal   = this.internalRotation180;
+    const hasCrossboard = this.crossboardRotation180;
+    if (!hasInternal && !hasCrossboard) return null;
+
     const n = this.n;
-    return this._hintSymmetry(
-      i => (n * n - 1) - i,
-      `Each board is 180° rotationally symmetric. The solution must be too, so any cell that "sees" its own 180° rotation cannot be a star.`
-    );
+    const description = hasInternal && hasCrossboard
+      ? `Each board has 180° rotational symmetry, and the boards are also 180° rotations of each other. Any cell that "sees" its own rotation cannot be a star.`
+      : hasInternal
+      ? `Each board independently has 180° rotational symmetry. Any cell that "sees" its own rotation cannot be a star.`
+      : `The two boards are 180° rotations of each other. Any cell that "sees" its counterpart on the rotated board cannot be a star.`;
+
+    return this._hintSymmetry(i => (n * n - 1) - i, description);
   }
 
   hintFromSolution() {
