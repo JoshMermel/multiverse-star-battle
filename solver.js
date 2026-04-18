@@ -155,7 +155,6 @@ export class PuzzleSolver {
 
   getHint() {
     const rules = [
-      () => this.hintRotation180(),
       // Error checking
       () => this.hintCheckForErrors(),
       () => this.hintAlreadySolved(),
@@ -177,6 +176,10 @@ export class PuzzleSolver {
       () => this.hintDisjointUnitRegionSync(2),
       () => this.hintManyRegionsSync(),
       () => this.hintRegionSubsetSync(1),
+      () => this.hintMainDiagonalFill(),
+      () => this.hintAntiDiagonalFill(),
+      () => this.hintRotation180Fill(),
+      () => this.hintRotation180(),
       () => this.hintMainDiagonalReflection(),
       () => this.hintAntiDiagonalReflection(),
       // Expert
@@ -928,6 +931,65 @@ export class PuzzleSolver {
       : `The two boards are 180° rotations of each other. Any cell that "sees" its counterpart on the rotated board cannot be a star.`;
 
     return this._hintSymmetry(i => (n * n - 1) - i, description);
+  }
+
+  _hintSymmetryFill(mirrorFn, description) {
+    const starMarks = [];
+    const dotMarks  = [];
+
+    for (let i = 0; i < this.n * this.n; i++) {
+      if (this.game.state[i] !== CELL.NONE) continue;
+      const mirror = mirrorFn(i);
+      if (mirror === i) continue;
+
+      const mirrorState = this.game.state[mirror];
+      if (mirrorState === CELL.STAR) {
+        starMarks.push({ idx: i, color: 'hint-target-green' });
+      } else if (mirrorState === CELL.DOT) {
+        dotMarks.push({ idx: i, color: 'hint-target-yellow' });
+      }
+    }
+
+    // Stars first, dots second — but never mix in a single hint
+    const marks = starMarks.length > 0 ? starMarks : dotMarks;
+    if (marks.length === 0) return null;
+
+    const filling = starMarks.length > 0 ? 'stars' : 'dots';
+    return {
+      description: `${description} You can copy ${filling} across by symmetry.`,
+      highlights: marks.map(({ idx }) => ({
+        idx: mirrorFn(idx), color: 'hint-source-blue'
+      })),
+      marks,
+      boardIdx: undefined
+    };
+  }
+
+  hintRotation180Fill() {
+    if (!this.internalRotation180 && !this.crossboardRotation180) return null;
+    const n = this.n;
+    return this._hintSymmetryFill(
+      i => (n * n - 1) - i,
+      `The solution has 180° rotational symmetry.`
+    );
+  }
+
+  hintMainDiagonalFill() {
+    if (!this.isMainDiagonalSymmetric) return null;
+    const n = this.n;
+    return this._hintSymmetryFill(
+      i => (i % n) * n + Math.floor(i / n),
+      `The solution is symmetric across the main diagonal (↘).`
+    );
+  }
+
+  hintAntiDiagonalFill() {
+    if (!this.isAntiDiagonalSymmetric) return null;
+    const n = this.n;
+    return this._hintSymmetryFill(
+      i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
+      `The solution is symmetric across the anti-diagonal (↙).`
+    );
   }
 
   hintFromSolution() {
