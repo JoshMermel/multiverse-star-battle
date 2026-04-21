@@ -994,17 +994,20 @@ export class PuzzleSolver {
 
   hintFromSolution() {
     const n = this.n;
+    const candidates = [];
     for (let i = 0; i < n * n; i++) {
       if (this.game.solution[i] !== 'x' && this.game.state[i] === CELL.NONE) {
-        return {
-          description: "No logical hint was found. Here's a nudge from the solution.",
-          highlights: [],
-          marks: [{ idx: i, color: 'hint-target-yellow' }],
-          boardIdx: undefined
-        };
+        candidates.push(i);
       }
     }
-    return null;
+    if (candidates.length === 0) return null;
+    const idx = candidates[Math.floor(Math.random() * candidates.length)];
+    return {
+      description: "No logical hint was found. Here's a nudge from the solution.",
+      highlights: [],
+      marks: [{ idx, color: 'hint-target-yellow' }],
+      boardIdx: undefined
+    };
   }
 
   // ─────────────────────── 
