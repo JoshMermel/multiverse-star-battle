@@ -345,11 +345,12 @@ class StarBattleGame {
       }
     };
 
-    const stepPuzzle = (delta) => {
+    this.stepPuzzle = (delta) => {
       let val = parseInt(puzInput.value) || 1;
       puzInput.value = val + delta;
       this.commitPuzzleSelection();
     };
+    const stepPuzzle = this.stepPuzzle;
     prevBtn.onpointerdown = (e) => {
       e.preventDefault();
       stepPuzzle(-1);
@@ -383,6 +384,14 @@ class StarBattleGame {
   // Attaches window-level listeners that persist for the lifetime of the app.
   // Must be called before any puzzle loads.
   setupGlobalListeners() {
+    window.addEventListener('keydown', (e) => {
+      // Left/right arrow keys navigate puzzles, unless focus is in a text input
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); this.stepPuzzle(-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); this.stepPuzzle(1); }
+    });
+
     window.addEventListener('pointerup', () => {
       if (this.isDragging) {
         this._commitDrag();
