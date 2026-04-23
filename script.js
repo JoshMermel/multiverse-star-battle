@@ -383,17 +383,15 @@ class StarBattleGame {
   // Attaches window-level listeners that persist for the lifetime of the app.
   // Must be called before any puzzle loads.
   setupGlobalListeners() {
-    window.addEventListener('pointerup', (e) => {
+    window.addEventListener('pointerup', () => {
       if (this.isDragging) {
         this._commitDrag();
         this.isDragging = false;
       }
       this.clearDragHighlights();
       this.draggedIndices = [];
-
-      const boardsWrapper = document.getElementById('boards-wrapper');
-      if (boardsWrapper && !boardsWrapper.contains(e.target)) {
-        this.clearHintUI();
+      this.clearHintUI();
+      if (!this.toastBirthTime || Date.now() - this.toastBirthTime > 500) {
         this.hideToast();
       }
     });
@@ -932,6 +930,7 @@ class StarBattleGame {
   // Clears any previous toast type before applying the new one.
   showToast(message, type = 'info', duration = 2000) {
     const toast = document.getElementById('toast');
+    this.activeToastType = type;
     toast.textContent = message;
     toast.className = '';
     toast.classList.add(`toast-${type}`, 'toast-hidden');
@@ -952,6 +951,7 @@ class StarBattleGame {
     }, duration);
   }
   hideToast() {
+    this.activeToastType = null;
     document.getElementById('toast').classList.add('toast-hidden');
   }
 
