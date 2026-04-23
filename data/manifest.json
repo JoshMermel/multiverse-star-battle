@@ -18,7 +18,7 @@
     {"id": "8x8_kaleido",         "label": "8x8 Kaliedo",     "group": "Symmetry"},
     {"id": "6x6_equal_area",      "label": "6x6",             "group": "Voting Districts"},
     {"id": "8x8_equal_area",      "label": "8x8",             "group": "Voting Districts"},
-    {"id": "8x8_impossible",      "label": "8x8 Impossible",  "group": "Voting Districts"},
+    {"id": "not_for_humans",      "label": "Not For Humans",  "group": "Special"},
     {"id": "signoff",             "label": "Signoff",         "group": "Special"}
   ]
 }
