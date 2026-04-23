@@ -383,14 +383,19 @@ class StarBattleGame {
   // Attaches window-level listeners that persist for the lifetime of the app.
   // Must be called before any puzzle loads.
   setupGlobalListeners() {
-    window.addEventListener('pointerup', () => {
+    window.addEventListener('pointerup', (e) => {
       if (this.isDragging) {
         this._commitDrag();
         this.isDragging = false;
       }
       this.clearDragHighlights();
       this.draggedIndices = [];
-      this.clearHintUI();
+
+      const boardsWrapper = document.getElementById('boards-wrapper');
+      if (boardsWrapper && !boardsWrapper.contains(e.target)) {
+        this.clearHintUI();
+        this.hideToast();
+      }
     });
   }
 
