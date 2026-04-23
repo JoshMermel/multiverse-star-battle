@@ -180,8 +180,7 @@ export class PuzzleSolver {
       () => this.hintManyRegionsSync(),
       () => this.hintRegionSubsetSync(1),
       () => this.hintRotation180(),
-      () => this.hintMainDiagonalReflection(),
-      () => this.hintAntiDiagonalReflection(),
+      () => this.hintDiagonalReflection(),
       // Expert
       () => this.hintDisjointUnitRegionSync(3),
       () => this.hintCrossBoardRegionPinned(2, "Row"),
@@ -254,107 +253,106 @@ export class PuzzleSolver {
   // MATCH: A region with exactly one cell and no star.
   // ACTION: Points to that cell as a forced star.
   hintSingleCellRegion() {
+    const candidates = [];
     for (let bIdx = 0; bIdx < 2; bIdx++) {
       for (const region of this.getUnsolvedRegions(bIdx)) {
         if (region.indices.length === 1 && this.game.state[region.indices[0]] === CELL.NONE) {
-          return {
-            description: `Every region must contain a star.`,
-            highlights: [{ idx: region.indices[0], color: 'hint-target-green' }],
-            marks: [],
-            boardIdx: region.boardIdx
-          };
+          candidates.push(region);
         }
       }
     }
-    return null;
+    if (candidates.length === 0) return null;
+    const region = candidates[Math.floor(Math.random() * candidates.length)];
+    return {
+      description: `Every region must contain a star.`,
+      highlights: [{ idx: region.indices[0], color: 'hint-target-green' }],
+      marks: [],
+      boardIdx: region.boardIdx
+    };
   }
 
   // MATCH: A unit (row, column, or region) with no star and exactly one empty
   //   cell.
   // ACTION: Points to that cell as the forced star location.
   hintOnlyEmpty() {
+    const candidates = [];
     for (const unit of this.units) {
       const empty = unit.indices.filter(i => this.game.state[i] === CELL.NONE);
       const hasStar = unit.indices.some(i => this.game.state[i] === CELL.STAR);
       if (hasStar || empty.length !== 1) continue;
-
-      const unitType = unit.label.includes("Row") ? "row"
-        : unit.label.includes("Column") ? "column"
-        : "region";
-
-      return {
-        description: `Only one spot is left for a star in this ${unitType}.`,
-        highlights: unit.indices
+      candidates.push(unit);
+    }
+    if (candidates.length === 0) return null;
+    const unit = candidates[Math.floor(Math.random() * candidates.length)];
+    const empty = unit.indices.filter(i => this.game.state[i] === CELL.NONE);
+    const unitType = unit.label.includes("Row") ? "row"
+      : unit.label.includes("Column") ? "column"
+      : "region";
+    return {
+      description: `Only one spot is left for a star in this ${unitType}.`,
+      highlights: unit.indices
         .filter(i => i !== empty[0])
         .map(idx => ({ idx, color: 'hint-source-blue' })),
-        marks: [{ idx: empty[0], color: 'hint-target-green' }],
-        boardIdx: unit.boardIdx
-      };
-    }
-    return null;
-  }
-
-  // Returns highlight/mark data for the first unit of the given type that has
-  // a star but still has empty cells, or null if none found.
-  getBlockedByStars(unitType) {
-    for (const unit of this.units.filter(u => u.label.includes(unitType))) {
-      const stars = unit.indices.filter(idx => this.game.state[idx] === CELL.STAR);
-      const empty = unit.indices.filter(idx => this.game.state[idx] === CELL.NONE);
-
-      // If this unit has its star but still has empty cells to dot...
-      if (stars.length > 0 && empty.length > 0) {
-        return {
-          highlights: stars.map(idx => ({ idx, color: 'hint-source-blue' })),
-          marks: empty.map(idx => ({ idx, color: 'hint-target-yellow' })),
-          label: unit.label,
-          boardIdx: unit.boardIdx
-        };
-      }
-    }
-    return null;
+      marks: [{ idx: empty[0], color: 'hint-target-green' }],
+      boardIdx: unit.boardIdx
+    };
   }
 
   // MATCH: A row, column, or region that already has its star.
   // ACTION: Marks all remaining empty cells in that unit as dots.
   hintExcludeSolvedUnit() {
-    const types = [
-      { key: "Row",    desc: "This row already has its star." },
-      { key: "Column", desc: "This column already has its star." },
-      { key: "Region", desc: "This region already has its star." },
-    ];
-    for (const { key, desc } of types) {
-      const result = this.getBlockedByStars(key);
-      if (result) return { description: desc, ...result, boardIdx: result.boardIdx ?? undefined };
+    const typeDescs = {
+      "Row": "This row already has its star.",
+      "Column": "This column already has its star.",
+      "Region": "This region already has its star.",
+    };
+    const candidates = [];
+    for (const unit of this.units) {
+      const stars = unit.indices.filter(idx => this.game.state[idx] === CELL.STAR);
+      const empty = unit.indices.filter(idx => this.game.state[idx] === CELL.NONE);
+      if (stars.length > 0 && empty.length > 0) candidates.push(unit);
     }
-    return null;
+    if (candidates.length === 0) return null;
+    const unit = candidates[Math.floor(Math.random() * candidates.length)];
+    const key = unit.label.includes("Row") ? "Row"
+      : unit.label.includes("Column") ? "Column"
+      : "Region";
+    const stars = unit.indices.filter(idx => this.game.state[idx] === CELL.STAR);
+    const empty = unit.indices.filter(idx => this.game.state[idx] === CELL.NONE);
+    return {
+      description: typeDescs[key],
+      highlights: stars.map(idx => ({ idx, color: 'hint-source-blue' })),
+      marks: empty.map(idx => ({ idx, color: 'hint-target-yellow' })),
+      boardIdx: unit.boardIdx ?? undefined
+    };
   }
 
   // MATCH: A placed star with empty neighbors.
   // ACTION: Marks those neighbors as dots since stars cannot touch.
   hintExcludeAdjacency() {
+    const candidates = [];
     for (let i = 0; i < this.n * this.n; i++) {
       if (this.game.state[i] !== CELL.STAR) continue;
-
       const marks = this.getNeighbors(i)
         .filter(nb => this.game.state[nb] === CELL.NONE)
         .map(nb => ({ idx: nb, color: 'hint-target-yellow' }));
-
-      if (marks.length > 0) {
-        return {
-          description: "Stars cannot touch each other.",
-          highlights: [{ idx: i, color: 'hint-source-blue' }],
-          marks,
-          boardIdx: undefined
-        };
-      }
+      if (marks.length > 0) candidates.push({ i, marks });
     }
-    return null;
+    if (candidates.length === 0) return null;
+    const { i, marks } = candidates[Math.floor(Math.random() * candidates.length)];
+    return {
+      description: "Stars cannot touch each other.",
+      highlights: [{ idx: i, color: 'hint-source-blue' }],
+      marks,
+      boardIdx: undefined
+    };
   }
 
   // MATCH: An unsolved region with exactly two orthogonally adjacent empty cells.
   // ACTION: Marks cells that would be blocked regardless of which cell gets the star.
   hintDomino() {
     const n = this.n;
+    const candidates = [];
 
     for (let bIdx = 0; bIdx < 2; bIdx++) {
       for (const region of this.getUnsolvedRegions(bIdx)) {
@@ -390,19 +388,22 @@ export class PuzzleSolver {
           .filter(idx => this.game.state[idx] === CELL.NONE);
 
         if (targets.length > 0) {
-          return {
-            description: "A star must be in the blue domino.",
-            highlights: [
-              { idx: idxA, color: 'hint-source-blue' },
-              { idx: idxB, color: 'hint-source-blue' }
-            ],
-            marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
-            boardIdx: region.boardIdx
-          };
+          candidates.push({ idxA, idxB, targets, boardIdx: region.boardIdx });
         }
       }
     }
-    return null;
+
+    if (candidates.length === 0) return null;
+    const { idxA, idxB, targets, boardIdx } = candidates[Math.floor(Math.random() * candidates.length)];
+    return {
+      description: "A star must be in the blue domino.",
+      highlights: [
+        { idx: idxA, color: 'hint-source-blue' },
+        { idx: idxB, color: 'hint-source-blue' }
+      ],
+      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
+      boardIdx
+    };
   }
 
   // Core logic for the "N units are covered by exactly N regions" deduction.
@@ -492,7 +493,8 @@ export class PuzzleSolver {
   // ACTION: In both cases, cells in the window outside the relevant regions
   //   must be dots.
   // When adjacent=true, only considers contiguous windows (cheaper).
-  _hintWindowRegionSync(N, axis, adjacent) {
+  // Returns ALL valid hints for a given N/axis/adjacent combination.
+  _hintWindowRegionSyncAll(N, axis, adjacent) {
     const n = this.n;
     const axisIndices = this.axisIndices[axis];
 
@@ -502,16 +504,23 @@ export class PuzzleSolver {
         : this.getCombinations(Array.from({length: n}, (_, i) => i), N)
         .map(combo => combo.map(u => axisIndices[u]));
 
+    const candidates = [];
     for (let bIdx = 0; bIdx < 2; bIdx++) {
       for (const windowIndices of windows) {
         const standard = this._hintRegionsTrappedInUnits(windowIndices, bIdx, axis);
-        if (standard) return standard;
+        if (standard) candidates.push(standard);
 
         const inverse = this._hintUnitsCoveredByRegions(windowIndices, bIdx, axis);
-        if (inverse) return inverse;
+        if (inverse) candidates.push(inverse);
       }
     }
-    return null;
+    return candidates;
+  }
+
+  _hintWindowRegionSync(N, axis, adjacent) {
+    const candidates = this._hintWindowRegionSyncAll(N, axis, adjacent);
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
   // MATCH (Standard): N adjacent rows/cols whose only available cells belong to
@@ -521,20 +530,25 @@ export class PuzzleSolver {
   // ACTION: In both cases, cells in the window outside the relevant regions
   //   must be dots.
   hintUnitRegionSync(N) {
+    const candidates = [];
     for (const axis of ["Row", "Column"]) {
-      const hint = this._hintWindowRegionSync(N, axis, true);
-      if (hint) return hint;
+      const hints = this._hintWindowRegionSyncAll(N, axis, true);
+      candidates.push(...hints);
     }
-    return null;
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
   // Extends hintUnitRegionSync to windows of 4 or more rows/cols.
   hintManyRegionsSync() {
+    const candidates = [];
     for (let n = 4; n < this.n; n++) {
-      const result = this.hintUnitRegionSync(n);
-      if (result) return result;
+      for (const axis of ["Row", "Column"]) {
+        candidates.push(...this._hintWindowRegionSyncAll(n, axis, true));
+      }
     }
-    return null;
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
   // Core logic shared by hintUnitSeesTooMuch and hintSeesTooMuch.
@@ -544,6 +558,7 @@ export class PuzzleSolver {
   //   regardless of where in the unit it lands.
   _hintSeesTooMuchForUnits(units) {
     const n = this.n;
+    const hintCandidates = [];
     for (const unit of units) {
       const candidates = unit.indices.filter(i => this.game.state[i] === CELL.NONE);
       if (candidates.length === 0) continue;
@@ -560,14 +575,16 @@ export class PuzzleSolver {
         if (canSeeAll) targets.push({ idx: i, color: 'hint-target-yellow' });
       }
 
-      if (targets.length > 0) return {
-        boardIdx: unit.boardIdx,
-        description: `The blue cells must contain a star.`,
-        highlights: candidates.map(i => ({ idx: i, color: 'hint-source-blue' })),
-        marks: targets,
-      };
+      if (targets.length > 0) hintCandidates.push({ unit, candidates, targets });
     }
-    return null;
+    if (hintCandidates.length === 0) return null;
+    const { unit, candidates, targets } = hintCandidates[Math.floor(Math.random() * hintCandidates.length)];
+    return {
+      boardIdx: unit.boardIdx,
+      description: `The blue cells must contain a star.`,
+      highlights: candidates.map(i => ({ idx: i, color: 'hint-source-blue' })),
+      marks: targets,
+    };
   }
 
   // MATCH: An unsolved row or column where every empty cell is "seen" by some
@@ -597,11 +614,13 @@ export class PuzzleSolver {
   //   are covered by exactly N unsolved regions.
   // ACTION: Cells in those regions outside the N rows/cols must be dots.
   hintDisjointUnitRegionSync(N) {
+    const candidates = [];
     for (const axis of ["Row", "Column"]) {
-      const hint = this._hintWindowRegionSync(N, axis, false);
-      if (hint) return hint;
+      const hints = this._hintWindowRegionSyncAll(N, axis, false);
+      candidates.push(...hints);
     }
-    return null;
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
   // MATCH: N regions whose combined available cells are a subset of N other
@@ -621,6 +640,7 @@ export class PuzzleSolver {
       }
     }
 
+    const candidates = [];
     for (let i = 0; i < comboSets.length; i++) {
       for (let j = 0; j < comboSets.length; j++) {
         if (i === j) continue;
@@ -634,12 +654,12 @@ export class PuzzleSolver {
         const targets = Array.from(setB.indices)
           .filter(idx => !setA.indices.has(idx) && this.game.state[idx] === CELL.NONE);
 
-        if (targets.length > 0) {
-          return this.formatSubsetHint(setA.regions, targets, setA.boardIdx);
-        }
+        if (targets.length > 0) candidates.push({ setA, targets });
       }
     }
-    return null;
+    if (candidates.length === 0) return null;
+    const { setA, targets } = candidates[Math.floor(Math.random() * candidates.length)];
+    return this.formatSubsetHint(setA.regions, targets, setA.boardIdx);
   }
 
   // MATCH: N disjoint regions (potentially from different boards) whose
@@ -662,6 +682,7 @@ export class PuzzleSolver {
 
     if (unsolvedRegions.length < N) return null;
 
+    const candidates = [];
     for (const combo of this.getCombinations(unsolvedRegions, N)) {
       if (!this._areDisjoint(combo.map(r => r.allIdxs))) continue;
 
@@ -686,9 +707,11 @@ export class PuzzleSolver {
           }
         }
       }
-      if (targets.length > 0) return this.formatCrossBoardHint(combo, targets, axis, uList);
+      if (targets.length > 0) candidates.push({ combo, targets, uList });
     }
-    return null;
+    if (candidates.length === 0) return null;
+    const { combo, targets, uList } = candidates[Math.floor(Math.random() * candidates.length)];
+    return this.formatCrossBoardHint(combo, targets, axis, uList);
   }
 
 
@@ -698,6 +721,7 @@ export class PuzzleSolver {
   //   regions.
   hintPartialOverlap() {
     const n = this.n;
+    const candidates = [];
 
     const board0Regions = this.getUnsolvedRegions(0);
     const board1Regions = this.getUnsolvedRegions(1);
@@ -724,20 +748,23 @@ export class PuzzleSolver {
         const targets = shared.filter(i => this.game.state[i] === CELL.NONE);
         if (targets.length === 0) continue;
 
-        return {
-          boardIdx: undefined,
-          description: `These two regions overlap everywhere except one row or column. A star anywhere in any non-shared cell would make one region unsolvable.`,
-          highlights: shared
-          .filter(i => this.game.state[i] === CELL.NONE)
-          .map(i => ({ idx: i, color: 'hint-source-blue' })),
-          marks: [
-            ...onlyA.filter(i => this.game.state[i] === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
-            ...onlyB.filter(i => this.game.state[i] === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
-          ]
-        };
+        candidates.push({ shared, onlyA, onlyB });
       }
     }
-    return null;
+
+    if (candidates.length === 0) return null;
+    const { shared, onlyA, onlyB } = candidates[Math.floor(Math.random() * candidates.length)];
+    return {
+      boardIdx: undefined,
+      description: `These two regions overlap everywhere except one row or column. A star anywhere in any non-shared cell would make one region unsolvable.`,
+      highlights: shared
+        .filter(i => this.game.state[i] === CELL.NONE)
+        .map(i => ({ idx: i, color: 'hint-source-blue' })),
+      marks: [
+        ...onlyA.filter(i => this.game.state[i] === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
+        ...onlyB.filter(i => this.game.state[i] === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
+      ]
+    };
   }
 
   // MATCH: An empty cell where placing a star immediately creates a
@@ -746,6 +773,7 @@ export class PuzzleSolver {
   // ACTION: That cell must be a dot.
   hintLookaheadHalf() {
     const n = this.n;
+    const candidates = [];
 
     const emptyIndices = this.game.state
       .flatMap((val, idx) => val === CELL.NONE ? [idx] : []);
@@ -775,16 +803,17 @@ export class PuzzleSolver {
       }
 
       const broken = this._findBrokenUnit(sandboxState);
-      if (!broken) continue;
-
-      return {
-        boardIdx: broken.type === 'region' ? broken.boardIdx : undefined,
-        description: `The blue cells must contain a star. This is impossible if the circled cell holds a star.`,
-        highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
-        marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
-      };
+      if (broken) candidates.push({ testIdx, broken });
     }
-    return null;
+
+    if (candidates.length === 0) return null;
+    const { testIdx, broken } = candidates[Math.floor(Math.random() * candidates.length)];
+    return {
+      boardIdx: broken.type === 'region' ? broken.boardIdx : undefined,
+      description: `The blue cells must contain a star. This is impossible if the circled cell holds a star.`,
+      highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
+      marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
+    };
   }
 
   // MATCH: An empty cell where placing a star leads to a contradiction within
@@ -792,6 +821,7 @@ export class PuzzleSolver {
   // ACTION: That cell must be a dot.
   hintLookahead(nStages) {
     const n = this.n;
+    const candidates = [];
 
     // Find all empty cells to test
     const emptyIndices = this.game.state
@@ -805,26 +835,24 @@ export class PuzzleSolver {
       // 2. Cascade consequences for n stages
       let broken = false;
       for (let i = 0; i < nStages; i++) {
-        // Apply simple rules to the sandbox
         this._applySimulatedRules(sandboxState);
-
         if (this._isBoardBroken(sandboxState)) {
           broken = true;
           break;
         }
       }
 
-      // 3. If broken, the test cell must be a dot
-      if (broken) {
-        return {
-          boardIdx: undefined,
-          description: `Placing a star here would make the puzzle unsolvable. Seeing why requires some lookahead.`,
-          highlights: [],
-          marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
-        };
-      }
+      if (broken) candidates.push(testIdx);
     }
-    return null;
+
+    if (candidates.length === 0) return null;
+    const testIdx = candidates[Math.floor(Math.random() * candidates.length)];
+    return {
+      boardIdx: undefined,
+      description: `Placing a star here would make the puzzle unsolvable. Seeing why requires some lookahead.`,
+      highlights: [],
+      marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
+    };
   }
 
   _isBoardSymmetric(mirrorFn) {
@@ -900,22 +928,27 @@ export class PuzzleSolver {
     return { description, highlights: [], marks, boardIdx: undefined };
   }
 
-  hintMainDiagonalReflection() {
-    if (!this.isMainDiagonalSymmetric) return null;
+  hintDiagonalReflection() {
     const n = this.n;
-    return this._hintSymmetry(
-      i => (i % n) * n + Math.floor(i / n),
-      `The two boards are reflections of each other across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-    );
-  }
-
-  hintAntiDiagonalReflection() {
-    if (!this.isAntiDiagonalSymmetric) return null;
-    const n = this.n;
-    return this._hintSymmetry(
-      i => (n-1 - i%n) * n + (n-1 - Math.floor(i/n)),
-      `The two boards are reflections of each other across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-    );
+    const variants = [
+      {
+        active: this.isMainDiagonalSymmetric,
+        mirrorFn: i => (i % n) * n + Math.floor(i / n),
+        description: `The two boards are reflections of each other across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+      },
+      {
+        active: this.isAntiDiagonalSymmetric,
+        mirrorFn: i => (n-1 - i%n) * n + (n-1 - Math.floor(i/n)),
+        description: `The two boards are reflections of each other across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+      },
+    ];
+    if (Math.random() < 0.5) variants.reverse();
+    for (const { active, mirrorFn, description } of variants) {
+      if (!active) continue;
+      const hint = this._hintSymmetry(mirrorFn, description);
+      if (hint) return hint;
+    }
+    return null;
   }
 
   hintRotation180() {
