@@ -132,6 +132,18 @@ class StarBattleGame {
 
     const currentId = this.currentPuzzleUniqueId;
 
+    const solvedCount = puzzles.filter(puz => solvedIds.has(puz._cachedId)).length;
+    const total = puzzles.length;
+    const pct = Math.round(solvedCount / total * 100);
+    const toolbarEl = document.querySelector('#browse-modal .browse-toolbar');
+    if (toolbarEl) {
+      const existing = toolbarEl.querySelector('.browse-completion');
+      const completionEl = existing ?? document.createElement('div');
+      completionEl.className = 'browse-completion';
+      completionEl.textContent = `${solvedCount} of ${total} puzzles solved (${pct}%)`;
+      if (!existing) toolbarEl.appendChild(completionEl);
+    }
+
     puzzles.forEach((puz, i) => {
       const num = i + 1;
       const tile = document.createElement('button');
