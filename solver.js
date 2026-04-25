@@ -17,8 +17,15 @@ export class PuzzleSolver {
 
     // precompute and cache symmetry properties that are useful for niche rules,
     // to avoid duplicating this work.
-    this.isMainDiagonalSymmetric   = this._isBoardSymmetric(i => (i % this.n) * this.n + Math.floor(i / this.n));
-    this.isAntiDiagonalSymmetric   = this._isBoardSymmetric(i => (this.n-1 - i%this.n) * this.n + (this.n-1 - Math.floor(i/this.n)));
+    const mainDiagFn = i => (i % this.n) * this.n + Math.floor(i / this.n);
+    const antiDiagFn = i => (this.n-1 - i%this.n) * this.n + (this.n-1 - Math.floor(i/this.n));
+    this.isMainDiagonalSymmetric = this._isBoardSymmetric(mainDiagFn) || this._computeInternalDiagonalSymmetry(mainDiagFn);
+    this.isAntiDiagonalSymmetric = this._isBoardSymmetric(antiDiagFn) || this._computeInternalDiagonalSymmetry(antiDiagFn);
+    // Track which case(s) triggered, for accurate hint descriptions.
+    this.mainDiagCrossBoard   = this._isBoardSymmetric(mainDiagFn);
+    this.mainDiagInternal     = this._computeInternalDiagonalSymmetry(mainDiagFn);
+    this.antiDiagCrossBoard   = this._isBoardSymmetric(antiDiagFn);
+    this.antiDiagInternal     = this._computeInternalDiagonalSymmetry(antiDiagFn);
     this.internalRotation180   = this._computeInternalRotation180();
     this.crossboardRotation180 = this._computeCrossboardRotation180();
   }
@@ -872,6 +879,21 @@ export class PuzzleSolver {
     return true;
   }
 
+  _computeInternalDiagonalSymmetry(mirrorFn) {
+    // True if BOTH boards independently have the given diagonal symmetry.
+    const total = this.n * this.n;
+    const [r1, r2] = this.game.regions;
+    for (let i = 0; i < total; i++) {
+      const mi = mirrorFn(i);
+      for (let j = i + 1; j < total; j++) {
+        const mj = mirrorFn(j);
+        if ((r1[i] === r1[j]) !== (r1[mi] === r1[mj])) return false;
+        if ((r2[i] === r2[j]) !== (r2[mi] === r2[mj])) return false;
+      }
+    }
+    return true;
+  }
+
   _computeInternalRotation180() {
     const total = this.n * this.n;
     const mirrorFn = i => total - 1 - i;
@@ -934,12 +956,20 @@ export class PuzzleSolver {
       {
         active: this.isMainDiagonalSymmetric,
         mirrorFn: i => (i % n) * n + Math.floor(i / n),
-        description: `The two boards are reflections of each other across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+        description: this.mainDiagCrossBoard && this.mainDiagInternal
+          ? `The two boards are reflections of each other across the main diagonal (↘), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+          : this.mainDiagInternal
+          ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+          : `The two boards are reflections of each other across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
       },
       {
         active: this.isAntiDiagonalSymmetric,
         mirrorFn: i => (n-1 - i%n) * n + (n-1 - Math.floor(i/n)),
-        description: `The two boards are reflections of each other across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+        description: this.antiDiagCrossBoard && this.antiDiagInternal
+          ? `The two boards are reflections of each other across the anti-diagonal (↙), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+          : this.antiDiagInternal
+          ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+          : `The two boards are reflections of each other across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
       },
     ];
     if (Math.random() < 0.5) variants.reverse();
@@ -1010,18 +1040,24 @@ export class PuzzleSolver {
   hintMainDiagonalFill() {
     if (!this.isMainDiagonalSymmetric) return null;
     const n = this.n;
+    const desc = this.mainDiagInternal && !this.mainDiagCrossBoard
+      ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution is symmetric.`
+      : `The solution is symmetric across the main diagonal (↘).`;
     return this._hintSymmetryFill(
       i => (i % n) * n + Math.floor(i / n),
-      `The solution is symmetric across the main diagonal (↘).`
+      desc
     );
   }
 
   hintAntiDiagonalFill() {
     if (!this.isAntiDiagonalSymmetric) return null;
     const n = this.n;
+    const desc = this.antiDiagInternal && !this.antiDiagCrossBoard
+      ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution is symmetric.`
+      : `The solution is symmetric across the anti-diagonal (↙).`;
     return this._hintSymmetryFill(
       i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
-      `The solution is symmetric across the anti-diagonal (↙).`
+      desc
     );
   }
 
