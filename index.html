@@ -6,10 +6,29 @@
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
+    <!-- Book picker modal -->
+    <div id="book-picker-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="bp-modal-title">
+      <div class="modal-box bp-modal-box">
+        <div class="modal-header">
+          <h2 id="bp-modal-title">Choose a Book</h2>
+          <button id="bp-modal-close-btn" data-close aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body bp-modal-body" id="bp-modal-body">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+
     <nav class="menu-container" aria-label="Puzzle navigation">
       <div class="menu-group">
-        <label for="category-select">Book</label>
-        <select id="category-select"></select>
+        <select id="category-select" aria-hidden="true" tabindex="-1"></select>
+        <button id="book-picker-btn" aria-haspopup="dialog" aria-label="Choose book">
+          <span class="bpb-label">
+            <span class="bpb-eyebrow">Book</span>
+            <span class="bpb-name" id="bpb-current-name">—</span>
+          </span>
+          <span class="bpb-chevron">▼</span>
+        </button>
       </div>
 
       <div class="menu-group puzzle-nav">
@@ -126,14 +145,5 @@
     </div>
 
     <script type="module" src="script.js"></script>
-    <script>
-      // Navigate to book links without adding a browser history entry.
-      document.addEventListener('click', function (e) {
-        const link = e.target.closest('.book-link');
-        if (!link) return;
-        e.preventDefault();
-        window.location.replace(link.href);
-      });
-    </script>
 
 </body></html>

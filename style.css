@@ -415,17 +415,6 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-bottom: 6px;
 }
 
-
-.book-link {
-  color: inherit;
-  text-decoration: none;
-}
-.book-link:hover,
-.book-link:active {
-  color: var(--primary-blue);
-  text-decoration: underline;
-}
-
 /* 10. BROWSE MODAL */
 .browse-btn {
   font-size: 1.1rem;
@@ -530,3 +519,120 @@ input[type="number"]::-webkit-inner-spin-button {
   border-color: #1976d2;
   box-shadow: 0 0 0 2px #1976d2;
 }
+
+/* 11. BOOK PICKER */
+
+/* Hidden select — kept for JS compatibility */
+#category-select { display: none; }
+
+/* Book picker button in nav */
+#book-picker-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  padding: 8px 14px;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  max-width: 180px;
+}
+#book-picker-btn:hover { border-color: var(--primary-blue); background: #f0f6ff; }
+#book-picker-btn .bpb-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  overflow: hidden;
+}
+#book-picker-btn .bpb-eyebrow {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #888;
+  line-height: 1;
+}
+#book-picker-btn .bpb-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+#book-picker-btn .bpb-chevron { color: #aaa; font-size: 0.7rem; flex-shrink: 0; }
+
+/* Book picker modal */
+.bp-modal-box {
+  max-width: 520px;
+  width: 94%;
+  max-height: 85vh;
+}
+.bp-modal-body { padding: 16px 20px 24px; }
+
+/* Group card grid */
+.bp-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.bp-group-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 18px 10px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #fafafa;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  text-align: center;
+}
+.bp-group-card:hover { border-color: var(--primary-blue); background: #f0f6ff; transform: translateY(-2px); }
+.bp-group-card.bp-active { border-color: var(--primary-blue); background: #e3f0ff; }
+.bp-group-card .bp-icon { font-size: 1.6rem; line-height: 1; }
+.bp-group-card .bp-group-name { font-weight: 700; font-size: 0.88rem; }
+.bp-group-card .bp-group-sub { font-size: 0.72rem; color: #777; }
+
+/* Difficulty list (drill-down) */
+.bp-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  color: var(--primary-blue);
+  cursor: pointer;
+  padding: 0 0 12px;
+  font-weight: 600;
+}
+.bp-back-btn:hover { text-decoration: underline; background: none; }
+.bp-drill-title { font-weight: 700; font-size: 1rem; margin-bottom: 12px; }
+.bp-diff-list { display: flex; flex-direction: column; gap: 8px; }
+.bp-diff-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+}
+.bp-diff-btn:hover { border-color: var(--primary-blue); background: #f0f6ff; }
+.bp-diff-btn.bp-selected { border-color: var(--primary-blue); background: #e3f0ff; color: var(--primary-blue); }
+.bp-diff-btn .bp-diff-arrow { color: #bbb; font-size: 0.8rem; }
+.bp-diff-btn.bp-selected .bp-diff-arrow { color: var(--primary-blue); }
+
+/* Book links (help modal) */
+.book-link { color: inherit; text-decoration: none; }
+.book-link:hover, .book-link:active { color: var(--primary-blue); text-decoration: underline; }

@@ -56,6 +56,7 @@ class StarBattleGame {
     document.getElementById('check-btn').onclick = () => this.checkCorrectness();
     document.getElementById('hint-btn').onclick = () => this.getHint();
     this.setupBrowseModal();
+    this.setupBookPicker();
   }
 
   // Creates open/close behaviour for a modal: close button(s), backdrop click,
@@ -415,6 +416,14 @@ class StarBattleGame {
       if (!this.toastBirthTime || Date.now() - this.toastBirthTime > 500) {
         this.hideToast();
       }
+    });
+
+    // Book links in the help modal navigate without adding a history entry.
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('.book-link');
+      if (!link) return;
+      e.preventDefault();
+      window.location.replace(link.href);
     });
   }
 
@@ -1040,6 +1049,163 @@ class StarBattleGame {
       params.set('puzzle', puzNum);
     }
     window.history.replaceState(null, '', `?${params.toString()}`);
+  }
+
+  // ──────────────────────
+  // ─── Book Picker ───────
+  // ──────────────────────
+
+  // Sets up the book picker modal: a two-level UI where users first pick a
+  // group (e.g. "8x8"), then drill into its individual difficulty categories.
+  setupBookPicker() {
+    const catSelect     = document.getElementById('category-select');
+    const modal         = document.getElementById('book-picker-modal');
+    const body          = document.getElementById('bp-modal-body');
+    const openBtn       = document.getElementById('book-picker-btn');
+    const currentNameEl = document.getElementById('bpb-current-name');
+
+    const groupMeta = {
+      '__ungrouped__':    { icon: '📅', blurb: '' },
+      '8x8':              { icon: '8×8', blurb: 'Beginner → Expert' },
+      '6x6':              { icon: '6×6', blurb: 'Beginner → Expert' },
+      '12x12':            { icon: '12×12', blurb: 'Beginner → Expert' },
+      'Symmetry':         { icon: '🔀', blurb: 'Lattice · Twin · Kaleido' },
+      'Voting Districts': { icon: '🗳️', blurb: '6×6 and 8×8' },
+      'Special':          { icon: '⚡', blurb: 'Unusual rule sets' },
+    };
+
+    const getStructuredCategories = () => {
+      const groups = [];
+      for (const child of catSelect.children) {
+        if (child.tagName === 'OPTGROUP') {
+          groups.push({
+            group: child.label,
+            cats: [...child.children].map(o => ({ id: o.value, label: o.textContent })),
+          });
+        } else if (child.tagName === 'OPTION') {
+          let ug = groups.find(g => g.group === '__ungrouped__');
+          if (!ug) { ug = { group: '__ungrouped__', cats: [] }; groups.push(ug); }
+          ug.cats.push({ id: child.value, label: child.textContent });
+        }
+      }
+      return groups;
+    };
+
+    const openModal  = () => { modal.classList.remove('modal-hidden'); renderGroups(); };
+    const closeModal = () => modal.classList.add('modal-hidden');
+
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !modal.classList.contains('modal-hidden')) closeModal();
+    });
+    document.getElementById('bp-modal-close-btn').onclick = closeModal;
+    openBtn.onclick = openModal;
+
+    const makeGroupCard = (name, icon, sub, active) => {
+      const card = document.createElement('button');
+      card.className = 'bp-group-card' + (active ? ' bp-active' : '');
+      card.innerHTML = `
+        <span class="bp-icon">${icon}</span>
+        <span class="bp-group-name">${name}</span>
+        ${sub ? `<span class="bp-group-sub">${sub}</span>` : ''}
+      `;
+      return card;
+    };
+
+    const renderGroups = () => {
+      const groups = getStructuredCategories();
+      const activeCatId = catSelect.value;
+      body.innerHTML = '';
+      const grid = document.createElement('div');
+      grid.className = 'bp-groups';
+
+      groups.forEach(g => {
+        const meta = groupMeta[g.group] || { icon: '📖', blurb: '' };
+        const isActive = g.cats.some(c => c.id === activeCatId);
+
+        if (g.group === '__ungrouped__') {
+          g.cats.forEach(cat => {
+            if (cat.id === 'tmp') return;
+            const card = makeGroupCard(cat.label, meta.icon, '', cat.id === activeCatId);
+            card.onclick = () => selectCategory(cat.id);
+            grid.appendChild(card);
+          });
+          return;
+        }
+
+        if (g.cats.length === 1) {
+          const card = makeGroupCard(g.group, meta.icon, meta.blurb, isActive);
+          card.onclick = () => selectCategory(g.cats[0].id);
+          grid.appendChild(card);
+          return;
+        }
+
+        const card = makeGroupCard(g.group, meta.icon, meta.blurb, isActive);
+        card.onclick = () => renderDrill(g);
+        grid.appendChild(card);
+      });
+
+      body.appendChild(grid);
+    };
+
+    const renderDrill = (group) => {
+      const activeCatId = catSelect.value;
+      body.innerHTML = '';
+
+      const back = document.createElement('button');
+      back.className = 'bp-back-btn';
+      back.textContent = '← All books';
+      back.onclick = renderGroups;
+
+      const title = document.createElement('div');
+      title.className = 'bp-drill-title';
+      title.textContent = group.group;
+
+      const list = document.createElement('div');
+      list.className = 'bp-diff-list';
+
+      group.cats.forEach(cat => {
+        const btn = document.createElement('button');
+        const isSelected = cat.id === activeCatId;
+        btn.className = 'bp-diff-btn' + (isSelected ? ' bp-selected' : '');
+        btn.innerHTML = `${cat.label} <span class="bp-diff-arrow">${isSelected ? '✓' : '›'}</span>`;
+        btn.onclick = () => selectCategory(cat.id);
+        list.appendChild(btn);
+      });
+
+      body.appendChild(back);
+      body.appendChild(title);
+      body.appendChild(list);
+    };
+
+    const selectCategory = (catId) => {
+      catSelect.value = catId;
+      catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: 1 } }));
+      closeModal();
+      const opt = catSelect.querySelector(`option[value="${catId}"]`);
+      if (opt) currentNameEl.textContent = opt.textContent;
+    };
+
+    // Sync button label whenever the select changes (e.g. on initial URL load).
+    catSelect.addEventListener('change', () => {
+      const opt = catSelect.querySelector(`option[value="${catSelect.value}"]`);
+      if (opt) currentNameEl.textContent = opt.textContent;
+    });
+
+    // Mirror disabled state from hidden select to the picker button.
+    new MutationObserver(() => {
+      openBtn.disabled = catSelect.disabled;
+    }).observe(catSelect, { attributes: true, attributeFilter: ['disabled'] });
+
+    // Sync button label once options are populated by setupMenu().
+    const observer = new MutationObserver(() => {
+      if (catSelect.options.length > 0) {
+        observer.disconnect();
+        const opt = catSelect.querySelector(`option[value="${catSelect.value}"]`);
+        if (opt) currentNameEl.textContent = opt.textContent;
+      }
+    });
+    observer.observe(catSelect, { childList: true, subtree: true });
   }
 }
 
