@@ -415,6 +415,17 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-bottom: 6px;
 }
 
+
+.book-link {
+  color: inherit;
+  text-decoration: none;
+}
+.book-link:hover,
+.book-link:active {
+  color: var(--primary-blue);
+  text-decoration: underline;
+}
+
 /* 10. BROWSE MODAL */
 .browse-btn {
   font-size: 1.1rem;

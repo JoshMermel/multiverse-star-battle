@@ -87,13 +87,15 @@
 
           <h3>Books</h3>
           <ul>
-            <li><strong>Daily</strong> — a new 7×7 puzzle each day</li>
-            <li><strong>6×6 / 8×8 / 12×12</strong> — puzzles by size and difficulty</li>
-            <li><strong>Lattice</strong> — each board has rotational or mirror symmetry</li>
-            <li><strong>Twin</strong> — both boards are the same, one flipped or rotated</li>
-            <li><strong>Kaleido</strong> — both Lattice and Twin</li>
-            <li><strong>Voting Districts</strong> — all regions have equal area</li>
-            <li><strong>Signoff</strong> — a message from the creator</li>
+            <li><a href="?book=daily&puzzle=1" class="book-link"><strong>Daily</strong></a> — a new 7×7 puzzle each day</li>
+            <li><strong><a href="?book=6x6_beginner&puzzle=1" class="book-link">6×6</a> / <a href="?book=8x8_beginner&puzzle=1" class="book-link">8×8</a> / <a href="?book=12x12_beginner&puzzle=1" class="book-link">12×12</a></strong> — puzzles by size and difficulty</li>
+            <li><a href="?book=8x8_lattice&puzzle=1" class="book-link"><strong>Lattice</strong></a> — each board has rotational or mirror symmetry</li>
+            <li><a href="?book=8x8_twin&puzzle=1" class="book-link"><strong>Twin</strong></a> — both boards are the same, one flipped or rotated</li>
+            <li><a href="?book=8x8_kaleido&puzzle=1" class="book-link"><strong>Kaleido</strong></a> — both Lattice and Twin</li>
+            <li><a href="?book=8x8_equal_area&puzzle=1" class="book-link"><strong>Voting Districts</strong></a> — all regions have equal area</li>
+            <li><a href="?book=not_sudoku&puzzle=1" class="book-link"><strong>Not Sudoku</strong></a> — the right board looks like a Sudoku grid, but the rules are still Star Battle — one star per row, column, and bold region</li>
+            <li><a href="?book=not_for_humans&puzzle=1" class="book-link"><strong>Not For Humans</strong></a> — puzzles so fiendishly difficult they were designed to defeat human solvers; attempt at your own peril</li>
+            <li><a href="?book=signoff&puzzle=1" class="book-link"><strong>Signoff</strong></a> — a message from the creator</li>
           </ul>
 
           <p style="margin-top: 16px; font-size: 0.9rem; color: #555;">
@@ -124,6 +126,14 @@
     </div>
 
     <script type="module" src="script.js"></script>
-  
+    <script>
+      // Navigate to book links without adding a browser history entry.
+      document.addEventListener('click', function (e) {
+        const link = e.target.closest('.book-link');
+        if (!link) return;
+        e.preventDefault();
+        window.location.replace(link.href);
+      });
+    </script>
 
 </body></html>
