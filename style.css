@@ -417,8 +417,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* 10. BROWSE MODAL */
 .browse-btn {
-  font-size: 1.1rem;
-  padding: 8px 12px;
+  font-size: 0.95rem;
 }
 
 .browse-modal-box {
