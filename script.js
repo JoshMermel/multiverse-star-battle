@@ -418,12 +418,14 @@ class StarBattleGame {
       }
     });
 
-    // Book links in the help modal navigate without adding a history entry.
+    // Book links in the help modal switch books without a page load.
     document.addEventListener('click', (e) => {
       const link = e.target.closest('.book-link');
       if (!link) return;
-      e.preventDefault();
-      window.location.replace(link.href);
+      const bookId = link.dataset.book;
+      if (!bookId) return;
+      document.getElementById('help-modal').classList.add('modal-hidden');
+      this.selectCategory(bookId);
     });
   }
 
@@ -1052,7 +1054,17 @@ class StarBattleGame {
   }
 
   // ──────────────────────
-  // ─── Book Picker ───────
+  // ── Book Picker ───────
+
+  // Switches to a new book category without a page load, resetting to puzzle 1.
+  selectCategory(catId) {
+    const catSelect     = document.getElementById('category-select');
+    const currentNameEl = document.getElementById('bpb-current-name');
+    catSelect.value = catId;
+    catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: 1 } }));
+    const opt = catSelect.querySelector(`option[value="${catId}"]`);
+    if (opt) currentNameEl.textContent = opt.textContent;
+  }
   // ──────────────────────
 
   // Sets up the book picker modal: a two-level UI where users first pick a
@@ -1178,13 +1190,7 @@ class StarBattleGame {
       body.appendChild(list);
     };
 
-    const selectCategory = (catId) => {
-      catSelect.value = catId;
-      catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: 1 } }));
-      closeModal();
-      const opt = catSelect.querySelector(`option[value="${catId}"]`);
-      if (opt) currentNameEl.textContent = opt.textContent;
-    };
+    const selectCategory = (catId) => { closeModal(); this.selectCategory(catId); };
 
     // Sync button label whenever the select changes (e.g. on initial URL load).
     catSelect.addEventListener('change', () => {
