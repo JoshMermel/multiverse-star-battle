@@ -3,8 +3,24 @@
   --grid-n: 8; /* Updated by JS */
   --cell-size: min(60px, 85vw / var(--grid-n));
   --line-thin: 1px solid #ccc;
+
+  /* Brand */
   --primary-blue: #1976d2;
+  --primary-blue-hover-bg: #f0f6ff;
+  --primary-blue-active-bg: #e3f0ff;
+
+  /* Semantic */
+  --color-solved: #2e7d32;
+  --color-solved-dark: #1b5e20;
+  --color-error: #c62828;
+  --color-win: #6a1b9a;
+
+  /* Neutral palette */
   --bg-light: #f8f9fa;
+  --bg-card: #fafafa;
+  --border-light: #e0e0e0;
+  --text-secondary: #666;
+  --text-muted: #888;
 }
 
 /* 2. RESET & BASE STYLES */
@@ -16,18 +32,19 @@ body {
   background-color: #fff;
 }
 
-button { 
-  padding: 8px 16px; 
-  cursor: pointer; 
-  background: #eee; 
-  border: 1px solid #999; 
-  border-radius: 4px; 
+button {
+  padding: 8px 16px;
+  cursor: pointer;
+  background: #eee;
+  border: 1px solid #999;
+  border-radius: 4px;
   transition: background 0.2s;
   --btn-font-size: 1rem;
   font-size: var(--btn-font-size);
 }
 
-button:hover { background: #ddd; }
+/* Scoped to enabled buttons only — removes need for button:disabled:hover override */
+button:not(:disabled):hover { background: #ddd; }
 
 button:disabled {
   background: #f0f0f0;
@@ -37,10 +54,6 @@ button:disabled {
   opacity: 0.6;
 }
 
-button:disabled:hover {
-  background: #f0f0f0;
-}
-
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -48,13 +61,13 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 /* 3. LAYOUT CONTAINERS */
-#game-container { 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
+#game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 20px;
-  position: relative;
   padding-bottom: 100px;
+  position: relative;
   min-height: 100vh;
 }
 
@@ -72,7 +85,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 #boards-wrapper {
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
   align-items: center;
   gap: 20px;
   width: 100%;
@@ -111,7 +124,7 @@ input[type="number"]::-webkit-inner-spin-button {
   border: 2px solid #ddd;
   border-radius: 4px;
   text-align: center;
-  font-size: 18px;
+  font-size: 1.125rem; /* was 18px */
   font-weight: bold;
 }
 
@@ -121,8 +134,8 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .label-top, .label-bottom {
-  font-size: 11px;
-  color: #666;
+  font-size: 0.6875rem; /* was 11px */
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -154,25 +167,25 @@ input[type="number"]::-webkit-inner-spin-button {
   width: var(--cell-size);
   height: var(--cell-size);
   border: var(--line-thin);
-  display: flex; 
-  justify-content: center; 
+  display: flex;
+  justify-content: center;
   align-items: center;
   cursor: pointer;
-  box-sizing: border-box;
+  /* box-sizing already set globally */
   background-color: white;
   position: relative;
   overflow: visible;
   -webkit-tap-highlight-color: transparent;
-
 }
 
 .star { color: #000; font-weight: bold; pointer-events: none; }
+
 .dot {
   width: calc(var(--cell-size) * 0.12);
   height: calc(var(--cell-size) * 0.12);
   background: #444;
   border-radius: 50%;
-  pointer-events: none;
+  pointer-events: none; /* also covers .cell .dot — no separate rule needed */
   z-index: 5;
 }
 
@@ -185,16 +198,30 @@ input[type="number"]::-webkit-inner-spin-button {
   pointer-events: none;
 }
 
-.error-cell {
-  background-color: rgba(255, 0, 0, 0.1) !important;
-}
+/* Cell state overlays. No !important needed — .cell sets background-color: white
+   at the same specificity, and these classes appear later in the cascade. */
+.error-cell          { background-color: rgba(255, 0, 0, 0.1); }
+.cell-drag-highlight { background-color: rgba(255, 165, 0, 0.15); }
 
-.cell-drag-highlight {
-  background-color: rgba(255, 165, 0, 0.15) !important;
-}
+.error-cell .star { color: #d00; }
 
-.error-cell .star {
-  color: #d00;
+/* Hint highlights — same cascade fix as above */
+.hint-source-blue  { background-color: rgba(0, 123, 255, 0.25); }
+.hint-error-red    {
+  background-color: rgba(255, 0, 0, 0.2);
+  outline: 2px solid rgba(200, 0, 0, 0.5);
+  outline-offset: -2px;
+}
+.hint-target-green { background-color: rgba(0, 200, 0, 0.25); }
+.hint-target-yellow {
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 0, 0.6) 70%,
+    transparent 71%
+  );
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 75% 75%;
 }
 
 /* 6. CONTROLS */
@@ -208,12 +235,6 @@ input[type="number"]::-webkit-inner-spin-button {
   margin: 20px auto;
 }
 
-/* Only push Instructions to the right on desktop */
-@media (min-width: 601px) {
-  #help-btn { margin-left: auto; }
-}
-
-
 /* 7. TOASTS & FEEDBACK */
 #toast {
   position: fixed;
@@ -221,19 +242,18 @@ input[type="number"]::-webkit-inner-spin-button {
   left: 50%;
   transform: translateX(-50%);
 
-  /* Critical for Mobile Wrapping */
+  /* Critical for mobile wrapping */
   width: 90%;
   max-width: 500px;
-  white-space: normal;   /* Allows text to wrap to multiple lines */
+  white-space: normal;
   text-align: center;
   line-height: 1.4;
 
-  /* Visuals */
   color: white;
   padding: 12px 20px;
   border-radius: 25px;
-  z-index: 3000;         /* Above the modal */
-  
+  z-index: 3000; /* Above modals */
+
   transition: opacity 0.3s, transform 0.3s;
 }
 
@@ -243,16 +263,22 @@ input[type="number"]::-webkit-inner-spin-button {
   pointer-events: none;
 }
 
-.toast-info { background-color: #1976d2; }
-.toast-hint { background-color: #1976d2; }
-.toast-success { background-color: #2e7d32; }
-.toast-error { background-color: #c62828; }
+.toast-info    { background-color: var(--primary-blue); }
+.toast-hint    { background-color: var(--primary-blue); }
+.toast-success { background-color: var(--color-solved); }
+.toast-error   { background-color: var(--color-error); }
+
 .toast-win {
-  background-color: #6a1b9a;
+  background-color: var(--color-win);
   border: 2px solid #ffd700;
-  animation: win-pulse 2s infinite;
-  transform-origin: center center;
+  /* Only transition opacity — animation handles transform */
   transition: opacity 0.3s;
+  animation: win-pulse 2s infinite;
+}
+
+@keyframes win-pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50%       { transform: translateX(-50%) scale(1.05); }
 }
 
 /* 8. RESPONSIVE DESIGN */
@@ -265,6 +291,11 @@ input[type="number"]::-webkit-inner-spin-button {
     justify-content: center;
     gap: 40px;
   }
+}
+
+/* Consolidated with other responsive rules (was split between section 6 and 8) */
+@media (min-width: 601px) {
+  #help-btn { margin-left: auto; }
 }
 
 @media (max-width: 600px) {
@@ -284,63 +315,20 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 
   /* Row 1: board state actions */
-  #undo-btn, #redo-btn, #reset-btn {
-    flex: 1 1 30%;
-  }
+  #undo-btn, #redo-btn, #reset-btn { flex: 1 1 30%; }
 
   /* Row 2: help and checking tools */
-  #check-btn, #hint-btn, #help-btn {
-    flex: 1 1 30%;
-  }
-  /* Make text shorter on mobile */
-  #check-btn {
-    font-size: 0;
-  }
+  #check-btn, #hint-btn, #help-btn { flex: 1 1 30%; }
+
+  /* Shorter label on mobile */
+  #check-btn { font-size: 0; }
   #check-btn::after {
     content: attr(data-mobile-label);
     font-size: var(--btn-font-size);
   }
 }
 
-.step-btn:active {
-  background: #ddd;
-}
-
-@keyframes win-pulse {
-  0%, 100% { transform: translateX(-50%) scale(1); }
-  50% { transform: translateX(-50%) scale(1.05); }
-}
-
-.hint-source-blue {
-  background-color: rgba(0, 123, 255, 0.25) !important;
-}
-
-.hint-error-red {
-  background-color: rgba(255, 0, 0, 0.2) !important;
-  outline: 2px solid rgba(200, 0, 0, 0.5);
-  outline-offset: -2px;
-}
-.hint-target-green {
-  background-color: rgba(0, 200, 0, 0.25) !important;
-}
-
-.hint-target-yellow {
-  /* This creates a yellow circle as a background image */
-  background-image: radial-gradient(
-  circle, 
-  rgba(255, 255, 0, 0.6) 70%, 
-  transparent 71%
-  );
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 75% 75%; 
-}
-
-
-/* Ensure the dots/stars have a higher z-index than the circle */
-.cell .dot {
-  pointer-events: none;
-}
+.step-btn:active { background: #ddd; }
 
 /* 9. MODAL */
 .modal-overlay {
@@ -359,6 +347,7 @@ input[type="number"]::-webkit-inner-spin-button {
   pointer-events: none;
 }
 
+/* Base modal. Use .modal-box--wide for browse/book-picker modals. */
 .modal-box {
   background: #fff;
   border-radius: 8px;
@@ -367,6 +356,12 @@ input[type="number"]::-webkit-inner-spin-button {
   width: 90%;
   max-height: 80vh;
   overflow-y: auto;
+}
+
+.modal-box--wide {
+  max-width: 560px;
+  width: 94%;
+  max-height: 85vh;
 }
 
 .modal-header {
@@ -388,10 +383,10 @@ input[type="number"]::-webkit-inner-spin-button {
   font-size: 1.2rem;
   cursor: pointer;
   padding: 4px 8px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
-.modal-header button:hover {
+.modal-header button:not(:disabled):hover {
   color: #000;
   background: #f0f0f0;
   border-radius: 4px;
@@ -402,33 +397,14 @@ input[type="number"]::-webkit-inner-spin-button {
   line-height: 1.6;
 }
 
-.modal-body h3 {
-  margin: 16px 0 8px;
-}
-
-.modal-body ul {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-
-.modal-body li {
-  margin-bottom: 6px;
-}
+.modal-body h3 { margin: 16px 0 8px; }
+.modal-body ul { margin: 8px 0; padding-left: 20px; }
+.modal-body li { margin-bottom: 6px; }
 
 /* 10. BROWSE MODAL */
-.browse-btn {
-  font-size: 0.95rem;
-}
+.browse-btn { font-size: 0.95rem; }
 
-.browse-modal-box {
-  max-width: 560px;
-  width: 94%;
-  max-height: 85vh;
-}
-
-.browse-modal-body {
-  padding: 12px 16px 20px;
-}
+.browse-modal-body { padding: 12px 16px 20px; }
 
 .browse-toolbar {
   display: flex;
@@ -444,7 +420,7 @@ input[type="number"]::-webkit-inner-spin-button {
   align-items: center;
   gap: 10px;
   font-size: 0.82rem;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .legend-dot {
@@ -456,14 +432,14 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-right: 2px;
 }
 
-.legend-solved  { background: #2e7d32; }
-.legend-current { background: #1976d2; }
-.legend-unsolved { background: #e0e0e0; border: 1px solid #bbb; }
+.legend-solved   { background: var(--color-solved); }
+.legend-current  { background: var(--primary-blue); }
+.legend-unsolved { background: var(--border-light); border: 1px solid #bbb; }
 
 .browse-completion {
   width: 100%;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
@@ -479,7 +455,7 @@ input[type="number"]::-webkit-inner-spin-button {
   gap: 6px;
   max-height: 55vh;
   overflow-y: auto;
-  padding: 2px;        /* room for focus rings */
+  padding: 2px; /* room for focus rings */
 }
 
 .browse-tile {
@@ -493,38 +469,29 @@ input[type="number"]::-webkit-inner-spin-button {
   cursor: pointer;
   border: 2px solid transparent;
   transition: transform 0.1s, box-shadow 0.1s;
-  background: #e0e0e0;
+  background: var(--border-light);
   color: #333;
   padding: 0;
   min-width: 0;
 }
 
-.browse-tile:hover {
+.browse-tile:not(:disabled):hover {
   transform: scale(1.12);
   box-shadow: 0 2px 8px rgba(0,0,0,0.18);
   background: #ccc;
 }
 
-.browse-tile.bt-solved {
-  background: #2e7d32;
-  color: #fff;
-}
-
-.browse-tile.bt-solved:hover {
-  background: #1b5e20;
-}
+.browse-tile.bt-solved { background: var(--color-solved); color: #fff; }
+.browse-tile.bt-solved:not(:disabled):hover { background: var(--color-solved-dark); }
 
 .browse-tile.bt-current {
-  border-color: #1976d2;
-  box-shadow: 0 0 0 2px #1976d2;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 2px var(--primary-blue);
 }
 
 /* 11. BOOK PICKER */
+#category-select { display: none; } /* Hidden; kept for JS compatibility */
 
-/* Hidden select — kept for JS compatibility */
-#category-select { display: none; }
-
-/* Book picker button in nav */
 #book-picker-btn {
   display: flex;
   align-items: center;
@@ -538,7 +505,11 @@ input[type="number"]::-webkit-inner-spin-button {
   transition: border-color 0.15s, background 0.15s;
   max-width: 180px;
 }
-#book-picker-btn:hover { border-color: var(--primary-blue); background: #f0f6ff; }
+#book-picker-btn:not(:disabled):hover {
+  border-color: var(--primary-blue);
+  background: var(--primary-blue-hover-bg);
+}
+
 #book-picker-btn .bpb-label {
   display: flex;
   flex-direction: column;
@@ -546,10 +517,10 @@ input[type="number"]::-webkit-inner-spin-button {
   overflow: hidden;
 }
 #book-picker-btn .bpb-eyebrow {
-  font-size: 9px;
+  font-size: 0.5625rem; /* was 9px */
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: #888;
+  color: var(--text-muted);
   line-height: 1;
 }
 #book-picker-btn .bpb-name {
@@ -562,20 +533,14 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 #book-picker-btn .bpb-chevron { color: #aaa; font-size: 0.7rem; flex-shrink: 0; }
 
-/* Book picker modal */
-.bp-modal-box {
-  max-width: 520px;
-  width: 94%;
-  max-height: 85vh;
-}
 .bp-modal-body { padding: 16px 20px 24px; }
 
-/* Group card grid */
 .bp-groups {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 12px;
 }
+
 .bp-group-card {
   display: flex;
   flex-direction: column;
@@ -583,20 +548,26 @@ input[type="number"]::-webkit-inner-spin-button {
   justify-content: center;
   gap: 6px;
   padding: 18px 10px 14px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border-light);
   border-radius: 10px;
   cursor: pointer;
-  background: #fafafa;
+  background: var(--bg-card);
   transition: border-color 0.15s, background 0.15s, transform 0.1s;
   text-align: center;
 }
-.bp-group-card:hover { border-color: var(--primary-blue); background: #f0f6ff; transform: translateY(-2px); }
-.bp-group-card.bp-active { border-color: var(--primary-blue); background: #e3f0ff; }
-.bp-group-card .bp-icon { font-size: 1.6rem; line-height: 1; }
+.bp-group-card:not(:disabled):hover {
+  border-color: var(--primary-blue);
+  background: var(--primary-blue-hover-bg);
+  transform: translateY(-2px);
+}
+.bp-group-card.bp-active {
+  border-color: var(--primary-blue);
+  background: var(--primary-blue-active-bg);
+}
+.bp-group-card .bp-icon       { font-size: 1.6rem; line-height: 1; }
 .bp-group-card .bp-group-name { font-weight: 700; font-size: 0.88rem; }
-.bp-group-card .bp-group-sub { font-size: 0.72rem; color: #777; }
+.bp-group-card .bp-group-sub  { font-size: 0.72rem; color: #777; }
 
-/* Difficulty list (drill-down) */
 .bp-back-btn {
   display: flex;
   align-items: center;
@@ -609,29 +580,40 @@ input[type="number"]::-webkit-inner-spin-button {
   padding: 0 0 12px;
   font-weight: 600;
 }
-.bp-back-btn:hover { text-decoration: underline; background: none; }
+.bp-back-btn:not(:disabled):hover { text-decoration: underline; background: none; }
+
 .bp-drill-title { font-weight: 700; font-size: 1rem; margin-bottom: 12px; }
+
 .bp-diff-list { display: flex; flex-direction: column; gap: 8px; }
+
 .bp-diff-btn {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border-light);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--bg-card);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   text-align: left;
 }
-.bp-diff-btn:hover { border-color: var(--primary-blue); background: #f0f6ff; }
-.bp-diff-btn.bp-selected { border-color: var(--primary-blue); background: #e3f0ff; color: var(--primary-blue); }
-.bp-diff-btn .bp-diff-arrow { color: #bbb; font-size: 0.8rem; }
+.bp-diff-btn:not(:disabled):hover {
+  border-color: var(--primary-blue);
+  background: var(--primary-blue-hover-bg);
+}
+.bp-diff-btn.bp-selected {
+  border-color: var(--primary-blue);
+  background: var(--primary-blue-active-bg);
+  color: var(--primary-blue);
+}
+.bp-diff-btn .bp-diff-arrow          { color: #bbb; font-size: 0.8rem; }
 .bp-diff-btn.bp-selected .bp-diff-arrow { color: var(--primary-blue); }
 
 /* Book links (help modal) */
 .book-link { color: inherit; text-decoration: none; }
-.book-link:hover, .book-link:active { color: var(--primary-blue); text-decoration: underline; }
+.book-link:hover,
+.book-link:active { color: var(--primary-blue); text-decoration: underline; }
