@@ -413,7 +413,8 @@ class StarBattleGame {
       this.clearDragHighlights();
       this.draggedIndices = [];
       this.clearHintUI();
-      if (!this.toastBirthTime || Date.now() - this.toastBirthTime > 500) {
+      const isWinToast = document.getElementById('toast').classList.contains('toast-win');
+      if (!isWinToast && (!this.toastBirthTime || Date.now() - this.toastBirthTime > 500)) {
         this.hideToast();
       }
     });
