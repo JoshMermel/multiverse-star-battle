@@ -145,8 +145,19 @@ class StarBattleGame {
       if (!existing) toolbarEl.appendChild(completionEl);
     }
 
+    let currentTier = null;
     puzzles.forEach((puz, i) => {
       const num = i + 1;
+
+      // Insert a full-width tier header whenever the tier changes.
+      if (puz.tier && puz.tier !== currentTier) {
+        currentTier = puz.tier;
+        const header = document.createElement('div');
+        header.className = 'browse-tier-header';
+        header.textContent = puz.tier;
+        grid.appendChild(header);
+      }
+
       const tile = document.createElement('button');
       tile.className = 'browse-tile';
       tile.textContent = num;
@@ -268,7 +279,7 @@ class StarBattleGame {
       if (cols[0] === 'name') continue;
       const [name, N, board_1, board_2, solution, score, tier, is_solved] = cols;
       if (!name || !N || !board_1 || !board_2 || !solution) continue;
-      puzzles.push({ id: id++, name, N: parseInt(N, 10), board1: board_1, board2: board_2, solution });
+      puzzles.push({ id: id++, name, N: parseInt(N, 10), board1: board_1, board2: board_2, solution, tier: tier || '' });
     }
     return puzzles;
   }
@@ -1078,13 +1089,24 @@ class StarBattleGame {
     const currentNameEl = document.getElementById('bpb-current-name');
 
     const groupMeta = {
-      '__ungrouped__':    { icon: '📅', blurb: '' },
-      '8x8':              { icon: '8×8', blurb: 'Beginner → Expert' },
-      '6x6':              { icon: '6×6', blurb: 'Beginner → Expert' },
-      '12x12':            { icon: '12×12', blurb: 'Beginner → Expert' },
-      'Symmetry':         { icon: '🔀', blurb: 'Lattice · Twin · Kaleido' },
-      'Voting Districts': { icon: '🗳️', blurb: '6×6 and 8×8' },
-      'Special':          { icon: '⚡', blurb: 'Unusual rule sets' },
+      '__ungrouped__':    { icon: '📅', blurb: '',                        desc: '' },
+      '8x8':              { icon: '8×8', blurb: 'Beginner → Expert',       desc: 'Puzzles by size and difficulty.' },
+      '6x6':              { icon: '6×6', blurb: 'Beginner → Expert',       desc: 'Puzzles by size and difficulty.' },
+      '12x12':            { icon: '12×12', blurb: 'Beginner → Expert',     desc: 'Puzzles by size and difficulty.' },
+      'Symmetry':         { icon: '🔀', blurb: 'Lattice · Twin · Kaleido', desc: 'Puzzles with structural symmetry between or within boards.' },
+      'Voting Districts': { icon: '🗳️', blurb: '6×6 and 8×8',             desc: 'All regions have equal area.' },
+      'Special':          { icon: '⚡', blurb: 'Unusual rule sets',         desc: 'Puzzles with unusual twists on the standard rules.' },
+    };
+
+    // Per-category descriptions shown on drill-down rows.
+    const catDesc = {
+      'daily':          'A new 7×7 puzzle each day.',
+      '8x8_lattice':    'Each board has rotational or mirror symmetry.',
+      '8x8_twin':       'Both boards are the same, one flipped or rotated.',
+      '8x8_kaleido':    'Both Lattice and Twin at once.',
+      'not_sudoku':     'The right board looks like a Sudoku grid, but Star Battle rules still apply.',
+      'not_for_humans': 'Designed to defeat human solvers — attempt at your own peril.',
+      'signoff':        'A message from the creator.',
     };
 
     const getStructuredCategories = () => {
@@ -1114,13 +1136,14 @@ class StarBattleGame {
     document.getElementById('bp-modal-close-btn').onclick = closeModal;
     openBtn.onclick = openModal;
 
-    const makeGroupCard = (name, icon, sub, active) => {
+    const makeGroupCard = (name, icon, sub, desc, active) => {
       const card = document.createElement('button');
       card.className = 'bp-group-card' + (active ? ' bp-active' : '');
       card.innerHTML = `
         <span class="bp-icon">${icon}</span>
         <span class="bp-group-name">${name}</span>
         ${sub ? `<span class="bp-group-sub">${sub}</span>` : ''}
+        ${desc ? `<span class="bp-group-desc">${desc}</span>` : ''}
       `;
       return card;
     };
@@ -1139,7 +1162,7 @@ class StarBattleGame {
         if (g.group === '__ungrouped__') {
           g.cats.forEach(cat => {
             if (cat.id === 'tmp') return;
-            const card = makeGroupCard(cat.label, meta.icon, '', cat.id === activeCatId);
+            const card = makeGroupCard(cat.label, meta.icon, '', catDesc[cat.id] || '', cat.id === activeCatId);
             card.onclick = () => selectCategory(cat.id);
             grid.appendChild(card);
           });
@@ -1147,13 +1170,13 @@ class StarBattleGame {
         }
 
         if (g.cats.length === 1) {
-          const card = makeGroupCard(g.group, meta.icon, meta.blurb, isActive);
+          const card = makeGroupCard(g.group, meta.icon, meta.blurb, catDesc[g.cats[0].id] || '', isActive);
           card.onclick = () => selectCategory(g.cats[0].id);
           grid.appendChild(card);
           return;
         }
 
-        const card = makeGroupCard(g.group, meta.icon, meta.blurb, isActive);
+        const card = makeGroupCard(g.group, meta.icon, meta.blurb, '', isActive);
         card.onclick = () => renderDrill(g);
         grid.appendChild(card);
       });
@@ -1163,6 +1186,7 @@ class StarBattleGame {
 
     const renderDrill = (group) => {
       const activeCatId = catSelect.value;
+      const meta = groupMeta[group.group] || {};
       body.innerHTML = '';
 
       const back = document.createElement('button');
@@ -1180,14 +1204,27 @@ class StarBattleGame {
       group.cats.forEach(cat => {
         const btn = document.createElement('button');
         const isSelected = cat.id === activeCatId;
+        const desc = catDesc[cat.id] || '';
         btn.className = 'bp-diff-btn' + (isSelected ? ' bp-selected' : '');
-        btn.innerHTML = `${cat.label} <span class="bp-diff-arrow">${isSelected ? '✓' : '›'}</span>`;
+        btn.innerHTML = `
+          <span class="bp-diff-label">
+            <span class="bp-diff-name">${cat.label}</span>
+            ${desc ? `<span class="bp-diff-desc">${desc}</span>` : ''}
+          </span>
+          <span class="bp-diff-arrow">${isSelected ? '✓' : '›'}</span>
+        `;
         btn.onclick = () => selectCategory(cat.id);
         list.appendChild(btn);
       });
 
       body.appendChild(back);
       body.appendChild(title);
+      if (meta.desc) {
+        const groupDesc = document.createElement('p');
+        groupDesc.className = 'bp-group-desc-header';
+        groupDesc.textContent = meta.desc;
+        body.appendChild(groupDesc);
+      }
       body.appendChild(list);
     };
 

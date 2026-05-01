@@ -489,6 +489,18 @@ input[type="number"]::-webkit-inner-spin-button {
   box-shadow: 0 0 0 2px var(--primary-blue);
 }
 
+.browse-tier-header {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+  padding: 8px 2px 2px;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 2px;
+}
+
 /* 11. BOOK PICKER */
 #category-select { display: none; } /* Hidden; kept for JS compatibility */
 
@@ -567,6 +579,19 @@ input[type="number"]::-webkit-inner-spin-button {
 .bp-group-card .bp-icon       { font-size: 1.6rem; line-height: 1; }
 .bp-group-card .bp-group-name { font-weight: 700; font-size: 0.88rem; }
 .bp-group-card .bp-group-sub  { font-size: 0.72rem; color: #777; }
+.bp-group-card .bp-group-desc {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.bp-group-desc-header {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+}
 
 .bp-back-btn {
   display: flex;
@@ -610,7 +635,21 @@ input[type="number"]::-webkit-inner-spin-button {
   background: var(--primary-blue-active-bg);
   color: var(--primary-blue);
 }
-.bp-diff-btn .bp-diff-arrow          { color: #bbb; font-size: 0.8rem; }
+.bp-diff-btn .bp-diff-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.bp-diff-btn .bp-diff-name { font-weight: 600; }
+.bp-diff-btn .bp-diff-desc {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+.bp-diff-btn.bp-selected .bp-diff-desc { color: var(--primary-blue); opacity: 0.8; }
+.bp-diff-btn .bp-diff-arrow          { color: #bbb; font-size: 0.8rem; flex-shrink: 0; }
 .bp-diff-btn.bp-selected .bp-diff-arrow { color: var(--primary-blue); }
 
 /* Book links (help modal) */
