@@ -1133,7 +1133,7 @@ class StarBattleGame {
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && !modal.classList.contains('modal-hidden')) closeModal();
     });
-    document.getElementById('bp-modal-close-btn').onclick = closeModal;
+    modal.querySelectorAll('[data-close]').forEach(btn => btn.onclick = closeModal);
     openBtn.onclick = openModal;
 
     const makeGroupCard = (name, icon, sub, desc, active) => {

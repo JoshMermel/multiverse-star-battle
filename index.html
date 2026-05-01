@@ -1,139 +1,141 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Multiverse Star Battle</title>
-    <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
-    <!-- Book picker modal -->
-    <div id="book-picker-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="bp-modal-title">
-      <div class="modal-box modal-box--wide">
-        <div class="modal-header">
-          <h2 id="bp-modal-title">Choose a Book</h2>
-          <button id="bp-modal-close-btn" data-close aria-label="Close">✕</button>
-        </div>
-        <div class="modal-body bp-modal-body" id="bp-modal-body">
-          <!-- populated by JS -->
-        </div>
-      </div>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Multiverse Star Battle</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="menu-container" aria-label="Puzzle navigation">
+    <div class="menu-group">
+      <select id="category-select" aria-hidden="true" tabindex="-1"></select>
+      <button id="book-picker-btn" aria-haspopup="dialog" aria-label="Choose book">
+        <span class="bpb-label">
+          <span class="bpb-eyebrow">Book</span>
+          <span class="bpb-name" id="bpb-current-name">—</span>
+        </span>
+        <span class="bpb-chevron">▼</span>
+      </button>
     </div>
 
-    <nav class="menu-container" aria-label="Puzzle navigation">
-      <div class="menu-group">
-        <select id="category-select" aria-hidden="true" tabindex="-1"></select>
-        <button id="book-picker-btn" aria-haspopup="dialog" aria-label="Choose book">
-          <span class="bpb-label">
-            <span class="bpb-eyebrow">Book</span>
-            <span class="bpb-name" id="bpb-current-name">—</span>
-          </span>
-          <span class="bpb-chevron">▼</span>
-        </button>
-      </div>
-
-      <div class="menu-group puzzle-nav">
-        <button id="prev-puz" class="step-btn" aria-label="Previous Puzzle">←</button>
-        <div class="input-wrapper">
-          <span class="label-top">Puzzle #</span>
-          <div class="input-relative-box">
-            <input type="number" id="puzzle-input" value="1" min="1" inputmode="numeric">
-            <span id="solved-badge" aria-label="Solved">✅</span>
-          </div>
-          <span class="label-bottom" id="puzzle-count-label">of —</span>
+    <div class="menu-group puzzle-nav">
+      <button id="prev-puz" class="step-btn" aria-label="Previous Puzzle">←</button>
+      <div class="input-wrapper">
+        <span class="label-top">Puzzle #</span>
+        <div class="input-relative-box">
+          <input type="number" id="puzzle-input" value="1" min="1" inputmode="numeric">
+          <span id="solved-badge" aria-label="Solved">✅</span>
         </div>
-        <button id="next-puz" class="step-btn" aria-label="Next Puzzle">→</button>
-        <button id="browse-btn" class="step-btn browse-btn" aria-label="Browse puzzles">Level Select</button>
+        <span class="label-bottom" id="puzzle-count-label">of —</span>
       </div>
-    </nav>
+      <button id="next-puz" class="step-btn" aria-label="Next Puzzle">→</button>
+      <button id="browse-btn" class="step-btn browse-btn" aria-label="Browse puzzles">Progress</button>
+    </div>
+  </nav>
 
-    <main id="game-container">
-      <h1 class="sr-only">Multiverse Star Battle</h1>
+  <main id="game-container">
+    <section id="controls" aria-label="Game controls">
+      <button id="undo-btn">Undo</button>
+      <button id="redo-btn">Redo</button>
+      <button id="reset-btn">Reset</button>
+      <button id="check-btn" data-mobile-label="Check">Correct so far?</button>
+      <button id="hint-btn">Hint</button>
+      <button id="help-btn">Instructions</button>
+    </section>
 
-      <section id="controls" aria-label="Game controls">
-        <button id="undo-btn">Undo</button>
-        <button id="redo-btn">Redo</button>
-        <button id="reset-btn">Reset</button>
-        <button id="check-btn" data-mobile-label="Check">Correct so far?</button>
-        <button id="hint-btn">Hint</button>
-        <button id="help-btn">Instructions</button>
+    <div id="boards-wrapper">
+      <section class="board-container" aria-label="Board 1">
+        <h2>Board 1</h2>
+        <div id="board1" class="grid-wrapper"></div>
       </section>
+      <section class="board-container" aria-label="Board 2">
+        <h2>Board 2</h2>
+        <div id="board2" class="grid-wrapper"></div>
+      </section>
+    </div>
+  </main>
 
-      <div id="boards-wrapper">
-        <section class="board-container" aria-label="Board 1">
-          <h2>Board 1</h2>
-          <div id="board1" class="grid-wrapper"></div>
-        </section>
-        <section class="board-container" aria-label="Board 2">
-          <h2>Board 2</h2>
-          <div id="board2" class="grid-wrapper"></div>
-        </section>
+  <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
+
+  <div id="book-picker-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="bp-modal-title">
+    <div class="modal-box modal-box--wide">
+      <div class="modal-header">
+        <h2 id="bp-modal-title">Choose a Book</h2>
+        <button data-close aria-label="Close">✕</button>
       </div>
-    </main>
+      <div class="modal-body" id="bp-modal-body">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
 
-    <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
-    <div id="reset-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title">
-      <div class="modal-box">
-        <div class="modal-header">
-          <h2 id="reset-modal-title">Clear the board?</h2>
-          <button id="reset-modal-close-btn" data-close aria-label="Close">✕</button>
+  <div id="reset-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="reset-modal-title">Clear the board?</h2>
+        <button data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>This will erase all your progress on this puzzle.</p>
+        <div class="modal-action-row">
+          <button data-close>Cancel</button>
+          <button id="reset-modal-confirm-btn">Yes, really clear the puzzle</button>
         </div>
-        <div class="modal-body">
-          <p>This will erase all your progress on this puzzle.</p>
-          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;">
-            <button id="reset-modal-cancel-btn" data-close>Cancel</button>
-            <button id="reset-modal-confirm-btn">Yes, really clear the puzzle</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="help-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modal-title">How to Play</h2>
+        <button data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Place exactly one star per row, column, and bold region on each board. Stars cannot touch each other, even diagonally.</p>
+
+        <p>The two boards always match — changes to one board take effect on the other board too.</p>
+
+        <h3>Controls</h3>
+        <ul>
+          <li><strong>Click</strong> — cycle empty → dot → star</li>
+          <li><strong>Right-click</strong> — toggle star directly</li>
+          <li><strong>Click and drag</strong> — paint dots across cells</li>
+        </ul>
+
+        <h3>Books</h3>
+        <p>Use the <strong>Book</strong> button in the top bar to browse available puzzle collections — each book shows a description to help you choose.</p>
+
+        <p class="modal-footer-note">
+          This game is open source. View the code on
+          <a href="https://github.com/JoshMermel/multiverse-star-battle/tree/gh-pages" target="_blank" rel="noopener noreferrer">GitHub</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="browse-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="browse-modal-title">
+    <div class="modal-box modal-box--wide">
+      <div class="modal-header">
+        <h2 id="browse-modal-title">Browse Puzzles</h2>
+        <button data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body browse-modal-body">
+        <div class="browse-toolbar">
+          <div class="browse-legend">
+            <span class="legend-dot legend-solved"></span> Solved
+            <span class="legend-dot legend-current"></span> Current
+            <span class="legend-dot legend-unsolved"></span> Unsolved
           </div>
+          <button id="browse-jump-btn" class="browse-jump-btn">→ First unsolved</button>
         </div>
+        <div id="browse-grid" class="browse-grid"></div>
       </div>
     </div>
-    <div id="help-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <div class="modal-box">
-        <div class="modal-header">
-          <h2 id="modal-title">How to Play</h2>
-          <button id="modal-close-btn" data-close aria-label="Close">✕</button>
-        </div>
-        <div class="modal-body">
-          <p>Place exactly one star per row, column, and bold region on each board. Stars cannot touch each other, even diagonally.</p>
+  </div>
 
-          <p>The two boards always match — changes to one board take effect on the board one too.</p>
+  <script type="module" src="script.js"></script>
 
-          <h3>Controls</h3>
-          <ul>
-            <li><strong>Click</strong> — cycle empty → dot → star</li>
-            <li><strong>Right-click</strong> — toggle star directly</li>
-            <li><strong>Click and drag</strong> — paint dots across cells</li>
-          </ul>
-
-          <h3>Books</h3>
-          <p>Use the <strong>Book</strong> button in the top bar to browse available puzzle collections.</p>
-
-          <p style="margin-top: 16px; font-size: 0.9rem; color: #555;">
-            This game is open source. View the code on
-            <a href="https://github.com/JoshMermel/multiverse-star-battle/tree/gh-pages" target="_blank" rel="noopener noreferrer">GitHub</a>.
-          </p>
-        </div>
-      </div>
-    </div>
-    <div id="browse-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="browse-modal-title">
-      <div class="modal-box modal-box--wide">
-        <div class="modal-header">
-          <h2 id="browse-modal-title">Browse Puzzles</h2>
-          <button id="browse-modal-close-btn" data-close aria-label="Close">✕</button>
-        </div>
-        <div class="modal-body browse-modal-body">
-          <div class="browse-toolbar">
-            <div class="browse-legend">
-              <span class="legend-dot legend-solved"></span> Solved
-              <span class="legend-dot legend-current"></span> Current
-              <span class="legend-dot legend-unsolved"></span> Unsolved
-            </div>
-            <button id="browse-jump-btn" class="browse-jump-btn">→ First unsolved</button>
-          </div>
-          <div id="browse-grid" class="browse-grid"></div>
-        </div>
-      </div>
-    </div>
-
-    <script type="module" src="script.js"></script>
-
-</body></html>
+</body>
+</html>

@@ -401,6 +401,19 @@ input[type="number"]::-webkit-inner-spin-button {
 .modal-body ul { margin: 8px 0; padding-left: 20px; }
 .modal-body li { margin-bottom: 6px; }
 
+.modal-action-row {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.modal-footer-note {
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
 /* 10. BROWSE MODAL */
 .browse-btn { font-size: 0.95rem; }
 
@@ -545,7 +558,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 #book-picker-btn .bpb-chevron { color: #aaa; font-size: 0.7rem; flex-shrink: 0; }
 
-.bp-modal-body { padding: 16px 20px 24px; }
+#bp-modal-body { padding: 16px 20px 24px; }
 
 .bp-groups {
   display: grid;
