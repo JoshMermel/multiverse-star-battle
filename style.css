@@ -18,9 +18,14 @@
   /* Neutral palette */
   --bg-light: #f8f9fa;
   --bg-card: #fafafa;
+  --bg-white: #fff;
+  --border-subtle: #eee;
   --border-light: #e0e0e0;
+  --border-input: #ddd;
+  --border-strong: #bbb;
   --text-secondary: #666;
   --text-muted: #888;
+  --text-subtle: #777;
 }
 
 /* 2. RESET & BASE STYLES */
@@ -29,7 +34,7 @@
 body {
   font-family: sans-serif;
   margin: 0;
-  background-color: #fff;
+  background-color: var(--bg-white);
 }
 
 button {
@@ -48,8 +53,8 @@ button:not(:disabled):hover { background: #ddd; }
 
 button:disabled {
   background: #f0f0f0;
-  color: #bbb;
-  border-color: #ddd;
+  color: var(--border-strong);
+  border-color: var(--border-input);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -65,9 +70,7 @@ input[type="number"]::-webkit-inner-spin-button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
-  padding-bottom: 100px;
-  position: relative;
+  padding: 20px 20px 160px;
   min-height: 100vh;
 }
 
@@ -99,11 +102,8 @@ input[type="number"]::-webkit-inner-spin-button {
   gap: 10px;
 }
 
-.puzzle-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* Only needs to override gap — flex/align inherited from .menu-group context */
+.puzzle-nav { gap: 8px; }
 
 .input-wrapper {
   display: flex;
@@ -121,7 +121,7 @@ input[type="number"]::-webkit-inner-spin-button {
 #puzzle-input {
   width: 65px;
   padding: 6px;
-  border: 2px solid #ddd;
+  border: 2px solid var(--border-input);
   border-radius: 4px;
   text-align: center;
   font-size: 1.125rem; /* was 18px */
@@ -214,14 +214,8 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 .hint-target-green { background-color: rgba(0, 200, 0, 0.25); }
 .hint-target-yellow {
-  background-image: radial-gradient(
-    circle,
-    rgba(255, 255, 0, 0.6) 70%,
-    transparent 71%
-  );
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 75% 75%;
+  background: radial-gradient(circle, rgba(255, 255, 0, 0.6) 70%, transparent 71%)
+  no-repeat center / 75% 75%;
 }
 
 /* 6. CONTROLS */
@@ -232,7 +226,7 @@ input[type="number"]::-webkit-inner-spin-button {
   gap: 10px;
   width: 100%;
   max-width: 800px;
-  margin: 20px auto;
+  margin-block: 20px;
 }
 
 /* 7. TOASTS & FEEDBACK */
@@ -263,7 +257,8 @@ input[type="number"]::-webkit-inner-spin-button {
   pointer-events: none;
 }
 
-.toast-info    { background-color: var(--primary-blue); }
+/* toast-info and toast-hint are identical — combined into one rule */
+.toast-info,
 .toast-hint    { background-color: var(--primary-blue); }
 .toast-success { background-color: var(--color-solved); }
 .toast-error   { background-color: var(--color-error); }
@@ -293,7 +288,6 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 }
 
-/* Consolidated with other responsive rules (was split between section 6 and 8) */
 @media (min-width: 601px) {
   #help-btn { margin-left: auto; }
 }
@@ -349,7 +343,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* Base modal. Use .modal-box--wide for browse/book-picker modals. */
 .modal-box {
-  background: #fff;
+  background: var(--bg-white);
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   max-width: 480px;
@@ -369,7 +363,7 @@ input[type="number"]::-webkit-inner-spin-button {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .modal-header h2 {
@@ -415,8 +409,6 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 /* 10. BROWSE MODAL */
-.browse-btn { font-size: 0.95rem; }
-
 .browse-modal-body { padding: 12px 16px 20px; }
 
 .browse-toolbar {
@@ -447,14 +439,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .legend-solved   { background: var(--color-solved); }
 .legend-current  { background: var(--primary-blue); }
-.legend-unsolved { background: var(--border-light); border: 1px solid #bbb; }
-
-.browse-completion {
-  width: 100%;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
+.legend-unsolved { background: var(--border-light); border: 1px solid var(--border-strong); }
 
 .browse-jump-btn {
   font-size: 0.82rem;
@@ -494,7 +479,7 @@ input[type="number"]::-webkit-inner-spin-button {
   background: #ccc;
 }
 
-.browse-tile.bt-solved { background: var(--color-solved); color: #fff; }
+.browse-tile.bt-solved { background: var(--color-solved); color: white; }
 .browse-tile.bt-solved:not(:disabled):hover { background: var(--color-solved-dark); }
 
 .browse-tile.bt-current {
@@ -523,10 +508,10 @@ input[type="number"]::-webkit-inner-spin-button {
   gap: 6px;
   font-size: 0.95rem;
   padding: 8px 14px;
-  background: #fff;
-  border: 2px solid #ddd;
+  background: var(--bg-white);
+  border: 2px solid var(--border-input);
   border-radius: 6px;
-  cursor: pointer;
+  /* cursor: pointer already set globally on button */
   transition: border-color 0.15s, background 0.15s;
   max-width: 180px;
 }
@@ -558,7 +543,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 #book-picker-btn .bpb-chevron { color: #aaa; font-size: 0.7rem; flex-shrink: 0; }
 
-#bp-modal-body { padding: 16px 20px 24px; }
+#bp-modal-body { padding-bottom: 24px; }
 
 .bp-groups {
   display: grid;
@@ -575,7 +560,7 @@ input[type="number"]::-webkit-inner-spin-button {
   padding: 18px 10px 14px;
   border: 2px solid var(--border-light);
   border-radius: 10px;
-  cursor: pointer;
+  /* cursor: pointer already set globally on button */
   background: var(--bg-card);
   transition: border-color 0.15s, background 0.15s, transform 0.1s;
   text-align: center;
@@ -591,7 +576,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 .bp-group-card .bp-icon       { font-size: 1.6rem; line-height: 1; }
 .bp-group-card .bp-group-name { font-weight: 700; font-size: 0.88rem; }
-.bp-group-card .bp-group-sub  { font-size: 0.72rem; color: #777; }
+.bp-group-card .bp-group-sub  { font-size: 0.72rem; color: var(--text-subtle); }
 .bp-group-card .bp-group-desc {
   font-size: 0.7rem;
   color: var(--text-secondary);
@@ -614,7 +599,7 @@ input[type="number"]::-webkit-inner-spin-button {
   border: none;
   font-size: 0.85rem;
   color: var(--primary-blue);
-  cursor: pointer;
+  /* cursor: pointer already set globally on button */
   padding: 0 0 12px;
   font-weight: 600;
 }
@@ -635,7 +620,7 @@ input[type="number"]::-webkit-inner-spin-button {
   background: var(--bg-card);
   font-size: 0.95rem;
   font-weight: 600;
-  cursor: pointer;
+  /* cursor: pointer already set globally on button */
   transition: border-color 0.15s, background 0.15s;
   text-align: left;
 }
@@ -662,10 +647,5 @@ input[type="number"]::-webkit-inner-spin-button {
   line-height: 1.3;
 }
 .bp-diff-btn.bp-selected .bp-diff-desc { color: var(--primary-blue); opacity: 0.8; }
-.bp-diff-btn .bp-diff-arrow          { color: #bbb; font-size: 0.8rem; flex-shrink: 0; }
+.bp-diff-btn .bp-diff-arrow          { color: var(--border-strong); font-size: 0.8rem; flex-shrink: 0; }
 .bp-diff-btn.bp-selected .bp-diff-arrow { color: var(--primary-blue); }
-
-/* Book links (help modal) */
-.book-link { color: inherit; text-decoration: none; }
-.book-link:hover,
-.book-link:active { color: var(--primary-blue); text-decoration: underline; }
