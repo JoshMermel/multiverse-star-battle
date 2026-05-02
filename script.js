@@ -193,6 +193,15 @@ class StarBattleGame {
     return catId === 'daily';
   }
 
+  // Returns true if today is Sunday in the Boston timezone.
+  isSunday() {
+    const day = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      weekday: 'short',
+    }).format(new Date());
+    return day === 'Sun';
+  }
+
   // Returns today's 0-based puzzle index by counting days since the Unix epoch
   // and wrapping around the available pool. This is stable for the whole day
   // regardless of when the page is loaded, and cycles forever as new puzzles
@@ -223,24 +232,31 @@ class StarBattleGame {
   // puzzle to show.
   async loadDailyCategory(targetSlot = 1) {
     if (!this.puzzleCache.has('daily')) {
-      // Fetch all three tiers in parallel
-      const [beginnerText, medText, hardText] = await Promise.all([
+      const isSunday = this.isSunday();
+
+      // Fetch beginner/medium/hard in parallel; add expert on Sundays only.
+      const fetches = [
         fetch('data/daily_beginner.csv').then(r => r.text()),
         fetch('data/daily_medium.csv').then(r => r.text()),
         fetch('data/daily_hard.csv').then(r => r.text()),
-      ]);
+        ...(isSunday ? [fetch('data/daily_expert.csv').then(r => r.text())] : []),
+      ];
+      const texts = await Promise.all(fetches);
 
-      const tiers = [
-        { label: 'Beginner', puzzles: this.parseCsv(beginnerText) },
-        { label: 'Medium',   puzzles: this.parseCsv(medText)  },
-        { label: 'Hard',     puzzles: this.parseCsv(hardText) },
+      const tierDefs = [
+        { label: 'Beginner', text: texts[0] },
+        { label: 'Medium',   text: texts[1] },
+        { label: 'Hard',     text: texts[2] },
+        ...(isSunday ? [{ label: 'Expert', text: texts[3] }] : []),
       ];
 
-      // Pick one puzzle per tier using the same stable daily index logic
-      const dailyPuzzles = tiers.map(({ label, puzzles }) => ({
-        ...puzzles[this.getDailyPuzzleIndex(puzzles.length)],
-        dailyLabel: label,   // carry the tier name through for the UI
-      }));
+      const dailyPuzzles = tierDefs.map(({ label, text }) => {
+        const puzzles = this.parseCsv(text);
+        return {
+          ...puzzles[this.getDailyPuzzleIndex(puzzles.length)],
+          dailyLabel: label,
+        };
+      });
 
       this.puzzleCache.set('daily', dailyPuzzles);
     }
@@ -254,9 +270,7 @@ class StarBattleGame {
     puzInput.value = clampedSlot;
     document.getElementById('puzzle-count-label').textContent = `of ${total}`;
 
-    await this._loadDailyPuzzleBySlot(
-      Math.max(1, Math.min(targetSlot, 3))
-    );
+    await this._loadDailyPuzzleBySlot(clampedSlot);
   }
 
   async _loadDailyPuzzleBySlot(slot) {
@@ -1041,11 +1055,16 @@ class StarBattleGame {
     const catId = params.get('book');
     const puzzleParam = params.get('puzzle');
 
-    // For daily, translate label → slot number; fall back to 1
-    const dailySlotMap = { beginner: 1, medium: 2, hard: 3 };
-    const puzNum = (catId === 'daily' && puzzleParam in dailySlotMap)
+    // For daily, translate label → slot number; fall back to 1.
+    // Expert (slot 4) is only available on Sundays — clamp to 3 otherwise.
+    const dailySlotMap = { beginner: 1, medium: 2, hard: 3, expert: 4 };
+    let puzNum = (catId === 'daily' && puzzleParam in dailySlotMap)
       ? dailySlotMap[puzzleParam]
       : parseInt(puzzleParam, 10) || 1;
+
+    if (catId === 'daily' && puzNum === 4 && !this.isSunday()) {
+      puzNum = 3;
+    }
 
     return { catId, puzNum };
   }
@@ -1056,7 +1075,7 @@ class StarBattleGame {
     const params = new URLSearchParams();
     params.set('book', catId);
     if (this.isDailyCategory(catId)) {
-      const dailyLabels = ['beginner', 'medium', 'hard'];
+      const dailyLabels = ['beginner', 'medium', 'hard', 'expert'];
       const slot = parseInt(document.getElementById('puzzle-input').value, 10);
       params.set('puzzle', dailyLabels[slot - 1] ?? 'beginner');
     } else {
