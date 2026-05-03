@@ -23,9 +23,41 @@
   --border-light: #e0e0e0;
   --border-input: #ddd;
   --border-strong: #bbb;
+  --text-primary: #111;
   --text-secondary: #666;
   --text-muted: #888;
   --text-subtle: #777;
+
+  /* Cell */
+  --cell-bg: #fff;
+  --cell-border: #ccc;
+}
+
+[data-theme="dark"] {
+  --primary-blue: #64b5f6;
+  --primary-blue-hover-bg: #1a2a3a;
+  --primary-blue-active-bg: #1e3248;
+
+  --color-solved: #66bb6a;
+  --color-solved-dark: #388e3c;
+  --color-error: #ef5350;
+  --color-win: #ce93d8;
+
+  --bg-light: #1e1e1e;
+  --bg-card: #252525;
+  --bg-white: #1a1a1a;
+  --border-subtle: #333;
+  --border-light: #3a3a3a;
+  --border-input: #444;
+  --border-strong: #555;
+  --text-primary: #e8e8e8;
+  --text-secondary: #aaa;
+  --text-muted: #888;
+  --text-subtle: #999;
+
+  --cell-bg: #2a2a2a;
+  --cell-border: #444;
+  --line-thin: 1px solid #444;
 }
 
 /* 2. RESET & BASE STYLES */
@@ -35,26 +67,28 @@ body {
   font-family: sans-serif;
   margin: 0;
   background-color: var(--bg-white);
+  color: var(--text-primary);
 }
 
 button {
   padding: 8px 16px;
   cursor: pointer;
-  background: #eee;
-  border: 1px solid #999;
+  background: var(--border-light);
+  border: 1px solid var(--border-strong);
   border-radius: 4px;
+  color: var(--text-primary);
   transition: background 0.2s;
   --btn-font-size: 1rem;
   font-size: var(--btn-font-size);
 }
 
 /* Scoped to enabled buttons only — removes need for button:disabled:hover override */
-button:not(:disabled):hover { background: #ddd; }
+button:not(:disabled):hover { background: var(--border-input); }
 
 button:disabled {
-  background: #f0f0f0;
-  color: var(--border-strong);
-  border-color: var(--border-input);
+  background: var(--bg-light);
+  color: var(--text-muted);
+  border-color: var(--border-light);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -126,6 +160,8 @@ input[type="number"]::-webkit-inner-spin-button {
   text-align: center;
   font-size: 1.125rem; /* was 18px */
   font-weight: bold;
+  background: var(--bg-white);
+  color: var(--text-primary);
 }
 
 #puzzle-input:focus {
@@ -172,18 +208,18 @@ input[type="number"]::-webkit-inner-spin-button {
   align-items: center;
   cursor: pointer;
   /* box-sizing already set globally */
-  background-color: white;
+  background-color: var(--cell-bg);
   position: relative;
   overflow: visible;
   -webkit-tap-highlight-color: transparent;
 }
 
-.star { color: #000; font-weight: bold; pointer-events: none; }
+.star { color: var(--text-primary); font-weight: bold; pointer-events: none; }
 
 .dot {
   width: calc(var(--cell-size) * 0.12);
   height: calc(var(--cell-size) * 0.12);
-  background: #444;
+  background: var(--text-secondary);
   border-radius: 50%;
   pointer-events: none; /* also covers .cell .dot — no separate rule needed */
   z-index: 5;
@@ -196,6 +232,12 @@ input[type="number"]::-webkit-inner-spin-button {
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+/* SVG region borders inherit currentColor so they respect dark mode */
+.region-svg path,
+.region-svg rect {
+  stroke: var(--text-primary);
 }
 
 /* Cell state overlays. No !important needed — .cell sets background-color: white
@@ -468,7 +510,7 @@ input[type="number"]::-webkit-inner-spin-button {
   border: 2px solid transparent;
   transition: transform 0.1s, box-shadow 0.1s;
   background: var(--border-light);
-  color: #333;
+  color: var(--text-primary);
   padding: 0;
   min-width: 0;
 }
@@ -476,7 +518,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .browse-tile:not(:disabled):hover {
   transform: scale(1.12);
   box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  background: #ccc;
+  background: var(--border-strong);
 }
 
 .browse-tile.bt-solved { background: var(--color-solved); color: white; }
@@ -508,9 +550,10 @@ input[type="number"]::-webkit-inner-spin-button {
   gap: 6px;
   font-size: 0.95rem;
   padding: 8px 14px;
-  background: var(--bg-white);
+  background: var(--bg-card);
   border: 2px solid var(--border-input);
   border-radius: 6px;
+  color: var(--text-primary);
   /* cursor: pointer already set globally on button */
   transition: border-color 0.15s, background 0.15s;
   max-width: 180px;
@@ -649,3 +692,152 @@ input[type="number"]::-webkit-inner-spin-button {
 .bp-diff-btn.bp-selected .bp-diff-desc { color: var(--primary-blue); opacity: 0.8; }
 .bp-diff-btn .bp-diff-arrow          { color: var(--border-strong); font-size: 0.8rem; flex-shrink: 0; }
 .bp-diff-btn.bp-selected .bp-diff-arrow { color: var(--primary-blue); }
+
+/* 12. SETTINGS BUTTON */
+.settings-btn {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  padding: 6px 8px;
+  color: var(--text-secondary);
+  line-height: 1;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.settings-btn:not(:disabled):hover {
+  background: var(--border-light);
+  color: var(--text-primary);
+}
+
+/* 13. SETTINGS MODAL */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+}
+.settings-row:last-child { border-bottom: none; }
+
+.settings-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+.settings-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+/* Toggle switch */
+.toggle-switch { flex-shrink: 0; position: relative; }
+.toggle-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.toggle-track {
+  display: block;
+  width: 44px;
+  height: 24px;
+  background: var(--border-strong);
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.toggle-switch input:checked + .toggle-track { background: var(--primary-blue); }
+
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: var(--bg-white);
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
+
+/* 14. TAB MODE */
+.board-tabs {
+  display: none; /* hidden by default, shown via JS when tab mode is on */
+  gap: 0;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-input);
+  width: fit-content;
+}
+
+body.tab-mode .board-tabs { display: flex; }
+
+.board-tab {
+  padding: 8px 28px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+  border-right: 1px solid var(--border-input);
+}
+.board-tab:last-child { border-right: none; }
+.board-tab:not(:disabled):hover { background: var(--primary-blue-hover-bg); color: var(--text-primary); }
+.board-tab.board-tab--active {
+  background: var(--primary-blue);
+  color: #fff;
+}
+.board-tab.board-tab--active:not(:disabled):hover { background: var(--primary-blue); }
+
+/* In tab mode, boards stack exactly on top of each other.
+   Both boards stay in normal flow (position: relative) so the wrapper
+   height never collapses. The inactive board is made invisible with
+   opacity + visibility — no position switching means no layout jank. */
+
+/* Hide the h2 headings in tab mode — the tabs replace them */
+body.tab-mode .board-container > h2 { display: none; }
+
+body.tab-mode #boards-wrapper {
+  /* Two-row grid: tabs row, then a stacking cell for both boards */
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  align-items: start;
+}
+
+body.tab-mode #board-tabs {
+  grid-row: 1;
+}
+
+body.tab-mode .board-container {
+  /* Both boards sit in row 2, column 1 — stacked exactly on top of each other */
+  grid-row: 2;
+  grid-column: 1;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s, visibility 0.12s;
+}
+
+body.tab-mode .board-container.tab-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}

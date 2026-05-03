@@ -57,6 +57,7 @@ class StarBattleGame {
     document.getElementById('hint-btn').onclick = () => this.getHint();
     this.setupBrowseModal();
     this.setupBookPicker();
+    this.setupSettings();
   }
 
   // Creates open/close behaviour for a modal: close button(s), backdrop click,
@@ -91,6 +92,74 @@ class StarBattleGame {
     const { open } = this.setupModal('reset-modal', { onConfirm: () => this.doReset() });
     document.getElementById('reset-btn').onclick = open;
   }
+
+  // ── Settings ──────────────────────────────────────────────────────────────
+
+  setupSettings() {
+    const { open } = this.setupModal('settings-modal');
+    document.getElementById('settings-btn').onclick = open;
+
+    const darkToggle = document.getElementById('setting-dark-mode');
+    const tabToggle  = document.getElementById('setting-tab-mode');
+
+    // Restore persisted preferences
+    const savedDark = localStorage.getItem('setting-dark-mode') === 'true';
+    const savedTab  = localStorage.getItem('setting-tab-mode')  === 'true';
+
+    darkToggle.checked = savedDark;
+    tabToggle.checked  = savedTab;
+    this._applyDarkMode(savedDark);
+    this._applyTabMode(savedTab);
+
+    darkToggle.addEventListener('change', () => {
+      localStorage.setItem('setting-dark-mode', darkToggle.checked);
+      this._applyDarkMode(darkToggle.checked);
+    });
+
+    tabToggle.addEventListener('change', () => {
+      localStorage.setItem('setting-tab-mode', tabToggle.checked);
+      this._applyTabMode(tabToggle.checked);
+    });
+  }
+
+  _applyDarkMode(on) {
+    document.documentElement.setAttribute('data-theme', on ? 'dark' : '');
+  }
+
+  _applyTabMode(on) {
+    document.body.classList.toggle('tab-mode', on);
+    const tabs = document.getElementById('board-tabs');
+    tabs.setAttribute('aria-hidden', on ? 'false' : 'true');
+
+    if (on) {
+      // Ensure board 1 is the initially visible one
+      this._showBoard(this._activeTabBoard ?? 1);
+    } else {
+      // Restore both boards to normal flow
+      document.querySelectorAll('.board-container').forEach(el => {
+        el.classList.remove('tab-visible');
+      });
+    }
+
+    // Wire tab buttons (idempotent — replaces onclick each time)
+    document.querySelectorAll('.board-tab').forEach(btn => {
+      const board = parseInt(btn.dataset.board);
+      btn.onclick = () => this._showBoard(board);
+    });
+  }
+
+  _showBoard(boardNum) {
+    this._activeTabBoard = boardNum;
+    document.querySelectorAll('.board-container').forEach((el, i) => {
+      const isVisible = (i + 1) === boardNum;
+      el.classList.toggle('tab-visible', isVisible);
+    });
+    document.querySelectorAll('.board-tab').forEach(btn => {
+      btn.classList.toggle('board-tab--active', parseInt(btn.dataset.board) === boardNum);
+    });
+  }
+
+  // ── End Settings ──────────────────────────────────────────────────────────
 
   setupBrowseModal() {
     const { open, close } = this.setupModal('browse-modal');
@@ -385,13 +454,7 @@ class StarBattleGame {
 
     this.stepPuzzle = (delta) => {
       let val = parseInt(puzInput.value) || 1;
-      const next = val + delta;
-      const max = parseInt(puzInput.max) || 1;
-      if (next < 1 || next > max) {
-        this.showToast(delta > 0 ? "No more puzzles in this book" : "Already at the first puzzle", "error");
-        return;
-      }
-      puzInput.value = next;
+      puzInput.value = val + delta;
       this.commitPuzzleSelection();
     };
     const stepPuzzle = this.stepPuzzle;
@@ -530,8 +593,7 @@ class StarBattleGame {
         month: 'long', day: 'numeric'
       });
       const label = this.currentPuzzle?.dailyLabel ?? '';
-      const suffix = label === 'Expert' ? ' (Sundays only)' : '';
-      this.showToast(`Daily ${label}${suffix} — ${today}`);
+      this.showToast(`Daily ${label} — ${today}`);
     } else {
       this.showToast(`Playing Puzzle ${puzId}`, "info");
     }

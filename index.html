@@ -19,6 +19,8 @@
       </button>
     </div>
 
+    <button id="settings-btn" class="settings-btn" aria-label="Settings" aria-haspopup="dialog">⚙</button>
+
     <div class="menu-group puzzle-nav">
       <button id="prev-puz" class="step-btn" aria-label="Previous Puzzle">←</button>
       <div class="input-wrapper">
@@ -45,6 +47,10 @@
     </section>
 
     <div id="boards-wrapper">
+      <div id="board-tabs" class="board-tabs" aria-hidden="true">
+        <button class="board-tab board-tab--active" data-board="1">Board 1</button>
+        <button class="board-tab" data-board="2">Board 2</button>
+      </div>
       <section class="board-container" aria-label="Board 1">
         <h2>Board 1</h2>
         <div id="board1" class="grid-wrapper"></div>
@@ -57,6 +63,38 @@
   </main>
 
   <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
+
+  <div id="settings-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="settings-modal-title">Settings</h2>
+        <button data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-list">
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Dark mode</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="setting-dark-mode" role="switch" aria-checked="false">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Tab mode</span>
+              <span class="settings-desc">Show one board at a time; toggle between them to compare</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="setting-tab-mode" role="switch" aria-checked="false">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="book-picker-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="bp-modal-title">
     <div class="modal-box modal-box--wide">
