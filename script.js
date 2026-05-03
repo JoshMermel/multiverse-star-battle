@@ -385,7 +385,13 @@ class StarBattleGame {
 
     this.stepPuzzle = (delta) => {
       let val = parseInt(puzInput.value) || 1;
-      puzInput.value = val + delta;
+      const next = val + delta;
+      const max = parseInt(puzInput.max) || 1;
+      if (next < 1 || next > max) {
+        this.showToast(delta > 0 ? "No more puzzles in this book" : "Already at the first puzzle", "error");
+        return;
+      }
+      puzInput.value = next;
       this.commitPuzzleSelection();
     };
     const stepPuzzle = this.stepPuzzle;
@@ -524,7 +530,8 @@ class StarBattleGame {
         month: 'long', day: 'numeric'
       });
       const label = this.currentPuzzle?.dailyLabel ?? '';
-      this.showToast(`Daily ${label} — ${today}`);
+      const suffix = label === 'Expert' ? ' (Sundays only)' : '';
+      this.showToast(`Daily ${label}${suffix} — ${today}`);
     } else {
       this.showToast(`Playing Puzzle ${puzId}`, "info");
     }
