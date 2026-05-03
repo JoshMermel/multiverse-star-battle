@@ -1184,6 +1184,7 @@ class StarBattleGame {
       'Symmetry':         { icon: '🔀', blurb: 'Lattice · Twin · Kaleido', desc: 'Puzzles with structural symmetry between or within boards.' },
       'Voting Districts': { icon: '🗳️', blurb: '6×6 and 8×8',             desc: 'All regions have equal area.' },
       'Special':          { icon: '⚡', blurb: 'Unusual rule sets',         desc: 'Puzzles with unusual twists on the standard rules.' },
+      'Experimental':     { icon: '🧪', blurb: 'Work in progress',           desc: 'New puzzle types still being developed — expect rough edges.' },
     };
 
     // Per-category descriptions shown on drill-down rows.
@@ -1195,6 +1196,7 @@ class StarBattleGame {
       'not_sudoku':     'The right board looks like a Sudoku grid, but Star Battle rules still apply.',
       'not_for_humans': 'Designed to defeat human solvers — attempt at your own peril.',
       'signoff':        'A message from the creator.',
+      'thermal':        'Regions shaped by simulated heat diffusion.',
     };
 
     const getStructuredCategories = () => {
