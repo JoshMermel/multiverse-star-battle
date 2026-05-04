@@ -859,14 +859,14 @@ class StarBattleGame {
     }
 
     // Debounce error highlights — short delay prevents transient flashes
-    // (e.g. double-clicking to place a star sees one click's errors for a frame)
-    // but clears immediately when the board is clean.
+    // (e.g. double-clicking to place a star sees one click's errors for a
+    // frame) but clears immediately when the board is clean.
     clearTimeout(this._errorHighlightTimer);
     if (errorIndices.size === 0) {
       this._applyErrorHighlights(errorIndices);
     } else {
       this._errorHighlightTimer = setTimeout(
-        () => this._applyErrorHighlights(errorIndices), 400
+        () => this._applyErrorHighlights(errorIndices), 300
       );
     }
 
