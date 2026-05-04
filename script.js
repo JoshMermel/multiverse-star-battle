@@ -866,7 +866,7 @@ class StarBattleGame {
       this._applyErrorHighlights(errorIndices);
     } else {
       this._errorHighlightTimer = setTimeout(
-        () => this._applyErrorHighlights(errorIndices), 200
+        () => this._applyErrorHighlights(errorIndices), 175
       );
     }
 
