@@ -73,6 +73,9 @@ class Comparator(ABC):
                 if char == 'x':
                     sol_list[forward_map[i]] = 'x'
             final_sol = "".join(sol_list)
+        else:
+            final_b1 = canonical_relabel(final_b1)
+            final_b2 = canonical_relabel(final_b2)
 
         row = {
             'name': name, 
