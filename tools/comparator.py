@@ -64,8 +64,8 @@ class Comparator(ABC):
                     res[forward_map[i]] = char
                 return "".join(res)
 
-            final_b1 = apply_tr(final_b1)
-            final_b2 = apply_tr(final_b2)
+            final_b1 = canonical_relabel(apply_tr(final_b1))
+            final_b2 = canonical_relabel(apply_tr(final_b2))
 
             # Apply transform to solution
             sol_list = ["."] * (self.n * self.n)
@@ -73,16 +73,6 @@ class Comparator(ABC):
                 if char == 'x':
                     sol_list[forward_map[i]] = 'x'
             final_sol = "".join(sol_list)
-
-        # 2. Mandatory Canonicalization
-        # Concatenate to ensure consistent labeling across the pair
-        combined = final_b1 + final_b2
-        standardized = canonical_relabel(combined)
-        
-        # Split back into individual boards
-        split_point = self.n * self.n
-        final_b1 = standardized[:split_point]
-        final_b2 = standardized[split_point:]
 
         row = {
             'name': name, 
