@@ -853,13 +853,19 @@ class StarBattleGame {
       errorIndices.add(idx);
     }
 
-    // Update error highlights
-    document.querySelectorAll('.cell').forEach(cell => {
-      const idx = parseInt(cell.dataset.index);
-      cell.classList.toggle('error-cell', errorIndices.has(idx));
-    });
+    // Debounce error highlights — short delay prevents transient flashes
+    // (e.g. double-clicking to place a star sees one click's errors for a frame)
+    // but clears immediately when the board is clean.
+    clearTimeout(this._errorHighlightTimer);
+    if (errorIndices.size === 0) {
+      this._applyErrorHighlights(errorIndices);
+    } else {
+      this._errorHighlightTimer = setTimeout(
+        () => this._applyErrorHighlights(errorIndices), 400
+      );
+    }
 
-    // Win check
+    // Win check — runs eagerly regardless of the highlight debounce
     if (this.isSolved() && errorIndices.size === 0) {
       this.markAsSolved();
       const toast = document.getElementById('toast');
@@ -875,6 +881,13 @@ class StarBattleGame {
         this.hideToast();
       }
     }
+  }
+
+  _applyErrorHighlights(errorIndices) {
+    document.querySelectorAll('.cell').forEach(cell => {
+      const idx = parseInt(cell.dataset.index);
+      cell.classList.toggle('error-cell', errorIndices.has(idx));
+    });
   }
 
   // ─────────────── 
