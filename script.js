@@ -499,13 +499,18 @@ class StarBattleGame {
       if (e.key === 'ArrowRight') { e.preventDefault(); this.stepPuzzle(1); }
     });
 
-    window.addEventListener('pointerup', () => {
+    window.addEventListener('pointerup', (e) => {
       if (this.isDragging) {
         this._commitDrag();
         this.isDragging = false;
       }
       this.clearDragHighlights();
       this.draggedIndices = [];
+
+      // Don't clear hints or the toast when the user is just switching tabs —
+      // they need the highlights and description while flipping between boards.
+      if (e.target.closest('.board-tab')) return;
+
       this.clearHintUI();
       const isWinToast = document.getElementById('toast').classList.contains('toast-win');
       if (!isWinToast && (!this.toastBirthTime || Date.now() - this.toastBirthTime > 500)) {
@@ -1050,6 +1055,13 @@ class StarBattleGame {
         const cell = document.querySelector(`${sel} [data-index="${idx}"]`);
         if (cell) cell.classList.add(color);
       }
+    }
+
+    // In tab mode, switch to the board the hint is about. If the hint is
+    // cross-board (boardIdx undefined), stay on whichever board the user
+    // is already looking at — they can flip between tabs to see both sides.
+    if (document.body.classList.contains('tab-mode') && hint.boardIdx !== undefined) {
+      this._showBoard(hint.boardIdx + 1);
     }
 
     this.showToast(hint.description, "hint", 30000);
