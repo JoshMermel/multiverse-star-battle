@@ -159,7 +159,8 @@ class TestLetterGenerator:
     def char_board_solutions(self, request):
         char = request.param
         gen = LetterGenerator(self.N, char)
-        board, solutions = gen.generate()
+        # some letters are hard to place, allow 10x the normal number of tries
+        board, solutions = gen.generate(max_attempts=10000)
         return char, board, solutions
 
     def test_correct_region_count(self, char_board_solutions):
@@ -176,33 +177,43 @@ class TestLetterGenerator:
 
     def test_letter_region_consistency(self, char_board_solutions):
         """
-        Verifies that the label representing the letter is exclusive to 
-        the letter's rendered pixels.
+        Verifies that the letter region on the generated board matches the
+        font shape at some valid placement (any row/col offset within bounds),
+        and that no extra cells carry the letter label.
+
+        Because _render_letter randomizes placement, we cannot reconstruct the
+        exact offset used; instead we check that the letter region's cell set
+        exactly matches the font pixels under at least one valid offset.
         """
         char, board, _ = char_board_solutions
+        n = self.N
         grid = parse_board(board)
-        partial = _render_letter(char, self.N)
-        
-        # Identify indices that SHOULD be the letter
-        letter_indices = {i for i, v in enumerate(partial) if v == 0}
-        non_letter_indices = {i for i in range(len(grid)) if i not in letter_indices}
+        font_pixels = FONT_7x5.get(char.upper(), [])
 
-        # Find the label currently assigned to the first letter pixel
-        letter_label = grid[next(iter(letter_indices))]
+        # Region 0 (label index 0 after canonical relabeling, which preserves
+        # _LETTER_REGION_ID=0 as the first-seen region) is the letter region.
+        letter_label = 0
+        letter_cells = {i for i, v in enumerate(grid) if v == letter_label}
 
-        # All pixels that ought to have the label actually have it
-        for idx in letter_indices:
-            assert grid[idx] == letter_label, (
-                f"Pixel at {idx} should be part of letter (label {letter_label}), "
-                f"but found label {grid[idx]}"
-            )
+        # Try all valid placements and check for an exact match.
+        matched = False
+        for row_off in range(n - 6):  # 0 .. n-7 inclusive
+            for col_off in range(n - 4):  # 0 .. n-5 inclusive
+                candidate = {
+                    (pr + row_off) * n + (pc + col_off)
+                    for pr, pc in font_pixels
+                    if 0 <= pr + row_off < n and 0 <= pc + col_off < n
+                }
+                if candidate == letter_cells:
+                    matched = True
+                    break
+            if matched:
+                break
 
-        # No extra pixels have that label
-        for idx in non_letter_indices:
-            assert grid[idx] != letter_label, (
-                f"Pixel at {idx} has letter label {letter_label} but should be "
-                "part of a filler region."
-            )
+        assert matched, (
+            f"Letter region cells {sorted(letter_cells)} do not match the "
+            f"font shape for '{char}' at any valid offset on an {n}x{n} board."
+        )
 
     def test_invalid_char_raises(self):
         """Characters not in FONT_7x5 should raise ValueError at construction time."""

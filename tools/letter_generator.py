@@ -7,14 +7,30 @@ from generator import Generator
 _LETTER_REGION_ID = 0  # Region 0 is always reserved for the letter shape.
 
 
-def _render_letter(char, n):
+def _render_letter(char, n, row_offset=None, col_offset=None):
     """
     Returns a partial flat grid (list of int|None) with the letter pixels
-    set to _LETTER_REGION_ID. Pixels outside the grid bounds are ignored.
+    set to _LETTER_REGION_ID.
+
+    The font is 7 rows x 5 cols (0-indexed). row_offset and col_offset
+    control placement on the board; if not provided they are chosen
+    uniformly at random from all positions where the letter fits entirely
+    within the n x n grid.
+
+    Raises ValueError if the letter cannot fit on a board of size n.
     """
+    if n < 7:
+        raise ValueError(f"Board size {n} is too small for the 7x5 font")
+
     pixels = FONT_7x5.get(char.upper(), [])
-    row_offset = (n - 7) // 2
-    col_offset = (n - 5) // 2
+    if not pixels:
+        raise ValueError(f"Character '{char}' has no pixels in FONT_7x5")
+
+    if row_offset is None:
+        row_offset = random.randint(0, n - 7)
+    if col_offset is None:
+        col_offset = random.randint(0, n - 5)
+
     partial = [None] * (n * n)
     for pr, pc in pixels:
         r, c = pr + row_offset, pc + col_offset
