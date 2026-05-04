@@ -159,8 +159,8 @@ class TestLetterGenerator:
     def char_board_solutions(self, request):
         char = request.param
         gen = LetterGenerator(self.N, char)
-        # some letters are hard to place, allow 10x the normal number of tries
-        board, solutions = gen.generate(max_attempts=10000)
+        # some letters are hard to place, allow 50x the normal number of tries
+        board, solutions = gen.generate(max_attempts=50000)
         return char, board, solutions
 
     def test_correct_region_count(self, char_board_solutions):

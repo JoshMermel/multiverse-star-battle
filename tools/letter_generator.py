@@ -1,3 +1,8 @@
+# TODO(jmerm):
+#   move computation of `partial` into generation since it can vary
+#   make sure each disconnected component has at least one seed in it, for cases
+#   like 'B' that have holes.
+
 import random
 from board_solver import get_all_solutions
 from board_utils import flood_fill, pretty_print
