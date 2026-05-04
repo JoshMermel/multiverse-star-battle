@@ -31,6 +31,16 @@
   /* Cell */
   --cell-bg: #fff;
   --cell-border: #ccc;
+
+  /* Highlight overlays */
+  --highlight-error-bg:       rgba(255, 0,   0,   0.10);
+  --highlight-drag-bg:        rgba(255, 165, 0,   0.18);
+  --highlight-hint-blue-bg:   rgba(0,   123, 255, 0.25);
+  --highlight-hint-red-bg:    rgba(255, 0,   0,   0.22);
+  --highlight-hint-red-out:   rgba(200, 0,   0,   0.55);
+  --highlight-hint-green-bg:  rgba(0,   200, 0,   0.25);
+  --highlight-hint-yellow:    rgba(255, 255, 0,   0.65);
+  --highlight-error-star:     #d00;
 }
 
 [data-theme="dark"] {
@@ -58,6 +68,16 @@
   --cell-bg: #2a2a2a;
   --cell-border: #444;
   --line-thin: 1px solid #444;
+
+  /* Highlight overlays — higher opacity so they read on dark cell backgrounds */
+  --highlight-error-bg:       rgba(255, 80,  80,  0.28);
+  --highlight-drag-bg:        rgba(255, 180, 0,   0.32);
+  --highlight-hint-blue-bg:   rgba(80,  160, 255, 0.35);
+  --highlight-hint-red-bg:    rgba(255, 80,  80,  0.35);
+  --highlight-hint-red-out:   rgba(255, 100, 100, 0.70);
+  --highlight-hint-green-bg:  rgba(80,  220, 80,  0.30);
+  --highlight-hint-yellow:    rgba(255, 255, 80,  0.50);
+  --highlight-error-star:     #ff6b6b;
 }
 
 /* 2. RESET & BASE STYLES */
@@ -242,21 +262,21 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* Cell state overlays. No !important needed — .cell sets background-color: white
    at the same specificity, and these classes appear later in the cascade. */
-.error-cell          { background-color: rgba(255, 0, 0, 0.1); }
-.cell-drag-highlight { background-color: rgba(255, 165, 0, 0.15); }
+.error-cell          { background-color: var(--highlight-error-bg); }
+.cell-drag-highlight { background-color: var(--highlight-drag-bg); }
 
-.error-cell .star { color: #d00; }
+.error-cell .star { color: var(--highlight-error-star); }
 
 /* Hint highlights — same cascade fix as above */
-.hint-source-blue  { background-color: rgba(0, 123, 255, 0.25); }
+.hint-source-blue  { background-color: var(--highlight-hint-blue-bg); }
 .hint-error-red    {
-  background-color: rgba(255, 0, 0, 0.2);
-  outline: 2px solid rgba(200, 0, 0, 0.5);
+  background-color: var(--highlight-hint-red-bg);
+  outline: 2px solid var(--highlight-hint-red-out);
   outline-offset: -2px;
 }
-.hint-target-green { background-color: rgba(0, 200, 0, 0.25); }
+.hint-target-green { background-color: var(--highlight-hint-green-bg); }
 .hint-target-yellow {
-  background: radial-gradient(circle, rgba(255, 255, 0, 0.6) 70%, transparent 71%)
+  background: radial-gradient(circle, var(--highlight-hint-yellow) 70%, transparent 71%)
   no-repeat center / 75% 75%;
 }
 
