@@ -17,7 +17,6 @@ Python code for generating and scoring puzzles.
 Stuff I intend to do short/medium term:
  - Concurrency.
  - Allow more variety in how LetterGenerator places letters.
- - Integrate deduping into puzzle generation.
  - Make the SymmetricGenerator work on more board sizes.
  - Maybe handle Ctrl-C during long runs and output whatever puzzles have been
    generated so far.
