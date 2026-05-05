@@ -263,7 +263,6 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Cell state overlays. No !important needed — .cell sets background-color: white
    at the same specificity, and these classes appear later in the cascade. */
 .error-cell          { background-color: var(--highlight-error-bg); }
-.cell-drag-highlight { background-color: var(--highlight-drag-bg); }
 
 .error-cell .star { color: var(--highlight-error-star); }
 
@@ -276,9 +275,16 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 .hint-target-green { background-color: var(--highlight-hint-green-bg); }
 .hint-target-yellow {
-  background: radial-gradient(circle, var(--highlight-hint-yellow) 70%, transparent 71%)
-  no-repeat center / 75% 75%;
+  /* Use background-image so background-color can still show through beneath it */
+  background-image: radial-gradient(circle, var(--highlight-hint-yellow) 70%, transparent 71%);
+  background-size: 75% 75%;
+  background-position: center;
+  background-repeat: no-repeat;
 }
+
+/* Drag highlight uses background-color only, so hint-target-yellow's
+   background-image (the circle) composites on top of it naturally. */
+.cell-drag-highlight { background-color: var(--highlight-drag-bg); }
 
 /* 6. CONTROLS */
 #controls {
