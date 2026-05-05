@@ -73,7 +73,7 @@ def _build_letter_pair(args, n, output_rows):
         raise ValueError("--char1 and --char2 are required for letter_pair mode")
     gen_a = LetterGenerator(n, args.char1[0].upper())
     gen_b = LetterGenerator(n, args.char2[0].upper())
-    return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows, randomize_orientation_for_output=False)
+    return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows, randomize_orientation_for_output=False, match_variants=False)
 
 # boilerplate so I don't need to write this every time when testing new
 # generators or comparators.
