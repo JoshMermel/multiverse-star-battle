@@ -1,11 +1,6 @@
-# TODO(jmerm):
-#   move computation of `partial` into generation since it can vary
-#   make sure each disconnected component has at least one seed in it, for cases
-#   like 'B' that have holes.
-
 import random
 from board_solver import get_all_solutions
-from board_utils import flood_fill, pretty_print
+from board_utils import flood_fill, get_neighbors_4, pretty_print
 from font_data import FONT_7x5
 from generator import Generator
 
@@ -24,7 +19,7 @@ def _render_letter(char, n, row_offset=None, col_offset=None):
 
     Raises ValueError if the letter cannot fit on a board of size n.
     """
-    if n < 7:
+    if n < 5:
         raise ValueError(f"Board size {n} is too small for the 7x5 font")
 
     pixels = FONT_7x5.get(char.upper(), [])
@@ -44,31 +39,87 @@ def _render_letter(char, n, row_offset=None, col_offset=None):
     return partial
 
 
+def _free_components(partial, n):
+    """
+    Returns a list of free-cell connected components (each a list of indices),
+    found by BFS over cells where partial[i] is None using 4-connectivity.
+    Letters like 'B' or 'O' enclose interior pockets that are completely
+    surrounded by letter pixels and unreachable from the outside — each such
+    pocket is its own component.
+    """
+    visited = set()
+    components = []
+    for start in range(n * n):
+        if partial[start] is not None or start in visited:
+            continue
+        component = []
+        queue = [start]
+        visited.add(start)
+        while queue:
+            idx = queue.pop()
+            component.append(idx)
+            for nb in get_neighbors_4(idx, n):
+                if nb not in visited and partial[nb] is None:
+                    visited.add(nb)
+                    queue.append(nb)
+        components.append(component)
+    return components
+
+
 class LetterGenerator(Generator):
     """
     Generates a board where region 0 is shaped like the given character.
     Other regions flood-fill the remaining space, never overwriting the letter.
-    The partial grid is precomputed in __init__ since it is constant for a
-    given (char, n).
+
+    Letters like 'B', 'D', 'O', 'P' enclose interior pockets of free cells
+    that are completely surrounded by letter pixels. The seeding step
+    guarantees at least one seed lands in every such component, so flood_fill
+    can always reach every free cell.
+
+    Placement (row/col offset) is randomized per attempt rather than fixed at
+    construction time, giving more chances to escape bad configurations.
     """
 
     def __init__(self, n, char):
         super().__init__(n)
         self.char = char.upper()
-        self.partial = _render_letter(self.char, n)
-        if not any(v == _LETTER_REGION_ID for v in self.partial):
+        # Validate that the character exists in the font.
+        if not FONT_7x5.get(self.char):
             raise ValueError(f"Character '{self.char}' has no pixels for n={n}")
 
     def _try_generate(self):
         n = self.n
-        grid = list(self.partial)
-        free_cells = [i for i, v in enumerate(grid) if v is None]
+        # Randomize placement each attempt — different offsets may produce
+        # fewer or smaller isolated pockets for tricky letters.
+        partial = _render_letter(self.char, n)
+        grid = list(partial)
 
-        # Need exactly n-1 seeds: one for each non-letter region.
-        if len(free_cells) < n - 1:
+        # Find connected components of free cells. Letters with enclosed
+        # regions (B, D, O, P, Q, R...) produce multiple components.
+        components = _free_components(partial, n)
+        n_components = len(components)
+
+        # We need n-1 seeds total (one per non-letter region). If there are
+        # more isolated pockets than seeds, this placement is unsolvable.
+        n_seeds = n - 1
+        if n_components > n_seeds:
             return None
 
-        seeds = random.sample(free_cells, n - 1)
+        # Place exactly one seed in each component first to guarantee
+        # flood_fill can reach every free cell.
+        seeds = set()
+        for component in components:
+            seed = random.choice(component)
+            seeds.add(seed)
+
+        # Distribute remaining seeds randomly across all free cells.
+        all_free = [i for i, v in enumerate(partial) if v is None]
+        remaining_free = [i for i in all_free if i not in seeds]
+        extra_count = n_seeds - n_components
+        if extra_count > len(remaining_free):
+            return None
+        seeds.update(random.sample(remaining_free, extra_count))
+
         for reg_id, cell in enumerate(seeds, start=1):
             grid[cell] = reg_id
 
