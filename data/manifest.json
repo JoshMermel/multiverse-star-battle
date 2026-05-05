@@ -16,11 +16,12 @@
     {"id": "8x8_lattice",         "label": "8x8 Lattice",       "group": "Symmetry"},
     {"id": "8x8_twin",            "label": "8x8 Twin",          "group": "Symmetry"},
     {"id": "8x8_kaleido",         "label": "8x8 Kaliedo",       "group": "Symmetry"},
-    {"id": "6x6_equal_area",      "label": "6x6",               "group": "Voting Districts"},
-    {"id": "8x8_equal_area",      "label": "8x8",               "group": "Voting Districts"},
+    {"id": "6x6_equal_area",      "label": "6x6 Equal Area",    "group": "Special"},
+    {"id": "8x8_equal_area",      "label": "8x8 Equal Area",    "group": "Special"},
     {"id": "not_sudoku",          "label": "Not Sudoku",        "group": "Special"},
-    {"id": "not_for_humans",      "label": "Not For Humans",    "group": "Special"},
-    {"id": "8x8_square_free",     "label": "Square Free",       "group": "Special"},
-    {"id": "signoff",             "label": "Signoff",           "group": "Special"}
+    {"id": "6x6_square_free",     "label": "6x6 Square Free",   "group": "Special"},
+    {"id": "8x8_square_free",     "label": "8x8 Square Free",   "group": "Special"},
+    {"id": "not_for_humans",      "label": "Not For Humans",    "group": "Showcase"},
+    {"id": "signoff",             "label": "Signoff",           "group": "Showcase"}
   ]
 }

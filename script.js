@@ -1202,26 +1202,29 @@ class StarBattleGame {
     const currentNameEl = document.getElementById('bpb-current-name');
 
     const groupMeta = {
-      '__ungrouped__':    { icon: '📅', blurb: '',                        desc: '' },
-      '8x8':              { icon: '8×8', blurb: 'Beginner → Expert',       desc: 'Puzzles by size and difficulty.' },
-      '6x6':              { icon: '6×6', blurb: 'Beginner → Expert',       desc: 'Puzzles by size and difficulty.' },
-      '12x12':            { icon: '12×12', blurb: 'Beginner → Expert',     desc: 'Puzzles by size and difficulty.' },
-      'Symmetry':         { icon: '🔀', blurb: 'Lattice · Twin · Kaleido', desc: 'Puzzles with structural symmetry between or within boards.' },
-      'Voting Districts': { icon: '🗳️', blurb: '6×6 and 8×8',             desc: 'All regions have equal area.' },
-      'Special':          { icon: '⚡', blurb: 'Unusual rule sets',         desc: 'Puzzles with unusual twists on the standard rules.' },
-      'Experimental':     { icon: '🧪', blurb: 'Work in progress',           desc: 'New puzzle types still being developed — expect rough edges.' },
+      '__ungrouped__':    { icon: '📅', blurb: '',                                      desc: '' },
+      '8x8':              { icon: '8×8', blurb: 'Beginner → Expert',                    desc: 'Puzzles by size and difficulty' },
+      '6x6':              { icon: '6×6', blurb: 'Beginner → Expert',                    desc: 'Puzzles by size and difficulty' },
+      '12x12':            { icon: '12×12', blurb: 'Beginner → Expert',                  desc: 'Puzzles by size and difficulty' },
+      'Symmetry':         { icon: '🔀', blurb: 'Lattice · Twin · Kaleido',              desc: 'Puzzles with structural symmetry between or within boards' },
+      'Special':          { icon: '⚡', blurb: 'Equal Area · Not Sudoku · Square Free', desc: 'Boards with special properties' },
+      'Showcase':         { icon: '🌟', blurb: 'Extra Special board patterns',          desc: 'Pushing puzzle generation to the limit' },
+      'Experimental':     { icon: '🧪', blurb: 'Work in progress',                      desc: 'New puzzle types still being developed — expect rough edges' },
     };
 
     // Per-category descriptions shown on drill-down rows.
     const catDesc = {
-      'daily':          'A new 7×7 puzzle each day.',
-      '8x8_lattice':    'Each board has rotational or mirror symmetry.',
-      '8x8_twin':       'Both boards are the same, one flipped or rotated.',
-      '8x8_kaleido':    'Both Lattice and Twin at once.',
-      'not_sudoku':     'The right board looks like a Sudoku grid, but Star Battle rules still apply.',
-      'not_for_humans': 'Designed to defeat human solvers — attempt at your own peril.',
-      'signoff':        'A message from the creator.',
-      '8x8_square_free':    'Regions without 2x2 squares',
+      'daily':           'New 7×7 puzzles each day',
+      '8x8_lattice':     'Each board has rotational or mirror symmetry',
+      '8x8_twin':        'Both boards are the same, one flipped or rotated',
+      '8x8_kaleido':     'Both Lattice and Twin at once',
+      'not_sudoku':      'The right board looks like a Sudoku grid, but Star Battle rules still apply',
+      'not_for_humans':  'Designed to defeat human solvers — attempt at your own peril',
+      'signoff':         'A message from the creator',
+      '6x6_equal_area':  'All regions have equal area',
+      '8x8_equal_area':  'All regions have equal area',
+      '6x6_square_free': 'Regions have no 2x2 squares',
+      '8x8_square_free': 'Regions have no 2x2 squares',
     };
 
     const getStructuredCategories = () => {
