@@ -43,8 +43,8 @@ import statistics
 # Board generators
 from letter_generator import LetterGenerator
 from random_generator import RandomGenerator
+from square_free_generator import SquareFreeGenerator
 from symmetric_generator import SymmetricGenerator
-from thermal_generator import ThermalGenerator
 from voting_district_generator import VotingDistrictGenerator
 
 # Comparators for pairing puzzles
@@ -78,7 +78,7 @@ def _build_letter_pair(args, n, output_rows):
 # boilerplate so I don't need to write this every time when testing new
 # generators or comparators.
 def _build_tmp(args, n, output_rows):
-    return SymmetricPoolComparator(ThermalGenerator(n, noise_level=0), n, output_rows)
+    return SymmetricPoolComparator(SquareFreeGenerator(n), n, output_rows)
     #gen_a = SymmetricGenerator(n, symmetry_type="rot_90")
     #gen_b = SymmetricGenerator(n, symmetry_type="rot_180")
     #return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows)

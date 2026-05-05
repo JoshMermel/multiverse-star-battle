@@ -18,8 +18,8 @@ from font_data import FONT_7x5
 from generator import MIN_SOLUTIONS
 from random_generator import RandomGenerator
 from letter_generator import LetterGenerator, _render_letter
+from square_free_generator import SquareFreeGenerator
 from symmetric_generator import SymmetricGenerator
-from thermal_generator import ThermalGenerator
 from voting_district_generator import VotingDistrictGenerator
 
 
@@ -220,6 +220,29 @@ class TestLetterGenerator:
         with pytest.raises(ValueError, match="no pixels"):
             LetterGenerator(self.N, "1")  # digits are not in FONT_7x5
 
+
+# ── SquareFreeGenerator ───────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("board_size", [6, 7, 8, 9])
+class TestSquareFreGenerator:
+    @pytest.fixture
+    def board_and_solutions(self, board_size):
+        gen = SquareFreeGenerator(board_size)
+        return gen.generate(), board_size
+
+    def test_correct_region_count(self, board_and_solutions):
+        (board, _), board_size = board_and_solutions
+        assert_board_valid(board, board_size)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        (board, _), board_size = board_and_solutions
+        assert_board_valid(board, board_size)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        (_, solutions), _ = board_and_solutions
+        assert_ambiguous(solutions)
+
+
 # ── SymmetricGenerator ────────────────────────────────────────────────────────
 
 SYMMETRY_TYPES = ['mirror', 'diagonal', 'double_mirror', 'rot_90', 'rot_180']
@@ -254,44 +277,6 @@ class TestSymmetricGenerator:
         sym_type, board, _, gen, n = sym_board_solutions
         assert_board_symmetric(board, n, gen)
 
-# ── ThermalGenerator ──────────────────────────────────────────────────────────
-
-@pytest.mark.parametrize("board_size", [6, 7, 8, 9])
-class TestThermalGenerator:
-    """
-    Tests for the ThermalGenerator across various board sizes and noise levels.
-    """
-
-    @pytest.mark.parametrize("noise", [0.0, 0.5, 1.0])
-    def test_thermal_validity_at_noise_levels(self, board_size, noise):
-        """
-        Verify that regardless of the noise level or size, the board 
-        has exactly N contiguous regions and is ambiguous.
-        """
-        gen = ThermalGenerator(board_size, noise_level=noise)
-        board, solutions = gen.generate()
-        
-        assert_board_valid(board, board_size)
-        assert_ambiguous(solutions)
-
-    def test_reproducibility_with_zero_noise(self, board_size):
-        """
-        Verify that pure Voronoi expansion (noise=0) still produces a 
-        valid board structure for any N.
-        """
-        gen = ThermalGenerator(board_size, noise_level=0.0)
-        board, _ = gen.generate()
-        assert_board_valid(board, board_size)
-
-    def test_noise_level_clamping(self, board_size):
-        """
-        Ensure input validation for the noise_level parameter
-        """
-        gen_low = ThermalGenerator(board_size, noise_level=-1.0)
-        gen_high = ThermalGenerator(board_size, noise_level=2.0)
-        
-        assert gen_low.noise_level == 0.0
-        assert gen_high.noise_level == 1.0
 
 # ── VotingDistrictGenerator ───────────────────────────────────────────────────
 

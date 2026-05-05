@@ -1221,7 +1221,7 @@ class StarBattleGame {
       'not_sudoku':     'The right board looks like a Sudoku grid, but Star Battle rules still apply.',
       'not_for_humans': 'Designed to defeat human solvers — attempt at your own peril.',
       'signoff':        'A message from the creator.',
-      'thermal':        'Regions shaped by simulated heat diffusion.',
+      '8x8_square_free':    'Regions without 2x2 squares',
     };
 
     const getStructuredCategories = () => {
