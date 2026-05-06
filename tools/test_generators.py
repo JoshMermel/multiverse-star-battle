@@ -223,12 +223,26 @@ class TestLetterGenerator:
 
 # ── SquareFreeGenerator ───────────────────────────────────────────────────────
 
+def assert_no_2x2_block(flat_board, n):
+    # Asserts that no 2x2 block of cells all belong to the same region.
+    # This is the headline constraint of SquareFreeGenerator.
+    grid = parse_board(flat_board)
+    for r in range(n - 1):
+        for c in range(n - 1):
+            tl = r * n + c
+            block = {grid[tl], grid[tl + 1], grid[tl + n], grid[tl + n + 1]}
+            assert len(block) > 1, (
+                f"2x2 block of region {grid[tl]} found at top-left ({r},{c})"
+            )
+
+
+
 @pytest.mark.parametrize("board_size", [6, 7, 8, 9])
 class TestSquareFreGenerator:
     @pytest.fixture
     def board_and_solutions(self, board_size):
         gen = SquareFreeGenerator(board_size)
-        return gen.generate(), board_size
+        return gen.generate(max_attempts=5000), board_size
 
     def test_correct_region_count(self, board_and_solutions):
         (board, _), board_size = board_and_solutions
@@ -241,6 +255,12 @@ class TestSquareFreGenerator:
     def test_is_ambiguous(self, board_and_solutions):
         (_, solutions), _ = board_and_solutions
         assert_ambiguous(solutions)
+
+    def test_no_2x2_block(self, board_and_solutions):
+        # No 2x2 block of cells should all belong to the same region.
+        (board, _), board_size = board_and_solutions
+        assert_no_2x2_block(board, board_size)
+
 
 
 # ── SymmetricGenerator ────────────────────────────────────────────────────────
