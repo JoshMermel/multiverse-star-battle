@@ -21,6 +21,7 @@ from letter_generator import LetterGenerator, _render_letter
 from square_free_generator import SquareFreeGenerator
 from symmetric_generator import SymmetricGenerator
 from voting_district_generator import VotingDistrictGenerator
+from voronoi_generator import VoronoiGenerator
 
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
@@ -242,7 +243,7 @@ class TestSquareFreGenerator:
     @pytest.fixture
     def board_and_solutions(self, board_size):
         gen = SquareFreeGenerator(board_size)
-        return gen.generate(max_attempts=5000), board_size
+        return gen.generate(), board_size
 
     def test_correct_region_count(self, board_and_solutions):
         (board, _), board_size = board_and_solutions
@@ -339,3 +340,25 @@ class TestVotingDistrictGenerator:
             assert len(cells) == n, (
                 f"Region {region_id} has {len(cells)} cells, expected {n}"
             )
+
+
+# ── VoronoiGenerator ──────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("board_size", [6, 7, 8, 9])
+class TestVoronoiGenerator:
+    @pytest.fixture
+    def board_and_solutions(self, board_size):
+        gen = VoronoiGenerator(board_size)
+        return gen.generate(), board_size
+
+    def test_correct_region_count(self, board_and_solutions):
+        (board, _), board_size = board_and_solutions
+        assert_board_valid(board, board_size)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        (board, _), board_size = board_and_solutions
+        assert_board_valid(board, board_size)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        (_, solutions), _ = board_and_solutions
+        assert_ambiguous(solutions)
