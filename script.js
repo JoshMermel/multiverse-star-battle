@@ -24,6 +24,7 @@ class StarBattleGame {
       const resp = await fetch('data/manifest.json');
       const data = await resp.json();
       this.categories = data.categories;
+      this.groups = data.groups ?? {};
 
       this.setupMenu();
       this.setupControls();
@@ -1207,31 +1208,9 @@ class StarBattleGame {
     const openBtn       = document.getElementById('book-picker-btn');
     const currentNameEl = document.getElementById('bpb-current-name');
 
-    const groupMeta = {
-      '__ungrouped__':    { icon: '📅', blurb: '',                                      desc: '' },
-      '8x8':              { icon: '8×8', blurb: 'Beginner → Expert',                    desc: 'Puzzles by size and difficulty' },
-      '6x6':              { icon: '6×6', blurb: 'Beginner → Expert',                    desc: 'Puzzles by size and difficulty' },
-      '12x12':            { icon: '12×12', blurb: 'Beginner → Expert',                  desc: 'Puzzles by size and difficulty' },
-      'Symmetry':         { icon: '🔀', blurb: 'Lattice · Twin · Kaleido',              desc: 'Puzzles with structural symmetry between or within boards' },
-      'Special':          { icon: '⚡', blurb: 'Equal Area · Not Sudoku · Square Free', desc: 'Boards with special properties' },
-      'Showcase':         { icon: '🌟', blurb: 'Extra Special board patterns',          desc: 'Pushing puzzle generation to the limit' },
-      'Experimental':     { icon: '🧪', blurb: 'Work in progress',                      desc: 'New puzzle types still being developed — expect rough edges' },
-    };
-
-    // Per-category descriptions shown on drill-down rows.
-    const catDesc = {
-      'daily':           'New 7×7 puzzles each day',
-      '8x8_lattice':     'Each board has rotational or mirror symmetry',
-      '8x8_twin':        'Both boards are the same, one flipped or rotated',
-      '8x8_kaleido':     'Both Lattice and Twin at once',
-      'not_sudoku':      'The right board looks like a Sudoku grid, but Star Battle rules still apply',
-      'not_for_humans':  'Designed to defeat human solvers — attempt at your own peril',
-      'signoff':         'A message from the creator',
-      '6x6_equal_area':  'All regions have equal area',
-      '8x8_equal_area':  'All regions have equal area',
-      '6x6_square_free': 'Regions have no 2x2 squares',
-      '8x8_square_free': 'Regions have no 2x2 squares',
-    };
+    // All book/group metadata now lives in manifest.json — no hardcoded lookups here.
+    const groupMeta = (g) => this.groups[g] ?? { icon: '📖', blurb: '', desc: '' };
+    const catDesc   = (id) => this.categories.find(c => c.id === id)?.desc ?? '';
 
     const getStructuredCategories = () => {
       const groups = [];
@@ -1280,13 +1259,13 @@ class StarBattleGame {
       grid.className = 'bp-groups';
 
       groups.forEach(g => {
-        const meta = groupMeta[g.group] || { icon: '📖', blurb: '' };
+        const meta = groupMeta(g.group);
         const isActive = g.cats.some(c => c.id === activeCatId);
 
         if (g.group === '__ungrouped__') {
           g.cats.forEach(cat => {
             if (cat.id === 'tmp') return;
-            const card = makeGroupCard(cat.label, meta.icon, '', catDesc[cat.id] || '', cat.id === activeCatId);
+            const card = makeGroupCard(cat.label, meta.icon, '', catDesc(cat.id), cat.id === activeCatId);
             card.onclick = () => selectCategory(cat.id);
             grid.appendChild(card);
           });
@@ -1294,7 +1273,7 @@ class StarBattleGame {
         }
 
         if (g.cats.length === 1) {
-          const card = makeGroupCard(g.group, meta.icon, meta.blurb, catDesc[g.cats[0].id] || '', isActive);
+          const card = makeGroupCard(g.group, meta.icon, meta.blurb, catDesc(g.cats[0].id), isActive);
           card.onclick = () => selectCategory(g.cats[0].id);
           grid.appendChild(card);
           return;
@@ -1310,7 +1289,7 @@ class StarBattleGame {
 
     const renderDrill = (group) => {
       const activeCatId = catSelect.value;
-      const meta = groupMeta[group.group] || {};
+      const meta = groupMeta(group.group);
       body.innerHTML = '';
 
       const back = document.createElement('button');
@@ -1328,7 +1307,7 @@ class StarBattleGame {
       group.cats.forEach(cat => {
         const btn = document.createElement('button');
         const isSelected = cat.id === activeCatId;
-        const desc = catDesc[cat.id] || '';
+        const desc = catDesc(cat.id);
         btn.className = 'bp-diff-btn' + (isSelected ? ' bp-selected' : '');
         btn.innerHTML = `
           <span class="bp-diff-label">
