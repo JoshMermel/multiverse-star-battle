@@ -35,13 +35,19 @@ class StarBattleGame {
       if (this.categories.length > 0) {
         const { catId, puzNum } = this.readUrlParams();
 
-        // Use URL cat if it exists in the manifest, otherwise fall back to first
-        const validCat = this.categories.find(c => c.id === catId);
-        catSelect.value = validCat ? validCat.id : this.categories[0].id;
+        // If the URL names a manifest category, load it normally via the
+        // select. If it names an arbitrary data/ CSV (but not a daily_*
+        // file, which is gated to one-per-day), load it directly. Otherwise
+        // fall back to the first manifest category.
+        const manifestCat = this.categories.find(c => c.id === catId);
+        const isArbitraryCsv = catId && !manifestCat && !catId.startsWith('daily_');
 
-        // Dispatch with the desired puzzle number attached so
-        // catSelect.onchange can read it.
-        catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: puzNum } }));
+        if (isArbitraryCsv) {
+          await this.loadCategory(catId, puzNum);
+        } else {
+          catSelect.value = manifestCat ? manifestCat.id : this.categories[0].id;
+          catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: puzNum } }));
+        }
 
       }
     } catch (e) {
