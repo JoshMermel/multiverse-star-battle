@@ -1,5 +1,6 @@
 import random
 from board_solver import get_all_solutions
+from board_utils import pretty_print
 from generator import Generator
 
 class SquareFreeGenerator(Generator):
@@ -78,3 +79,10 @@ class SquareFreeGenerator(Generator):
 
         solutions = get_all_solutions(grid_flat, n)
         return self._make_result(grid_flat, solutions)
+
+if __name__ == "__main__":
+    print("\n--- SquareFree Generator (N=8) ---")
+    gen = SquareFreeGenerator(8)
+    board, solutions = gen.generate()
+    pretty_print(board, 8)
+    print(f"Solutions: {len(solutions)}")
