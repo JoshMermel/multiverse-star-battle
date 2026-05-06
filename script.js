@@ -455,6 +455,17 @@ class StarBattleGame {
 
     this.stepPuzzle = (delta) => {
       let val = parseInt(puzInput.value) || 1;
+      const total = parseInt(puzInput.max) || 0;
+
+      if (delta < 0 && val <= 1) {
+        this.showToast("You're on the first puzzle in this book.", "info");
+        return;
+      }
+      if (delta > 0 && total > 0 && val >= total) {
+        this.showToast("You're on the last puzzle in this book.", "info");
+        return;
+      }
+
       puzInput.value = val + delta;
       this.commitPuzzleSelection();
     };
