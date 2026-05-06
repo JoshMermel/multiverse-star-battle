@@ -764,7 +764,7 @@ class StarBattleGame {
     } else {
       for (const idx of this.draggedIndices) {
         if (this.state[idx] === CELL.NONE) {
-          this.applyState(idx, CELL.DOT, { suppressWinToast: true }); // suppress mid-drag
+          this.applyState(idx, CELL.DOT, { suppressWinToast: true, debounceMs: 0 }); // suppress mid-drag; drag is unambiguous
         }
       }
       // One final validate after all cells are committed, with win toast allowed
@@ -783,13 +783,16 @@ class StarBattleGame {
 
   // Applies a state change to one cell, updates its visual, validates the
   // board, and persists to localStorage.
-  applyState(idx, type, { suppressWinToast = false } = {}) {
+  applyState(idx, type, { suppressWinToast = false, debounceMs } = {}) {
     if (this.state[idx] === type) return;
     this.state[idx] = type;
     document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
       this.updateCellVisual(cell, type);
     });
-    this.validate({ suppressWinToast });
+    // If the caller didn't specify, infer: dots may be the first click of a
+    // double-click so delay errors; stars and removals are unambiguous.
+    const delay = debounceMs ?? (type === CELL.DOT ? 200 : 0);
+    this.validate({ suppressWinToast, debounceMs: delay });
     this.saveCurrentState();
   }
 
@@ -822,7 +825,10 @@ class StarBattleGame {
   }
 
   // Highlights obvious rule violations in real time.
-  validate({ suppressWinToast = false } = {}) {
+  // debounceMs controls how long to wait before showing error highlights:
+  //   0   — show immediately (star placements, drags — clearly not mid-double-click)
+  //   200 — short delay (dot placements — could be the first click of a double-click)
+  validate({ suppressWinToast = false, debounceMs = 0 } = {}) {
     const n = this.n;
     const errorIndices = new Set();
 
@@ -858,15 +864,15 @@ class StarBattleGame {
       errorIndices.add(idx);
     }
 
-    // Debounce error highlights — short delay prevents transient flashes
-    // (e.g. double-clicking to place a star sees one click's errors for a
-    // frame) but clears immediately when the board is clean.
+    // Debounce error highlights — dot placements use a delay to avoid flashing
+    // on the first click of a double-click; stars and drags show errors immediately.
+    // Clears always run immediately so removing an error feels instant.
     clearTimeout(this._errorHighlightTimer);
-    if (errorIndices.size === 0) {
+    if (errorIndices.size === 0 || debounceMs === 0) {
       this._applyErrorHighlights(errorIndices);
     } else {
       this._errorHighlightTimer = setTimeout(
-        () => this._applyErrorHighlights(errorIndices), 175
+        () => this._applyErrorHighlights(errorIndices), debounceMs
       );
     }
 
