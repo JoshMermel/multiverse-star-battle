@@ -1,13 +1,13 @@
 {
   "groups": {
     "__ungrouped__": { "icon": "📅" },
-    "8x8":           { "icon": "8×8",  "blurb": "Beginner → Expert",                    "desc": "Puzzles by size and difficulty" },
-    "6x6":           { "icon": "6×6",  "blurb": "Beginner → Expert",                    "desc": "Puzzles by size and difficulty" },
-    "12x12":         { "icon": "12×12","blurb": "Beginner → Expert",                    "desc": "Puzzles by size and difficulty" },
-    "Symmetry":      { "icon": "🔀",   "blurb": "Lattice · Twin · Kaleido",             "desc": "Puzzles with structural symmetry between or within boards" },
-    "Special":       { "icon": "⚡",   "blurb": "Equal Area · Not Sudoku · Square Free","desc": "Boards with special properties" },
-    "Showcase":      { "icon": "🌟",   "blurb": "Extra Special board patterns",         "desc": "Pushing puzzle generation to the limit" },
-    "Experimental":  { "icon": "🧪",   "blurb": "Work in progress",                     "desc": "New puzzle types still being developed — expect rough edges" }
+    "8x8":           { "icon": "8×8",  "blurb": "Beginner → Expert",             "desc": "Puzzles by size and difficulty" },
+    "6x6":           { "icon": "6×6",  "blurb": "Beginner → Expert",             "desc": "Puzzles by size and difficulty" },
+    "12x12":         { "icon": "12×12","blurb": "Beginner → Expert",             "desc": "Puzzles by size and difficulty" },
+    "Symmetry":      { "icon": "🔀",   "blurb": "Lattice · Twin · Kaleido",      "desc": "Puzzles with structural symmetry between or within boards" },
+    "Special":       { "icon": "⚡",   "blurb": "Equal Area · Not Sudoku ",      "desc": "Boards with special properties" },
+    "Showcase":      { "icon": "🌟",   "blurb": "Extra Special board patterns",  "desc": "Pushing puzzle generation to the limit" },
+    "Experimental":  { "icon": "🧪",   "blurb": "Work in progress",              "desc": "New puzzle types still being developed — expect rough edges" }
   },
   "categories": [
     {"id": "daily",           "label": "Daily",           "desc": "New 7×7 puzzles each day"},
@@ -23,15 +23,16 @@
     {"id": "12x12_medium",    "label": "12x12 Medium",    "group": "12x12"},
     {"id": "12x12_hard",      "label": "12x12 Hard",      "group": "12x12"},
     {"id": "12x12_expert",    "label": "12x12 Expert",    "group": "12x12"},
-    {"id": "8x8_lattice",     "label": "8x8 Lattice",     "group": "Symmetry", "desc": "Each board has rotational or mirror symmetry"},
-    {"id": "8x8_twin",        "label": "8x8 Twin",        "group": "Symmetry", "desc": "Both boards are the same, one flipped or rotated"},
-    {"id": "8x8_kaleido",     "label": "8x8 Kaliedo",     "group": "Symmetry", "desc": "Both Lattice and Twin at once"},
-    {"id": "6x6_equal_area",  "label": "6x6 Equal Area",  "group": "Special",  "desc": "All regions have equal area"},
-    {"id": "8x8_equal_area",  "label": "8x8 Equal Area",  "group": "Special",  "desc": "All regions have equal area"},
-    {"id": "not_sudoku",      "label": "Not Sudoku",      "group": "Special",  "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply"},
-    {"id": "6x6_square_free", "label": "6x6 Square Free", "group": "Special",  "desc": "Regions have no 2x2 squares"},
-    {"id": "8x8_square_free", "label": "8x8 Square Free", "group": "Special",  "desc": "Regions have no 2x2 squares"},
-    {"id": "not_for_humans",  "label": "Not For Humans",  "group": "Showcase", "desc": "Designed to defeat human solvers — attempt at your own peril"},
-    {"id": "signoff",         "label": "Signoff",         "group": "Showcase", "desc": "A message from the creator"}
+    {"id": "8x8_lattice",     "label": "8x8 Lattice",     "group": "Symmetry",      "desc": "Each board has rotational or mirror symmetry"},
+    {"id": "8x8_twin",        "label": "8x8 Twin",        "group": "Symmetry",      "desc": "Both boards are the same, one flipped or rotated"},
+    {"id": "8x8_kaleido",     "label": "8x8 Kaliedo",     "group": "Symmetry",      "desc": "Both Lattice and Twin at once"},
+    {"id": "6x6_equal_area",  "label": "6x6 Equal Area",  "group": "Special",       "desc": "All regions have equal area"},
+    {"id": "8x8_equal_area",  "label": "8x8 Equal Area",  "group": "Special",       "desc": "All regions have equal area"},
+    {"id": "not_sudoku",      "label": "Not Sudoku",      "group": "Special",       "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply"},
+    {"id": "6x6_square_free", "label": "6x6 Square Free", "group": "Experimental",  "desc": "Regions have no 2x2 squares"},
+    {"id": "8x8_square_free", "label": "8x8 Square Free", "group": "Experimental",  "desc": "Regions have no 2x2 squares"},
+    {"id": "voronoi",         "label": "Voronoi",         "group": "Experimental",  "desc": "Regions generated like a voronoi diagram"},
+    {"id": "not_for_humans",  "label": "Not For Humans",  "group": "Showcase",      "desc": "Designed to defeat human solvers — attempt at your own peril"},
+    {"id": "signoff",         "label": "Signoff",         "group": "Showcase",      "desc": "A message from the creator"}
   ]
 }
