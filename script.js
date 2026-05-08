@@ -106,17 +106,22 @@ class StarBattleGame {
     const { open } = this.setupModal('settings-modal');
     document.getElementById('settings-btn').onclick = open;
 
-    const darkToggle = document.getElementById('setting-dark-mode');
-    const tabToggle  = document.getElementById('setting-tab-mode');
+    const darkToggle       = document.getElementById('setting-dark-mode');
+    const tabToggle        = document.getElementById('setting-tab-mode');
+    const axisLabelsToggle = document.getElementById('setting-axis-labels');
 
     // Restore persisted preferences
-    const savedDark = localStorage.getItem('setting-dark-mode') === 'true';
-    const savedTab  = localStorage.getItem('setting-tab-mode')  === 'true';
+    const savedDark       = localStorage.getItem('setting-dark-mode')   === 'true';
+    const savedTab        = localStorage.getItem('setting-tab-mode')    === 'true';
+    const savedAxisLabels = localStorage.getItem('setting-axis-labels') === 'true';
 
-    darkToggle.checked = savedDark;
-    tabToggle.checked  = savedTab;
+    darkToggle.checked       = savedDark;
+    tabToggle.checked        = savedTab;
+    axisLabelsToggle.checked = savedAxisLabels;
     this._applyDarkMode(savedDark);
     this._applyTabMode(savedTab);
+    // Axis labels are applied after puzzle load, not here, because boards
+    // don't exist yet — _applyAxisLabels() is called at the end of loadPuzzle().
 
     darkToggle.addEventListener('change', () => {
       localStorage.setItem('setting-dark-mode', darkToggle.checked);
@@ -126,6 +131,18 @@ class StarBattleGame {
     tabToggle.addEventListener('change', () => {
       localStorage.setItem('setting-tab-mode', tabToggle.checked);
       this._applyTabMode(tabToggle.checked);
+    });
+
+    axisLabelsToggle.addEventListener('change', () => {
+      localStorage.setItem('setting-axis-labels', axisLabelsToggle.checked);
+      // Rebuild both boards so label DOM is added/removed cleanly
+      if (this.currentPuzzle && this.regions) {
+        document.getElementById('board1').innerHTML = '';
+        document.getElementById('board2').innerHTML = '';
+        this.renderBoard('board1', this.regions[0]);
+        this.renderBoard('board2', this.regions[1]);
+        this.updateVisuals();
+      }
     });
   }
 
@@ -625,8 +642,66 @@ class StarBattleGame {
   // Builds the cell grid and SVG region borders for one board.
   renderBoard(id, regionMap) {
     const wrapper = document.getElementById(id);
-    wrapper.appendChild(this._buildGrid());
-    wrapper.appendChild(this._buildRegionSvg(regionMap));
+    const grid    = this._buildGrid();
+    const svg     = this._buildRegionSvg(regionMap);
+
+    const axisLabelsOn = localStorage.getItem('setting-axis-labels') === 'true';
+    if (axisLabelsOn) {
+      wrapper.classList.add('grid-wrapper--labeled');
+
+      // Set the grid template explicitly in JS so we don't depend on
+      // var(--grid-n) resolving correctly on this element.
+      wrapper.style.gridTemplateColumns = `var(--cell-size) repeat(${this.n}, var(--cell-size))`;
+      wrapper.style.gridTemplateRows    = `var(--cell-size) repeat(${this.n}, var(--cell-size))`;
+
+      // Corner spacer: row 1, col 1
+      const corner = document.createElement('div');
+      corner.className = 'axis-corner';
+      corner.style.gridRow    = '1';
+      corner.style.gridColumn = '1';
+      wrapper.appendChild(corner);
+
+      // Column labels: row 1, cols 2..(n+1) — one per column, explicitly placed
+      for (let c = 0; c < this.n; c++) {
+        const label = document.createElement('div');
+        label.className = 'axis-label axis-label--col';
+        label.textContent = String.fromCharCode(65 + c);
+        label.setAttribute('aria-hidden', 'true');
+        label.style.gridRow    = '1';
+        label.style.gridColumn = String(c + 2);
+        wrapper.appendChild(label);
+      }
+
+      // Row labels: rows 2..(n+1), col 1 — one per row, explicitly placed
+      for (let r = 0; r < this.n; r++) {
+        const label = document.createElement('div');
+        label.className = 'axis-label axis-label--row';
+        label.textContent = String(r + 1);
+        label.setAttribute('aria-hidden', 'true');
+        label.style.gridRow    = String(r + 2);
+        label.style.gridColumn = '1';
+        wrapper.appendChild(label);
+      }
+
+      // Inner wrapper: rows 2..(n+1), col 2 — holds the grid + SVG overlay
+      const inner = document.createElement('div');
+      inner.className = 'axis-board-inner';
+      inner.style.gridRow    = `2 / span ${this.n}`;
+      inner.style.gridColumn = '2';
+      // Explicit size required so the absolutely-positioned SVG overlay fills
+      // the board correctly (100% resolves against this element's dimensions).
+      inner.style.width  = `calc(${this.n} * var(--cell-size))`;
+      inner.style.height = `calc(${this.n} * var(--cell-size))`;
+      inner.appendChild(grid);
+      inner.appendChild(svg);
+      wrapper.appendChild(inner);
+    } else {
+      wrapper.classList.remove('grid-wrapper--labeled');
+      wrapper.style.gridTemplateColumns = '';
+      wrapper.style.gridTemplateRows    = '';
+      wrapper.appendChild(grid);
+      wrapper.appendChild(svg);
+    }
   }
 
   // Creates the interactive grid div with all pointer event handlers attached.

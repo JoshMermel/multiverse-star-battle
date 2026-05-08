@@ -298,6 +298,38 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Drag takes priority over hover sync when both classes are present */
 .cell-drag-highlight.cell-hover-sync { background-color: var(--highlight-drag-bg); }
 
+/* 5b. AXIS LABELS */
+
+/* When labels are on, .grid-wrapper becomes a CSS grid. The grid-template-columns
+   and grid-template-rows are set via inline style in JS (where this.n is known).
+   Layout: col 1 = row-label gutter, cols 2..N+1 = board columns
+            row 1 = col-label gutter, rows 2..N+1 = board rows */
+.grid-wrapper--labeled {
+  display: grid;
+}
+
+/* The inner wrapper carries position:relative so the SVG overlay works correctly */
+.axis-board-inner {
+  position: relative;
+  grid-column: 2;
+}
+
+.axis-label {
+  font-size: calc(var(--cell-size) * 0.28);
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: var(--cell-size);
+  height: var(--cell-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  justify-self: center;
+  user-select: none;
+  pointer-events: none;
+  line-height: 1;
+}
+
 /* 6. CONTROLS */
 #controls {
   display: flex;
