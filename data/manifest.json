@@ -32,6 +32,7 @@
     {"id": "6x6_square_free", "label": "6x6 Square Free", "group": "Experimental",  "desc": "Regions have no 2x2 squares"},
     {"id": "8x8_square_free", "label": "8x8 Square Free", "group": "Experimental",  "desc": "Regions have no 2x2 squares"},
     {"id": "voronoi",         "label": "Voronoi",         "group": "Experimental",  "desc": "Regions generated like a voronoi diagram"},
+    {"id": "venn",            "label": "Venn",            "group": "Experimental",  "desc": "Boards inspired by venn diagrams"},
     {"id": "not_for_humans",  "label": "Not For Humans",  "group": "Showcase",      "desc": "Designed to defeat human solvers — attempt at your own peril"},
     {"id": "signoff",         "label": "Signoff",         "group": "Showcase",      "desc": "A message from the creator"}
   ]
