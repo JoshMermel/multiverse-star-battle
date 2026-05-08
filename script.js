@@ -641,6 +641,20 @@ class StarBattleGame {
       const cell = document.createElement('div');
       cell.className = 'cell';
       cell.dataset.index = i;
+
+      // Desktop-only cross-board hover: highlight the same cell index on both boards.
+      // window.matchMedia is checked once at grid-build time; grids are rebuilt per
+      // puzzle so this stays current if the user resizes/changes input device.
+      if (window.matchMedia('(pointer: fine)').matches) {
+        cell.addEventListener('pointerenter', () => {
+          if (this.isDragging) return;
+          this._setHoverSync(i, true);
+        });
+        cell.addEventListener('pointerleave', () => {
+          this._setHoverSync(i, false);
+        });
+      }
+
       grid.appendChild(cell);
     }
 
@@ -796,6 +810,14 @@ class StarBattleGame {
   clearDragHighlights() {
     document.querySelectorAll('.cell-drag-highlight').forEach(cell => {
       cell.classList.remove('cell-drag-highlight');
+    });
+  }
+
+  // Highlights (or un-highlights) the cell at `idx` on every board simultaneously.
+  // Only called on pointer:fine (desktop) devices; dragging suppresses it.
+  _setHoverSync(idx, on) {
+    document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+      cell.classList.toggle('cell-hover-sync', on);
     });
   }
 

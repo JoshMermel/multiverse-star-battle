@@ -41,6 +41,9 @@
   --highlight-hint-green-bg:  rgba(0,   200, 0,   0.25);
   --highlight-hint-yellow:    rgba(255, 255, 0,   0.65);
   --highlight-error-star:     #d00;
+
+  /* Cross-board hover sync — desktop only */
+  --highlight-hover-sync-bg:  rgba(0, 180, 160, 0.13);
 }
 
 [data-theme="dark"] {
@@ -78,6 +81,9 @@
   --highlight-hint-green-bg:  rgba(80,  220, 80,  0.30);
   --highlight-hint-yellow:    rgba(255, 255, 80,  0.50);
   --highlight-error-star:     #ff6b6b;
+
+  /* Cross-board hover sync — desktop only */
+  --highlight-hover-sync-bg:  rgba(0, 210, 190, 0.18);
 }
 
 /* 2. RESET & BASE STYLES */
@@ -285,6 +291,9 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Drag highlight uses background-color only, so hint-target-yellow's
    background-image (the circle) composites on top of it naturally. */
 .cell-drag-highlight { background-color: var(--highlight-drag-bg); }
+
+/* Cross-board hover sync — only applied via JS on pointer:fine (desktop) devices */
+.cell-hover-sync { background-color: var(--highlight-hover-sync-bg); }
 
 /* 6. CONTROLS */
 #controls {
