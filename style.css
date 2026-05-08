@@ -295,6 +295,9 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Cross-board hover sync — only applied via JS on pointer:fine (desktop) devices */
 .cell-hover-sync { background-color: var(--highlight-hover-sync-bg); }
 
+/* Drag takes priority over hover sync when both classes are present */
+.cell-drag-highlight.cell-hover-sync { background-color: var(--highlight-drag-bg); }
+
 /* 6. CONTROLS */
 #controls {
   display: flex;
