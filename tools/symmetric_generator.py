@@ -83,8 +83,15 @@ class SymmetricGenerator(Generator):
         elif self.sym_type == 'double_mirror':
             return random.choice([i for i in range(n + 1) if (n - i) % 4 == 0])
         elif self.sym_type == 'rot_90':
-            limit = n // 2
-            return random.choice([i for i in range(limit) if i % 4 == n % 4])
+            # The only valid straddle count is n%4 (so the remainder divides
+            # into 4-cell quad orbits).  We also require count <= n//2 - 1 so
+            # the outermost ring never touches the board border (which would
+            # make the board unsolvable).  For N=7 these two constraints
+            # conflict (n%4=3 > n//2-1=2), so rot_90 is unsupported there.
+            count = n % 4
+            if count > n // 2 - 1:
+                return None  # signals _try_generate to skip this attempt
+            return count
         elif self.sym_type == 'rot_180':
             limit = n // 2
             return random.choice([i for i in range(limit) if i % 2 == n % 2])
@@ -101,7 +108,8 @@ class SymmetricGenerator(Generator):
         """
         n = self.n
         labels_used = 0
-        if count == 0: return 0
+        if count == 0:
+            return 0
 
         if self.sym_type == 'mirror':
             mid = (n - 1) // 2
@@ -214,9 +222,12 @@ class SymmetricGenerator(Generator):
         current_label = labels_used
 
         for idx in indices:
-            if current_label >= n: break
+            if current_label >= n:
+                break
             orbit = list(set(self.get_orbit(idx)))
             if len(orbit) == orbit_size and all(grid[o] is None for o in orbit):
+                # Each orbit cell gets its own label; symmetric_flood_fill grows
+                # them in lockstep so they form one symmetric region per orbit.
                 for o_idx in orbit:
                     grid[o_idx] = current_label
                     current_label += 1
@@ -232,22 +243,32 @@ class SymmetricGenerator(Generator):
         the live boundary rather than rescanning all n² cells.  When a cell is
         filled its symmetric images are filled with the corresponding image
         labels, and their newly exposed neighbours are added to the frontier.
+
+        Returns True if the board was filled successfully, False if the failure
+        budget was exhausted (indicating an unsatisfiable seed configuration).
         """
 
         n = self.n
         frontier = []
+        frontier_set = set()
         for i in range(n * n):
             if grid[i] is None:
                 for nb in get_neighbors_4(i, n):
                     if grid[nb] is not None:
-                        frontier.append((i, nb))
+                        pair = (i, nb)
+                        if pair not in frontier_set:
+                            frontier.append(pair)
+                            frontier_set.add(pair)
 
         max_failures = 200
         failures = 0
 
         while frontier and failures < max_failures:
-            random.shuffle(frontier)
+            # Swap-and-pop: O(1) random removal without shuffling the whole list.
+            pick = random.randrange(len(frontier))
+            frontier[pick], frontier[-1] = frontier[-1], frontier[pick]
             u_idx, l_idx = frontier.pop()
+            frontier_set.discard((u_idx, l_idx))
 
             if grid[u_idx] is not None:
                 continue
@@ -284,13 +305,16 @@ class SymmetricGenerator(Generator):
                 failures += 1
                 continue
 
-            # 2. Commit the expansion
+            # 2. Commit the expansion.
             for u_img, label in candidate_assignments.items():
                 if grid[u_img] is None:
                     grid[u_img] = label
                     for nb in get_neighbors_4(u_img, n):
                         if grid[nb] is None:
-                            frontier.append((nb, u_img))
+                            pair = (nb, u_img)
+                            if pair not in frontier_set:
+                                frontier.append(pair)
+                                frontier_set.add(pair)
 
         return failures < max_failures
 
@@ -305,9 +329,12 @@ class SymmetricGenerator(Generator):
         """
         grid = [None] * (self.n * self.n)
         straddle_count = self._decide_straddle_count()
+        if straddle_count is None:
+            return None  # unsupported N/symmetry combination
         labels_used = self._place_straddle_seeds(grid, straddle_count)
         self._place_regular_seeds(grid, labels_used)
-        self.symmetric_flood_fill(grid)
+        if not self.symmetric_flood_fill(grid):
+            return None
         return self._make_result(grid)
 
     def _debug_print(self, grid):

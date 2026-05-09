@@ -275,7 +275,7 @@ class TestSymmetricGenerator:
     def sym_board_solutions(self, request, board_size):
         sym_type = request.param
         if board_size == 7 and sym_type == 'rot_90':
-            pytest.skip("rot_90 symmetry is known to fail for N=7")
+            pytest.skip("no valid 7x7 rot_90 boards exist")
 
         gen = SymmetricGenerator(board_size, sym_type)
         board, solutions = gen.generate()
