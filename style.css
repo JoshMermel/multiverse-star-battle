@@ -306,6 +306,10 @@ input[type="number"]::-webkit-inner-spin-button {
             row 1 = col-label gutter, rows 2..N+1 = board rows */
 .grid-wrapper--labeled {
   display: grid;
+  /* The row-label gutter on the left shifts the board rightward by --cell-size,
+     so pull the whole wrapper left by half that amount to re-center visually.
+     The col-label gutter on top has no effect on horizontal centering. */
+  margin-left: calc(var(--cell-size) * -0.5);
 }
 
 /* The inner wrapper carries position:relative so the SVG overlay works correctly */
