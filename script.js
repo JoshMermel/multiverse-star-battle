@@ -958,6 +958,18 @@ class StarBattleGame {
       if (this.regions[1][i] === regionId2) toFill.add(i);
     }
 
+    // Also dot all 8 cells adjacent to the star (orthogonal and diagonal),
+    // since stars can never touch each other even diagonally.
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = row + dr, nc = col + dc;
+        if (nr >= 0 && nr < n && nc >= 0 && nc < n) {
+          toFill.add(nr * n + nc);
+        }
+      }
+    }
+
     // Dot only empty cells; never overwrite a star (including the one just placed).
     for (const i of toFill) {
       if (this.state[i] === CELL.NONE) {
