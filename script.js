@@ -106,18 +106,21 @@ class StarBattleGame {
     const { open } = this.setupModal('settings-modal');
     document.getElementById('settings-btn').onclick = open;
 
-    const darkToggle       = document.getElementById('setting-dark-mode');
-    const tabToggle        = document.getElementById('setting-tab-mode');
-    const axisLabelsToggle = document.getElementById('setting-axis-labels');
+    const darkToggle         = document.getElementById('setting-dark-mode');
+    const tabToggle          = document.getElementById('setting-tab-mode');
+    const axisLabelsToggle   = document.getElementById('setting-axis-labels');
+    const autoFillDotsToggle = document.getElementById('setting-auto-fill-dots');
 
     // Restore persisted preferences
-    const savedDark       = localStorage.getItem('setting-dark-mode')   === 'true';
-    const savedTab        = localStorage.getItem('setting-tab-mode')    === 'true';
-    const savedAxisLabels = localStorage.getItem('setting-axis-labels') === 'true';
+    const savedDark         = localStorage.getItem('setting-dark-mode')       === 'true';
+    const savedTab          = localStorage.getItem('setting-tab-mode')        === 'true';
+    const savedAxisLabels   = localStorage.getItem('setting-axis-labels')     === 'true';
+    const savedAutoFillDots = localStorage.getItem('setting-auto-fill-dots')  === 'true';
 
-    darkToggle.checked       = savedDark;
-    tabToggle.checked        = savedTab;
-    axisLabelsToggle.checked = savedAxisLabels;
+    darkToggle.checked         = savedDark;
+    tabToggle.checked          = savedTab;
+    axisLabelsToggle.checked   = savedAxisLabels;
+    autoFillDotsToggle.checked = savedAutoFillDots;
     this._applyDarkMode(savedDark);
     this._applyTabMode(savedTab);
     // Axis labels are applied after puzzle load, not here, because boards
@@ -143,6 +146,10 @@ class StarBattleGame {
         this.renderBoard('board2', this.regions[1]);
         this.updateVisuals();
       }
+    });
+
+    autoFillDotsToggle.addEventListener('change', () => {
+      localStorage.setItem('setting-auto-fill-dots', autoFillDotsToggle.checked);
     });
   }
 
@@ -907,8 +914,59 @@ class StarBattleGame {
     // If the caller didn't specify, infer: dots may be the first click of a
     // double-click so delay errors; stars and removals are unambiguous.
     const delay = debounceMs ?? (type === CELL.DOT ? 200 : 0);
+
+    // Auto-fill: when a star is placed (and not already in a recursive call),
+    // dot every empty cell in the same row, col, and region on both boards.
+    if (type === CELL.STAR && !this._suppressAutoFill &&
+        localStorage.getItem('setting-auto-fill-dots') === 'true') {
+      this._suppressAutoFill = true;
+      this._autoFillDots(idx);
+      this._suppressAutoFill = false;
+    }
+
     this.validate({ suppressWinToast, debounceMs: delay });
     this.saveCurrentState();
+  }
+
+  // Dots every CELL.NONE cell that shares a row, column, or region with the
+  // star just placed at `idx`. Operates on the shared state (both boards see
+  // the same state array), so the fill naturally appears on both boards.
+  // Called only while _suppressAutoFill is true, so no recursion occurs.
+  _autoFillDots(idx) {
+    const n   = this.n;
+    const row = Math.floor(idx / n);
+    const col = idx % n;
+
+    // Collect the union of cells to dot: entire row, entire col, entire region.
+    // The region is defined by `this.regions[0]` — both boards share regions
+    // that map to the same logical groups (they may differ visually but the
+    // region id at each index is what matters for the rule).
+    const regionId = this.regions[0][idx];
+    const toFill   = new Set();
+
+    for (let i = 0; i < n * n; i++) {
+      const r = Math.floor(i / n), c = i % n;
+      if (r === row || c === col || this.regions[0][i] === regionId) {
+        toFill.add(i);
+      }
+    }
+
+    // Also apply the region from board 2 (in case the two boards have
+    // different region groupings at this index).
+    const regionId2 = this.regions[1][idx];
+    for (let i = 0; i < n * n; i++) {
+      if (this.regions[1][i] === regionId2) toFill.add(i);
+    }
+
+    // Dot only empty cells; never overwrite a star (including the one just placed).
+    for (const i of toFill) {
+      if (this.state[i] === CELL.NONE) {
+        this.state[i] = CELL.DOT;
+        document.querySelectorAll(`.cell[data-index="${i}"]`).forEach(cell => {
+          this.updateCellVisual(cell, CELL.DOT);
+        });
+      }
+    }
   }
 
   // Returns true if every solution star is placed and no extra stars exist.
