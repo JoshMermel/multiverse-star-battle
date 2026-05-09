@@ -21,6 +21,8 @@ Stuff I intend to do short/medium term:
    generated so far.
  - Maybe integrate my janky swastika-filtering logic into SymmetricGenerator.
  - Write a doc to explain each heuristic in scorer.py and give examples.
+ - Add deduping to scoring flow too, disabled if it alreaady happened during
+   genration.
 
 Stuff I might or might not do longer term:
  - Maybe account for the following during scoring:

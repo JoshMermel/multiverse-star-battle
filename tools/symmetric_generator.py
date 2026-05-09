@@ -1,6 +1,3 @@
-# this class only really works when N is even. It could be fixed up, but I
-# haven't bothered.
-
 """
 symmetric_generator.py
 
@@ -29,20 +26,14 @@ import random
 from board_utils import get_neighbors_4, pretty_print
 from generator import Generator
 
-
 class SymmetricGenerator(Generator):
     # Symmetry types that require orbit quads (4 cells per region seed).
     _QUAD_SYMMETRIES = frozenset({'double_mirror', 'rot_90'})
 
     def __init__(self, n, symmetry_type=None):
         super().__init__(n)
-        # Grid is local to _try_generate, not stored as instance state.
-
         valid_symmetries = ['mirror', 'diagonal', 'double_mirror', 'rot_90', 'rot_180']
-        if symmetry_type is None:
-            self.sym_type = random.choice(valid_symmetries)
-        else:
-            self.sym_type = symmetry_type
+        self.sym_type = symmetry_type if symmetry_type else random.choice(valid_symmetries)
 
     # -- Grid helpers ---------------------------------------------------------
 
@@ -75,6 +66,7 @@ class SymmetricGenerator(Generator):
             candidates = [idx]
         return [i for i in candidates if i is not None]
 
+
     # -- Seeding --------------------------------------------------------------
 
     def _decide_straddle_count(self):
@@ -89,12 +81,10 @@ class SymmetricGenerator(Generator):
         elif self.sym_type == 'diagonal':
             return random.choice([i for i in range(1, n + 1) if i % 2 == n % 2])
         elif self.sym_type == 'double_mirror':
-            choices = [i for i in range(n + 1) if i % 2 == 0 and (n - i) % 4 == 0]
-            return random.choice(choices)
+            return random.choice([i for i in range(n + 1) if (n - i) % 4 == 0])
         elif self.sym_type == 'rot_90':
-            # For rot_90 every region must occupy a full 4-cell orbit; there
-            # is no fixed point for even N, so straddling is impossible.
-            return 0
+            limit = n // 2
+            return random.choice([i for i in range(limit) if i % 4 == n % 4])
         elif self.sym_type == 'rot_180':
             limit = n // 2
             return random.choice([i for i in range(limit) if i % 2 == n % 2])
@@ -111,8 +101,7 @@ class SymmetricGenerator(Generator):
         """
         n = self.n
         labels_used = 0
-        if count == 0:
-            return 0
+        if count == 0: return 0
 
         if self.sym_type == 'mirror':
             mid = (n - 1) // 2
@@ -121,12 +110,15 @@ class SymmetricGenerator(Generator):
             for _ in range(count):
                 r = rows.pop()
                 grid[self._get_idx(r, mid)] = labels_used
-                grid[self._get_idx(r, n - 1 - mid)] = labels_used
+                # Even N straddles are on both sides of the midline
+                if n % 2 == 0:
+                    grid[self._get_idx(r, mid + 1)] = labels_used
                 labels_used += 1
 
         elif self.sym_type == 'diagonal':
             cut_points = sorted(random.sample(range(1, n), count - 1))
             segments = zip([0] + cut_points, cut_points + [n])
+
             for start, end in segments:
                 for i in range(start, end):
                     grid[self._get_idx(i, i)] = labels_used
@@ -136,57 +128,75 @@ class SymmetricGenerator(Generator):
                 labels_used += 1
 
         elif self.sym_type == 'double_mirror':
-            mid = (n - 1) // 2
-            for _ in range(count // 2):
-                placed = False
-                axes = ['v', 'h']
-                random.shuffle(axes)
-                for axis in axes:
-                    if axis == 'v':
-                        potential_pos = [(r, mid) for r in range(mid)]
-                    else:
-                        potential_pos = [(mid, c) for c in range(mid)]
-                    random.shuffle(potential_pos)
-                    for r, c in potential_pos:
-                        if axis == 'v':
-                            c2, r2 = (mid + 1 if n % 2 == 0 else mid), r
-                            mr1, mc1, mr2, mc2 = n - 1 - r, c, n - 1 - r2, c2
-                        else:
-                            r2, c2 = (mid + 1 if n % 2 == 0 else mid), c
-                            mr1, mc1, mr2, mc2 = r, n - 1 - c, r2, n - 1 - c2
+            mid = n // 2
+            # 1. Place the unique center seed for odd N
+            if n % 2 != 0:
+                grid[self._get_idx(mid, mid)] = labels_used
+                labels_used += 1
 
-                        cells_a = {self._get_idx(r, c), self._get_idx(r2, c2)}
-                        cells_b = {self._get_idx(mr1, mc1), self._get_idx(mr2, mc2)}
-                        if all(grid[idx] is None for idx in (cells_a | cells_b)):
-                            for idx in cells_a:
-                                grid[idx] = labels_used
-                            labels_used += 1
-                            for idx in cells_b:
-                                grid[idx] = labels_used
-                            labels_used += 1
-                            placed = True
-                            break
-                    if placed:
-                        break
+            # 2. Identify potential straddle orbits
+            potential_orbits = []
+            if n % 2 == 0:
+                # Even N: Use the 2-cell adjacent pairs crossing the midlines
+                for i in range(mid):
+                    potential_orbits.append({
+                        'primary': [(i, mid - 1), (i, mid)],
+                        'mirror':  [(n - 1 - i, mid - 1), (n - 1 - i, mid)]
+                    })
+                    potential_orbits.append({
+                        'primary': [(mid - 1, i), (mid, i)],
+                        'mirror':  [(mid - 1, n - 1 - i), (mid, n - 1 - i)]
+                    })
+            else:
+                # Odd N: Use single cells located directly on the midlines
+                for i in range(mid):
+                    # Cells on the vertical axis (excluding the center)
+                    potential_orbits.append({
+                        'primary': [(i, mid)],
+                        'mirror':  [(n - 1 - i, mid)]
+                    })
+                    # Cells on the horizontal axis (excluding the center)
+                    potential_orbits.append({
+                        'primary': [(mid, i)],
+                        'mirror':  [(mid, n - 1 - i)]
+                    })
 
-        elif self.sym_type == 'rot_180':
-            max_layers = n // 2
-            pool = list(range(1, max_layers - 1))
-            random.shuffle(pool)
-            selected_layers = sorted([0] + pool[: count - 1])
+            random.shuffle(potential_orbits)
 
-            mid_start, mid_end = (n // 2) - 1, (n // 2)
-            for ring_layer in selected_layers:
-                r_min = mid_start - ring_layer
-                r_max = mid_end + ring_layer
-                c_min = mid_start - ring_layer
-                c_max = mid_end + ring_layer
-                for r in range(r_min, r_max + 1):
-                    for c in range(c_min, c_max + 1):
-                        if r == r_min or r == r_max or c == c_min or c == c_max:
-                            idx = self._get_idx(r, c)
-                            if idx is not None and grid[idx] is None:
-                                grid[idx] = labels_used
+            # 3. Place regions in symmetric partner pairs
+            remaining = count - (1 if n % 2 != 0 else 0)
+            for _ in range(remaining // 2):
+                if not potential_orbits: break
+                orbit = potential_orbits.pop()
+
+                # Assign one label to the primary cell(s)
+                for r, c in orbit['primary']:
+                    grid[self._get_idx(r, c)] = labels_used
+                labels_used += 1
+
+                # Assign a different label to the mirror partner(s)
+                for r, c in orbit['mirror']:
+                    grid[self._get_idx(r, c)] = labels_used
+                labels_used += 1
+
+        elif self.sym_type in ('rot_90', 'rot_180'):
+            is_odd = (n % 2 != 0)
+            selected_layers = list(range(count))
+
+            for layer in selected_layers:
+                if is_odd and layer == 0:
+                    grid[self._get_idx(n // 2, n // 2)] = labels_used
+                else:
+                    offset = 0 if is_odd else -1
+                    r_min = (n // 2) - layer + offset
+                    r_max = (n // 2) + layer
+                    c_min = (n // 2) - layer + offset
+                    c_max = (n // 2) + layer
+                    for r in range(r_min, r_max + 1):
+                        for c in range(c_min, c_max + 1):
+                            if r == r_min or r == r_max or c == c_min or c == c_max:
+                                idx = self._get_idx(r, c)
+                                if idx is not None: grid[idx] = labels_used
                 labels_used += 1
 
         return labels_used
@@ -198,21 +208,18 @@ class SymmetricGenerator(Generator):
         have been seeded.
         """
         n = self.n
-        total_regions = n
-        if labels_used >= total_regions:
-            return
         orbit_size = 4 if self.sym_type in self._QUAD_SYMMETRIES else 2
         indices = [i for i in range(n * n) if grid[i] is None]
         random.shuffle(indices)
         current_label = labels_used
+
         for idx in indices:
-            if current_label >= total_regions:
-                break
+            if current_label >= n: break
             orbit = list(set(self.get_orbit(idx)))
             if len(orbit) == orbit_size and all(grid[o] is None for o in orbit):
-                for i, o_idx in enumerate(orbit):
-                    grid[o_idx] = current_label + i
-                current_label += orbit_size
+                for o_idx in orbit:
+                    grid[o_idx] = current_label
+                    current_label += 1
 
     # -- Flood fill -----------------------------------------------------------
 
@@ -226,25 +233,21 @@ class SymmetricGenerator(Generator):
         filled its symmetric images are filled with the corresponding image
         labels, and their newly exposed neighbours are added to the frontier.
         """
-        n = self.n
 
+        n = self.n
         frontier = []
-        frontier_set = set()
         for i in range(n * n):
             if grid[i] is None:
                 for nb in get_neighbors_4(i, n):
                     if grid[nb] is not None:
-                        pair = (i, nb)
-                        if pair not in frontier_set:
-                            frontier.append(pair)
-                            frontier_set.add(pair)
+                        frontier.append((i, nb))
 
-        while frontier:
-            pick_idx = random.randrange(len(frontier))
-            # Swap-and-pop for O(1) removal.
-            frontier[pick_idx], frontier[-1] = frontier[-1], frontier[pick_idx]
+        max_failures = 200
+        failures = 0
+
+        while frontier and failures < max_failures:
+            random.shuffle(frontier)
             u_idx, l_idx = frontier.pop()
-            frontier_set.discard((u_idx, l_idx))
 
             if grid[u_idx] is not None:
                 continue
@@ -252,15 +255,44 @@ class SymmetricGenerator(Generator):
             u_orbit = self.get_orbit(u_idx)
             l_orbit = self.get_orbit(l_idx)
 
+            # 1. Consistency Check:
+            # We must ensure that this expansion doesn't try to assign
+            # different labels to the same physical cell.
+            candidate_assignments = {}
+            possible = True
+
             for u_img, l_img in zip(u_orbit, l_orbit):
+                label_to_assign = grid[l_img]
+
+                # If the target cell is already filled, it must match the label
+                # we are trying to assign (this handles symmetric straddlers).
+                if grid[u_img] is not None:
+                    if grid[u_img] != label_to_assign:
+                        possible = False
+                        break
+
+                # If we've already proposed a different label for this physical
+                # cell during this specific orbit expansion, it's a conflict.
+                if u_img in candidate_assignments:
+                    if candidate_assignments[u_img] != label_to_assign:
+                        possible = False
+                        break
+
+                candidate_assignments[u_img] = label_to_assign
+
+            if not possible:
+                failures += 1
+                continue
+
+            # 2. Commit the expansion
+            for u_img, label in candidate_assignments.items():
                 if grid[u_img] is None:
-                    grid[u_img] = grid[l_img]
+                    grid[u_img] = label
                     for nb in get_neighbors_4(u_img, n):
                         if grid[nb] is None:
-                            pair = (nb, u_img)
-                            if pair not in frontier_set:
-                                frontier.append(pair)
-                                frontier_set.add(pair)
+                            frontier.append((nb, u_img))
+
+        return failures < max_failures
 
     # -- Public interface -----------------------------------------------------
 
@@ -276,7 +308,6 @@ class SymmetricGenerator(Generator):
         labels_used = self._place_straddle_seeds(grid, straddle_count)
         self._place_regular_seeds(grid, labels_used)
         self.symmetric_flood_fill(grid)
-
         return self._make_result(grid)
 
     def _debug_print(self, grid):
@@ -288,7 +319,6 @@ class SymmetricGenerator(Generator):
             for c in range(self.n)
         )
         pretty_print(flat, self.n)
-
 
 if __name__ == "__main__":
     for m in ['mirror', 'diagonal', 'double_mirror', 'rot_90', 'rot_180']:

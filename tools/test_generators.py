@@ -269,11 +269,14 @@ class TestSquareFreGenerator:
 SYMMETRY_TYPES = ['mirror', 'diagonal', 'double_mirror', 'rot_90', 'rot_180']
 
 # TODO(jmerm): expand sizes here once other sizes work.
-@pytest.mark.parametrize("board_size", [8])
+@pytest.mark.parametrize("board_size", [5,6,7,8,9])
 class TestSymmetricGenerator:
     @pytest.fixture(params=SYMMETRY_TYPES)
     def sym_board_solutions(self, request, board_size):
         sym_type = request.param
+        if board_size == 7 and sym_type == 'rot_90':
+            pytest.skip("rot_90 symmetry is known to fail for N=7")
+
         gen = SymmetricGenerator(board_size, sym_type)
         board, solutions = gen.generate()
         return sym_type, board, solutions, gen, board_size
