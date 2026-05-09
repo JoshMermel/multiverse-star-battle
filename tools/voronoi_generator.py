@@ -1,6 +1,5 @@
 import random
 import heapq
-from board_solver import get_all_solutions
 from board_utils import get_neighbors_4, pretty_print
 from generator import Generator
 
@@ -10,7 +9,7 @@ class VoronoiGenerator(Generator):
     Generates approximate Voronoi diagrams on the grid.
 
     Each of the N regions grows outward from a randomly placed seed using a
-    priority-queue flood fill. The priority is the Euclidean distance from the
+    priority-queue flood fill.  The priority is the Euclidean distance from the
     cell to the region's seed, jittered by a small random offset per cell.
 
     The jitter is what makes this "approximate" rather than exact: pure
@@ -31,10 +30,10 @@ class VoronoiGenerator(Generator):
         n = self.n
 
         # 1. Place N seeds, one per region, at random distinct cells.
-        seed_indices = random.sample(range(n * n), n)
+        seed_indices = self._random_seeds(n)
         seed_coords = [divmod(idx, n) for idx in seed_indices]
 
-        grid_flat = [None] * (n * n)
+        grid = [None] * (n * n)
 
         # Priority queue entries: (priority, cell_index, region_id).
         # Priority is Euclidean distance to the region's seed plus jitter,
@@ -42,7 +41,7 @@ class VoronoiGenerator(Generator):
         # to produce irregular boundaries.
         heap = []
         for reg_id, (sr, sc) in enumerate(seed_coords):
-            grid_flat[sr * n + sc] = reg_id
+            grid[sr * n + sc] = reg_id
             for nb in get_neighbors_4(sr * n + sc, n):
                 nr, nc = divmod(nb, n)
                 dist = ((nr - sr) ** 2 + (nc - sc) ** 2) ** 0.5
@@ -52,29 +51,28 @@ class VoronoiGenerator(Generator):
         while heap:
             priority, idx, reg_id = heapq.heappop(heap)
 
-            if grid_flat[idx] is not None:
+            if grid[idx] is not None:
                 continue  # already claimed by an earlier (lower-priority) wave
 
-            grid_flat[idx] = reg_id
+            grid[idx] = reg_id
             sr, sc = seed_coords[reg_id]
 
             for nb in get_neighbors_4(idx, n):
-                if grid_flat[nb] is None:
+                if grid[nb] is None:
                     nr, nc = divmod(nb, n)
                     dist = ((nr - sr) ** 2 + (nc - sc) ** 2) ** 0.5
                     heapq.heappush(heap, (dist + random.uniform(0, self.JITTER), nb, reg_id))
 
-        # Every cell must be claimed; if any remain None the flood fill has a bug.
-        assert None not in grid_flat, "Flood fill left unclaimed cells"
+        # The flood fill guarantees full coverage by construction (every cell
+        # is reachable from at least one seed's expanding wave), so any None
+        # here indicates a bug rather than an expected failure mode.
+        if None in grid:
+            return None
 
         # 3. Solve and return.
-        solutions = get_all_solutions(grid_flat, n)
-        return self._make_result(grid_flat, solutions)
+        return self._make_result(grid)
 
 
 if __name__ == "__main__":
     print("\n--- Voronoi Generator (N=8) ---")
-    gen = VoronoiGenerator(8)
-    board, solutions = gen.generate()
-    pretty_print(board, 8)
-    print(f"Solutions: {len(solutions)}")
+    VoronoiGenerator.demo(8)

@@ -1,5 +1,4 @@
 import random
-from board_solver import get_all_solutions
 from board_utils import flood_fill, get_neighbors_4, pretty_print
 from font_data import FONT_7x5
 from generator import Generator
@@ -19,7 +18,7 @@ def _render_letter(char, n, row_offset=None, col_offset=None):
 
     Raises ValueError if the letter cannot fit on a board of size n.
     """
-    if n < 5:
+    if n < 7:
         raise ValueError(f"Board size {n} is too small for the 7x5 font")
 
     pixels = FONT_7x5.get(char.upper(), [])
@@ -42,7 +41,7 @@ def _render_letter(char, n, row_offset=None, col_offset=None):
 def _free_components(partial, n):
     """
     Returns a list of free-cell connected components (each a list of indices),
-    found by BFS over cells where partial[i] is None using 4-connectivity.
+    found by DFS over cells where partial[i] is None using 4-connectivity.
     Letters like 'B' or 'O' enclose interior pockets that are completely
     surrounded by letter pixels and unreachable from the outside — each such
     pocket is its own component.
@@ -53,15 +52,15 @@ def _free_components(partial, n):
         if partial[start] is not None or start in visited:
             continue
         component = []
-        queue = [start]
+        stack = [start]
         visited.add(start)
-        while queue:
-            idx = queue.pop()
+        while stack:
+            idx = stack.pop()
             component.append(idx)
             for nb in get_neighbors_4(idx, n):
                 if nb not in visited and partial[nb] is None:
                     visited.add(nb)
-                    queue.append(nb)
+                    stack.append(nb)
         components.append(component)
     return components
 
@@ -86,6 +85,26 @@ class LetterGenerator(Generator):
         # Validate that the character exists in the font.
         if not FONT_7x5.get(self.char):
             raise ValueError(f"Character '{self.char}' has no pixels for n={n}")
+
+    @classmethod
+    def demo(cls, n=8, **constructor_kwargs):
+        """
+        Overrides Generator.demo() to handle the required char argument.
+        Iterates over all letters if char is not specified.
+        """
+        char = constructor_kwargs.pop('char', None)
+        if char is not None:
+            gen = cls(n, char)
+            board, solutions = gen.generate()
+            pretty_print(board, n)
+            print(f"Solutions: {len(solutions)}")
+        else:
+            for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
+                print(f"\n--- Letter Generator: {letter} (N={n}) ---")
+                gen = cls(n, letter)
+                board, solutions = gen.generate()
+                pretty_print(board, n)
+                print(f"Solutions: {len(solutions)}")
 
     def _try_generate(self):
         n = self.n
@@ -120,6 +139,8 @@ class LetterGenerator(Generator):
             return None
         seeds.update(random.sample(remaining_free, extra_count))
 
+        # Region IDs are assigned in arbitrary set-iteration order; the labels
+        # just need to be distinct integers in [1, n-1], which this guarantees.
         for reg_id, cell in enumerate(seeds, start=1):
             grid[cell] = reg_id
 
@@ -128,14 +149,8 @@ class LetterGenerator(Generator):
         if grid is None:
             return None
 
-        solutions = get_all_solutions(grid, n)
-        return self._make_result(grid, solutions)
+        return self._make_result(grid)
 
 
 if __name__ == "__main__":
-    for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
-        print(f"\n--- Letter Generator: {letter} (N=8) ---")
-        gen = LetterGenerator(8, letter)
-        board, solutions = gen.generate()
-        pretty_print(board, 8)
-        print(f"Solutions: {len(solutions)}")
+    LetterGenerator.demo(8)

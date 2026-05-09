@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from board_utils import ALPHABET, canonical_relabel
+import random
+from board_solver import get_all_solutions
+from board_utils import ALPHABET, pretty_print
 
 # Boards with fewer than this many solutions are rejected.
 # Ambiguity across multiple boards is the goal for multiverse puzzles.
@@ -28,7 +30,8 @@ class Generator(ABC):
     ------------------------
     Must return (flat_board: str, solutions) on success, or None on failure.
     Subclasses should use _make_result(grid, solutions) as their final return
-    statement, which handles the ambiguity check and string conversion.
+    statement, which handles the ambiguity check, solves the board, and
+    converts to a string.
     """
 
     def __init__(self, n):
@@ -36,7 +39,7 @@ class Generator(ABC):
 
     def generate(self, max_attempts=1000):
         """
-        Public entry point. Calls _try_generate() up to max_attempts times,
+        Public entry point. Calls _try_generate() up to max_attempts times.
         Raises GenerationError if no valid board is found within the budget.
         """
         for _ in range(max_attempts):
@@ -60,22 +63,43 @@ class Generator(ABC):
     # ── Helpers for subclasses ────────────────────────────────────────────────
 
     @staticmethod
-    def _grid_to_str(grid):
-        """Converts a flat integer grid to a region-label string using ALPHABET."""
-        return "".join(ALPHABET[v] for v in grid)
+    def _random_seeds(n):
+        """
+        Returns a list of N distinct randomly chosen cell indices, one per
+        region.  Used as the starting point for flood-fill based generators.
+        """
+        return random.sample(range(n * n), n)
 
     @staticmethod
-    def _is_ambiguous(solutions):
-        """Returns True if the solution set meets the minimum ambiguity requirement."""
-        return len(solutions) >= MIN_SOLUTIONS
+    def _make_result(grid, solutions=None):
+        """
+        Packages a completed grid into the _try_generate return value.
 
-    @staticmethod
-    def _make_result(grid, solutions):
+        If solutions is not provided it is computed here.  Returns
+        (flat_board_string, solutions) if the board meets the minimum
+        ambiguity requirement, or None otherwise.
+
+        Use this as the final return statement in every _try_generate
+        implementation.
         """
-        Packages a completed grid and its solutions into the _try_generate
-        return value, or returns None if the board is not sufficiently ambiguous.
-        Use this as the final return statement in every _try_generate implementation.
-        """
+        if solutions is None:
+            n = int(len(grid) ** 0.5)
+            solutions = get_all_solutions(grid, n)
         if len(solutions) >= MIN_SOLUTIONS:
             return "".join(ALPHABET[v] for v in grid), solutions
         return None
+
+    @classmethod
+    def demo(cls, n=8, max_attempts=1000, **constructor_kwargs):
+        """
+        Instantiates the generator, runs it, and prints the result.
+
+        constructor_kwargs are forwarded to __init__ (e.g. symmetry_type for
+        SymmetricGenerator).  max_attempts is forwarded to generate() and
+        defaults to 1000 for most generators; VotingDistrictGenerator overrides
+        this default via its own demo() classmethod.
+        """
+        gen = cls(n, **constructor_kwargs)
+        board, solutions = gen.generate(max_attempts=max_attempts)
+        pretty_print(board, n)
+        print(f"Solutions: {len(solutions)}")

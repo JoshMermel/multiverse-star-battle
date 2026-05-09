@@ -43,6 +43,7 @@ import statistics
 # Board generators
 from letter_generator import LetterGenerator
 from random_generator import RandomGenerator
+from stripe_generator import StripeGenerator
 from square_free_generator import SquareFreeGenerator
 from symmetric_generator import SymmetricGenerator
 from voronoi_generator import VoronoiGenerator
@@ -53,6 +54,7 @@ from asymmetric_pool_comparator import AsymmetricPoolComparator
 from self_comparator import SelfComparator
 from symmetric_pool_comparator import SymmetricPoolComparator
 from sudoku_comparator import SudokuComparator
+from venn_generator import VennGenerator
 
 # Scoring utils
 from scorer import StarBattlePuzzle, CompositeScorer, TIER_ORDER, _TIER_RANK
@@ -79,7 +81,7 @@ def _build_letter_pair(args, n, output_rows):
 # boilerplate so I don't need to write this every time when testing new
 # generators or comparators.
 def _build_tmp(args, n, output_rows):
-    return SymmetricPoolComparator(VoronoiGenerator(n), n, output_rows)
+    return SymmetricPoolComparator(VennGenerator(n), n, output_rows)
     #gen_a = SymmetricGenerator(n, symmetry_type="rot_90")
     #gen_b = SymmetricGenerator(n, symmetry_type="rot_180")
     #return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows)

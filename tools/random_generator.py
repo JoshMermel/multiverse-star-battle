@@ -10,21 +10,16 @@ class RandomGenerator(Generator):
     def _try_generate(self):
         n = self.n
         grid = [None] * (n * n)
-        seeds = random.sample(range(n * n), n)
-        for reg_id, cell in enumerate(seeds):
+        for reg_id, cell in enumerate(self._random_seeds(n)):
             grid[cell] = reg_id
 
         grid = flood_fill(grid, n)
         if grid is None:
             return None
 
-        solutions = get_all_solutions(grid, n)
-        return self._make_result(grid, solutions)
+        return self._make_result(grid)
 
 
 if __name__ == "__main__":
     print("\n--- Random Generator (N=8) ---")
-    gen = RandomGenerator(8)
-    board, solutions = gen.generate()
-    pretty_print(board, 8)
-    print(f"Solutions: {len(solutions)}")
+    RandomGenerator.demo(8)

@@ -17,15 +17,17 @@ Method
    (up to a small limit).
 3. After enough accepted moves the board is well-shuffled; solve and return.
 
-Note: each generation attempt is expensive (4·N² ReCom moves). If calling
-generate() directly, consider passing a low max_attempts (e.g. 5-10) rather
-than the default 1000.
+Performance note
+----------------
+Each generation attempt runs 4·N² ReCom moves, making it significantly more
+expensive than other generators.  DEFAULT_MAX_ATTEMPTS is set to 10 rather
+than the base-class default of 1000.  Pass max_attempts explicitly to
+generate() if you need a different budget.
 """
 
 from collections import deque
 import random
 
-from board_solver import get_all_solutions
 from board_utils import get_neighbors_4, pretty_print
 from generator import Generator
 
@@ -36,11 +38,22 @@ _SPANNING_TREE_ATTEMPTS = 10
 class VotingDistrictGenerator(Generator):
     """Generates a board where every region contains exactly N cells."""
 
+    # Lower default than the base class because each attempt is expensive.
+    DEFAULT_MAX_ATTEMPTS = 10
+
     def __init__(self, n):
         super().__init__(n)
         self._moves_per_attempt = 4 * n * n
         # Precompute the full grid adjacency list — it never changes between moves.
         self._grid_adj = {idx: get_neighbors_4(idx, n) for idx in range(n * n)}
+
+    @classmethod
+    def demo(cls, n=8, **constructor_kwargs):
+        """Overrides Generator.demo() to use DEFAULT_MAX_ATTEMPTS."""
+        gen = cls(n, **constructor_kwargs)
+        board, solutions = gen.generate(max_attempts=cls.DEFAULT_MAX_ATTEMPTS)
+        pretty_print(board, n)
+        print(f"Solutions: {len(solutions)}")
 
     # ── grid helpers ──────────────────────────────────────────────────────────
 
@@ -82,11 +95,7 @@ class VotingDistrictGenerator(Generator):
             visited_in_walk = {start: 0}
             cur = start
             while cur not in in_tree:
-                nbrs = blob_adj.get(cur, [])
-                if not nbrs:
-                    # Isolated node in blob subgraph — blob is malformed.
-                    return None
-                nxt = random.choice(nbrs)
+                nxt = random.choice(blob_adj[cur])
                 if nxt in visited_in_walk:
                     path = path[:visited_in_walk[nxt] + 1]
                     visited_in_walk = {c: i for i, c in enumerate(path)}
@@ -183,8 +192,6 @@ class VotingDistrictGenerator(Generator):
 
             for _ in range(_SPANNING_TREE_ATTEMPTS):
                 tree = self._random_spanning_tree(blob_list, blob_adj)
-                if tree is None:
-                    break
                 balance_edges = self._find_balance_edges(tree, blob)
                 if balance_edges:
                     break
@@ -251,13 +258,9 @@ class VotingDistrictGenerator(Generator):
         if moves_done == 0:
             return None
 
-        solutions = get_all_solutions(grid, n)
-        return self._make_result(grid, solutions)
+        return self._make_result(grid)
 
 
 if __name__ == "__main__":
     print("\n--- Voting District Generator (N=8) ---")
-    gen = VotingDistrictGenerator(8)
-    board, solutions = gen.generate(max_attempts=10)
-    pretty_print(board, 8)
-    print(f"Solutions: {len(solutions)}")
+    VotingDistrictGenerator.demo(8)

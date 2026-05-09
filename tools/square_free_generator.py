@@ -1,41 +1,58 @@
 import random
-from board_solver import get_all_solutions
 from board_utils import pretty_print
 from generator import Generator
+
 
 class SquareFreeGenerator(Generator):
     """
     Generates Star Battle boards with 'skeletal' regions.
 
     Constraint: regions form trees — each grown cell connects to exactly one
-    existing cell of the same region (strict branching). This implies the
-    square-free property: a 2x2 block would require at least one cell to have
-    two same-region neighbours.
+    existing cell of the same region (strict branching).  This implies the
+    square-free property: a 2×2 filled block would require at least one cell
+    to have two same-region neighbours, violating the constraint.
+
+    Growth strategy
+    ---------------
+    Each region maintains a list of live branch tips.  On each iteration one
+    region is chosen at random and we attempt to extend its most-recently-added
+    tip (LIFO order, working backwards through the list).  If a tip has no
+    valid neighbours it is permanently pruned.  A region becomes inactive once
+    all its tips are pruned.
+
+    When all regions are inactive the board may still have unfilled cells
+    (regions can box each other in), in which case the attempt is discarded
+    and the outer retry loop tries again.  This failure mode becomes more
+    frequent for large N.
     """
 
     def _try_generate(self):
         n = self.n
-        grid_flat = [None] * (n * n)
+        grid = [None] * (n * n)
 
-        # 1. Initialize N seeds — one per region
-        seed_indices = random.sample(range(n * n), n)
-        # tips[reg_id] holds the frontier of live branch-tips for that region
+        # 1. Initialise N seeds — one per region.
+        # tips[reg_id]: list of live branch-tip indices for that region.
+        # We treat this as a stack (LIFO) — new tips are appended and we
+        # search from the end, giving priority to the most recent growth.
         tips = []
-        for reg_id, idx in enumerate(seed_indices):
-            grid_flat[idx] = reg_id
+        for reg_id, idx in enumerate(self._random_seeds(n)):
+            grid[idx] = reg_id
             tips.append([idx])
 
         active_regions = list(range(n))
 
-        # 2. Competitive Branching Growth
+        # 2. Competitive branching growth.
         while active_regions:
-            # Pick one region at random per iteration for fair, unbiased growth
+            # Choose a region at random each iteration for unbiased growth.
             reg_id = random.choice(active_regions)
             frontier = tips[reg_id]
             expanded = False
 
-            # Search frontier backwards to prioritise 'tips' of branches
-            for i in range(len(frontier) - 1, -1, -1):
+            # Walk the tip stack from the top (most recent), looking for a
+            # tip that can still grow.  Prune dead tips as we go using
+            # swap-and-pop for O(1) removal.
+            i = len(frontier) - 1
+            while i >= 0:
                 curr_idx = frontier[i]
                 nr_base, nc_base = divmod(curr_idx, n)
 
@@ -45,44 +62,45 @@ class SquareFreeGenerator(Generator):
                     if not (0 <= nr < n and 0 <= nc < n):
                         continue
                     n_idx = nr * n + nc
-                    if grid_flat[n_idx] is not None:
+                    if grid[n_idx] is not None:
                         continue
 
-                    # Strict branching: the candidate must touch only curr_idx
-                    # among existing same-region cells (i.e. curr_idx is its
-                    # sole same-region neighbour).
+                    # Strict branching: the candidate cell must touch exactly
+                    # one same-region cell (curr_idx).  If it also borders
+                    # another cell of this region, accepting it would create a
+                    # cycle, violating the tree structure.
                     has_other_same_reg = any(
-                        grid_flat[(nr + ddr) * n + (nc + ddc)] == reg_id
+                        grid[(nr + ddr) * n + (nc + ddc)] == reg_id
                         for ddr, ddc in [(-1, 0), (1, 0), (0, -1), (0, 1)]
-                        if 0 <= nr + ddr < n and 0 <= nc + ddc < n
-                        and (nr + ddr) * n + (nc + ddc) != curr_idx
+                        if (0 <= nr + ddr < n and 0 <= nc + ddc < n
+                            and (nr + ddr) * n + (nc + ddc) != curr_idx)
                     )
                     if not has_other_same_reg:
                         candidates.append(n_idx)
 
                 if candidates:
                     next_idx = random.choice(candidates)
-                    grid_flat[next_idx] = reg_id
+                    grid[next_idx] = reg_id
                     frontier.append(next_idx)
                     expanded = True
                     break
                 else:
-                    # This branch tip is permanently stuck; prune it
-                    frontier.pop(i)
+                    # Tip is permanently stuck — prune it with swap-and-pop.
+                    frontier[i] = frontier[-1]
+                    frontier.pop()
+                    i -= 1
 
             if not expanded:
                 active_regions.remove(reg_id)
 
-        # 3. Validate fill and solve
-        if None in grid_flat:
+        # 3. Validate fill and solve.
+        if None in grid:
+            # Some cells were never claimed; discard this attempt.
             return None
 
-        solutions = get_all_solutions(grid_flat, n)
-        return self._make_result(grid_flat, solutions)
+        return self._make_result(grid)
+
 
 if __name__ == "__main__":
     print("\n--- SquareFree Generator (N=8) ---")
-    gen = SquareFreeGenerator(8)
-    board, solutions = gen.generate()
-    pretty_print(board, 8)
-    print(f"Solutions: {len(solutions)}")
+    SquareFreeGenerator.demo(8)

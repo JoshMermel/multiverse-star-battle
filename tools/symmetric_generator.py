@@ -20,11 +20,13 @@ first; _place_straddle_seeds plants them.  _place_regular_seeds then places
 the remaining regions in symmetric orbit pairs (or quads for rot_90 /
 double_mirror).  symmetric_flood_fill grows all seeded regions simultaneously
 while preserving the chosen symmetry.
+
+Unassigned cells are represented as None throughout, consistent with all
+other generators.
 """
 
 import random
 from board_utils import get_neighbors_4, pretty_print
-from board_solver import get_all_solutions
 from generator import Generator
 
 
@@ -90,6 +92,8 @@ class SymmetricGenerator(Generator):
             choices = [i for i in range(n + 1) if i % 2 == 0 and (n - i) % 4 == 0]
             return random.choice(choices)
         elif self.sym_type == 'rot_90':
+            # For rot_90 every region must occupy a full 4-cell orbit; there
+            # is no fixed point for even N, so straddling is impossible.
             return 0
         elif self.sym_type == 'rot_180':
             limit = n // 2
@@ -153,7 +157,7 @@ class SymmetricGenerator(Generator):
 
                         cells_a = {self._get_idx(r, c), self._get_idx(r2, c2)}
                         cells_b = {self._get_idx(mr1, mc1), self._get_idx(mr2, mc2)}
-                        if all(grid[idx] == -1 for idx in (cells_a | cells_b)):
+                        if all(grid[idx] is None for idx in (cells_a | cells_b)):
                             for idx in cells_a:
                                 grid[idx] = labels_used
                             labels_used += 1
@@ -181,7 +185,7 @@ class SymmetricGenerator(Generator):
                     for c in range(c_min, c_max + 1):
                         if r == r_min or r == r_max or c == c_min or c == c_max:
                             idx = self._get_idx(r, c)
-                            if idx is not None and grid[idx] == -1:
+                            if idx is not None and grid[idx] is None:
                                 grid[idx] = labels_used
                 labels_used += 1
 
@@ -198,14 +202,14 @@ class SymmetricGenerator(Generator):
         if labels_used >= total_regions:
             return
         orbit_size = 4 if self.sym_type in self._QUAD_SYMMETRIES else 2
-        indices = [i for i in range(n * n) if grid[i] == -1]
+        indices = [i for i in range(n * n) if grid[i] is None]
         random.shuffle(indices)
         current_label = labels_used
         for idx in indices:
             if current_label >= total_regions:
                 break
             orbit = list(set(self.get_orbit(idx)))
-            if len(orbit) == orbit_size and all(grid[o] == -1 for o in orbit):
+            if len(orbit) == orbit_size and all(grid[o] is None for o in orbit):
                 for i, o_idx in enumerate(orbit):
                     grid[o_idx] = current_label + i
                 current_label += orbit_size
@@ -227,9 +231,9 @@ class SymmetricGenerator(Generator):
         frontier = []
         frontier_set = set()
         for i in range(n * n):
-            if grid[i] == -1:
+            if grid[i] is None:
                 for nb in get_neighbors_4(i, n):
-                    if grid[nb] != -1:
+                    if grid[nb] is not None:
                         pair = (i, nb)
                         if pair not in frontier_set:
                             frontier.append(pair)
@@ -242,17 +246,17 @@ class SymmetricGenerator(Generator):
             u_idx, l_idx = frontier.pop()
             frontier_set.discard((u_idx, l_idx))
 
-            if grid[u_idx] != -1:
+            if grid[u_idx] is not None:
                 continue
 
             u_orbit = self.get_orbit(u_idx)
             l_orbit = self.get_orbit(l_idx)
 
             for u_img, l_img in zip(u_orbit, l_orbit):
-                if grid[u_img] == -1:
+                if grid[u_img] is None:
                     grid[u_img] = grid[l_img]
                     for nb in get_neighbors_4(u_img, n):
-                        if grid[nb] == -1:
+                        if grid[nb] is None:
                             pair = (nb, u_img)
                             if pair not in frontier_set:
                                 frontier.append(pair)
@@ -267,20 +271,19 @@ class SymmetricGenerator(Generator):
         or None on failure.  The outer retry loop in Generator.generate()
         handles repeated attempts.
         """
-        grid = [-1] * (self.n * self.n)
+        grid = [None] * (self.n * self.n)
         straddle_count = self._decide_straddle_count()
         labels_used = self._place_straddle_seeds(grid, straddle_count)
         self._place_regular_seeds(grid, labels_used)
         self.symmetric_flood_fill(grid)
 
-        solutions = get_all_solutions(grid, self.n)
-        return self._make_result(grid, solutions)
+        return self._make_result(grid)
 
     def _debug_print(self, grid):
         """Prints the given grid state using region label characters."""
         from board_utils import ALPHABET
         flat = "".join(
-            ALPHABET[grid[r * self.n + c]] if grid[r * self.n + c] != -1 else "."
+            ALPHABET[grid[r * self.n + c]] if grid[r * self.n + c] is not None else "."
             for r in range(self.n)
             for c in range(self.n)
         )
@@ -290,7 +293,4 @@ class SymmetricGenerator(Generator):
 if __name__ == "__main__":
     for m in ['mirror', 'diagonal', 'double_mirror', 'rot_90', 'rot_180']:
         print(f"\n--- Symmetric Generator: {m} (N=8) ---")
-        gen = SymmetricGenerator(8, m)
-        board, solutions = gen.generate()
-        pretty_print(board, 8)
-        print(f"Solutions: {len(solutions)}")
+        SymmetricGenerator.demo(8, symmetry_type=m)
