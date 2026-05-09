@@ -43,7 +43,6 @@ import statistics
 # Board generators
 from letter_generator import LetterGenerator
 from random_generator import RandomGenerator
-from stripe_generator import StripeGenerator
 from square_free_generator import SquareFreeGenerator
 from symmetric_generator import SymmetricGenerator
 from voronoi_generator import VoronoiGenerator
