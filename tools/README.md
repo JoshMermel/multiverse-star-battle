@@ -10,6 +10,8 @@ Python code for generating and scoring puzzles.
  - board_solver.py uses OR-Tools to efficiently solve candidate boards.
  - scorer.py uses human-inspired heuristics to estimate difficulty of board
    pairs.
+ - puzzle_deduper.py is used to dedupe puzzles, including orientation and
+   swapping
  - font_data.py is a pixel font used to generate boards with letters inside them
  - board_utils.py contains helpers that are useful across the project and which
    don't fit anywhere else.
