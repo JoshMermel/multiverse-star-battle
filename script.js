@@ -468,7 +468,11 @@ class StarBattleGame {
 
     this.commitPuzzleSelection = async () => {
       let val = parseInt(puzInput.value, 10);
-      const catId = catSelect.value;
+      // If the current book is an arbitrary CSV (not in the manifest select),
+      // stay in it rather than falling back to whatever the select shows.
+      const catId = (this.currentCategoryId && !catSelect.querySelector(`option[value="${this.currentCategoryId}"]`))
+        ? this.currentCategoryId
+        : catSelect.value;
       if (isNaN(val)) val = 1;
 
       // Skip if the requested puzzle is already loaded
@@ -640,7 +644,8 @@ class StarBattleGame {
         month: 'long', day: 'numeric'
       });
       const label = this.currentPuzzle?.dailyLabel ?? '';
-      this.showToast(`Daily ${label} — ${today}`);
+      const sundayNote = label === 'Expert' ? ' ☀️ Sundays only' : '';
+      this.showToast(`Daily ${label} — ${today}${sundayNote}`);
     } else {
       this.showToast(`Playing Puzzle ${puzId}`, "info");
     }
