@@ -213,23 +213,19 @@ class SymmetricGenerator(Generator):
 
                 def get_palindromic_partition(total_len, num_segments):
                     """
-                    Splits total_len into num_segments contiguous parts whose
-                    sizes are palindromic (symmetric around a centre part of
-                    size 1).  This ensures seeded regions respect the double-
-                    mirror symmetry.
+                    Splits total_len into num_segments contiguous parts that form a
+                    palindrome.  The centre segment absorbs whatever is left after the
+                    symmetric outer segments are chosen, so all segment sizes are >= 1.
                     """
                     if num_segments == 1:
                         return [total_len]
-                    half_segs = num_segments // 2
-                    half_len = total_len // 2
-                    divs = sorted(random.sample(range(1, half_len), half_segs - 1))
-                    parts = []
-                    last = 0
-                    for d in divs:
-                        parts.append(d - last)
-                        last = d
-                    parts.append(half_len - last)
-                    return parts + [1] + parts[::-1]
+                    half = num_segments // 2
+                    # Constrain cut points to the first half of the axis so each outer
+                    # segment fits within it, guaranteeing the centre segment is >= 1.
+                    cuts = sorted(random.sample(range(1, total_len // 2 + 1), half))
+                    outer = [cuts[0]] + [cuts[i] - cuts[i-1] for i in range(1, half)]
+                    centre = total_len - 2 * sum(outer)
+                    return outer + [centre] + outer[::-1]
 
                 v_parts = get_palindromic_partition(n, v_count)
                 h_parts = get_palindromic_partition(n, h_count)
@@ -389,4 +385,4 @@ class SymmetricGenerator(Generator):
 if __name__ == "__main__":
     for m in ['mirror', 'diagonal', 'double_mirror', 'rot_90', 'rot_180']:
         print(f"\n--- Symmetric Generator: {m} (N=8) ---")
-        SymmetricGenerator.demo(7, symmetry_type=m)
+        SymmetricGenerator.demo(8, symmetry_type=m)
