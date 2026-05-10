@@ -151,6 +151,33 @@ class StarBattleGame {
     autoFillDotsToggle.addEventListener('change', () => {
       localStorage.setItem('setting-auto-fill-dots', autoFillDotsToggle.checked);
     });
+
+    // ── Clear saves ──────────────────────────────────────────────────────────
+    const clearSavesBtn = document.getElementById('clear-saves-btn');
+    let clearSavesConfirmPending = false;
+    let clearSavesConfirmTimer = null;
+
+    clearSavesBtn.addEventListener('click', () => {
+      if (!clearSavesConfirmPending) {
+        // First click: enter confirm state
+        clearSavesConfirmPending = true;
+        clearSavesBtn.textContent = 'Are you sure?';
+        clearSavesBtn.classList.add('danger-btn--confirm');
+        // Auto-revert if the user doesn't follow through within 4 seconds
+        clearSavesConfirmTimer = setTimeout(() => {
+          clearSavesConfirmPending = false;
+          clearSavesBtn.textContent = 'Clear saves';
+          clearSavesBtn.classList.remove('danger-btn--confirm');
+        }, 4000);
+      } else {
+        // Second click: execute
+        clearTimeout(clearSavesConfirmTimer);
+        clearSavesConfirmPending = false;
+        clearSavesBtn.textContent = 'Clear saves';
+        clearSavesBtn.classList.remove('danger-btn--confirm');
+        this._clearAllSaveData();
+      }
+    });
   }
 
   _applyDarkMode(on) {
@@ -1162,6 +1189,34 @@ class StarBattleGame {
     }
     this.updateControls();
     this.updateSolvedUI();
+  }
+
+  // Deletes all puzzle state and solved-history entries from localStorage,
+  // leaving settings (setting-*) untouched. Also resets the current board
+  // to an empty state so the UI stays consistent.
+  _clearAllSaveData() {
+    const keysToDelete = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key === 'sb_solved' || key.startsWith('sb_state_')) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach(k => localStorage.removeItem(k));
+
+    // Reset the live board so the UI reflects the cleared state
+    if (this.state) {
+      this.state.fill(CELL.NONE);
+      this.history = [JSON.stringify(this.state)];
+      this.historyIdx = 0;
+      this.clearHintUI();
+      this.updateVisuals();
+      this.updateControls();
+      this.validate();
+      this.updateSolvedUI();
+    }
+
+    this.showToast(`Cleared ${keysToDelete.length - 1} puzzle save(s).`, 'info');
   }
 
   // Records this puzzle as solved in localStorage and updates the solved badge.
