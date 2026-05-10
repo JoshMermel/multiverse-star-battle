@@ -57,6 +57,7 @@ from venn_generator import VennGenerator
 
 # Scoring utils
 from scorer import StarBattlePuzzle, CompositeScorer, TIER_ORDER, _TIER_RANK
+from puzzle_deduper import PuzzleDeduper
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -80,10 +81,10 @@ def _build_letter_pair(args, n, output_rows):
 # boilerplate so I don't need to write this every time when testing new
 # generators or comparators.
 def _build_tmp(args, n, output_rows):
-    return SymmetricPoolComparator(VennGenerator(n), n, output_rows)
-    #gen_a = SymmetricGenerator(n, symmetry_type="rot_90")
-    #gen_b = SymmetricGenerator(n, symmetry_type="rot_180")
-    #return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows)
+    #return SymmetricPoolComparator(VennGenerator(n), n, output_rows)
+    gen_a = SymmetricGenerator(n, symmetry_type="rot_180")
+    gen_b = SymmetricGenerator(n, symmetry_type="mirror")
+    return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows)
 
 
 # Maps mode names to factory lambdas.
@@ -128,6 +129,8 @@ def run_generation(args):
         args.input = args.output
         args.output = _scored_output_path(args.output)
         args.puzzle = None
+        # Generation already deduped; no need to repeat the work.
+        args.skip_dedup = True
         print("\n# Scoring {0}...".format(args.input), flush=True)
         run_scoring(args)
 
@@ -144,8 +147,10 @@ def run_scoring(args):
         return
 
     scorer = CompositeScorer(verbose=args.verbose)
+    deduper = None if getattr(args, 'skip_dedup', False) else PuzzleDeduper()
     all_results = []
     total, solved_count = 0, 0
+    skipped_count = 0
 
     with open(input_file, mode='r') as f:
         reader = csv.DictReader(f)
@@ -153,6 +158,12 @@ def run_scoring(args):
         for row in reader:
             if args.puzzle and row['name'] != args.puzzle:
                 continue
+            n = int(row['N'])
+            if deduper is not None:
+                if deduper.is_duplicate(row['board_1'], row['board_2'], n):
+                    skipped_count += 1
+                    continue
+                deduper.register(row['board_1'], row['board_2'], n)
             total += 1
             puzzle = StarBattlePuzzle(
                 int(row['N']), row['board_1'], row['board_2'],
@@ -196,6 +207,8 @@ def run_scoring(args):
     print("STATISTICS")
     print("=" * 52)
     print("Total:   {0}".format(total))
+    if skipped_count:
+        print("Skipped (duplicates): {0}".format(skipped_count))
     pct = (solved_count / total * 100) if total > 0 else 0
     print("Solved:  {0} ({1:.1f}%)".format(solved_count, pct))
     if solved_scores:
@@ -290,6 +303,8 @@ Examples:
                          help="Score only this named puzzle")
     score_p.add_argument("--verbose", action="store_true",
                          help="Print each inference step during scoring")
+    score_p.add_argument("--skip-dedup", action="store_true", dest="skip_dedup",
+                         help="Skip duplicate detection (use when input was already deduped during generation)")
 
     args = parser.parse_args()
 
