@@ -115,15 +115,15 @@ class StorageManager {
           // Overwrite local state with cloud state
           localStorage.setItem(`sb_state_${puzzleId}`, stateJson);
         }
-
-        if (this.onCloudDataLoadedCallback) {
-          this.onCloudDataLoadedCallback();
-        }
-
-        // Push the newly merged local state back up to the cloud so that
-        // this device's pre-existing local data is shared across devices.
-        this._syncToCloud();
       }
+
+      if (this.onCloudDataLoadedCallback) {
+        this.onCloudDataLoadedCallback();
+      }
+
+      // Push the newly merged local state back up to the cloud so that
+      // this device's pre-existing local data is shared across devices.
+      this._syncToCloud();
     } catch (error) {
       console.error("Error syncing from cloud", error);
       alert("Error syncing FROM cloud: " + error.message);
