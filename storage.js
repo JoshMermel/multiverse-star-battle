@@ -126,6 +126,7 @@ class StorageManager {
       }
     } catch (error) {
       console.error("Error syncing from cloud", error);
+      alert("Error syncing FROM cloud: " + error.message);
     }
   }
 
@@ -160,8 +161,10 @@ class StorageManager {
           solved: solved,
           states: states
         }); // Overwrite with entire local state (since local represents current truth)
+        alert(`Successfully synced to cloud! Solved count: ${solved.length}`);
       } catch (error) {
         console.error("Error syncing to cloud", error);
+        alert("Error syncing TO cloud: " + error.message);
       }
     }, 2000); // 2 second debounce
   }
