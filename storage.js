@@ -119,6 +119,10 @@ class StorageManager {
         if (this.onCloudDataLoadedCallback) {
           this.onCloudDataLoadedCallback();
         }
+
+        // Push the newly merged local state back up to the cloud so that
+        // this device's pre-existing local data is shared across devices.
+        this._syncToCloud();
       }
     } catch (error) {
       console.error("Error syncing from cloud", error);
