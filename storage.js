@@ -19,13 +19,18 @@ class StorageManager {
     this.onAuthChangeCallback = null;
     this.onCloudDataLoadedCallback = null;
     this._syncTimeout = null;
-    
+
     auth.onAuthStateChanged(user => {
       this.user = user;
       if (this.onAuthChangeCallback) this.onAuthChangeCallback(user);
       if (user) {
         this._syncFromCloud();
       }
+    });
+
+    // Required to complete the sign-in flow after the page reloads from a redirect
+    auth.getRedirectResult().catch(error => {
+      console.error("Redirect sign-in error", error);
     });
   }
 
@@ -89,13 +94,15 @@ class StorageManager {
 
   // --- Cloud Syncing ---
   async _syncFromCloud() {
+    console.log("Syncing from cloud");
     if (!this.user) return;
+    console.log("Syncing from cloud 2");
     try {
       const docRef = db.collection('users').doc(this.user.uid);
       const docSnap = await docRef.get();
       if (docSnap.exists) {
         const data = docSnap.data();
-        
+
         // Merge solved list
         const localSolved = this.getSolvedList();
         const cloudSolved = data.solved || [];
@@ -119,17 +126,19 @@ class StorageManager {
   }
 
   async _syncToCloud(isClearAll = false) {
+    console.log("Syncing to cloud");
     if (!this.user) return;
-    
+    console.log("Syncing to cloud 2");
+
     // To avoid spamming Firestore on every cell click, we debounce this.
     clearTimeout(this._syncTimeout);
     this._syncTimeout = setTimeout(async () => {
       try {
         const docRef = db.collection('users').doc(this.user.uid);
-        
+
         if (isClearAll) {
-           await docRef.set({ solved: [], states: {} });
-           return;
+          await docRef.set({ solved: [], states: {} });
+          return;
         }
 
         // Gather all local data
@@ -142,7 +151,7 @@ class StorageManager {
             states[puzzleId] = localStorage.getItem(key);
           }
         }
-        
+
         await docRef.set({
           solved: solved,
           states: states
