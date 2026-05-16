@@ -1,5 +1,6 @@
 import { PuzzleSolver } from './solver.js';
 import { CELL } from './constants.js';
+import { storageManager } from './storage.js';
 
 class StarBattleGame {
   // ────────────────────── 
@@ -65,6 +66,30 @@ class StarBattleGame {
     this.setupBrowseModal();
     this.setupBookPicker();
     this.setupSettings();
+    this.setupAuth();
+  }
+
+  setupAuth() {
+    const authBtn = document.getElementById('auth-btn');
+
+    const updateAuthBtn = (user) => {
+      authBtn.textContent = user ? 'Sign Out' : 'Sign In';
+    };
+
+    storageManager.setCallbacks({
+      onAuthChange: updateAuthBtn,
+      onCloudDataLoaded: () => {
+        this.loadProgress({ suppressWinToast: true });
+      }
+    });
+
+    authBtn.onclick = () => {
+      if (storageManager.user) {
+        storageManager.signOut();
+      } else {
+        storageManager.signIn();
+      }
+    };
   }
 
   // Creates open/close behaviour for a modal: close button(s), backdrop click,
@@ -72,7 +97,7 @@ class StarBattleGame {
   setupModal(modalId, { onConfirm } = {}) {
     const modal = document.getElementById(modalId);
     const close = () => modal.classList.add('modal-hidden');
-    const open  = () => modal.classList.remove('modal-hidden');
+    const open = () => modal.classList.remove('modal-hidden');
 
     modal.querySelectorAll('[data-close]').forEach(btn => btn.onclick = close);
     modal.addEventListener('click', e => { if (e.target === modal) close(); });
@@ -106,20 +131,20 @@ class StarBattleGame {
     const { open } = this.setupModal('settings-modal');
     document.getElementById('settings-btn').onclick = open;
 
-    const darkToggle         = document.getElementById('setting-dark-mode');
-    const tabToggle          = document.getElementById('setting-tab-mode');
-    const axisLabelsToggle   = document.getElementById('setting-axis-labels');
+    const darkToggle = document.getElementById('setting-dark-mode');
+    const tabToggle = document.getElementById('setting-tab-mode');
+    const axisLabelsToggle = document.getElementById('setting-axis-labels');
     const autoFillDotsToggle = document.getElementById('setting-auto-fill-dots');
 
     // Restore persisted preferences
-    const savedDark         = localStorage.getItem('setting-dark-mode')       === 'true';
-    const savedTab          = localStorage.getItem('setting-tab-mode')        === 'true';
-    const savedAxisLabels   = localStorage.getItem('setting-axis-labels')     === 'true';
-    const savedAutoFillDots = localStorage.getItem('setting-auto-fill-dots')  === 'true';
+    const savedDark = localStorage.getItem('setting-dark-mode') === 'true';
+    const savedTab = localStorage.getItem('setting-tab-mode') === 'true';
+    const savedAxisLabels = localStorage.getItem('setting-axis-labels') === 'true';
+    const savedAutoFillDots = localStorage.getItem('setting-auto-fill-dots') === 'true';
 
-    darkToggle.checked         = savedDark;
-    tabToggle.checked          = savedTab;
-    axisLabelsToggle.checked   = savedAxisLabels;
+    darkToggle.checked = savedDark;
+    tabToggle.checked = savedTab;
+    axisLabelsToggle.checked = savedAxisLabels;
     autoFillDotsToggle.checked = savedAutoFillDots;
     this._applyDarkMode(savedDark);
     this._applyTabMode(savedTab);
@@ -249,7 +274,7 @@ class StarBattleGame {
     if (!puzzles?.length) return;
 
     // Build a Set of hashes for all solved puzzles
-    const solvedIds = new Set(JSON.parse(localStorage.getItem(this.solvedKey) || '[]'));
+    const solvedIds = new Set(storageManager.getSolvedList());
 
     // Pre-compute hashes for all puzzles in this book (cached on the puzzle objects)
     await Promise.all(puzzles.map(async (puz) => {
@@ -291,7 +316,7 @@ class StarBattleGame {
       tile.setAttribute('aria-label', `Puzzle ${num}${solvedIds.has(puz._cachedId) ? ' (solved)' : ''}`);
 
       if (solvedIds.has(puz._cachedId)) tile.classList.add('bt-solved');
-      if (puz._cachedId === currentId)  tile.classList.add('bt-current');
+      if (puz._cachedId === currentId) tile.classList.add('bt-current');
 
       tile.onclick = () => {
         document.getElementById('browse-modal').classList.add('modal-hidden');
@@ -310,7 +335,7 @@ class StarBattleGame {
 
   // Returns the 1-based puzzle number of the first unsolved puzzle, or null if all solved.
   _findFirstUnsolvedPuzzleNum() {
-    const solvedIds = new Set(JSON.parse(localStorage.getItem(this.solvedKey) || '[]'));
+    const solvedIds = new Set(storageManager.getSolvedList());
     const idx = this.loadedPuzzles.findIndex(puz => !solvedIds.has(puz._cachedId));
     return idx === -1 ? null : idx + 1;
   }
@@ -372,8 +397,8 @@ class StarBattleGame {
 
       const tierDefs = [
         { label: 'Beginner', text: texts[0] },
-        { label: 'Medium',   text: texts[1] },
-        { label: 'Hard',     text: texts[2] },
+        { label: 'Medium', text: texts[1] },
+        { label: 'Hard', text: texts[2] },
         ...(isSunday ? [{ label: 'Expert', text: texts[3] }] : []),
       ];
 
@@ -681,8 +706,8 @@ class StarBattleGame {
   // Builds the cell grid and SVG region borders for one board.
   renderBoard(id, regionMap) {
     const wrapper = document.getElementById(id);
-    const grid    = this._buildGrid();
-    const svg     = this._buildRegionSvg(regionMap);
+    const grid = this._buildGrid();
+    const svg = this._buildRegionSvg(regionMap);
 
     const axisLabelsOn = localStorage.getItem('setting-axis-labels') === 'true';
     if (axisLabelsOn) {
@@ -691,12 +716,12 @@ class StarBattleGame {
       // Set the grid template explicitly in JS so we don't depend on
       // var(--grid-n) resolving correctly on this element.
       wrapper.style.gridTemplateColumns = `var(--cell-size) repeat(${this.n}, var(--cell-size))`;
-      wrapper.style.gridTemplateRows    = `var(--cell-size) repeat(${this.n}, var(--cell-size))`;
+      wrapper.style.gridTemplateRows = `var(--cell-size) repeat(${this.n}, var(--cell-size))`;
 
       // Corner spacer: row 1, col 1
       const corner = document.createElement('div');
       corner.className = 'axis-corner';
-      corner.style.gridRow    = '1';
+      corner.style.gridRow = '1';
       corner.style.gridColumn = '1';
       wrapper.appendChild(corner);
 
@@ -706,7 +731,7 @@ class StarBattleGame {
         label.className = 'axis-label axis-label--col';
         label.textContent = String.fromCharCode(65 + c);
         label.setAttribute('aria-hidden', 'true');
-        label.style.gridRow    = '1';
+        label.style.gridRow = '1';
         label.style.gridColumn = String(c + 2);
         wrapper.appendChild(label);
       }
@@ -717,7 +742,7 @@ class StarBattleGame {
         label.className = 'axis-label axis-label--row';
         label.textContent = String(r + 1);
         label.setAttribute('aria-hidden', 'true');
-        label.style.gridRow    = String(r + 2);
+        label.style.gridRow = String(r + 2);
         label.style.gridColumn = '1';
         wrapper.appendChild(label);
       }
@@ -725,11 +750,11 @@ class StarBattleGame {
       // Inner wrapper: rows 2..(n+1), col 2 — holds the grid + SVG overlay
       const inner = document.createElement('div');
       inner.className = 'axis-board-inner';
-      inner.style.gridRow    = `2 / span ${this.n}`;
+      inner.style.gridRow = `2 / span ${this.n}`;
       inner.style.gridColumn = '2';
       // Explicit size required so the absolutely-positioned SVG overlay fills
       // the board correctly (100% resolves against this element's dimensions).
-      inner.style.width  = `calc(${this.n} * var(--cell-size))`;
+      inner.style.width = `calc(${this.n} * var(--cell-size))`;
       inner.style.height = `calc(${this.n} * var(--cell-size))`;
       inner.appendChild(grid);
       inner.appendChild(svg);
@@ -737,7 +762,7 @@ class StarBattleGame {
     } else {
       wrapper.classList.remove('grid-wrapper--labeled');
       wrapper.style.gridTemplateColumns = '';
-      wrapper.style.gridTemplateRows    = '';
+      wrapper.style.gridTemplateRows = '';
       wrapper.appendChild(grid);
       wrapper.appendChild(svg);
     }
@@ -861,7 +886,7 @@ class StarBattleGame {
   // session.
   handleStart(idx, isRightClick) {
     const toast = document.getElementById('toast');
-    const isWinToast = toast.classList.contains('toast-win') && 
+    const isWinToast = toast.classList.contains('toast-win') &&
       !toast.classList.contains('toast-hidden');
     if (!isWinToast) this.hideToast();
     this.isDragging = true;
@@ -950,7 +975,7 @@ class StarBattleGame {
     // Auto-fill: when a star is placed (and not already in a recursive call),
     // dot every empty cell in the same row, col, and region on both boards.
     if (type === CELL.STAR && !this._suppressAutoFill &&
-        localStorage.getItem('setting-auto-fill-dots') === 'true') {
+      localStorage.getItem('setting-auto-fill-dots') === 'true') {
       this._suppressAutoFill = true;
       this._autoFillDots(idx);
       this._suppressAutoFill = false;
@@ -965,7 +990,7 @@ class StarBattleGame {
   // the same state array), so the fill naturally appears on both boards.
   // Called only while _suppressAutoFill is true, so no recursion occurs.
   _autoFillDots(idx) {
-    const n   = this.n;
+    const n = this.n;
     const row = Math.floor(idx / n);
     const col = idx % n;
 
@@ -974,7 +999,7 @@ class StarBattleGame {
     // that map to the same logical groups (they may differ visually but the
     // region id at each index is what matters for the rule).
     const regionId = this.regions[0][idx];
-    const toFill   = new Set();
+    const toFill = new Set();
 
     for (let i = 0; i < n * n; i++) {
       const r = Math.floor(i / n), c = i % n;
@@ -1060,8 +1085,8 @@ class StarBattleGame {
 
     // Check rows and columns
     for (let i = 0; i < n; i++) {
-      checkGroup(Array.from({length: n}, (_, k) => i * n + k));
-      checkGroup(Array.from({length: n}, (_, k) => k * n + i));
+      checkGroup(Array.from({ length: n }, (_, k) => i * n + k));
+      checkGroup(Array.from({ length: n }, (_, k) => k * n + i));
     }
 
     // Check regions for both boards
@@ -1174,14 +1199,14 @@ class StarBattleGame {
   // Persists the current cell state to localStorage under the puzzle's unique
   // ID.
   saveCurrentState() {
-    localStorage.setItem(this.stateKey, JSON.stringify(this.state));
+    storageManager.savePuzzleState(this.currentPuzzleUniqueId, this.state);
   }
 
   // Restores saved cell state from localStorage if it exists, then syncs all UI
   loadProgress({ suppressWinToast = false } = {}) {
-    const savedState = localStorage.getItem(this.stateKey);
+    const savedState = storageManager.getPuzzleState(this.currentPuzzleUniqueId);
     if (savedState) {
-      this.state = JSON.parse(savedState);
+      this.state = savedState;
       this.history = [JSON.stringify(this.state)];
       this.historyIdx = 0;
       this.updateVisuals();
@@ -1195,14 +1220,7 @@ class StarBattleGame {
   // leaving settings (setting-*) untouched. Also resets the current board
   // to an empty state so the UI stays consistent.
   _clearAllSaveData() {
-    const keysToDelete = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key === 'sb_solved' || key.startsWith('sb_state_')) {
-        keysToDelete.push(key);
-      }
-    }
-    keysToDelete.forEach(k => localStorage.removeItem(k));
+    storageManager.clearAllPuzzleData();
 
     // Reset the live board so the UI reflects the cleared state
     if (this.state) {
@@ -1216,22 +1234,18 @@ class StarBattleGame {
       this.updateSolvedUI();
     }
 
-    this.showToast(`Cleared ${keysToDelete.length - 1} puzzle save(s).`, 'info');
+    this.showToast('Cleared all puzzle saves.', 'info');
   }
 
   // Records this puzzle as solved in localStorage and updates the solved badge.
   markAsSolved() {
-    const solved = JSON.parse(localStorage.getItem(this.solvedKey) || '[]');
-    if (!solved.includes(this.currentPuzzleUniqueId)) {
-      solved.push(this.currentPuzzleUniqueId);
-      localStorage.setItem(this.solvedKey, JSON.stringify(solved));
-    }
-    this._updateSolvedBadge(solved);
+    storageManager.markPuzzleSolved(this.currentPuzzleUniqueId);
+    this._updateSolvedBadge(storageManager.getSolvedList());
   }
 
   // Shows or hides the ✅ badge based on whether this puzzle is recorded as solved.
   updateSolvedUI() {
-    const solved = JSON.parse(localStorage.getItem(this.solvedKey) || '[]');
+    const solved = storageManager.getSolvedList();
     this._updateSolvedBadge(solved);
   }
 
@@ -1249,7 +1263,7 @@ class StarBattleGame {
   updateCellVisual(cell, val) {
     cell.innerHTML = val === CELL.STAR ? '<span class="star">★</span>'
       : val === CELL.DOT ? '<div class="dot"></div>'
-      : '';
+        : '';
   }
 
   // Re-renders all cells on both boards to match the current state array.
@@ -1436,7 +1450,7 @@ class StarBattleGame {
 
   // Switches to a new book category without a page load, resetting to puzzle 1.
   selectCategory(catId) {
-    const catSelect     = document.getElementById('category-select');
+    const catSelect = document.getElementById('category-select');
     const currentNameEl = document.getElementById('bpb-current-name');
     catSelect.value = catId;
     catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: 1 } }));
@@ -1448,15 +1462,15 @@ class StarBattleGame {
   // Sets up the book picker modal: a two-level UI where users first pick a
   // group (e.g. "8x8"), then drill into its individual difficulty categories.
   setupBookPicker() {
-    const catSelect     = document.getElementById('category-select');
-    const modal         = document.getElementById('book-picker-modal');
-    const body          = document.getElementById('bp-modal-body');
-    const openBtn       = document.getElementById('book-picker-btn');
+    const catSelect = document.getElementById('category-select');
+    const modal = document.getElementById('book-picker-modal');
+    const body = document.getElementById('bp-modal-body');
+    const openBtn = document.getElementById('book-picker-btn');
     const currentNameEl = document.getElementById('bpb-current-name');
 
     // All book/group metadata now lives in manifest.json — no hardcoded lookups here.
     const groupMeta = (g) => this.groups[g] ?? { icon: '📖', blurb: '', desc: '' };
-    const catDesc   = (id) => this.categories.find(c => c.id === id)?.desc ?? '';
+    const catDesc = (id) => this.categories.find(c => c.id === id)?.desc ?? '';
 
     const getStructuredCategories = () => {
       const groups = [];
@@ -1475,7 +1489,7 @@ class StarBattleGame {
       return groups;
     };
 
-    const openModal  = () => { modal.classList.remove('modal-hidden'); renderGroups(); };
+    const openModal = () => { modal.classList.remove('modal-hidden'); renderGroups(); };
     const closeModal = () => modal.classList.add('modal-hidden');
 
     modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });

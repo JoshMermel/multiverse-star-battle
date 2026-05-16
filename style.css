@@ -767,20 +767,29 @@ input[type="number"]::-webkit-inner-spin-button {
 .bp-diff-btn .bp-diff-arrow          { color: var(--border-strong); font-size: 0.8rem; flex-shrink: 0; }
 .bp-diff-btn.bp-selected .bp-diff-arrow { color: var(--primary-blue); }
 
-/* 12. SETTINGS BUTTON */
-.settings-btn {
+/* 12. HEADER BUTTONS */
+.settings-btn, .auth-btn {
   background: none;
   border: none;
-  font-size: 1.3rem;
-  padding: 6px 8px;
   color: var(--text-secondary);
   line-height: 1;
   border-radius: 6px;
   transition: background 0.15s, color 0.15s;
 }
-.settings-btn:not(:disabled):hover {
+.settings-btn:not(:disabled):hover, .auth-btn:not(:disabled):hover {
   background: var(--border-light);
   color: var(--text-primary);
+}
+
+.settings-btn {
+  font-size: 1.3rem;
+  padding: 6px 8px;
+}
+
+.auth-btn {
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 8px 12px;
 }
 
 /* 13. SETTINGS MODAL */
