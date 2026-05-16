@@ -20,6 +20,14 @@ class StorageManager {
     this.onCloudDataLoadedCallback = null;
     this._syncTimeout = null;
 
+    // Cleanup legacy uncompressed save files to free up localStorage space
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb_state_') && !key.startsWith('sb_v2_state_')) {
+        localStorage.removeItem(key);
+      }
+    }
+
     auth.onAuthStateChanged(user => {
       this.user = user;
       if (this.onAuthChangeCallback) this.onAuthChangeCallback(user);
@@ -57,18 +65,37 @@ class StorageManager {
     }
   }
 
+  // --- Serialization ---
+  _serializeState(stateArray) {
+    if (!stateArray) return null;
+    return stateArray.map(cell => {
+      if (cell === 'star') return 'S';
+      if (cell === 'dot') return '.';
+      return '-';
+    }).join('');
+  }
+
+  _deserializeState(stateString) {
+    if (!stateString) return null;
+    return stateString.split('').map(char => {
+      if (char === 'S') return 'star';
+      if (char === '.') return 'dot';
+      return 'none';
+    });
+  }
+
   // --- Local Storage Accessors ---
   getSolvedList() {
     return JSON.parse(localStorage.getItem('sb_solved') || '[]');
   }
 
   getPuzzleState(puzzleId) {
-    const state = localStorage.getItem(`sb_state_${puzzleId}`);
-    return state ? JSON.parse(state) : null;
+    const state = localStorage.getItem(`sb_v2_state_${puzzleId}`);
+    return state ? this._deserializeState(state) : null;
   }
 
   savePuzzleState(puzzleId, stateArray) {
-    localStorage.setItem(`sb_state_${puzzleId}`, JSON.stringify(stateArray));
+    localStorage.setItem(`sb_v2_state_${puzzleId}`, this._serializeState(stateArray));
   }
 
   markPuzzleSolved(puzzleId) {
@@ -84,7 +111,7 @@ class StorageManager {
     const keysToDelete = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key === 'sb_solved' || key.startsWith('sb_state_')) {
+      if (key === 'sb_solved' || key.startsWith('sb_v2_state_')) {
         keysToDelete.push(key);
       }
     }
@@ -111,9 +138,9 @@ class StorageManager {
 
         // Merge states
         const states = data.states || {};
-        for (const [puzzleId, stateJson] of Object.entries(states)) {
+        for (const [puzzleId, stateString] of Object.entries(states)) {
           // Overwrite local state with cloud state
-          localStorage.setItem(`sb_state_${puzzleId}`, stateJson);
+          localStorage.setItem(`sb_v2_state_${puzzleId}`, stateString);
         }
       }
 
@@ -151,8 +178,8 @@ class StorageManager {
         const states = {};
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
-          if (key.startsWith('sb_state_')) {
-            const puzzleId = key.replace('sb_state_', '');
+          if (key.startsWith('sb_v2_state_')) {
+            const puzzleId = key.replace('sb_v2_state_', '');
             states[puzzleId] = localStorage.getItem(key);
           }
         }
