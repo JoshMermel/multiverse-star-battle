@@ -38,7 +38,7 @@ class StorageManager {
   async signIn() {
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
-      await auth.signInWithPopup(provider);
+      await auth.signInWithRedirect(provider);
     } catch (error) {
       console.error("Sign-in error", error);
     }
