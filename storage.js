@@ -135,13 +135,6 @@ class StorageManager {
         const cloudSolved = data.solved || [];
         const mergedSolved = [...new Set([...localSolved, ...cloudSolved])];
         localStorage.setItem('sb_solved', JSON.stringify(mergedSolved));
-
-        // Merge states
-        const states = data.states || {};
-        for (const [puzzleId, stateString] of Object.entries(states)) {
-          // Overwrite local state with cloud state
-          localStorage.setItem(`sb_v2_state_${puzzleId}`, stateString);
-        }
       }
 
       if (this.onCloudDataLoadedCallback) {
@@ -153,7 +146,6 @@ class StorageManager {
       this._syncToCloud();
     } catch (error) {
       console.error("Error syncing from cloud", error);
-      alert("Error syncing FROM cloud: " + error.message);
     }
   }
 
@@ -169,29 +161,18 @@ class StorageManager {
         const docRef = db.collection('users').doc(this.user.uid);
 
         if (isClearAll) {
-          await docRef.set({ solved: [], states: {} });
+          await docRef.set({ solved: [] });
           return;
         }
 
-        // Gather all local data
+        // Gather local solved data
         const solved = this.getSolvedList();
-        const states = {};
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key.startsWith('sb_v2_state_')) {
-            const puzzleId = key.replace('sb_v2_state_', '');
-            states[puzzleId] = localStorage.getItem(key);
-          }
-        }
 
         await docRef.set({
-          solved: solved,
-          states: states
-        }); // Overwrite with entire local state (since local represents current truth)
-        alert(`Successfully synced to cloud! Solved count: ${solved.length}`);
+          solved: solved
+        }); // Overwrite cloud document with local solved list (states are kept local)
       } catch (error) {
         console.error("Error syncing to cloud", error);
-        alert("Error syncing TO cloud: " + error.message);
       }
     }, 2000); // 2 second debounce
   }
