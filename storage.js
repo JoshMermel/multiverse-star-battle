@@ -18,7 +18,7 @@ class StorageManager {
     this.user = null;
     this.onAuthChangeCallback = null;
     this.onCloudDataLoadedCallback = null;
-    this._syncTimeout = null;
+    this._solvedCache = JSON.parse(localStorage.getItem('sb_solved') || '[]');
 
     // Cleanup legacy uncompressed save files to free up localStorage space
     for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -86,7 +86,7 @@ class StorageManager {
 
   // --- Local Storage Accessors ---
   getSolvedList() {
-    return JSON.parse(localStorage.getItem('sb_solved') || '[]');
+    return [...this._solvedCache]; // return a copy to prevent accidental mutations
   }
 
   getPuzzleState(puzzleId) {
@@ -99,15 +99,21 @@ class StorageManager {
   }
 
   markPuzzleSolved(puzzleId) {
-    const solved = this.getSolvedList();
-    if (!solved.includes(puzzleId)) {
-      solved.push(puzzleId);
-      localStorage.setItem('sb_solved', JSON.stringify(solved));
-      this._syncToCloud();
+    if (!this._solvedCache.includes(puzzleId)) {
+      this._solvedCache.push(puzzleId);
+      localStorage.setItem('sb_solved', JSON.stringify(this._solvedCache));
+      
+      // Push just the delta to the cloud
+      if (this.user) {
+        db.collection('users').doc(this.user.uid).set({
+          solved: firebase.firestore.FieldValue.arrayUnion(puzzleId)
+        }, { merge: true }).catch(err => console.error("Error pushing solve to cloud", err));
+      }
     }
   }
 
   clearAllPuzzleData() {
+    this._solvedCache = [];
     const keysToDelete = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -121,60 +127,63 @@ class StorageManager {
 
   // --- Cloud Syncing ---
   async _syncFromCloud() {
-    console.log("Syncing from cloud");
     if (!this.user) return;
-    console.log("Syncing from cloud 2");
     try {
       const docRef = db.collection('users').doc(this.user.uid);
       const docSnap = await docRef.get();
+      let needsSync = false;
+
       if (docSnap.exists) {
         const data = docSnap.data();
 
         // Merge solved list
-        const localSolved = this.getSolvedList();
         const cloudSolved = data.solved || [];
-        const mergedSolved = [...new Set([...localSolved, ...cloudSolved])];
-        localStorage.setItem('sb_solved', JSON.stringify(mergedSolved));
+        const mergedSolved = [...new Set([...this._solvedCache, ...cloudSolved])];
+        
+        if (this._solvedCache.length !== mergedSolved.length) {
+          this._solvedCache = mergedSolved;
+          localStorage.setItem('sb_solved', JSON.stringify(this._solvedCache));
+          needsSync = true;
+        }
+      } else if (this._solvedCache.length > 0) {
+        // Doc doesn't exist, we must create it with our local cache
+        needsSync = true;
       }
 
       if (this.onCloudDataLoadedCallback) {
         this.onCloudDataLoadedCallback();
       }
 
-      // Push the newly merged local state back up to the cloud so that
-      // this device's pre-existing local data is shared across devices.
-      this._syncToCloud();
+      if (needsSync) {
+        this._syncToCloud();
+      }
     } catch (error) {
       console.error("Error syncing from cloud", error);
     }
   }
 
   async _syncToCloud(isClearAll = false) {
-    console.log("Syncing to cloud");
     if (!this.user) return;
-    console.log("Syncing to cloud 2");
 
-    // To avoid spamming Firestore on every cell click, we debounce this.
-    clearTimeout(this._syncTimeout);
-    this._syncTimeout = setTimeout(async () => {
+    if (isClearAll) {
       try {
-        const docRef = db.collection('users').doc(this.user.uid);
-
-        if (isClearAll) {
-          await docRef.set({ solved: [] });
-          return;
-        }
-
-        // Gather local solved data
-        const solved = this.getSolvedList();
-
-        await docRef.set({
-          solved: solved
-        }); // Overwrite cloud document with local solved list (states are kept local)
+        await db.collection('users').doc(this.user.uid).set({ solved: [] }, { merge: true });
       } catch (error) {
-        console.error("Error syncing to cloud", error);
+        console.error("Error clearing cloud data", error);
       }
-    }, 2000); // 2 second debounce
+      return;
+    }
+
+    try {
+      const docRef = db.collection('users').doc(this.user.uid);
+      if (this._solvedCache.length > 0) {
+        await docRef.set({
+          solved: firebase.firestore.FieldValue.arrayUnion(...this._solvedCache)
+        }, { merge: true }); // Push any local-only solves using arrayUnion
+      }
+    } catch (error) {
+      console.error("Error syncing to cloud", error);
+    }
   }
 }
 
