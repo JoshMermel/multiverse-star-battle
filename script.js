@@ -1211,6 +1211,16 @@ class StarBattleGame {
       this.historyIdx = 0;
       this.updateVisuals();
       this.validate({ suppressWinToast });
+    } else if (storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {
+      // No local save, but the puzzle is marked solved (e.g. synced from cloud
+      // on another device). Reconstruct the solved board from the solution so
+      // the user can see the answer rather than a blank grid.
+      this.state = this.solution.map(cell => cell === 'x' ? CELL.STAR : CELL.DOT);
+      this.history = [JSON.stringify(this.state)];
+      this.historyIdx = 0;
+      this.saveCurrentState(); // persist locally so this path only runs once
+      this.updateVisuals();
+      this.validate({ suppressWinToast: true });
     }
     this.updateControls();
     this.updateSolvedUI();
