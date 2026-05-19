@@ -586,7 +586,7 @@ class StarBattleGame {
       // No local save, but the puzzle is marked solved (e.g. synced from cloud
       // on another device). Reconstruct the solved board from the solution so
       // the user can see the answer rather than a blank grid.
-      this.state = this.solution.map(cell => cell === 'x' ? CELL.STAR : CELL.DOT);
+      this.state = [...this.solution].map(cell => cell === 'x' ? CELL.STAR : CELL.DOT);
       this.history = [JSON.stringify(this.state)];
       this.historyIdx = 0;
       this.saveCurrentState(); // persist locally so this path only runs once
