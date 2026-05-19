@@ -39,14 +39,14 @@ javascript, and integrated it into the gui. This turned into the "hint" feature.
 
 If a region has only one empty square then that square must be a star.
 
-<a><img src="images/only_empty.png"></img></a>
+<img src="images/only_empty.png" width="400"></img>
 
 ### Sees star
 
 If a cell is in the same row/col/region as a star, then that cell must hold a
 dot.
 
-<a><img src="images/sees_star.png"></img></a>
+<img src="images/sees_star.png" width="400"></img>
 
 ### Domino
 
@@ -54,7 +54,7 @@ If a pair of adjacent cells must hold a star, that lets us place many dots. This
 can apply because these are the only two empty cells left in a region, or
 because these are the only two empty cells left in a row/col.
 
-<a><img src="images/domino.png"></img></a>
+<img src="images/domino.png" width="400"></img>
 
 Fun fact - this puzzle can be solved using just "Only empty", "Sees Star", and
 "Domino".
@@ -65,8 +65,8 @@ A similar rule applies when there are three empty cells in a row/col, and one of
 the three must contain a star. This rule also applies if the middle of the three
 contains a dot.
 
-<a><img src="images/triomino.png"></img></a>
-<a><img src="images/triomino_middle_dot.png"></img></a>
+<img src="images/triomino.png" width="400"></img>
+<img src="images/triomino_middle_dot.png" width="400"></img>
 
 ### One row/col
 
@@ -75,15 +75,15 @@ This technique applies to two similar cases.
 A. If a region covers all empty cells in a row/col - the rest of that region
 cannot possibly have a star. If it did, then the row/col would be unsolvabled.
 
-<a><img src="images/1_col_A.png"></img></a>
+<img src="images/1_col_A.png" width="400"></img>
 
 B. If a region's empty cells are fully contained in a row/col, then the
 remainder of that row/col cannot have a star. If it did, the region would be
 unsolvable.
 
-<a><img src="images/1_row_B.png"></img></a>
+<img src="images/1_row_B.png" width="400"></img>
 
-<a><img src="images/1_col_B.png"></img></a>
+<img src="images/1_col_B.png" width="400"></img>
 
 ### Sees too much
 
@@ -97,7 +97,7 @@ For scoring, I break this rule into 3 cases.
 2. The region has 3 empty cells.
 3. The region has 4 or more empty cells.
 
-<a><img src="images/sees_too_much.png"></img></a>
+<img src="images/sees_too_much.png" width="400"></img>
 
 This is intended to reflect the way I solve. I usually look at regions with very
 few empty cells first.
@@ -114,13 +114,13 @@ A. If a pair of regions covers all empty cells in a pair of adjacent rows/cols -
 the rest of those regions cannot possibly have a star. If it did, there wouldn't
 be room to satisfy both regions.
 
-<a><img src="images/2_rows_A.png"></img></a>
+<img src="images/2_rows_A.png" width="400"></img>
 
 B. If a pair of region's empty cells are fully contained in 2 adjacent
 rows/cols, then the remainder of those rows/cols cannot have a star. If it did,
 those regions wouldn't both be solvable.
 
-<a><img src="images/2_cols_B.png"></img></a>
+<img src="images/2_cols_B.png" width="400"></img>
 
 ### Diagonal fill
 
@@ -138,8 +138,8 @@ it across the diagonal, and we'd have a different valid solution to the puzzle.
 So, any time we place a dot or star, we can also reflect that mark
 across the diagonal.
 
-<a><img src="images/diag_fill_1.png"></img></a>
-<a><img src="images/diag_fill_2.png"></img></a>
+<img src="images/diag_fill_1.png" width="400"></img>
+<img src="images/diag_fill_2.png" width="400"></img>
 
 ### Rot180 fill
 
@@ -155,8 +155,8 @@ degrees, and we'd have a different valid solution to the puzzle.
 
 So any time we place a dot or star, we can also rotate that mark 180 degrees.
 
-<a><img src="images/180_fill_1.png"></img></a>
-<a><img src="images/180_fill_2.png"></img></a>
+<img src="images/180_fill_1.png" width="400"></img>
+<img src="images/180_fill_2.png" width="400"></img>
 
 ### 3 Adjacent rows/cols
 
@@ -167,13 +167,13 @@ A. If a group of 3 regions covers all empty cells in a trio of adjacent rows/col
 the rest of those regions cannot possibly have a star. If it did, there wouldn't
 be room to satisfy both regions.
 
-<a><img src="images/three_cols_A.png"></img></a>
+<img src="images/three_cols_A.png" width="400"></img>
 
 B. If a group of 3 region's empty cells are fully contained in 3 adjacent rows/cols,
 then the remainder of those rows/cols cannot have a star. If it did, those
 regions wouldn't both be solvable.
 
-<a><img src="images/3_cols_B.png"></img></a>
+<img src="images/3_cols_B.png" width="400"></img>
 
 ### 2 Disjoint rows/cols
 
@@ -181,23 +181,23 @@ This is the same as "2 Adjacent rows/cols", but we drop the requirement that the
 rows be adjacent. This makes these cases harder to spot (and more rare). Like
 those, it comes in two flavors.
 
-<a><img src="images/2_disjoint_A.png"></img></a>
-<a><img src="images/2_disjoint_B.png"></img></a>
+<img src="images/2_disjoint_A.png" width="400"></img>
+<img src="images/2_disjoint_B.png" width="400"></img>
 
 ### Many adjacent rows/cols
 
 Generalizing "3 Adjacent rows/cols", looks at any number of adjacent rows and
 cols. On this board, the A and B flavors make the same observation.
 
-<a><img src="images/many_adjacent_A.png"></img></a>
-<a><img src="images/many_adjacent_B.png"></img></a>
+<img src="images/many_adjacent_A.png" width="400"></img>
+<img src="images/many_adjacent_B.png" width="400"></img>
 
 ### Regions contins regions
 
 This is my favorite rule. If one region is a subset of another, then the star
 must be in the smaller one. Otherwise the smaller one would be unsolvable.
 
-<a><img src="images/region_contains_region.png"></img></a>
+<img src="images/region_contains_region.png" width="400"></img>
 
 ### Rot180 symmetry
 
@@ -205,8 +205,8 @@ As mentioned above, there are times when we know that the solution will have 180
 degree rotation symmetry. If so, we can place dots in any cell that "sees"
 iteslf under 180 degree rotation.
 
-<a><img src="images/180_1.png"></img></a>
-<a><img src="images/180_2.png"></img></a>
+<img src="images/180_1.png" width="400"></img>
+<img src="images/180_2.png" width="400"></img>
 
 ### Diagonal symmetry
 
@@ -214,48 +214,48 @@ As mentioned above, there are times when we know that the solution will have
 reflection symmetry across a diagonal. If so, we can place dots in any cell that
 "sees" iteslf under diagonal reflection
 
-<a><img src="images/diag_1.png"></img></a>
-<a><img src="images/diag_2.png"></img></a>
+<img src="images/diag_1.png" width="400"></img>
+<img src="images/diag_2.png" width="400"></img>
 
 ### 3 disjoint rows/cols
 
 Like "2 disjoint rows/cols" but we look at groups of 3 rows/cols at once.
 
-<a><img src="images/3_disjoint_rows_A.png"></img></a>
-<a><img src="images/3_disjoint_cols_B.png"></img></a>
+<img src="images/3_disjoint_rows_A.png" width="400"></img>
+<img src="images/3_disjoint_cols_B.png" width="400"></img>
 
 ### 2 regions crossboard
 
 When a pair of regions are disjoint, and are fully contained in the same two
 rows/cols, we can place a dot everywhere else in those two rows/cols.
 
-<a><img src="images/2_regions_crossboard.png"></img></a>
+<img src="images/2_regions_crossboard.png" width="400"></img>
 
 ### 3 regions crossboard
 
 Same as the above, but looking at groups of three regions.
 
-<a><img src="images/3_regions_crossboard.png"></img></a>
+<img src="images/3_regions_crossboard.png" width="400"></img>
 
 ### Crossboard partial overlap
 
 If two regions mostly overlap, and the non-overlapping cells all see each other
 (e.g. share a column), then the star must be in the overlapping part.
 
-<a><img src="images/partial_overlap.png"></img></a>
+<img src="images/partial_overlap.png" width="400"></img>
 
 ### Half-stage lookahead
 
 Speculatively place a star, see if any rows/cols/regions are completely filled
 with dots afterward.
 
-<a><img src="images/half_lookahead.png"></img></a>
+<img src="images/half_lookahead.png" width="400"></img>
 
 ### region pair contains pair
 
 Like region-contains-region, but looking at pairs of regions.
 
-<a><img src="images/double_subset.png"></img></a>
+<img src="images/double_subset.png" width="400"></img>
 
 fun fact, there's a second double-subset in this image.
 
@@ -267,13 +267,13 @@ all dots implied by _those_ stars. I think this rule is impractical for humans
 except in very special cases.
 
 Consider a star at C3:
-<a><img src="images/1_lookahead_1.png"></img></a>
+<img src="images/1_lookahead_1.png" width="400"></img>
 
 This forces the following dots, which forces a star at A4.
-<a><img src="images/1_lookahead_2.png"></img></a>
+<img src="images/1_lookahead_2.png" width="400"></img>
 
 But placing the A4 star makes one region on board 1 unsolvable.
-<a><img src="images/1_lookahead_3.png"></img></a>
+<img src="images/1_lookahead_3.png" width="400"></img>
 
 ## Unimplemented Rules
 
@@ -282,7 +282,7 @@ But placing the A4 star makes one region on board 1 unsolvable.
 There are lots of ways to notice an implied region, here's one. Maybe I'll add
 more later
 
-<a><img src="images/implied_region.png"></img></a>
+<img src="images/implied_region.png" width="400"></img>
 
 Check out columns E+F of board 1. There is trio of empty cells (F4, E5, F5), and
 a pair of empty cells on (E7, F7). Each cluster must contain one star. So we can
