@@ -75,15 +75,15 @@ This technique applies to two similar cases.
 A. If a region covers all empty cells in a row/col - the rest of that region
 cannot possibly have a star. If it did, then the row/col would be unsolvabled.
 
-<a><img src="images/one_col_A.png"></img></a>
+<a><img src="images/1_col_A.png"></img></a>
 
 B. If a region's empty cells are fully contained in a row/col, then the
 remainder of that row/col cannot have a star. If it did, the region would be
 unsolvable.
 
-<a><img src="images/one_col_B.png"></img></a>
+<a><img src="images/1_col_B.png"></img></a>
 
-<a><img src="images/one_row_B.png"></img></a>
+<a><img src="images/1_row_B.png"></img></a>
 
 ### Sees too much
 
@@ -265,3 +265,6 @@ Like "2 disjoint rows" but we look at groups of 3 rows at once.
 - how many applications of a hard rule are required?
 - which levels are worth publishing
 - ideas for future improvement to the scoring system
+
+
+TODO(jmerm): link to levels in bestiary.md
