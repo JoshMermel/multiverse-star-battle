@@ -574,7 +574,7 @@ class StarBattleGame {
   }
 
   // Restores saved cell state from localStorage if it exists, then syncs all UI
-  loadProgress({ suppressWinToast = false } = {}) {
+  loadProgress({ suppressWinToast = false, isReset = false } = {}) {
     const savedState = storageManager.getPuzzleState(this.currentPuzzleUniqueId);
     if (savedState) {
       this.state = savedState;
@@ -582,7 +582,7 @@ class StarBattleGame {
       this.historyIdx = 0;
       this.updateVisuals();
       this.validate({ suppressWinToast });
-    } else if (storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {
+    } else if (!isReset && storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {
       // No local save, but the puzzle is marked solved (e.g. synced from cloud
       // on another device). Reconstruct the solved board from the solution so
       // the user can see the answer rather than a blank grid.
@@ -592,9 +592,29 @@ class StarBattleGame {
       this.saveCurrentState(); // persist locally so this path only runs once
       this.updateVisuals();
       this.validate({ suppressWinToast: true });
+    } else {
+      // If there's no saved state AND it's a reset (or not solved elsewhere),
+      // ensure the board state is explicitly blank/cleared.
+      this.state = new Array(this.n * this.n).fill(CELL.NONE);
+      this.history = [JSON.stringify(this.state)];
+      this.historyIdx = 0;
+      this.updateVisuals();
+      this.validate({ suppressWinToast: true });
     }
     this.updateControls();
     this.updateSolvedUI();
+  }
+
+  doReset() {
+    this.hideToast();
+    this.state.fill(CELL.NONE);
+    this.history = [JSON.stringify(this.state)];
+    this.historyIdx = 0;
+    this.clearHintUI();
+    this.updateVisuals();
+    this.updateControls();
+    this.validate();
+    this.saveCurrentState();
   }
 
   // Deletes all puzzle state and solved-history entries from localStorage,
