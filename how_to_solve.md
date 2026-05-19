@@ -62,10 +62,12 @@ Fun fact - this puzzle can be solved using just "Only empty", "Sees Star", and
 ### Triomino
 
 A similar rule applies when there are three empty cells in a row/col, and one of
-the three must contain a star. This rule also applies if the middle of the three
-contains a dot.
+the three must contain a star.
 
 <img src="images/triomino.png" width="400"></img>
+
+This rule also applies if the middle of the three contains a dot.
+
 <img src="images/triomino_middle_dot.png" width="400"></img>
 
 ### One row/col
@@ -270,9 +272,11 @@ Consider a star at C3:
 <img src="images/1_lookahead_1.png" width="400"></img>
 
 This forces the following dots, which forces a star at A4.
+
 <img src="images/1_lookahead_2.png" width="400"></img>
 
 But placing the A4 star makes one region on board 1 unsolvable.
+
 <img src="images/1_lookahead_3.png" width="400"></img>
 
 ## Unimplemented Rules
