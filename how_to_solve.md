@@ -169,7 +169,7 @@ A. If a group of 3 regions covers all empty cells in a trio of adjacent rows/col
 the rest of those regions cannot possibly have a star. If it did, there wouldn't
 be room to satisfy both regions.
 
-<img src="images/three_cols_A.png" width="400"></img>
+<img src="images/3_cols_A.png" width="400"></img>
 
 B. If a group of 3 region's empty cells are fully contained in 3 adjacent rows/cols,
 then the remainder of those rows/cols cannot have a star. If it did, those
