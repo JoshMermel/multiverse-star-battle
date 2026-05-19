@@ -81,9 +81,9 @@ B. If a region's empty cells are fully contained in a row/col, then the
 remainder of that row/col cannot have a star. If it did, the region would be
 unsolvable.
 
-<a><img src="images/1_col_B.png"></img></a>
-
 <a><img src="images/1_row_B.png"></img></a>
+
+<a><img src="images/1_col_B.png"></img></a>
 
 ### Sees too much
 
@@ -114,13 +114,13 @@ A. If a pair of regions covers all empty cells in a pair of adjacent rows/cols -
 the rest of those regions cannot possibly have a star. If it did, there wouldn't
 be room to satisfy both regions.
 
-<a><img src="images/two_rows_A.png"></img></a>
+<a><img src="images/2_rows_A.png"></img></a>
 
 B. If a pair of region's empty cells are fully contained in 2 adjacent
 rows/cols, then the remainder of those rows/cols cannot have a star. If it did,
 those regions wouldn't both be solvable.
 
-<a><img src="images/two_cols_B.png"></img></a>
+<a><img src="images/2_cols_B.png"></img></a>
 
 ### Diagonal fill
 
@@ -217,47 +217,87 @@ reflection symmetry across a diagonal. If so, we can place dots in any cell that
 <a><img src="images/diag_1.png"></img></a>
 <a><img src="images/diag_2.png"></img></a>
 
-### 3 disjoint rows
+### 3 disjoint rows/cols
 
-Like "2 disjoint rows" but we look at groups of 3 rows at once.
+Like "2 disjoint rows/cols" but we look at groups of 3 rows/cols at once.
 
 <a><img src="images/3_disjoint_rows_A.png"></img></a>
 <a><img src="images/3_disjoint_cols_B.png"></img></a>
 
 ### 2 regions crossboard
 
+When a pair of regions are disjoint, and are fully contained in the same two
+rows/cols, we can place a dot everywhere else in those two rows/cols.
+
 <a><img src="images/2_regions_crossboard.png"></img></a>
 
 ### 3 regions crossboard
+
+Same as the above, but looking at groups of three regions.
 
 <a><img src="images/3_regions_crossboard.png"></img></a>
 
 ### Crossboard partial overlap
 
+If two regions mostly overlap, and the non-overlapping cells all see each other
+(e.g. share a column), then the star must be in the overlapping part.
+
 <a><img src="images/partial_overlap.png"></img></a>
 
-### half-stage lookahead
+### Half-stage lookahead
+
+Speculatively place a star, see if any rows/cols/regions are completely filled
+with dots afterward.
 
 <a><img src="images/half_lookahead.png"></img></a>
 
 ### region pair contains pair
 
+Like region-contains-region, but looking at pairs of regions.
+
 <a><img src="images/double_subset.png"></img></a>
+
+fun fact, there's a second double-subset in this image.
 
 ### Lookahead
 
+Like "Half-stage lookahead", but after placing all dots implied by the
+speculative star, keep going. Place all stars force by only-empty, then place
+all dots implied by _those_ stars. I think this rule is impractical for humans
+except in very special cases.
+
+Consider a star at C3:
 <a><img src="images/1_lookahead_1.png"></img></a>
+
+This forces the following dots, which forces a star at A4.
 <a><img src="images/1_lookahead_2.png"></img></a>
+
+But placing the A4 star makes one region on board 1 unsolvable.
 <a><img src="images/1_lookahead_3.png"></img></a>
 
 ## Unimplemented Rules
 
 ### Implied region
 
+There are lots of ways to notice an implied region, here's one. Maybe I'll add
+more later
+
+<a><img src="images/implied_region.png"></img></a>
+
+Check out columns E+F of board 1. There is trio of empty cells (F4, E5, F5), and
+a pair of empty cells on (E7, F7). Each cluster must contain one star. So we can
+treat the E7+F7 pair like a region, and eliminate H7.
+
+I haven't figured out how to write this rule for the solver yet. All my
+techniques for pointing out implied regions are too vauge.
 
 ### Both-or-Neither
 
+This is a technique I see a teammate use sometimes. He'll point out two cells
+that must be equal, then say ~"oh, but if both are stars, then there's a
+contradiction", and mark dots in both.
 
+I think it's probably a special case of lookahead, but more human-viable.
 
 ## More philosophy
 
