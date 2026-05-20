@@ -12,11 +12,14 @@ All of the "books" of puzzles that I publish were created in the same way:
 2. Rank them by difficulty
 3. Filter the big set down to a smaller set
 
-My ranking system is built around a big list of techniques, sorted by my opinion
-about thier complexity. The computer solver iterates down the list and checks
-whether each technique can apply to the current state of the puzzle. If so, it
-add some dots/stars, and jumps back to the top of the list. This is intended to
-mimic how a human solves these puzzles.
+The goal of my ranking system is to estimate how hard a human will find each
+puzzle. It does this by solving like a human would. Humans look for patterns
+that let them place dots/stars, and tend to notice simpler patterns before
+complex ones. Similarly, my ranking system is built around a big list of
+techniques, sorted by my opinion about thier complexity. The computer solver
+iterates down the list and checks whether each technique can apply to the
+current state of the puzzle. If so, it add some dots/stars, and jumps back to
+the top of the list.
 
 At the end, I have a trace of a possible path through the puzzle, and I can ask
 questions like "what was the hardest technique that was required?" and "how many
@@ -28,258 +31,287 @@ video series, linked from the readme.
 
 ## The hint system is the ranking system
 
-As I built my list of rules, I needed to constantly ask myself - "is there a
+As I built my list of techniques, I needed to constantly ask myself - "is there a
 simpler move that the one the computer chose here?". I sometimes found the text
 descriptions difficult to visualize, so I used AI to re-implement the solver in
 javascript, and integrated it into the gui. This turned into the "hint" feature.
 
 ## Techniques
 
-### Only empty
+### The rules of the puzzle
+
+#### Only empty
 
 If a region has only one empty square then that square must be a star.
 
 <img src="images/only_empty.png" width="600"></img>
 
-### Sees star
+#### Sees star
 
 If a cell is in the same row/col/region as a star, then that cell must hold a
 dot.
 
 <img src="images/sees_star.png" width="600"></img>
 
-### Domino
+### Notable shapes
 
-If a pair of adjacent cells must hold a star, that lets us place many dots. This
-can apply because these are the only two empty cells left in a region, or
-because these are the only two empty cells left in a row/col.
+There are a number of shapes which let you place dots. I usually start each solve
+by scanning for them.
 
 <img src="images/domino.png" width="600"></img>
 
-Fun fact - this puzzle can be solved using just "Only empty", "Sees Star", and
-"Domino".
-
-### Triomino
-
-A similar rule applies when there are three empty cells in a row/col, and one of
-the three must contain a star.
+In this case, A6 and A7 form a domino, so there cannot be a star in the rest of
+the A column, or in B6/B7.
 
 <img src="images/triomino.png" width="600"></img>
 
-This rule also applies if the middle of the three contains a dot.
+There must be a star in {A3, B3, C3}, because the are the only empty cells in
+board 1's top-left region. If we put a star at B4, then that region would not
+have any stars.
 
 <img src="images/triomino_middle_dot.png" width="600"></img>
 
-### One row/col
+There must be a star in {D6, D8}, since they are the only empty cells left in
+column D. This lets us place dots at C7 and E7, since a star in either location
+would make column D unsolvable.
 
-This technique applies to two similar cases.
+<img src="images/sees_too_much.png" width="600"></img>
 
-A. If a region covers all empty cells in a row/col - the rest of that region
-cannot possibly have a star. If it did, then the row/col would be unsolvabled.
+There must be a star in  {D2, F1, G1}, since they form a region on board 1. All
+three of these "see" {C1, D1, F2, G2} by row, col, or adjacency. So a star in
+any of these 4 cells would make that region of board 1 unsolvable, and we can
+mark all 4 with dots.
+
+More generally, if every empty cell of an unsolved row/col/region "sees" the
+same set of cells outside of that row/col/region, then those cells cannot hold a
+star. I call this category of inference "sees too much".
+
+### Adjacent rows/cols
+
+This technique comes in 2 flavors.
+
+A. If a group of N regions covers all the empty cells in a group of N adjacent
+rows/cols - the rest of those regions cannot possibly have a star. If it did,
+there wouldn't be room to satisfy all the regions.
+
+B. If the empty cells of a group of N regions are fully contained in N adjacent
+rows/cols, then the remainder of those rows/cols cannot have a star. If it did,
+those regions wouldn't all be solvable.
+
+These descriptions are pretty abstract, so let's look at some concrete exapmles,
+starting with N=1.
+
+#### One row/col
 
 <img src="images/1_col_A.png" width="600"></img>
 
-B. If a region's empty cells are fully contained in a row/col, then the
-remainder of that row/col cannot have a star. If it did, the region would be
+In this case, the leftmost region on board1 is fully contained in column A.
+Therefore, the rest of that region cannot hold a star, or column A would be
 unsolvable.
 
 <img src="images/1_row_B.png" width="600"></img>
 
+On the same puzzle, we can also look at the top-left region on board 2. This
+region is fully contained in row 1, so the rest of row 1 cannot hold a star. If
+it did, the top-left region would be unsolvable.
+
 <img src="images/1_col_B.png" width="600"></img>
 
-### Sees too much
+Note that placing dots on the board can create opportunities to use these
+techniques. In this case, look at column A on board 2. Because of dots we've
+already placed, we can see that one region owns all empty cells in the column.
+This lets us place dots in the remainder of that region.
 
-If any cell "sees" (by row/col/adjacency) all empty cells of a region/row/col,
-then that cell must hold a dot. Otherwise the region/row/col would be
-unsolvable.
-
-For scoring, I break this rule into 3 cases.
-
-1. The region has 2 empty cells.
-2. The region has 3 empty cells.
-3. The region has 4 or more empty cells.
-
-<img src="images/sees_too_much.png" width="600"></img>
-
-This is intended to reflect the way I solve. I usually look at regions with very
-few empty cells first.
-
-Also note that Domino is a special case of this rule. Many of my rules are
-special cases of each other :)
-
-### 2 adjacent rows/cols
-
-This is similar to "One row/col", but look at a pair of adjacent rows. It also
-comes in two flavors.
-
-A. If a pair of regions covers all empty cells in a pair of adjacent rows/cols -
-the rest of those regions cannot possibly have a star. If it did, there wouldn't
-be room to satisfy both regions.
 
 <img src="images/2_rows_A.png" width="600"></img>
 
-B. If a pair of region's empty cells are fully contained in 2 adjacent
-rows/cols, then the remainder of those rows/cols cannot have a star. If it did,
-those regions wouldn't both be solvable.
+Now let's consider a case where N=2. In this case, the bottom-right and
+bottom-left regions of board2 combine to fill rows 7 and 8. We know that these
+two rows contain two stars, so there's no room for starts in the rest of those
+regions.
 
 <img src="images/2_cols_B.png" width="600"></img>
 
-### Diagonal fill
-
-Sometimes we can tell, just from the structure of the boards, that the solution
-will have symmetry across one of the diagonals. There are two cases that I know
-of:
-
-1. Both boards have symmetry along one of the diagonals
-2. One board is the transpose of the other
-
-In both cases, we take advantage of the fact that the solution is unique. If
-the unique solution didn't have diagonal-reflection symmetry, we could reflect
-it across the diagonal, and we'd have a different valid solution to the puzzle.
-
-So, any time we place a dot or star, we can also reflect that mark
-across the diagonal.
-
-<img src="images/diag_fill_1.png" width="600"></img>
-<img src="images/diag_fill_2.png" width="600"></img>
-
-### Rot180 fill
-
-Similar to the above, sometimes we can tell that the solution must have
-180-degree diagonal symmetry. There are two cases that I know of:
-
-1. Both boards have 180 degree rotaitonal symmetry
-2. The two boards are 180 degree rotations of one another
-
-In both cases, we take advantage of the fact that the solution is unique. If the
-unique solution didn't have 180 degree rotation symmetry, we could rotate it 180
-degrees, and we'd have a different valid solution to the puzzle.
-
-So any time we place a dot or star, we can also rotate that mark 180 degrees.
-
-<img src="images/180_fill_1.png" width="600"></img>
-<img src="images/180_fill_2.png" width="600"></img>
-
-### 3 Adjacent rows/cols
-
-This is just like "1 row/col" and "2 Adjacent rows/cols", but applied to groups
-of 3 adjacent rows/cols. Like those, it comes in two flavors.
-
-A. If a group of 3 regions covers all empty cells in a trio of adjacent rows/cols -
-the rest of those regions cannot possibly have a star. If it did, there wouldn't
-be room to satisfy both regions.
+And here is case B for N=2. The two square regions on board 2 are both contained
+in columns C and D. Each one must contain a star, so the rest of columns C and D
+must contain dots.
 
 <img src="images/3_cols_A.png" width="600"></img>
 
-B. If a group of 3 region's empty cells are fully contained in 3 adjacent rows/cols,
-then the remainder of those rows/cols cannot have a star. If it did, those
-regions wouldn't both be solvable.
+Moving on to N=3, the story is the same. Columns {F,G,H} on board 2 are filled
+by 3 regions, so the remainder of those regions cannot have stars.
 
 <img src="images/3_cols_B.png" width="600"></img>
 
-### 2 Disjoint rows/cols
-
-This is the same as "2 Adjacent rows/cols", but we drop the requirement that the
-rows be adjacent. This makes these cases harder to spot (and more rare). Like
-those, it comes in two flavors.
-
-<img src="images/2_disjoint_A.png" width="600"></img>
-<img src="images/2_disjoint_B.png" width="600"></img>
-
-### Many adjacent rows/cols
-
-Generalizing "3 Adjacent rows/cols", looks at any number of adjacent rows and
-cols. On this board, the A and B flavors make the same observation.
+The same board contains an example of case B for N=3. The leftmost 3 regions on
+board 2 are fully contained in columns {A,B,C}. Each region must contain a star,
+so they must collectively put three stars in those three columns. Therefore the
+rest of those columns must have dots.
 
 <img src="images/many_adjacent_A.png" width="600"></img>
+
 <img src="images/many_adjacent_B.png" width="600"></img>
 
-### Regions contins regions
+One last example for N=4. In this case, we can make the same observation using a
+type-A inference, or a type-B inference.
 
-This is my favorite rule. If one region is a subset of another, then the star
-must be in the smaller one. Otherwise the smaller one would be unsolvable.
+### Disjoint rows/cols
+
+I find it easier to spot row/col based inferences when the rows/cols are
+contiguous, but the logic works exactly the same even if they are not.
+
+<img src="images/2_disjoint_A.png" width="600"></img>
+
+Look at rows 1 and 3. Together, they must contain two stars. No matter how we
+place them, we'll satisfy the top two regions of board 2, so the remainder of
+those regions must be dots.
+
+<img src="images/2_disjoint_B.png" width="600"></img>
+
+Look at the regions containing blue squares. Together, they must place stars in
+rows 2 and 4. Therefore the rest of those rows must contain dots.
+
+<img src="images/3_disjoint_rows_A.png" width="600"></img>
+
+Here is a disjoint example with N=3. Three regions are fully contained in
+columns {C, E, H}, so the rest of those columns must contain dots.
+
+<img src="images/3_disjoint_cols_B.png" width="600"></img>
+
+And here is an example of case B for N=3. Rows {1,2,4} only see three regions,
+so the rest of those regions must contain dots.
+
+### Symmetry
+
+Sometimes we can tell, just from the structure of the boards, that the solution
+has some symmetry. We can use this to to our advantage.
+
+#### Diagonal
+
+<img src="images/self_diag_2.png" width="600"></img>
+
+In this case, the two boards are diagonal reflections of one another. If the
+solution wasn't symmetric along that reflection, then we could reflect it, and
+have a second valid solution. But since we know the solution is unique, we can
+reflect all dots/stars along that reflection. In this case, we've placed a dot
+at A2, and that tells us that there must also be a dot at B1.
+
+<img src="images/self_diag_1.png" width="600"></img>
+
+Let's take this logic one step further. Here is another puzzle where the boards
+are diagonal refelctions of one another. Since the solution is symmetric, any
+cell which "sees" its own reflection (by row/col/adjacency/region) cannot have a
+star.
+
+<img src="images/both_diag.png" width="600"></img>
+
+Here, both boards have diagonal self-symmetry. By the same logic above, this
+means the solution must also have diagonal self-symmetry. So any cell which "sees"
+itself under diagonal reflection cannot have a star.
+
+I find this technique frustratingly powerful. It's easy to spot, and trivializes
+many puzzles that would otherwise be very difficult.
+
+#### Rot180
+
+<img src="images/self_rot180_1.png" width="600"></img>
+
+This puzzle has two boards that are 180 degree rotations of one another. If the
+unique solution wasn't symmetric along that reflection, then we could rotate it
+180 degrees, and we'd have a second valid solution to the puzzle. So any time
+we place a dot or star, we can also rotate that mark 180 degrees.
+
+<img src="images/self_rot180_2.png" width="600"></img>
+
+Again, we can take this further and consider every cell alongside image under
+180 degree rotation. If the two "see" each other, including by being in the same
+region, then they cannot be a star.
+
+<img src="images/both_rot180.png" width="600"></img>
+
+Here, both boards have 180 degree self-symmetry. By the same logic above, this
+means the solution must also have 180 degree symmetry. So any cell which "sees"
+itself under 180 degree rotation cannot have a star.
+
+
+### Crossboard
 
 <img src="images/region_contains_region.png" width="600"></img>
 
-### Rot180 symmetry
+In this case, the top-right region of board 1 is a subset of the top-right
+region of board 2. If we put a non-shared cell of board 2, it would make that
+region unsolvable on board 1. More generally, if any region is a subset of
+another region, we can place dots in all cells of the larger region which are
+not in the smaller region. This is my favorite technique.
 
-As mentioned above, there are times when we know that the solution will have 180
-degree rotation symmetry. If so, we can place dots in any cell that "sees"
-iteslf under 180 degree rotation.
-
-<img src="images/180_1.png" width="600"></img>
-<img src="images/180_2.png" width="600"></img>
-
-### Diagonal symmetry
-
-As mentioned above, there are times when we know that the solution will have
-reflection symmetry across a diagonal. If so, we can place dots in any cell that
-"sees" iteslf under diagonal reflection
-
-<img src="images/diag_1.png" width="600"></img>
-<img src="images/diag_2.png" width="600"></img>
-
-### 3 disjoint rows/cols
-
-Like "2 disjoint rows/cols" but we look at groups of 3 rows/cols at once.
-
-<img src="images/3_disjoint_rows_A.png" width="600"></img>
-<img src="images/3_disjoint_cols_B.png" width="600"></img>
-
-### 2 regions crossboard
-
-When a pair of regions are disjoint, and are fully contained in the same two
-rows/cols, we can place a dot everywhere else in those two rows/cols.
-
-<img src="images/2_regions_crossboard.png" width="600"></img>
-
-### 3 regions crossboard
-
-Same as the above, but looking at groups of three regions.
-
-<img src="images/3_regions_crossboard.png" width="600"></img>
-
-### Crossboard partial overlap
-
-If two regions mostly overlap, and the non-overlapping cells all see each other
-(e.g. share a column), then the star must be in the overlapping part.
-
-<img src="images/partial_overlap.png" width="600"></img>
-
-### Half-stage lookahead
-
-Speculatively place a star, see if any rows/cols/regions are completely filled
-with dots afterward.
-
-<img src="images/half_lookahead.png" width="600"></img>
-
-### region pair contains pair
-
-Like region-contains-region, but looking at pairs of regions.
 
 <img src="images/double_subset.png" width="600"></img>
 
-fun fact, there's a second double-subset in this image.
+We can apply the same logic when one pair of regions is a subset of another
+pair. This technique is quite rare, but I think it's really cool.  Fun fact,
+there's a second place you can apply double-subset in this image.
+
+<img src="images/2_regions_crossboard.png" width="600"></img>
+
+In this case, the bottom-left region of board1 and the bottom-right region of
+board2 are disjoint, and are both contained in rows 7 and 8. No matter how we
+place stars in those regions, we'll satisfy those rows, so we can mark the rest
+of those rows with dots.
+
+<img src="images/3_regions_crossboard.png" width="600"></img>
+
+The same reasoning applies with >2 rows/cols. In this case, the empty cells of 3
+regions (two from board 1, one from board 2) are all contained in columns {D, E,
+F}.  So th rest of those columns must contain only dots.
+
+<img src="images/partial_overlap.png" width="600"></img>
+
+Focus on the regions containing blue cells on each board. They share 3 cells
+{B5, C5, D5}, and each have on cell which is not shared (D3 and D7). If we put
+the star in the non-shared region of one, then we'd put dots in all shared
+cells, and be forced to put a dot in the non-shared cell of the other. But in
+this case, D3 and D7 see each other, so we aren't allowed to put stars in both.
+
+More generally, if the non-shared cells of two regions all mutually see each
+other, then we can put dots in all of them.
 
 ### Lookahead
 
-Like "Half-stage lookahead", but after placing all dots implied by the
-speculative star, keep going. Place all stars force by only-empty, then place
-all dots implied by _those_ stars. I think this rule is impractical for humans
-except in very special cases.
+<img src="images/half_lookahead.png" width="600"></img>
 
-Consider a star at C3:
+In this case, a star at B1 would see B4 (by column), and A3 (by region on board
+2). This would make the middle-left region of board 1 unsolvable, so B1 cannot
+contain a star. This is sorta like a generalized version of "sees too much", but
+taking into account the region on the other board.
+
+I call this "half-stage lookahead", because it's implemented in terms of the
+multi-stage lookahead technique below.  This is the hardest kind of inference
+that I still think of as "human viable" in the general case. And even then, I
+only allow it in "expert" tier puzzles.
+
+#### Multi-stage lookahead
+
+This is the technique of last resort, sort like a guess-and-test.
+
+
 <img src="images/1_lookahead_1.png" width="600"></img>
 
-This forces the following dots, which forces a star at A4.
+Consider a star at C3:
 
 <img src="images/1_lookahead_2.png" width="600"></img>
 
-But placing the A4 star makes one region on board 1 unsolvable.
+This forces the following dots, which forces a star at A4.
 
 <img src="images/1_lookahead_3.png" width="600"></img>
 
-## Unimplemented Rules
+But placing the A4 star makes one region on board 1 unsolvable.
+
+I think this technique is not viable for humans in the typical case, but can be
+used in specialized cases. I also think it's fun to see how many repititons of
+the "place all implied dots, now place all implied stars" process is needed to
+find a contradiction on especially hard puzzles.
+
+## Unimplemented Techniques
 
 ### Implied region
 
@@ -292,7 +324,7 @@ Check out columns E+F of board 1. There is trio of empty cells (F4, E5, F5), and
 a pair of empty cells on (E7, F7). Each cluster must contain one star. So we can
 treat the E7+F7 pair like a region, and eliminate H7.
 
-I haven't figured out how to write this rule for the solver yet. All my
+I haven't figured out how to write this technique for the solver yet. All my
 techniques for pointing out implied regions are too vauge.
 
 ### Both-or-Neither
@@ -306,9 +338,9 @@ I think it's probably a special case of lookahead, but more human-viable.
 ## More philosophy
 
 - symmetry
-- how many applications of a hard rule are required?
+- how many applications of a hard technique are required?
 - which levels are worth publishing
 - ideas for future improvement to the scoring system
 
 
-TODO(jmerm): link to levels in bestiary.md
+TODO(jmerm): link to levels in armory.md
