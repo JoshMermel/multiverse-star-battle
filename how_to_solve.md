@@ -284,15 +284,20 @@ In this case, a star at B1 would see B4 (by column), and A3 (by region on board
 contain a star. This is sorta like a generalized version of "sees too much", but
 taking into account the region on the other board.
 
+<img src="images/half_lookahead_2.png" width="600"></img>
+
+In this case, a star at D7 would force a dot at C5 (because of board 1 regions),
+and E5 and F5 (because of board 2 regions). This makes row 5 unsolvable.
+
 I call this "half-stage lookahead", because it's implemented in terms of the
 multi-stage lookahead technique below.  This is the hardest kind of inference
 that I still think of as "human viable" in the general case. And even then, I
 only allow it in "expert" tier puzzles.
 
+
 #### Multi-stage lookahead
 
 This is the technique of last resort, sort like a guess-and-test.
-
 
 <img src="images/1_lookahead_1.png" width="600"></img>
 
@@ -310,6 +315,13 @@ I think this technique is not viable for humans in the typical case, but can be
 used in specialized cases. I also think it's fun to see how many repititons of
 the "place all implied dots, now place all implied stars" process is needed to
 find a contradiction on especially hard puzzles.
+
+<img src="images/viable_lookahead.png" width="600"></img>
+
+Here's an example where I might use it. On board 1, there's a domino in F5+G5,
+and a domino in H3+H4. If we put a star in F3, it would dots into F5 and H3,
+which would force stars into G4 and H5. Those two are adjacent, so this would be
+a contradiction.
 
 ## Unimplemented Techniques
 
