@@ -44,7 +44,9 @@ javascript, and integrated it into the gui. This turned into the "hint" feature.
 
 If a region has only one empty square then that square must be a star.
 
+<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=1">
 <img src="images/only_empty.png" width="600"></img>
+</a>
 
 #### Sees star
 
