@@ -8,14 +8,11 @@ import { applyRules } from './rules.js';
 import { applyHistory } from './history.js';
 
 class StarBattleGame {
-  // ────────────────────── 
-  // ─── Initialisation ─── 
-  // ────────────────────── 
+  // --- Initialization ---
 
-  // Bootstraps the game: sets up global input handling then fetches puzzle data
+  // Bootstrap the game: set up global input handling and fetch puzzle data.
   constructor() {
-    // Expose shared singletons so renderer.js and input.js can reach them
-    // without importing directly (keeps those files free of top-level imports).
+    // Expose singletons to renderer and input modules to avoid circular imports.
     this._deps = { storageManager };
     this._constants = { CELL };
 
@@ -23,13 +20,12 @@ class StarBattleGame {
     this.categories = [];
     this.loadedPuzzles = [];
     this.draggedIndices = [];
-    // Listener setup must run before initGame so they exist during puzzle load
+    // Set up global listeners before game initialization.
     this.setupGlobalListeners();
     document.addEventListener('DOMContentLoaded', () => this.initGame());
   }
 
-  // Fetches the manifest, populates the category menu, and loads the initial
-  // puzzle.
+  // Fetch the manifest, populate the category menu, and load the initial puzzle.
   async initGame() {
     try {
       const resp = await fetch('data/manifest.json');
@@ -46,10 +42,8 @@ class StarBattleGame {
       if (this.categories.length > 0) {
         const { catId, puzNum } = this.readUrlParams();
 
-        // If the URL names a manifest category, load it normally via the
-        // select. If it names an arbitrary data/ CSV (but not a daily_*
-        // file, which is gated to one-per-day), load it directly. Otherwise
-        // fall back to the first manifest category.
+        // Load target category if specified in URL (handling custom CSVs directly),
+        // otherwise default to the first manifest category.
         const manifestCat = this.categories.find(c => c.id === catId);
         const isArbitraryCsv = catId && !manifestCat && !catId.startsWith('daily_');
 
@@ -66,7 +60,7 @@ class StarBattleGame {
     }
   }
 
-  // Initialises all game state for a new puzzle and re-renders both boards.
+  // Initialize game state for a new puzzle and render both boards.
   async loadPuzzle(puzzleData, categoryId) {
     this.currentPuzzleUniqueId = await this.computePuzzleId(puzzleData);
     this.currentCategoryId = categoryId;
@@ -109,13 +103,10 @@ class StarBattleGame {
     }
   }
 
-  // ────────────────── 
-  // ─── Game State ─── 
-  // ────────────────── 
+  // --- Game State ---
 
-  // Handles the initial pointer-down on a cell. Right-click toggles a star
-  // directly; left-click cycles none -> dot -> star -> none and begins a drag
-  // session.
+  // Handle initial pointer action on a cell. Left-click cycles states and
+  // begins drag sessions; right-click toggles stars directly.
   handleStart(idx, isRightClick) {
     const toast = document.getElementById('toast');
     const isWinToast = toast.classList.contains('toast-win') &&
@@ -143,7 +134,7 @@ class StarBattleGame {
     }
   }
 
-  // Paints a dot on any empty cell the pointer passes over during a drag.
+  // Paint dots on empty cells during drag actions.
   handleDrag(idx) {
     if (!this.isDragging || this.draggedIndices.includes(idx)) return;
     this.draggedIndices.push(idx);
@@ -167,10 +158,10 @@ class StarBattleGame {
     } else {
       for (const idx of this.draggedIndices) {
         if (this.state[idx] === CELL.NONE) {
-          this.applyState(idx, CELL.DOT, { suppressWinToast: true, debounceMs: 0 }); // suppress mid-drag; drag is unambiguous
+          this.applyState(idx, CELL.DOT, { suppressWinToast: true, debounceMs: 0 });
         }
       }
-      // One final validate after all cells are committed, with win toast allowed
+      // Validate board state after drag completes.
       this.validate();
     }
 
@@ -184,20 +175,17 @@ class StarBattleGame {
     });
   }
 
-  // Applies a state change to one cell, updates its visual, validates the
-  // board, and persists to localStorage.
+  // Apply state change to a cell, update visuals, validate, and persist.
   applyState(idx, type, { suppressWinToast = false, debounceMs } = {}) {
     if (this.state[idx] === type) return;
     this.state[idx] = type;
     document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
       this.updateCellVisual(cell, type);
     });
-    // If the caller didn't specify, infer: dots may be the first click of a
-    // double-click so delay errors; stars and removals are unambiguous.
+    // Delay dot placement validation to prevent flashing during double-clicks.
     const delay = debounceMs ?? (type === CELL.DOT ? 200 : 0);
 
-    // Auto-fill: when a star is placed (and not already in a recursive call),
-    // dot every empty cell in the same row, col, and region on both boards.
+    // Automatically fill dots in the same row, column, and region when placing a star.
     if (type === CELL.STAR && !this._suppressAutoFill &&
       localStorage.getItem('setting-auto-fill-dots') === 'true') {
       this._suppressAutoFill = true;
@@ -211,12 +199,9 @@ class StarBattleGame {
 
 
 
-  // ──────────────
-  // ─── Hints ─── 
-  // ──────────────
+  // --- Hints ---
 
-  // Asks the solver for the next hint and either displays it or shows a
-  // fallback toast.
+  // Request a hint from the solver and update UI.
   getHint() {
     const hint = this.solver.getHint();
     if (hint) {
@@ -228,19 +213,15 @@ class StarBattleGame {
 
 
 
-  // ────────────
-  // ─── URL ─── 
-  // ────────────
+  // --- URL Parameters ---
 
-  // Reads ?book= and ?puzzle= from the URL.
-  // Returns safe defaults if absent or invalid.
+  // Read category and puzzle index from URL query parameters.
   readUrlParams() {
     const params = new URLSearchParams(window.location.search);
     const catId = params.get('book');
     const puzzleParam = params.get('puzzle');
 
-    // For daily, translate label → slot number; fall back to 1.
-    // Expert (slot 4) is only available on Sundays — clamp to 3 otherwise.
+    // Map daily labels to slot indices. Expert is restricted to Sundays.
     const dailySlotMap = { beginner: 1, medium: 2, hard: 3, expert: 4 };
     let puzNum = (catId === 'daily' && puzzleParam in dailySlotMap)
       ? dailySlotMap[puzzleParam]
@@ -253,8 +234,7 @@ class StarBattleGame {
     return { catId, puzNum };
   }
 
-  // Updates the URL bar to reflect the current puzzle without adding a browser
-  // history entry.
+  // Update browser URL query parameters without creating a new history entry.
   updateUrlParams(catId, puzNum) {
     const params = new URLSearchParams();
     params.set('book', catId);
@@ -269,7 +249,7 @@ class StarBattleGame {
   }
 }
 
-// Apply mixins before instantiating
+// Register mixins before instantiating
 applyRenderer(StarBattleGame);
 applyInput(StarBattleGame);
 applyPuzzleLoader(StarBattleGame);

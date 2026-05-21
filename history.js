@@ -4,10 +4,10 @@ import { CELL } from './constants.js';
 export function applyHistory(GameClass) {
   const p = GameClass.prototype;
 
-  // Appends the current state to the undo history, truncating any undone future
+  // Save current state to history and truncate any undone future states.
   p.saveHistory = function () {
     const snap = JSON.stringify(this.state);
-    // Deduplicate: skip if state hasn't actually changed since the last snapshot.
+    // Skip if state is unchanged.
     if (snap === this.history[this.historyIdx]) return;
 
     this.history = this.history.slice(0, this.historyIdx + 1);
@@ -16,7 +16,7 @@ export function applyHistory(GameClass) {
     this.updateControls();
   };
 
-  // Steps back one entry in undo history.
+  // Revert to the previous history state.
   p.undo = function () {
     this.hideToast();
     if (this.historyIdx > 0) {
@@ -29,7 +29,7 @@ export function applyHistory(GameClass) {
     }
   };
 
-  // Steps forward one entry in undo history.
+  // Advance to the next history state.
   p.redo = function () {
     this.hideToast();
     if (this.historyIdx < this.history.length - 1) {
@@ -42,12 +42,12 @@ export function applyHistory(GameClass) {
     }
   };
 
-  // Persists the current cell state to localStorage under the puzzle's unique ID.
+  // Persist current state to localStorage.
   p.saveCurrentState = function () {
     storageManager.savePuzzleState(this.currentPuzzleUniqueId, this.state);
   };
 
-  // Restores saved cell state from localStorage if it exists, then syncs all UI
+  // Load saved state or reconstruct from solved history.
   p.loadProgress = function ({ suppressWinToast = false, isReset = false } = {}) {
     const savedState = storageManager.getPuzzleState(this.currentPuzzleUniqueId);
     if (savedState) {
@@ -57,18 +57,15 @@ export function applyHistory(GameClass) {
       this.updateVisuals();
       this.validate({ suppressWinToast });
     } else if (!isReset && storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {
-      // No local save, but the puzzle is marked solved (e.g. synced from cloud
-      // on another device). Reconstruct the solved board from the solution so
-      // the user can see the answer rather than a blank grid.
+      // Reconstruct board from solution if solved on another device.
       this.state = [...this.solution].map(cell => cell === 'x' ? CELL.STAR : CELL.DOT);
       this.history = [JSON.stringify(this.state)];
       this.historyIdx = 0;
-      this.saveCurrentState(); // persist locally so this path only runs once
+      this.saveCurrentState();
       this.updateVisuals();
       this.validate({ suppressWinToast: true });
     } else {
-      // If there's no saved state AND it's a reset (or not solved elsewhere),
-      // ensure the board state is explicitly blank/cleared.
+      // Clear state if no progress or solved record exists.
       this.state = new Array(this.n * this.n).fill(CELL.NONE);
       this.history = [JSON.stringify(this.state)];
       this.historyIdx = 0;
@@ -91,13 +88,11 @@ export function applyHistory(GameClass) {
     this.saveCurrentState();
   };
 
-  // Deletes all puzzle state and solved-history entries from localStorage,
-  // leaving settings (setting-*) untouched. Also resets the current board
-  // to an empty state so the UI stays consistent.
+  // Clear all saved puzzle data and reset active board.
   p._clearAllSaveData = function () {
     storageManager.clearAllPuzzleData();
 
-    // Reset the live board so the UI reflects the cleared state
+
     if (this.state) {
       this.state.fill(CELL.NONE);
       this.history = [JSON.stringify(this.state)];
@@ -112,7 +107,7 @@ export function applyHistory(GameClass) {
     this.showToast('Cleared all puzzle saves.', 'info');
   };
 
-  // Records this puzzle as solved in localStorage and updates the solved badge.
+  // Mark puzzle as solved and update UI.
   p.markAsSolved = function () {
     storageManager.markPuzzleSolved(this.currentPuzzleUniqueId);
     this._updateSolvedBadge(storageManager.getSolvedList());

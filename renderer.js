@@ -1,17 +1,11 @@
-// renderer.js
-// Mixes rendering methods into StarBattleGame.prototype.
-// Call applyRenderer(StarBattleGame) once before instantiating the class.
-//
-// Everything here is "game state → DOM": no game state is mutated,
-// no events are wired. Methods read `this.n`, `this.state`, `this.regions`,
-// etc. and update the DOM accordingly.
+// Mixin for rendering logic (game state to DOM updates).
 
 export function applyRenderer(GameClass) {
   const p = GameClass.prototype;
 
-  // ── Board construction ────────────────────────────────────────────────────
+  // --- Board Construction ---
 
-  // Builds the cell grid and SVG region borders for one board.
+  // Render cell grid and SVG region borders for a board.
   p.renderBoard = function (id, regionMap) {
     const wrapper = document.getElementById(id);
     const grid = this._buildGrid();
@@ -21,19 +15,18 @@ export function applyRenderer(GameClass) {
     if (axisLabelsOn) {
       wrapper.classList.add('grid-wrapper--labeled');
 
-      // Set the grid template explicitly in JS so we don't depend on
-      // var(--grid-n) resolving correctly on this element.
+      // Define grid template using custom property fallback directly.
       wrapper.style.gridTemplateColumns = `var(--cell-size) repeat(${this.n}, var(--cell-size))`;
       wrapper.style.gridTemplateRows = `var(--cell-size) repeat(${this.n}, var(--cell-size))`;
 
-      // Corner spacer: row 1, col 1
+      // Corner spacer.
       const corner = document.createElement('div');
       corner.className = 'axis-corner';
       corner.style.gridRow = '1';
       corner.style.gridColumn = '1';
       wrapper.appendChild(corner);
 
-      // Column labels: row 1, cols 2..(n+1) — one per column, explicitly placed
+      // Column labels (A-Z).
       for (let c = 0; c < this.n; c++) {
         const label = document.createElement('div');
         label.className = 'axis-label axis-label--col';
@@ -44,7 +37,7 @@ export function applyRenderer(GameClass) {
         wrapper.appendChild(label);
       }
 
-      // Row labels: rows 2..(n+1), col 1 — one per row, explicitly placed
+      // Row labels (1-N).
       for (let r = 0; r < this.n; r++) {
         const label = document.createElement('div');
         label.className = 'axis-label axis-label--row';
@@ -55,13 +48,12 @@ export function applyRenderer(GameClass) {
         wrapper.appendChild(label);
       }
 
-      // Inner wrapper: rows 2..(n+1), col 2 — holds the grid + SVG overlay
+      // Inner wrapper to hold grid and SVG overlay.
       const inner = document.createElement('div');
       inner.className = 'axis-board-inner';
       inner.style.gridRow = `2 / span ${this.n}`;
       inner.style.gridColumn = '2';
-      // Explicit size required so the absolutely-positioned SVG overlay fills
-      // the board correctly (100% resolves against this element's dimensions).
+      // Set dimensions explicitly so absolute overlay matches board dimensions.
       inner.style.width = `calc(${this.n} * var(--cell-size))`;
       inner.style.height = `calc(${this.n} * var(--cell-size))`;
       inner.appendChild(grid);
@@ -76,7 +68,7 @@ export function applyRenderer(GameClass) {
     }
   };
 
-  // Creates the interactive grid div with all pointer event handlers attached.
+  // Build cell grid element.
   p._buildGrid = function () {
     const grid = document.createElement('div');
     grid.className = 'star-battle-grid';
@@ -89,10 +81,7 @@ export function applyRenderer(GameClass) {
       cell.className = 'cell';
       cell.dataset.index = i;
 
-      // Desktop-only cross-board hover: highlight the same cell index on both
-      // boards. window.matchMedia is checked once at grid-build time; grids
-      // are rebuilt per puzzle so this stays current if the user
-      // resizes/changes input device.
+      // Synchronize hover state across boards on pointer devices.
       if (window.matchMedia('(pointer: fine)').matches) {
         cell.addEventListener('pointerenter', () => {
           if (this.isDragging) return;
@@ -128,8 +117,7 @@ export function applyRenderer(GameClass) {
 
     grid.onpointermove = (e) => {
       if (!this.isDragging) return;
-      // pointerover doesn't fire on touch during drag, so fall back to
-      // elementFromPoint.
+      // Fall back to elementFromPoint for touch drag support.
       const cell = document.elementFromPoint(e.clientX, e.clientY)?.closest('.cell');
       if (cell) {
         const idx = parseInt(cell.dataset.index);
@@ -143,9 +131,9 @@ export function applyRenderer(GameClass) {
     return grid;
   };
 
-  // Creates the SVG overlay that draws thick borders between regions.
+  // Build SVG overlay containing region borders.
   p._buildRegionSvg = function (regionMap) {
-    const COORD = 100; // virtual units per cell
+    const COORD = 100;
     const totalCoord = this.n * COORD;
     const STROKE = COORD * 0.07;
     const HALF = STROKE / 2;
@@ -154,7 +142,7 @@ export function applyRenderer(GameClass) {
     svg.setAttribute("class", "region-svg");
     svg.setAttribute("viewBox", `${-HALF} ${-HALF} ${totalCoord + STROKE} ${totalCoord + STROKE}`);
 
-    // Walk every cell; draw a border segment wherever the region changes.
+    // Draw boundary paths between different regions.
     let paths = "";
     for (let i = 0; i < this.n * this.n; i++) {
       const r = Math.floor(i / this.n), c = i % this.n;
@@ -187,9 +175,9 @@ export function applyRenderer(GameClass) {
     return svg;
   };
 
-  // ── Cell & board visuals ──────────────────────────────────────────────────
+  // --- Cell & Board Visuals ---
 
-  // Updates a single cell's DOM to reflect its current state value.
+  // Update cell contents based on state value (star/dot/empty).
   p.updateCellVisual = function (cell, val) {
     const { CELL } = this._constants;
     cell.innerHTML = val === CELL.STAR ? '<span class="star">★</span>'
@@ -197,22 +185,21 @@ export function applyRenderer(GameClass) {
         : '';
   };
 
-  // Re-renders all cells on both boards to match the current state array.
+  // Update visuals for all cells.
   p.updateVisuals = function () {
     document.querySelectorAll('.cell').forEach(cell => {
       this.updateCellVisual(cell, this.state[cell.dataset.index]);
     });
   };
 
-  // Highlights (or un-highlights) the cell at `idx` on every board simultaneously.
-  // Only called on pointer:fine (desktop) devices; dragging suppresses it.
+  // Sync cell hover state across boards.
   p._setHoverSync = function (idx, on) {
     document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
       cell.classList.toggle('cell-hover-sync', on);
     });
   };
 
-  // ── Error highlights ──────────────────────────────────────────────────────
+  // --- Error Highlights ---
 
   p._applyErrorHighlights = function (errorIndices) {
     document.querySelectorAll('.cell').forEach(cell => {
@@ -221,9 +208,9 @@ export function applyRenderer(GameClass) {
     });
   };
 
-  // ── Controls ──────────────────────────────────────────────────────────────
+  // --- Controls ---
 
-  // Enables or disables undo/redo buttons based on current history position.
+  // Enable/disable undo and redo buttons based on history position.
   p.updateControls = function () {
     const undoBtn = document.getElementById('undo-btn');
     const redoBtn = document.getElementById('redo-btn');
@@ -231,8 +218,7 @@ export function applyRenderer(GameClass) {
     redoBtn.disabled = (this.historyIdx >= this.history.length - 1);
   };
 
-  // Disables navigation controls and fades the boards while a puzzle fetch is
-  // in flight.
+  // Update loading state overlay and controls.
   p.setLoading = function (isLoading) {
     const ids = ['prev-puz', 'next-puz', 'puzzle-input', 'category-select',
       'hint-btn', 'check-btn', 'reset-btn'];
@@ -242,31 +228,29 @@ export function applyRenderer(GameClass) {
     boardsWrapper.style.pointerEvents = isLoading ? 'none' : '';
   };
 
-  // ── Solved badge ──────────────────────────────────────────────────────────
+  // --- Solved Badge ---
 
-  // Shows or hides the ✅ badge based on whether this puzzle is recorded as solved.
+  // Update solved badge visibility.
   p.updateSolvedUI = function () {
     const { storageManager } = this._deps;
     const solved = storageManager.getSolvedList();
     this._updateSolvedBadge(solved);
   };
 
-  // Sets the solved badge opacity from an already-fetched solved list.
+  // Update opacity of the solved badge element.
   p._updateSolvedBadge = function (solved) {
     const badge = document.getElementById('solved-badge');
     badge.style.opacity = solved.includes(this.currentPuzzleUniqueId) ? '1' : '0';
   };
 
-  // ── Hints ─────────────────────────────────────────────────────────────────
+  // --- Hints ---
 
-  // Applies highlight and mark classes to cells based on a hint object,
-  // and shows the hint description as a toast.
+  // Highlight cells and display hint description.
   p.applyHintUI = function (hint) {
     const selectors = (hint.boardIdx !== undefined)
       ? [`#board${hint.boardIdx + 1}`]
       : ['#board1', '#board2'];
 
-    // Unified loop — highlights and marks both just add a CSS class to a cell
     for (const { idx, color } of [...hint.highlights, ...hint.marks]) {
       for (const sel of selectors) {
         const cell = document.querySelector(`${sel} [data-index="${idx}"]`);
@@ -274,9 +258,7 @@ export function applyRenderer(GameClass) {
       }
     }
 
-    // In tab mode, switch to the board the hint is about. If the hint is
-    // cross-board (boardIdx undefined), stay on whichever board the user
-    // is already looking at — they can flip between tabs to see both sides.
+    // Switch active board tab if hint is board-specific.
     if (document.body.classList.contains('tab-mode') && hint.boardIdx !== undefined) {
       this._showBoard(hint.boardIdx + 1);
     }
@@ -284,17 +266,16 @@ export function applyRenderer(GameClass) {
     this.showToast(hint.description, "hint", 30000);
   };
 
-  // Removes all hint highlight classes from every cell on both boards.
+  // Clear active hint highlights.
   p.clearHintUI = function () {
     document.querySelectorAll('.cell').forEach(cell => {
       cell.classList.remove('hint-source-blue', 'hint-target-yellow', 'hint-target-green', 'hint-error-red');
     });
   };
 
-  // ── Toast ─────────────────────────────────────────────────────────────────
+  // --- Toast Notifications ---
 
-  // Displays a dismissible notification at the bottom of the screen.
-  // Clears any previous toast type before applying the new one.
+  // Show a dismissible toast notification.
   p.showToast = function (message, type = 'info', duration = 2000) {
     const toast = document.getElementById('toast');
     this.activeToastType = type;
@@ -321,7 +302,7 @@ export function applyRenderer(GameClass) {
     document.getElementById('toast').classList.add('toast-hidden');
   };
 
-  // ── Global UI state ───────────────────────────────────────────────────────
+  // --- Global UI State ---
 
   p._applyDarkMode = function (on) {
     document.documentElement.setAttribute('data-theme', on ? 'dark' : '');
@@ -340,7 +321,7 @@ export function applyRenderer(GameClass) {
       });
     }
 
-    // Wire tab buttons (idempotent — replaces onclick each time)
+    // Bind tab click handlers.
     document.querySelectorAll('.board-tab').forEach(btn => {
       const board = parseInt(btn.dataset.board);
       btn.onclick = () => this._showBoard(board);

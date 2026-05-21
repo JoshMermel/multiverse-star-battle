@@ -1,23 +1,16 @@
-// puzzle-loader.js
-// Mixes puzzle-fetching and parsing methods into StarBattleGame.prototype.
-// Call applyPuzzleLoader(StarBattleGame) once before instantiating the class.
-//
-// Responsibility: fetch CSV data, parse it, manage the puzzle cache, and
-// select the right puzzle to hand off to loadPuzzle(). Nothing here mutates
-// game state or touches the DOM beyond the nav counter/input elements that
-// track which puzzle number is loaded.
+// Mixin for fetching, parsing, and caching puzzle data.
 
 export function applyPuzzleLoader(GameClass) {
   const p = GameClass.prototype;
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // --- Helpers ---
 
-  // Returns true if catId refers to the special daily puzzle category.
+  // Check if category is the daily puzzle.
   p.isDailyCategory = function (catId) {
     return catId === 'daily';
   };
 
-  // Returns true if today is Sunday in the Boston timezone.
+  // Check if today is Sunday in the Boston timezone.
   p.isSunday = function () {
     const day = new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/New_York',
@@ -26,11 +19,9 @@ export function applyPuzzleLoader(GameClass) {
     return day === 'Sun';
   };
 
-  // Returns today's 0-based puzzle index by counting days since the Unix epoch
-  // and wrapping around the available pool. Stable for the whole day regardless
-  // of when the page is loaded, and cycles forever as new puzzles are added.
+  // Calculate today's stable puzzle index from the Unix epoch.
   p.getDailyPuzzleIndex = function (total) {
-    // 'en-CA' gives YYYY-MM-DD, which Date() parses reliably.
+    // Use ISO-like local format (YYYY-MM-DD) for reliable parsing.
     const bostonDateStr = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/New_York',
       year: 'numeric',
@@ -45,11 +36,9 @@ export function applyPuzzleLoader(GameClass) {
     return daysSinceEpoch % total;
   };
 
-  // ── Parsing ───────────────────────────────────────────────────────────────
+  // --- Parsing ---
 
-  // Parses the CSV format produced by gen_puzzles.py into an array of puzzle
-  // objects. Expects a header row of: name,N,board_1,board_2,solution
-  // Lines beginning with '#' (generator progress comments) are skipped.
+  // Parse CSV puzzle data into an array of puzzle objects.
   p.parseCsv = function (text) {
     const lines = text.split('\n');
     const puzzles = [];
@@ -58,7 +47,7 @@ export function applyPuzzleLoader(GameClass) {
       const line = raw.trim();
       if (!line || line.startsWith('#')) continue;
       const cols = line.split(',');
-      if (cols[0] === 'name') continue; // skip header row
+      if (cols[0] === 'name') continue;
       const [name, N, board_1, board_2, solution, score, tier, is_solved] = cols;
       if (!name || !N || !board_1 || !board_2 || !solution) continue;
       puzzles.push({ id: id++, name, N: parseInt(N, 10), board1: board_1, board2: board_2, solution, tier: tier || '' });
@@ -66,11 +55,9 @@ export function applyPuzzleLoader(GameClass) {
     return puzzles;
   };
 
-  // ── Hashing ───────────────────────────────────────────────────────────────
+  // --- Hashing ---
 
-  // Hashes puzzle content to a stable 16-char hex ID for localStorage keying.
-  // Using content rather than puzzle name means renamed puzzles don't lose progress.
-  // Also used by input.js (_renderBrowseGrid) to identify puzzles in the browse grid.
+  // Generate a stable 16-character hash of the puzzle configuration.
   p.computePuzzleId = async function (puzzleData) {
     const stable = JSON.stringify({
       board1: puzzleData.board1,
@@ -83,13 +70,12 @@ export function applyPuzzleLoader(GameClass) {
     );
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex.slice(0, 16); // 16 hex chars = 64 bits, plenty unique
+    return hashHex.slice(0, 16);
   };
 
-  // ── Loading ───────────────────────────────────────────────────────────────
+  // --- Loading ---
 
-  // Fetches puzzles for a category, updates the nav UI, and hands off to
-  // loadPuzzle(). targetPuz is clamped to the valid range automatically.
+  // Load a category by ID and target puzzle index.
   p.loadCategory = async function (catId, targetPuz = 1) {
     if (this.isDailyCategory(catId)) {
       await this.loadDailyCategory(targetPuz);
@@ -115,8 +101,7 @@ export function applyPuzzleLoader(GameClass) {
     await this.loadPuzzle(this.loadedPuzzles[clampedPuz - 1], catId);
   };
 
-  // Fetches all daily tier CSVs in parallel, selects today's puzzle from each,
-  // and hands off to loadPuzzle(). Expert tier is only included on Sundays.
+  // Load today's daily puzzles from all tiers (including expert on Sundays).
   p.loadDailyCategory = async function (targetSlot = 1) {
     if (!this.puzzleCache.has('daily')) {
       const isSunday = this.isSunday();

@@ -3,19 +3,13 @@ import { CELL } from './constants.js';
 export function applyRules(GameClass) {
   const p = GameClass.prototype;
 
-  // Dots every CELL.NONE cell that shares a row, column, or region with the
-  // star just placed at `idx`. Operates on the shared state (both boards see
-  // the same state array), so the fill naturally appears on both boards.
-  // Called only while _suppressAutoFill is true, so no recursion occurs.
+  // Fill empty cells in the same row, column, or region with dots when a star is placed.
   p._autoFillDots = function (idx) {
     const n = this.n;
     const row = Math.floor(idx / n);
     const col = idx % n;
 
-    // Collect the union of cells to dot: entire row, entire col, entire region.
-    // The region is defined by `this.regions[0]` — both boards share regions
-    // that map to the same logical groups (they may differ visually but the
-    // region id at each index is what matters for the rule).
+    // Collect cells to dot (row, column, and board 1 region).
     const regionId = this.regions[0][idx];
     const toFill = new Set();
 
@@ -26,15 +20,13 @@ export function applyRules(GameClass) {
       }
     }
 
-    // Also apply the region from board 2 (in case the two boards have
-    // different region groupings at this index).
+    // Add cells from board 2 region (groupings may differ from board 1).
     const regionId2 = this.regions[1][idx];
     for (let i = 0; i < n * n; i++) {
       if (this.regions[1][i] === regionId2) toFill.add(i);
     }
 
-    // Also dot all 8 cells adjacent to the star (orthogonal and diagonal),
-    // since stars can never touch each other even diagonally.
+    // Add adjacent cells (stars cannot touch orthogonally or diagonally).
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
         if (dr === 0 && dc === 0) continue;
@@ -45,7 +37,7 @@ export function applyRules(GameClass) {
       }
     }
 
-    // Dot only empty cells; never overwrite a star (including the one just placed).
+    // Apply dots to empty cells only.
     for (const i of toFill) {
       if (this.state[i] === CELL.NONE) {
         this.state[i] = CELL.DOT;
@@ -56,14 +48,12 @@ export function applyRules(GameClass) {
     }
   };
 
-  // Returns true if every solution star is placed and no extra stars exist.
-  // Empty cells and dots are ignored — the puzzle is solved even with blank
-  // squares.
+  // Check if all solution stars are placed and no extra stars exist.
   p.isSolved = function () {
     return this.state.every((v, i) => (this.solution[i] === 'x') ? v === CELL.STAR : v !== CELL.STAR);
   };
 
-  // Returns the set of cell indices involved in adjacency violations.
+  // Find all cell indices with adjacency violations.
   p._getAdjacentErrorIndices = function () {
     const n = this.n;
     const errors = new Set();
@@ -84,10 +74,8 @@ export function applyRules(GameClass) {
     return errors;
   };
 
-  // Highlights obvious rule violations in real time.
-  // debounceMs controls how long to wait before showing error highlights:
-  //   0   — show immediately (star placements, drags — clearly not mid-double-click)
-  //   200 — short delay (dot placements — could be the first click of a double-click)
+  // Validate current state and highlight rule violations.
+  // debounceMs delays highlighting to prevent flashing during double-clicks.
   p.validate = function ({ suppressWinToast = false, debounceMs = 0 } = {}) {
     const n = this.n;
     const errorIndices = new Set();
@@ -95,19 +83,19 @@ export function applyRules(GameClass) {
     const checkGroup = (indices) => {
       const stars = indices.filter(i => this.state[i] === CELL.STAR);
       const allDots = indices.every(i => this.state[i] === CELL.DOT);
-      // Highlight if more than 1 star or if group is impossible (all dots)
+      // Mark group as erroneous if it has multiple stars or is completely dotted.
       if (stars.length > 1 || allDots) {
         indices.forEach(i => errorIndices.add(i));
       }
     };
 
-    // Check rows and columns
+
     for (let i = 0; i < n; i++) {
       checkGroup(Array.from({ length: n }, (_, k) => i * n + k));
       checkGroup(Array.from({ length: n }, (_, k) => k * n + i));
     }
 
-    // Check regions for both boards
+
     this.regions.forEach(regionString => {
       const regionIds = [...new Set(regionString.split(''))];
       regionIds.forEach(id => {
@@ -119,14 +107,11 @@ export function applyRules(GameClass) {
       });
     });
 
-    // Check adjacency
+
     for (const idx of this._getAdjacentErrorIndices()) {
       errorIndices.add(idx);
     }
 
-    // Debounce error highlights — dot placements use a delay to avoid flashing
-    // on the first click of a double-click; stars and drags show errors immediately.
-    // Clears always run immediately so removing an error feels instant.
     clearTimeout(this._errorHighlightTimer);
     if (errorIndices.size === 0 || debounceMs === 0) {
       this._applyErrorHighlights(errorIndices);
@@ -136,7 +121,7 @@ export function applyRules(GameClass) {
       );
     }
 
-    // Win check — runs eagerly regardless of the highlight debounce
+    // Check win condition.
     if (this.isSolved() && errorIndices.size === 0) {
       this.markAsSolved();
       const toast = document.getElementById('toast');
@@ -146,7 +131,7 @@ export function applyRules(GameClass) {
         this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
       }
     } else {
-      // If the board is no longer solved, dismiss the win toast
+      // Dismiss win toast if puzzle is no longer solved.
       const toast = document.getElementById('toast');
       if (toast.classList.contains('toast-win') && !toast.classList.contains('toast-hidden')) {
         this.hideToast();
@@ -154,8 +139,7 @@ export function applyRules(GameClass) {
     }
   };
 
-  // Checks the user's current placements against the solution and shows a toast
-  // with the result. Only considers filled cells (dots and stars), not empty ones.
+  // Check current placements against the solution and display results.
   p.checkCorrectness = function () {
     let errorCount = 0;
     let filledCount = 0;
