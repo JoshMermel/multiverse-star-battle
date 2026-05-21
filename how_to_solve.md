@@ -211,8 +211,6 @@ href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=8">
 One last example for N=4. In this case, we can make the same observation using a
 type-A inference, or a type-B inference.
 
-TODO(jmerm): just for fun, see if the corpus has any cases where n>4 is useful.
-
 ### Disjoint rows/cols
 
 I find it easier to spot row/col based inferences when the rows/cols are
@@ -474,7 +472,60 @@ I think it's probably a special case of lookahead, but more human-viable.
 
 ## More philosophy
 
-- symmetry
-- how many applications of a hard technique are required?
-- which levels are worth publishing
-- ideas for future improvement to the scoring system
+### Which puzzles are actaully good
+
+The output of my solver is a "score" which estimates puzzle difficulty, and a
+"tier", which says which kinds of rules were required. On my corpus of 1 million
+8x8 puzzles, "beginner" ranges from 12-174, "medium"
+difficulty puzzles range from 25-311, "hard" ranges from 39-367, "expert" ranges
+from 92-1236, and "grandmaster" ranges from 145-3548.
+
+Notice how the hardest beginner puzzle has a score higher than the easiest
+grandmaster puzzle - what's up with that?! That beginner puzzle reqires a ton of
+applications of beginner tier techniques, each one only placing a few dots at a
+time. That grandmaster puzzle is trivial, except a crux which requires a
+grandmaster tier technique.
+
+Personally, I don't consider either to be suitable for publication. I
+think that a beginner solver doesn't want a beginner puzzle like that, and an
+expert/grandmaster solver also doesn't want a puzzle like that.
+
+When I'm choosing which puzzles to publish, I throw away the puzzles with the
+highest and lowest scores within each tier.
+
+### Symmetry rules
+
+I also have trouble characterizing the difficulty of puzzles that are
+trivialized by the symmetry techniques. My current thinking is that I consider
+the "copy notation along symmetry" as a medium tier technique. This gives those
+puzzles a slight score decrease, because they can someteimes use this instead of
+a harder technique. I consider the "sees
+self under symmetry" as somewhere between "hard" and "expert". If a puzzle falls
+into this category, I don't serve it at all.
+
+### Branching Paths
+
+In many cases, the same technique can be applied to multiple places on the
+puzzle. Which one you choose can dramatically impact the solver's view of the
+puzzle. I think this is especially noticable with the lookahead rules, since
+they are difficult and place only a sinlge dot. A lucky use of lookahead might
+trivialize the rest of the puzzle. An unlucky use of lookahead might require
+several more applications of lookahead before the path becomes clear.
+
+So what is the difficulty of that puzzle?
+
+Perhaps I should run the solver several times, randomizing at all decision
+points, and then look at the mean/median of all difficulty scores.
+
+### Ideas for future improvement to scoring
+
+ - how early does the first hard rule appear?
+ - how early is the first star placed?
+ - N row/cols along an edge is easier to spot than mid-board?
+ - how often a solver of beginner/medium/... strength would need to switch
+   boards
+ - lookahead is expensive and not targeted. A good choice of lookahead might
+   prevent the need for others. The same is true more generally if you think
+   about it; maybe rules need to return a list of possible "Inference" objects
+   and then the solver randomly selects amongst them?
+ - split off a half-lookahead case which only requires looking at one board?
