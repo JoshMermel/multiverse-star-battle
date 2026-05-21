@@ -468,9 +468,25 @@ This is a technique I see a teammate use sometimes. He'll point out two cells
 that must be equal, then say ~"oh, but if both are stars, then there's a
 contradiction", and mark dots in both.
 
-I think it's probably a special case of lookahead, but more human-viable.
+I suspect that there are more human-viable rules that I don't know about. If you
+think of one - please let me know!
 
 ## More philosophy
+
+### Branching Paths
+
+In many cases, the same technique can be applied to multiple places on the
+puzzle. Which one you choose can dramatically impact the solver's view of the
+puzzle. I think this is especially noticable with the lookahead rules, since
+they are difficult and place only a sinlge dot. A lucky use of lookahead might
+trivialize the rest of the puzzle. An unlucky use of lookahead might require
+several more applications of lookahead before the path becomes clear.
+
+So what is the difficulty of that puzzle?
+
+Perhaps I should run the solver several times, randomizing at all decision
+points, and then look at the mean/median of all difficulty scores.
+
 
 ### Which puzzles are actaully good
 
@@ -480,8 +496,11 @@ The output of my solver is a "score" which estimates puzzle difficulty, and a
 difficulty puzzles range from 25-311, "hard" ranges from 39-367, "expert" ranges
 from 92-1236, and "grandmaster" ranges from 145-3548.
 
-Notice how the hardest beginner puzzle has a score higher than the easiest
-grandmaster puzzle - what's up with that?! That beginner puzzle reqires a ton of
+Notice how the [hardest
+beginner](https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=25)
+puzzle has a score higher than the [easiest
+grandmaster](https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=26)
+puzzle - what's up with that?! That beginner puzzle reqires a ton of
 applications of beginner tier techniques, each one only placing a few dots at a
 time. That grandmaster puzzle is trivial, except a crux which requires a
 grandmaster tier technique.
@@ -502,20 +521,6 @@ puzzles a slight score decrease, because they can someteimes use this instead of
 a harder technique. I consider the "sees
 self under symmetry" as somewhere between "hard" and "expert". If a puzzle falls
 into this category, I don't serve it at all.
-
-### Branching Paths
-
-In many cases, the same technique can be applied to multiple places on the
-puzzle. Which one you choose can dramatically impact the solver's view of the
-puzzle. I think this is especially noticable with the lookahead rules, since
-they are difficult and place only a sinlge dot. A lucky use of lookahead might
-trivialize the rest of the puzzle. An unlucky use of lookahead might require
-several more applications of lookahead before the path becomes clear.
-
-So what is the difficulty of that puzzle?
-
-Perhaps I should run the solver several times, randomizing at all decision
-points, and then look at the mean/median of all difficulty scores.
 
 ### Ideas for future improvement to scoring
 
