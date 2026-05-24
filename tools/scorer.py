@@ -233,6 +233,7 @@ class CompositeScorer:
             (self.rule_3_region_pinned_crossboard_rows,     60, "Expert"),
             (self.rule_3_region_pinned_crossboard_cols,     60, "Expert"),
             (self.rule_crossboard_partial_overlap,          75, "Expert"),
+            (self.rule_lookahead_half_stage_single_board,   78, "Expert"),
             (self.rule_lookahead_half_stage,                80, "Expert"),
             (self.rule_region_pair_contains_pair,           90, "Expert"),
 
@@ -756,6 +757,102 @@ class CompositeScorer:
                 if changes > 0:
                     return changes
         return 0
+
+    def rule_lookahead_half_stage_single_board(self, p):
+        """
+        Place a star speculatively, propagate row/col/adjacency consequences
+        (board-agnostic), then apply only ONE board's region elimination for
+        the test cell — and check whether that single board's view already
+        yields a contradiction.
+
+        This is strictly cheaper reasoning than rule_lookahead_half_stage:
+        the contradiction is visible from a single board's perspective alone,
+        without needing to combine region information from both boards.
+
+        Two separate sandbox passes are run per candidate cell (one per board),
+        each dotting out only that board's region for the test cell.
+        A contradiction is accepted only if the broken unit belongs to the
+        same board being tested (or is a row/col/adjacency violation, which
+        is board-agnostic geometry).
+        """
+        for test_idx in (i for i, val in enumerate(p.grid) if val is None):
+            for b_idx in range(N_BOARDS):
+                # Find the region this cell belongs to on b_idx.
+                reg_char = p.cell_to_region[b_idx][test_idx]
+                reg_indices = p.regions[b_idx][reg_char]
+
+                # Skip if this board's region already has a star (it's solved).
+                if any(p.grid[i] == "x" for i in reg_indices):
+                    continue
+
+                saved = p.copy_grid()
+                p.grid[test_idx] = "x"
+
+                tr, tc = p.get_rc(test_idx)
+
+                # Row and column elimination (board-agnostic).
+                for i in p.row_indices[tr] + p.col_indices[tc]:
+                    if p.grid[i] is None:
+                        p.grid[i] = "."
+
+                # Adjacency elimination (board-agnostic).
+                for nb in p._neighbor_map[test_idx]:
+                    if p.grid[nb] is None:
+                        p.grid[nb] = "."
+
+                # Region elimination for this board only.
+                for i in reg_indices:
+                    if p.grid[i] is None:
+                        p.grid[i] = "."
+
+                broken = self._find_broken_unit_single_board(p, b_idx)
+                p.restore_grid(saved)
+
+                if broken:
+                    changes = p.validate_and_set(
+                        test_idx, ".",
+                        f"Half-stage single-board (B{b_idx+1}) lookahead contradiction",
+                        self.verbose)
+                    if changes > 0:
+                        return changes
+        return 0
+
+    # experimental
+    def _find_broken_unit_single_board(self, p, b_idx):
+        """
+        Returns True if the current grid state contains a contradiction that
+        is visible from board b_idx alone: a row or column with no star and no
+        empty cells, a region on b_idx with no star and no empty cells, or two
+        adjacent stars.
+
+        Broken regions on the *other* board are deliberately ignored, since
+        detecting those requires cross-board region reasoning.
+        """
+        # Rows and columns are board-agnostic geometry — include them.
+        for unit in p.row_indices + p.col_indices:
+            stars = sum(1 for i in unit if p.grid[i] == "x")
+            has_empty = any(p.grid[i] is None for i in unit)
+            if stars > 1:
+                return True
+            if stars == 0 and not has_empty:
+                return True
+
+        # Only check regions belonging to b_idx.
+        for reg_indices in p.regions[b_idx].values():
+            stars = sum(1 for i in reg_indices if p.grid[i] == "x")
+            has_empty = any(p.grid[i] is None for i in reg_indices)
+            if stars > 1:
+                return True
+            if stars == 0 and not has_empty:
+                return True
+
+        # Adjacency violations are always local.
+        for i, val in enumerate(p.grid):
+            if val == "x":
+                if any(p.grid[nb] == "x" for nb in p._neighbor_map[i]):
+                    return True
+
+        return False
 
     def rule_lookahead_half_stage(self, p):
         """Place star, apply sees_star consequences only, check for contradiction."""
