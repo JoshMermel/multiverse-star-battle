@@ -195,6 +195,7 @@ export class PuzzleSolver {
       () => this.hintCrossBoardRegionPinned(3, "Row"),
       () => this.hintCrossBoardRegionPinned(3, "Col"),
       () => this.hintPartialOverlap(),
+      () => this.hintLookaheadHalfSingleBoard(),
       () => this.hintLookaheadHalf(),
       () => this.hintRegionSubsetSync(2),
       // Grandmaster
@@ -771,6 +772,79 @@ export class PuzzleSolver {
         ...onlyA.filter(i => this.game.state[i] === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
         ...onlyB.filter(i => this.game.state[i] === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
       ]
+    };
+  }
+
+  // MATCH: An empty cell where placing a star immediately creates a contradiction
+  //   that is visible on a single board alone — i.e. a region on the same board
+  //   as the test cell becomes unsatisfiable, or a row/column is broken without
+  //   needing to combine information from both boards' region layouts.
+  // ACTION: That cell must be a dot.
+  // This is a strictly cheaper observation than hintLookaheadHalf: the broken
+  // unit is either (a) a region belonging to the same board as testIdx, or
+  // (b) a row/col whose only remaining empty cells all belonged to a single
+  // region on that same board (so the deduction requires no cross-board
+  // reasoning).
+  hintLookaheadHalfSingleBoard() {
+    const n = this.n;
+    const candidates = [];
+
+    const emptyIndices = this.game.state
+      .flatMap((val, idx) => val === CELL.NONE ? [idx] : []);
+
+    for (const testIdx of emptyIndices) {
+      const row = Math.floor(testIdx / n);
+      const col = testIdx % n;
+
+      // Run one sandbox per board, applying only that board's region for testIdx.
+      // Row, col, and adjacency consequences are board-agnostic and applied in
+      // both passes — but only the single board's region is used to fill dots.
+      for (const bIdx of [0, 1]) {
+        const boardReg = this._getRegionsContaining(testIdx)
+          .find(r => r.boardIdx === bIdx);
+        if (!boardReg) continue; // cell not in any region on this board
+
+        const sandboxState = [...this.game.state];
+        sandboxState[testIdx] = CELL.STAR;
+
+        // Row and column elimination (board-agnostic).
+        for (let j = 0; j < n; j++) {
+          const rIdx = row * n + j;
+          const cIdx = j * n + col;
+          if (sandboxState[rIdx] === CELL.NONE && rIdx !== testIdx) sandboxState[rIdx] = CELL.DOT;
+          if (sandboxState[cIdx] === CELL.NONE && cIdx !== testIdx) sandboxState[cIdx] = CELL.DOT;
+        }
+
+        // Adjacency elimination (board-agnostic).
+        for (const nb of this.getNeighbors(testIdx)) {
+          if (sandboxState[nb] === CELL.NONE) sandboxState[nb] = CELL.DOT;
+        }
+
+        // Region elimination for this board only.
+        boardReg.indices.forEach(i => {
+          if (sandboxState[i] === CELL.NONE) sandboxState[i] = CELL.DOT;
+        });
+
+        const broken = this._findBrokenUnit(sandboxState);
+        if (!broken) continue;
+
+        // Only accept contradictions that are visible within this single board:
+        // a broken region on bIdx, a broken row/col, or an adjacency violation.
+        // We explicitly exclude broken regions belonging to the *other* board,
+        // since those require cross-board region reasoning.
+        if (broken.type === 'region' && broken.boardIdx !== bIdx) continue;
+
+        candidates.push({ testIdx, broken, boardIdx: bIdx });
+      }
+    }
+
+    if (candidates.length === 0) return null;
+    const { testIdx, broken, boardIdx } = candidates[Math.floor(Math.random() * candidates.length)];
+    return {
+      boardIdx: boardIdx,
+      description: `The blue cells must contain a star. This is impossible if the circled cell holds a star.`,
+      highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
+      marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
     };
   }
 
