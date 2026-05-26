@@ -124,6 +124,7 @@ export function applyRules(GameClass) {
     // Check win condition.
     if (this.isSolved() && errorIndices.size === 0) {
       this.markAsSolved();
+      this._stopTimer();
       const toast = document.getElementById('toast');
       const winToastAlreadyVisible = toast.classList.contains('toast-win') &&
         !toast.classList.contains('toast-hidden');
@@ -131,6 +132,11 @@ export function applyRules(GameClass) {
         this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
       }
     } else {
+      // Resume timer if it is stopped/paused and puzzle is not solved.
+      if (!this.timerInterval) {
+        this.timerStartTime = Date.now() - (this.timerElapsedTime * 1000);
+        this._startTimer();
+      }
       // Dismiss win toast if puzzle is no longer solved.
       const toast = document.getElementById('toast');
       if (toast.classList.contains('toast-win') && !toast.classList.contains('toast-hidden')) {

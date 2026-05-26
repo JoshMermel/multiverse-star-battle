@@ -84,6 +84,13 @@ export function applyHistory(GameClass) {
     this.clearHintUI();
     this.updateVisuals();
     this.updateControls();
+
+    // Reset the solve timer.
+    this.timerElapsedTime = 0;
+    this._updateTimerDisplay(0);
+    this.timerStartTime = Date.now();
+    this._startTimer();
+
     this.validate();
     this.saveCurrentState();
   };

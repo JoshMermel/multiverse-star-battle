@@ -338,4 +338,27 @@ export function applyRenderer(GameClass) {
       btn.classList.toggle('board-tab--active', parseInt(btn.dataset.board) === boardNum);
     });
   };
+
+  p._applyShowTimer = function (on) {
+    const timerContainer = document.getElementById('timer-container');
+    if (timerContainer) {
+      timerContainer.style.display = on ? 'flex' : 'none';
+    }
+  };
+
+  p._updateTimerDisplay = function (seconds) {
+    const display = document.getElementById('timer-display');
+    if (!display) return;
+
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    let timeStr = "";
+    if (hrs > 0) {
+      timeStr += `${String(hrs).padStart(2, '0')}:`;
+    }
+    timeStr += `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    display.textContent = timeStr;
+  };
 }

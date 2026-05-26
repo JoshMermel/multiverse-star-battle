@@ -21,6 +21,10 @@
       <button id="auth-btn" class="auth-btn" aria-label="Sign In">Sign In</button>
     </div>
 
+    <div class="menu-group" id="timer-container" style="display: none;">
+      <span id="timer-display" class="timer-display" aria-label="Solve timer">00:00</span>
+    </div>
+
     <div class="menu-group puzzle-nav">
       <button id="prev-puz" class="step-btn" aria-label="Previous Puzzle">←</button>
       <div class="input-wrapper">
@@ -108,6 +112,16 @@
             </div>
             <div class="toggle-switch">
               <input type="checkbox" id="setting-auto-fill-dots" role="switch" aria-checked="false">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Show timer</span>
+              <span class="settings-desc">Show a timer tracking how long the puzzle takes to solve</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="setting-show-timer" role="switch" aria-checked="false">
               <span class="toggle-track"><span class="toggle-thumb"></span></span>
             </div>
           </label>

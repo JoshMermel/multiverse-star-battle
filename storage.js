@@ -1,4 +1,4 @@
-// Firebase configuration
+// Firebase configuration.
 const firebaseConfig = {
   apiKey: "AIzaSyB0a0ypQx03ZtyYlJ9EvBD0cJqryRqDINA",
   authDomain: "multiverse-star-battle.firebaseapp.com",
@@ -8,7 +8,7 @@ const firebaseConfig = {
   appId: "1:125582722457:web:76e185dca1bbec297d7f08"
 };
 
-// Initialize Firebase
+// Initialize Firebase.
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
@@ -20,7 +20,7 @@ class StorageManager {
     this.onCloudDataLoadedCallback = null;
     this._solvedCache = JSON.parse(localStorage.getItem('sb_solved') || '[]');
 
-    // Cleanup legacy uncompressed save files to free up localStorage space
+    // Clean up obsolete uncompressed save data.
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
       if (key && key.startsWith('sb_state_') && !key.startsWith('sb_v2_state_')) {
@@ -36,7 +36,7 @@ class StorageManager {
       }
     });
 
-    // Required to complete the sign-in flow after the page reloads from a redirect
+    // Handle redirect sign-in callback.
     auth.getRedirectResult().catch(error => {
       console.error("Redirect sign-in error", error);
     });
@@ -84,9 +84,9 @@ class StorageManager {
     });
   }
 
-  // --- Local Storage Accessors ---
+  // --- Local Storage ---
   getSolvedList() {
-    return [...this._solvedCache]; // return a copy to prevent accidental mutations
+    return [...this._solvedCache];
   }
 
   getPuzzleState(puzzleId) {
@@ -103,7 +103,7 @@ class StorageManager {
       this._solvedCache.push(puzzleId);
       localStorage.setItem('sb_solved', JSON.stringify(this._solvedCache));
       
-      // Push just the delta to the cloud
+      // Push the solved delta to Firestore.
       if (this.user) {
         db.collection('users').doc(this.user.uid).set({
           solved: firebase.firestore.FieldValue.arrayUnion(puzzleId)
@@ -122,10 +122,10 @@ class StorageManager {
       }
     }
     keysToDelete.forEach(k => localStorage.removeItem(k));
-    this._syncToCloud(true); // pass true to indicate a full clear on cloud too
+    this._syncToCloud(true);
   }
 
-  // --- Cloud Syncing ---
+  // --- Cloud Sync ---
   async _syncFromCloud() {
     if (!this.user) return;
     try {
@@ -136,7 +136,7 @@ class StorageManager {
       if (docSnap.exists) {
         const data = docSnap.data();
 
-        // Merge solved list
+        // Merge solved puzzle history.
         const cloudSolved = data.solved || [];
         const mergedSolved = [...new Set([...this._solvedCache, ...cloudSolved])];
         
@@ -146,7 +146,7 @@ class StorageManager {
           needsSync = true;
         }
       } else if (this._solvedCache.length > 0) {
-        // Doc doesn't exist, we must create it with our local cache
+        // Initialize cloud document with local cache if missing.
         needsSync = true;
       }
 
@@ -179,7 +179,7 @@ class StorageManager {
       if (this._solvedCache.length > 0) {
         await docRef.set({
           solved: firebase.firestore.FieldValue.arrayUnion(...this._solvedCache)
-        }, { merge: true }); // Push any local-only solves using arrayUnion
+        }, { merge: true });
       }
     } catch (error) {
       console.error("Error syncing to cloud", error);

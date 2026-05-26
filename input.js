@@ -1,17 +1,11 @@
-// input.js
-// Mixes input/event-wiring methods into StarBattleGame.prototype.
-// Call applyInput(StarBattleGame) once before instantiating the class.
-//
-// Everything here runs once at startup to attach DOM event listeners.
-// Methods read game state and call back into the game instance, but do
-// not mutate game state directly.
+// Mixin for binding DOM input events and setting up UI controls.
 
 export function applyInput(GameClass) {
   const p = GameClass.prototype;
 
-  // ── Controls ──────────────────────────────────────────────────────────────
+  // --- Controls ---
 
-  // Wires up the main game action buttons. Called once after the DOM is ready.
+  // Set up event handlers for control buttons.
   p.setupControls = function () {
     document.getElementById('undo-btn').onclick = () => this.undo();
     document.getElementById('redo-btn').onclick = () => this.redo();
@@ -47,10 +41,9 @@ export function applyInput(GameClass) {
     };
   };
 
-  // ── Modals ────────────────────────────────────────────────────────────────
+  // --- Modals ---
 
-  // Creates open/close behaviour for a modal: close button(s), backdrop click,
-  // Escape key, and an optional confirm action. Returns { open, close } handles.
+  // Set up open/close behavior for a modal and return control handles.
   p.setupModal = function (modalId, { onConfirm } = {}) {
     const modal = document.getElementById(modalId);
     const close = () => modal.classList.add('modal-hidden');
@@ -70,19 +63,19 @@ export function applyInput(GameClass) {
     return { open, close };
   };
 
-  // Sets up open/close behaviour for the instructions modal.
+  // Set up help modal behavior.
   p.setupHelpModal = function () {
     const { open } = this.setupModal('help-modal');
     document.getElementById('help-btn').onclick = open;
   };
 
-  // Sets up open/close behaviour for the board-clearing confirmation modal.
+  // Set up reset confirmation modal.
   p.setupResetModal = function () {
     const { open } = this.setupModal('reset-modal', { onConfirm: () => this.doReset() });
     document.getElementById('reset-btn').onclick = open;
   };
 
-  // ── Settings ──────────────────────────────────────────────────────────────
+  // --- Settings ---
 
   p.setupSettings = function () {
     const { open } = this.setupModal('settings-modal');
@@ -92,21 +85,24 @@ export function applyInput(GameClass) {
     const tabToggle = document.getElementById('setting-tab-mode');
     const axisLabelsToggle = document.getElementById('setting-axis-labels');
     const autoFillDotsToggle = document.getElementById('setting-auto-fill-dots');
+    const showTimerToggle = document.getElementById('setting-show-timer');
 
-    // Restore persisted preferences
+    // Restore saved preferences.
     const savedDark = localStorage.getItem('setting-dark-mode') === 'true';
     const savedTab = localStorage.getItem('setting-tab-mode') === 'true';
     const savedAxisLabels = localStorage.getItem('setting-axis-labels') === 'true';
     const savedAutoFillDots = localStorage.getItem('setting-auto-fill-dots') === 'true';
+    const savedShowTimer = localStorage.getItem('setting-show-timer') === 'true';
 
     darkToggle.checked = savedDark;
     tabToggle.checked = savedTab;
     axisLabelsToggle.checked = savedAxisLabels;
     autoFillDotsToggle.checked = savedAutoFillDots;
+    showTimerToggle.checked = savedShowTimer;
     this._applyDarkMode(savedDark);
     this._applyTabMode(savedTab);
-    // Axis labels are applied after puzzle load, not here, because boards
-    // don't exist yet — _applyAxisLabels() is called at the end of loadPuzzle().
+    this._applyShowTimer(savedShowTimer);
+    // Note: Axis labels are applied during puzzle load once boards exist.
 
     darkToggle.addEventListener('change', () => {
       localStorage.setItem('setting-dark-mode', darkToggle.checked);
@@ -120,7 +116,7 @@ export function applyInput(GameClass) {
 
     axisLabelsToggle.addEventListener('change', () => {
       localStorage.setItem('setting-axis-labels', axisLabelsToggle.checked);
-      // Rebuild both boards so label DOM is added/removed cleanly
+      // Re-render boards to apply/remove labels.
       if (this.currentPuzzle && this.regions) {
         document.getElementById('board1').innerHTML = '';
         document.getElementById('board2').innerHTML = '';
@@ -134,25 +130,30 @@ export function applyInput(GameClass) {
       localStorage.setItem('setting-auto-fill-dots', autoFillDotsToggle.checked);
     });
 
-    // ── Clear saves ──────────────────────────────────────────────────────────
+    showTimerToggle.addEventListener('change', () => {
+      localStorage.setItem('setting-show-timer', showTimerToggle.checked);
+      this._applyShowTimer(showTimerToggle.checked);
+    });
+
+    // --- Clear Saves ---
     const clearSavesBtn = document.getElementById('clear-saves-btn');
     let clearSavesConfirmPending = false;
     let clearSavesConfirmTimer = null;
 
     clearSavesBtn.addEventListener('click', () => {
       if (!clearSavesConfirmPending) {
-        // First click: enter confirm state
+        // Enter confirmation state on first click.
         clearSavesConfirmPending = true;
         clearSavesBtn.textContent = 'Are you sure?';
         clearSavesBtn.classList.add('danger-btn--confirm');
-        // Auto-revert if the user doesn't follow through within 4 seconds
+        // Auto-revert confirmation after 4 seconds.
         clearSavesConfirmTimer = setTimeout(() => {
           clearSavesConfirmPending = false;
           clearSavesBtn.textContent = 'Clear saves';
           clearSavesBtn.classList.remove('danger-btn--confirm');
         }, 4000);
       } else {
-        // Second click: execute
+        // Execute clear operation on second click.
         clearTimeout(clearSavesConfirmTimer);
         clearSavesConfirmPending = false;
         clearSavesBtn.textContent = 'Clear saves';
@@ -162,13 +163,12 @@ export function applyInput(GameClass) {
     });
   };
 
-  // ── Global listeners ──────────────────────────────────────────────────────
+  // --- Global Event Listeners ---
 
-  // Attaches window-level listeners that persist for the lifetime of the app.
-  // Must be called before any puzzle loads.
+  // Attach global key and click event listeners.
   p.setupGlobalListeners = function () {
     window.addEventListener('keydown', (e) => {
-      // Left/right arrow keys navigate puzzles, unless focus is in a text input
+      // Navigate puzzles with arrow keys unless focused on inputs.
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
       if (e.key === 'ArrowLeft') { e.preventDefault(); this.stepPuzzle(-1); }
@@ -183,8 +183,7 @@ export function applyInput(GameClass) {
       this.clearDragHighlights();
       this.draggedIndices = [];
 
-      // Don't clear hints or the toast when the user is just switching tabs —
-      // they need the highlights and description while flipping between boards.
+      // Keep hints visible when switching board tabs.
       if (e.target.closest('.board-tab')) return;
 
       this.clearHintUI();
@@ -194,7 +193,7 @@ export function applyInput(GameClass) {
       }
     });
 
-    // Book links in the help modal switch books without a page load.
+    // Allow book links inside modal text to switch categories.
     document.addEventListener('click', (e) => {
       const link = e.target.closest('.book-link');
       if (!link) return;
@@ -205,7 +204,7 @@ export function applyInput(GameClass) {
     });
   };
 
-  // ── Menu & puzzle navigation ──────────────────────────────────────────────
+  // --- Navigation & Menu Setup ---
 
   p.setupMenu = function () {
     const catSelect = document.getElementById('category-select');
@@ -213,10 +212,7 @@ export function applyInput(GameClass) {
     const prevBtn = document.getElementById('prev-puz');
     const nextBtn = document.getElementById('next-puz');
 
-    // Populate Categories.
-    // Categories with no "group" field (e.g. Daily) are appended first as plain
-    // options. The rest are grouped into <optgroup> elements, one per unique
-    // group label, preserving manifest order within each group.
+    // Populate categories select dropdown with optional grouping.
     const groups = new Map(); // group label -> <optgroup>
     this.categories.forEach(cat => {
       const opt = document.createElement('option');
@@ -251,14 +247,13 @@ export function applyInput(GameClass) {
 
     this.commitPuzzleSelection = async () => {
       let val = parseInt(puzInput.value, 10);
-      // If the current book is an arbitrary CSV (not in the manifest select),
-      // stay in it rather than falling back to whatever the select shows.
+      // Stay in custom CSV category if active.
       const catId = (this.currentCategoryId && !catSelect.querySelector(`option[value="${this.currentCategoryId}"]`))
         ? this.currentCategoryId
         : catSelect.value;
       if (isNaN(val)) val = 1;
 
-      // Skip if the requested puzzle is already loaded
+      // Skip if puzzle is already active.
       if (this.currentCategoryId === catId && this.currentPuzzle?.id === val) return;
 
       this.setLoading(true);
@@ -290,7 +285,7 @@ export function applyInput(GameClass) {
     nextBtn.onpointerdown = (e) => { e.preventDefault(); this.stepPuzzle(1); };
 
     puzInput.addEventListener('input', (e) => {
-      // Fire immediately for spinner arrow clicks; wait for Enter when typing.
+      // Commit spinner inputs immediately; wait for explicit actions when typing.
       if (e.inputType === undefined || e.inputType === 'insertReplacementText') {
         this.commitPuzzleSelection();
       }
@@ -304,13 +299,13 @@ export function applyInput(GameClass) {
       }
     });
 
-    // Also commit if the user clicks out of the box
+    // Commit selection on blur.
     puzInput.addEventListener('blur', () => {
       this.commitPuzzleSelection();
     });
   };
 
-  // ── Browse modal ──────────────────────────────────────────────────────────
+  // --- Browse Modal ---
 
   p.setupBrowseModal = function () {
     const { open, close } = this.setupModal('browse-modal');
@@ -333,7 +328,7 @@ export function applyInput(GameClass) {
     };
   };
 
-  // Builds (or rebuilds) the grid of browse tiles, marking solved/current state.
+  // Render list of puzzles in the browse modal grid.
   p._renderBrowseGrid = async function () {
     const { storageManager } = this._deps;
     const grid = document.getElementById('browse-grid');
@@ -342,10 +337,10 @@ export function applyInput(GameClass) {
     const puzzles = this.loadedPuzzles;
     if (!puzzles?.length) return;
 
-    // Build a Set of hashes for all solved puzzles
+    // Identify solved puzzles.
     const solvedIds = new Set(storageManager.getSolvedList());
 
-    // Pre-compute hashes for all puzzles in this book (cached on the puzzle objects)
+    // Cache puzzle IDs.
     await Promise.all(puzzles.map(async (puz) => {
       if (!puz._cachedId) {
         puz._cachedId = await this.computePuzzleId(puz);
@@ -397,12 +392,12 @@ export function applyInput(GameClass) {
       grid.appendChild(tile);
     });
 
-    // Scroll the current tile into view
+    // Scroll active puzzle tile into view.
     const currentTile = grid.querySelector('.bt-current');
     if (currentTile) currentTile.scrollIntoView({ block: 'nearest' });
   };
 
-  // Returns the 1-based puzzle number of the first unsolved puzzle, or null if all solved.
+  // Find the first unsolved puzzle index in the active book.
   p._findFirstUnsolvedPuzzleNum = function () {
     const { storageManager } = this._deps;
     const solvedIds = new Set(storageManager.getSolvedList());
@@ -410,9 +405,9 @@ export function applyInput(GameClass) {
     return idx === -1 ? null : idx + 1;
   };
 
-  // ── Book picker ───────────────────────────────────────────────────────────
+  // --- Book Picker ---
 
-  // Switches to a new book category without a page load, resetting to puzzle 1.
+  // Select a category and load its first puzzle.
   p.selectCategory = function (catId) {
     const catSelect = document.getElementById('category-select');
     const currentNameEl = document.getElementById('bpb-current-name');
@@ -422,8 +417,7 @@ export function applyInput(GameClass) {
     if (opt) currentNameEl.textContent = opt.textContent;
   };
 
-  // Sets up the book picker modal: a two-level UI where users first pick a
-  // group (e.g. "8x8"), then drill into its individual difficulty categories.
+  // Set up the book picker modal with grouped categories.
   p.setupBookPicker = function () {
     const catSelect = document.getElementById('category-select');
     const modal = document.getElementById('book-picker-modal');
@@ -431,7 +425,7 @@ export function applyInput(GameClass) {
     const openBtn = document.getElementById('book-picker-btn');
     const currentNameEl = document.getElementById('bpb-current-name');
 
-    // All book/group metadata now lives in manifest.json — no hardcoded lookups here.
+    // Metadata is loaded from the manifest.
     const groupMeta = (g) => this.groups[g] ?? { icon: '📖', blurb: '', desc: '' };
     const catDesc = (id) => this.categories.find(c => c.id === id)?.desc ?? '';
 
@@ -556,18 +550,18 @@ export function applyInput(GameClass) {
 
     const selectCategory = (catId) => { closeModal(); this.selectCategory(catId); };
 
-    // Sync button label whenever the select changes (e.g. on initial URL load).
+    // Update button label on select changes.
     catSelect.addEventListener('change', () => {
       const opt = catSelect.querySelector(`option[value="${catSelect.value}"]`);
       if (opt) currentNameEl.textContent = opt.textContent;
     });
 
-    // Mirror disabled state from hidden select to the picker button.
+    // Synchronize disabled state with underlying select.
     new MutationObserver(() => {
       openBtn.disabled = catSelect.disabled;
     }).observe(catSelect, { attributes: true, attributeFilter: ['disabled'] });
 
-    // Sync button label once options are populated by setupMenu().
+    // Update button label when options are ready.
     const observer = new MutationObserver(() => {
       if (catSelect.options.length > 0) {
         observer.disconnect();

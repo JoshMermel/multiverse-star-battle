@@ -20,6 +20,9 @@ class StarBattleGame {
     this.categories = [];
     this.loadedPuzzles = [];
     this.draggedIndices = [];
+    this.timerInterval = null;
+    this.timerStartTime = null;
+    this.timerElapsedTime = 0;
     // Set up global listeners before game initialization.
     this.setupGlobalListeners();
     document.addEventListener('DOMContentLoaded', () => this.initGame());
@@ -88,6 +91,15 @@ class StarBattleGame {
     this.updateUrlParams(categoryId, puzzleData.id);
 
     this.solver = new PuzzleSolver(this);
+
+    // Initialize timer for the puzzle
+    this._stopTimer();
+    this.timerElapsedTime = 0;
+    this._updateTimerDisplay(0);
+    if (!this.isSolved()) {
+      this.timerStartTime = Date.now();
+      this._startTimer();
+    }
   }
 
   showToastOnLoad(catId, puzId) {
@@ -246,6 +258,23 @@ class StarBattleGame {
       params.set('puzzle', puzNum);
     }
     window.history.replaceState(null, '', `?${params.toString()}`);
+  }
+
+  _startTimer() {
+    this._stopTimer();
+    this.timerInterval = setInterval(() => {
+      if (this.timerStartTime) {
+        this.timerElapsedTime = Math.floor((Date.now() - this.timerStartTime) / 1000);
+        this._updateTimerDisplay(this.timerElapsedTime);
+      }
+    }, 1000);
+  }
+
+  _stopTimer() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
   }
 }
 
