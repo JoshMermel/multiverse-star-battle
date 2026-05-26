@@ -25,6 +25,11 @@ export class PuzzleSolver {
     this.antiDiagInternal     = this._computeInternalDiagonalSymmetry(antiDiagFn);
     this.internalRotation180   = this._computeInternalRotation180();
     this.crossboardRotation180 = this._computeCrossboardRotation180();
+
+    // Hint cycling state.
+    this.lastStateString  = null;
+    this.currentHintType  = null;
+    this.currentHintIndex = 0;
   }
 
   // Get all units (rows, columns, and regions).
@@ -155,52 +160,70 @@ export class PuzzleSolver {
   getHint() {
     const rules = [
       // Error validation
-      () => this.hintCheckForErrors(),
-      () => this.hintAlreadySolved(),
+      { key: 'checkForErrors',           fn: () => this.hintCheckForErrors() },
+      { key: 'alreadySolved',            fn: () => this.hintAlreadySolved() },
       // Beginner
-      () => this.hintSingleCellRegion(),
-      () => this.hintOnlyEmpty(),
-      () => this.hintExcludeAdjacency(),
-      () => this.hintExcludeSolvedUnit(),
-      () => this.hintDomino(),
-      () => this.hintUnitSeesTooMuch(),
-      () => this.hintUnitRegionSync(1),
+      { key: 'singleCellRegion',         fn: () => this.hintSingleCellRegion() },
+      { key: 'onlyEmpty',                fn: () => this.hintOnlyEmpty() },
+      { key: 'excludeAdjacency',         fn: () => this.hintExcludeAdjacency() },
+      { key: 'excludeSolvedUnit',        fn: () => this.hintExcludeSolvedUnit() },
+      { key: 'domino',                   fn: () => this.hintDomino() },
+      { key: 'unitSeesTooMuch',          fn: () => this.hintUnitSeesTooMuch() },
+      { key: 'unitRegionSync1',          fn: () => this.hintUnitRegionSync(1) },
       // Medium
-      () => this.hintSeesTooMuch(2),
-      () => this.hintSeesTooMuch(3),
-      () => this.hintSeesTooMuch(null),
-      () => this.hintUnitRegionSync(2),
-      () => this.hintMainDiagonalFill(),
-      () => this.hintAntiDiagonalFill(),
-      () => this.hintRotation180Fill(),
+      { key: 'seesTooMuch2',             fn: () => this.hintSeesTooMuch(2) },
+      { key: 'seesTooMuch3',             fn: () => this.hintSeesTooMuch(3) },
+      { key: 'seesTooMuchAll',           fn: () => this.hintSeesTooMuch(null) },
+      { key: 'unitRegionSync2',          fn: () => this.hintUnitRegionSync(2) },
+      { key: 'mainDiagonalFill',         fn: () => this.hintMainDiagonalFill() },
+      { key: 'antiDiagonalFill',         fn: () => this.hintAntiDiagonalFill() },
+      { key: 'rotation180Fill',          fn: () => this.hintRotation180Fill() },
       // Hard
-      () => this.hintUnitRegionSync(3),
-      () => this.hintDisjointUnitRegionSync(2),
-      () => this.hintManyRegionsSync(),
-      () => this.hintRegionSubsetSync(1),
-      () => this.hintRotation180(),
-      () => this.hintDiagonalReflection(),
+      { key: 'unitRegionSync3',          fn: () => this.hintUnitRegionSync(3) },
+      { key: 'disjointUnitRegionSync2',  fn: () => this.hintDisjointUnitRegionSync(2) },
+      { key: 'manyRegionsSync',          fn: () => this.hintManyRegionsSync() },
+      { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
+      { key: 'rotation180',             fn: () => this.hintRotation180() },
+      { key: 'diagonalReflection',       fn: () => this.hintDiagonalReflection() },
       // Expert
-      () => this.hintDisjointUnitRegionSync(3),
-      () => this.hintCrossBoardRegionPinned(2, "Row"),
-      () => this.hintCrossBoardRegionPinned(2, "Col"),
-      () => this.hintCrossBoardRegionPinned(3, "Row"),
-      () => this.hintCrossBoardRegionPinned(3, "Col"),
-      () => this.hintPartialOverlap(),
-      () => this.hintLookaheadHalfSingleBoard(),
-      () => this.hintLookaheadHalf(),
-      () => this.hintRegionSubsetSync(2),
+      { key: 'disjointUnitRegionSync3',  fn: () => this.hintDisjointUnitRegionSync(3) },
+      { key: 'crossBoardPinned2Row',     fn: () => this.hintCrossBoardRegionPinned(2, "Row") },
+      { key: 'crossBoardPinned2Col',     fn: () => this.hintCrossBoardRegionPinned(2, "Col") },
+      { key: 'crossBoardPinned3Row',     fn: () => this.hintCrossBoardRegionPinned(3, "Row") },
+      { key: 'crossBoardPinned3Col',     fn: () => this.hintCrossBoardRegionPinned(3, "Col") },
+      { key: 'partialOverlap',           fn: () => this.hintPartialOverlap() },
+      { key: 'lookaheadHalfSingleBoard', fn: () => this.hintLookaheadHalfSingleBoard() },
+      { key: 'lookaheadHalf',            fn: () => this.hintLookaheadHalf() },
+      { key: 'regionSubsetSync2',        fn: () => this.hintRegionSubsetSync(2) },
       // Grandmaster
-      () => this.hintLookahead(1),
-      () => this.hintLookahead(2),
-      () => this.hintLookahead(3),
-      () => this.hintLookahead(8),
-      () => this.hintFromSolution(),
+      { key: 'lookahead1',              fn: () => this.hintLookahead(1) },
+      { key: 'lookahead2',              fn: () => this.hintLookahead(2) },
+      { key: 'lookahead3',              fn: () => this.hintLookahead(3) },
+      { key: 'lookahead8',              fn: () => this.hintLookahead(8) },
+      { key: 'fromSolution',            fn: () => this.hintFromSolution() },
     ];
 
-    for (const rule of rules) {
-      const hint = rule();
-      if (hint) return hint;
+    // Detect board-state changes; reset cycling when the board changes.
+    const stateString = this.game.state.join(',');
+    if (stateString !== this.lastStateString) {
+      this.lastStateString  = stateString;
+      this.currentHintType  = null;
+      this.currentHintIndex = 0;
+    }
+
+    for (const { key, fn } of rules) {
+      const hints = fn();
+      if (!hints || hints.length === 0) continue;
+
+      // If a different (earlier) rule fires, reset the cycling index.
+      if (key !== this.currentHintType) {
+        this.currentHintType  = key;
+        this.currentHintIndex = 0;
+      }
+
+      const hint = hints[this.currentHintIndex % hints.length];
+      this.currentHintIndex++;
+      return hint;
     }
     return null;
   }
@@ -216,12 +239,12 @@ export class PuzzleSolver {
     }
 
     if (highlights.length > 0) {
-      return {
+      return [{
         description: "Can't provide a hint, fix the errors marked in red first",
         highlights,
         marks: [],
         boardIdx: undefined
-      };
+      }];
     }
 
     return null;
@@ -234,12 +257,12 @@ export class PuzzleSolver {
     );
     if (!isSolved) return null;
 
-    return {
+    return [{
       description: "The puzzle is already solved!",
       highlights: [],
       marks: [],
       boardIdx: undefined
-    };
+    }];
   }
 
   // Rule: Check for unsolved regions containing exactly one cell.
@@ -253,13 +276,13 @@ export class PuzzleSolver {
       }
     }
     if (candidates.length === 0) return null;
-    const region = candidates[Math.floor(Math.random() * candidates.length)];
-    return {
+    candidates.sort((a, b) => a.indices[0] - b.indices[0]);
+    return candidates.map(region => ({
       description: `Every region must contain a star.`,
       highlights: [{ idx: region.indices[0], color: 'hint-target-green' }],
       marks: [],
       boardIdx: region.boardIdx
-    };
+    }));
   }
 
   // Rule: Check for units with no star and exactly one empty cell.
@@ -272,19 +295,21 @@ export class PuzzleSolver {
       candidates.push(unit);
     }
     if (candidates.length === 0) return null;
-    const unit = candidates[Math.floor(Math.random() * candidates.length)];
-    const empty = unit.indices.filter(i => this.game.state[i] === CELL.NONE);
-    const unitType = unit.label.includes("Row") ? "row"
-      : unit.label.includes("Column") ? "column"
-      : "region";
-    return {
-      description: `Only one spot is left for a star in this ${unitType}.`,
-      highlights: unit.indices
-        .filter(i => i !== empty[0])
-        .map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: [{ idx: empty[0], color: 'hint-target-green' }],
-      boardIdx: unit.boardIdx
-    };
+    candidates.sort((a, b) => a.indices[0] - b.indices[0]);
+    return candidates.map(unit => {
+      const empty = unit.indices.filter(i => this.game.state[i] === CELL.NONE);
+      const unitType = unit.label.includes("Row") ? "row"
+        : unit.label.includes("Column") ? "column"
+        : "region";
+      return {
+        description: `Only one spot is left for a star in this ${unitType}.`,
+        highlights: unit.indices
+          .filter(i => i !== empty[0])
+          .map(idx => ({ idx, color: 'hint-source-blue' })),
+        marks: [{ idx: empty[0], color: 'hint-target-green' }],
+        boardIdx: unit.boardIdx
+      };
+    });
   }
 
   // Rule: Check for units that already have their star placed.
@@ -301,18 +326,20 @@ export class PuzzleSolver {
       if (stars.length > 0 && empty.length > 0) candidates.push(unit);
     }
     if (candidates.length === 0) return null;
-    const unit = candidates[Math.floor(Math.random() * candidates.length)];
-    const key = unit.label.includes("Row") ? "Row"
-      : unit.label.includes("Column") ? "Column"
-      : "Region";
-    const stars = unit.indices.filter(idx => this.game.state[idx] === CELL.STAR);
-    const empty = unit.indices.filter(idx => this.game.state[idx] === CELL.NONE);
-    return {
-      description: typeDescs[key],
-      highlights: stars.map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: empty.map(idx => ({ idx, color: 'hint-target-yellow' })),
-      boardIdx: unit.boardIdx ?? undefined
-    };
+    candidates.sort((a, b) => a.indices[0] - b.indices[0]);
+    return candidates.map(unit => {
+      const key = unit.label.includes("Row") ? "Row"
+        : unit.label.includes("Column") ? "Column"
+        : "Region";
+      const stars = unit.indices.filter(idx => this.game.state[idx] === CELL.STAR);
+      const empty = unit.indices.filter(idx => this.game.state[idx] === CELL.NONE);
+      return {
+        description: typeDescs[key],
+        highlights: stars.map(idx => ({ idx, color: 'hint-source-blue' })),
+        marks: empty.map(idx => ({ idx, color: 'hint-target-yellow' })),
+        boardIdx: unit.boardIdx ?? undefined
+      };
+    });
   }
 
   // Rule: Check for empty cells adjacent to placed stars.
@@ -326,13 +353,13 @@ export class PuzzleSolver {
       if (marks.length > 0) candidates.push({ i, marks });
     }
     if (candidates.length === 0) return null;
-    const { i, marks } = candidates[Math.floor(Math.random() * candidates.length)];
-    return {
+    candidates.sort((a, b) => a.i - b.i);
+    return candidates.map(({ i, marks }) => ({
       description: "Stars cannot touch each other.",
       highlights: [{ idx: i, color: 'hint-source-blue' }],
       marks,
       boardIdx: undefined
-    };
+    }));
   }
 
   // Rule: Check for domino patterns in unsolved regions.
@@ -380,8 +407,8 @@ export class PuzzleSolver {
     }
 
     if (candidates.length === 0) return null;
-    const { idxA, idxB, targets, boardIdx } = candidates[Math.floor(Math.random() * candidates.length)];
-    return {
+    candidates.sort((a, b) => a.idxA - b.idxA || a.idxB - b.idxB);
+    return candidates.map(({ idxA, idxB, targets, boardIdx }) => ({
       description: "A star must be in the blue domino.",
       highlights: [
         { idx: idxA, color: 'hint-source-blue' },
@@ -389,7 +416,7 @@ export class PuzzleSolver {
       ],
       marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
       boardIdx
-    };
+    }));
   }
 
   // Check "N units covered by N regions" deduction.
@@ -499,7 +526,7 @@ export class PuzzleSolver {
   _hintWindowRegionSync(N, axis, adjacent) {
     const candidates = this._hintWindowRegionSyncAll(N, axis, adjacent);
     if (candidates.length === 0) return null;
-    return candidates[Math.floor(Math.random() * candidates.length)];
+    return candidates;
   }
 
   // Rule: Check for N adjacent rows/columns synchronized with N regions.
@@ -510,7 +537,8 @@ export class PuzzleSolver {
       candidates.push(...hints);
     }
     if (candidates.length === 0) return null;
-    return candidates[Math.floor(Math.random() * candidates.length)];
+    candidates.sort((a, b) => (a.highlights[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? 0));
+    return candidates;
   }
 
   // Rule: Check region synchronization for 4+ rows/columns.
@@ -522,7 +550,8 @@ export class PuzzleSolver {
       }
     }
     if (candidates.length === 0) return null;
-    return candidates[Math.floor(Math.random() * candidates.length)];
+    candidates.sort((a, b) => (a.highlights[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? 0));
+    return candidates;
   }
 
   // Helper to find external cells that see all options in a unit.
@@ -548,13 +577,13 @@ export class PuzzleSolver {
       if (targets.length > 0) hintCandidates.push({ unit, candidates, targets });
     }
     if (hintCandidates.length === 0) return null;
-    const { unit, candidates, targets } = hintCandidates[Math.floor(Math.random() * hintCandidates.length)];
-    return {
+    hintCandidates.sort((a, b) => a.candidates[0] - b.candidates[0]);
+    return hintCandidates.map(({ unit, candidates, targets }) => ({
       boardIdx: unit.boardIdx,
       description: `The blue cells must contain a star.`,
       highlights: candidates.map(i => ({ idx: i, color: 'hint-source-blue' })),
       marks: targets,
-    };
+    }));
   }
 
   // Rule: Check rows/columns where all empty cells are visible to an external cell.
@@ -581,7 +610,8 @@ export class PuzzleSolver {
       candidates.push(...hints);
     }
     if (candidates.length === 0) return null;
-    return candidates[Math.floor(Math.random() * candidates.length)];
+    candidates.sort((a, b) => (a.highlights[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? 0));
+    return candidates;
   }
 
   // Rule: Identify subsets where regions are nested within others.
@@ -617,8 +647,8 @@ export class PuzzleSolver {
       }
     }
     if (candidates.length === 0) return null;
-    const { setA, targets } = candidates[Math.floor(Math.random() * candidates.length)];
-    return this.formatSubsetHint(setA.regions, targets, setA.boardIdx);
+    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
+    return candidates.map(({ setA, targets }) => this.formatSubsetHint(setA.regions, targets, setA.boardIdx));
   }
 
   // Rule: Check cross-board pinned regions.
@@ -667,8 +697,8 @@ export class PuzzleSolver {
       if (targets.length > 0) candidates.push({ combo, targets, uList });
     }
     if (candidates.length === 0) return null;
-    const { combo, targets, uList } = candidates[Math.floor(Math.random() * candidates.length)];
-    return this.formatCrossBoardHint(combo, targets, axis, uList);
+    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
+    return candidates.map(({ combo, targets, uList }) => this.formatCrossBoardHint(combo, targets, axis, uList));
   }
 
 
@@ -707,8 +737,8 @@ export class PuzzleSolver {
     }
 
     if (candidates.length === 0) return null;
-    const { shared, onlyA, onlyB } = candidates[Math.floor(Math.random() * candidates.length)];
-    return {
+    candidates.sort((a, b) => (a.shared[0] ?? 0) - (b.shared[0] ?? 0));
+    return candidates.map(({ shared, onlyA, onlyB }) => ({
       boardIdx: undefined,
       description: `These two regions overlap everywhere except one row or column. A star anywhere in any non-shared cell would make one region unsolvable.`,
       highlights: shared
@@ -718,7 +748,7 @@ export class PuzzleSolver {
         ...onlyA.filter(i => this.game.state[i] === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
         ...onlyB.filter(i => this.game.state[i] === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
       ]
-    };
+    }));
   }
 
   // MATCH: An empty cell where placing a star immediately creates a contradiction
@@ -785,13 +815,13 @@ export class PuzzleSolver {
     }
 
     if (candidates.length === 0) return null;
-    const { testIdx, broken, boardIdx } = candidates[Math.floor(Math.random() * candidates.length)];
-    return {
+    candidates.sort((a, b) => a.testIdx - b.testIdx);
+    return candidates.map(({ testIdx, broken, boardIdx }) => ({
       boardIdx: boardIdx,
       description: `The blue cells must contain a star. This is impossible if the circled cell holds a star.`,
       highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
       marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
-    };
+    }));
   }
 
   // Rule: Lookahead level 1 (check single-star placement contradiction).
@@ -831,13 +861,13 @@ export class PuzzleSolver {
     }
 
     if (candidates.length === 0) return null;
-    const { testIdx, broken } = candidates[Math.floor(Math.random() * candidates.length)];
-    return {
+    candidates.sort((a, b) => a.testIdx - b.testIdx);
+    return candidates.map(({ testIdx, broken }) => ({
       boardIdx: broken.type === 'region' ? broken.boardIdx : undefined,
       description: `The blue cells must contain a star. This is impossible if the circled cell holds a star.`,
       highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
       marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
-    };
+    }));
   }
 
   // Rule: Multi-stage lookahead for contradiction checking.
@@ -868,13 +898,13 @@ export class PuzzleSolver {
     }
 
     if (candidates.length === 0) return null;
-    const testIdx = candidates[Math.floor(Math.random() * candidates.length)];
-    return {
+    candidates.sort((a, b) => a - b);
+    return candidates.map(testIdx => ({
       boardIdx: undefined,
       description: `Placing a star here would make the puzzle unsolvable. Seeing why requires some lookahead.`,
       highlights: [],
       marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
-    };
+    }));
   }
 
   _isBoardSymmetric(mirrorFn) {
@@ -986,13 +1016,13 @@ export class PuzzleSolver {
           : `The two boards are reflections of each other across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
       },
     ];
-    if (Math.random() < 0.5) variants.reverse();
+    const results = [];
     for (const { active, mirrorFn, description } of variants) {
       if (!active) continue;
       const hint = this._hintSymmetry(mirrorFn, description);
-      if (hint) return hint;
+      if (hint) results.push(hint);
     }
-    return null;
+    return results.length > 0 ? results : null;
   }
 
   hintRotation180() {
@@ -1007,7 +1037,8 @@ export class PuzzleSolver {
       ? `Each board independently has 180° rotational symmetry. Any cell that "sees" its own rotation cannot be a star.`
       : `The two boards are 180° rotations of each other. Any cell that "sees" its counterpart on the rotated board cannot be a star.`;
 
-    return this._hintSymmetry(i => (n * n - 1) - i, description);
+    const hint = this._hintSymmetry(i => (n * n - 1) - i, description);
+    return hint ? [hint] : null;
   }
 
   _hintSymmetryFill(mirrorFn, description) {
@@ -1032,14 +1063,14 @@ export class PuzzleSolver {
     if (marks.length === 0) return null;
 
     const filling = starMarks.length > 0 ? 'stars' : 'dots';
-    return {
+    return [{
       description: `${description} You can copy ${filling} across by symmetry.`,
       highlights: marks.map(({ idx }) => ({
         idx: mirrorFn(idx), color: 'hint-source-blue'
       })),
       marks,
       boardIdx: undefined
-    };
+    }];
   }
 
   hintRotation180Fill() {
@@ -1084,13 +1115,13 @@ export class PuzzleSolver {
       }
     }
     if (candidates.length === 0) return null;
-    const idx = candidates[Math.floor(Math.random() * candidates.length)];
-    return {
+    candidates.sort((a, b) => a - b);
+    return candidates.map(idx => ({
       description: "No logical hint was found. Here's a nudge from the solution.",
       highlights: [],
       marks: [{ idx, color: 'hint-target-yellow' }],
       boardIdx: undefined
-    };
+    }));
   }
 
   // --- Hint Formatters ---
