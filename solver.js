@@ -719,12 +719,21 @@ export class PuzzleSolver {
 
         if (shared.length === 0 || disjoint.length === 0) continue;
 
-        const allInOneUnit = (indices, axis) => {
-          const vals = indices.map(i => axis === 'row' ? Math.floor(i / n) : i % n);
-          return new Set(vals).size === 1;
+        // Two cells see each other if a star in one eliminates the other:
+        // same row, same column, or 8-adjacent.
+        const sees = (i, j) => {
+          const ri = Math.floor(i / n), ci = i % n;
+          const rj = Math.floor(j / n), cj = j % n;
+          return ri === rj || ci === cj || (Math.abs(ri - rj) <= 1 && Math.abs(ci - cj) <= 1);
         };
 
-        if (!allInOneUnit(disjoint, 'row') && !allInOneUnit(disjoint, 'col')) continue;
+        // The hint is valid when every onlyA cell sees every onlyB cell (and vice
+        // versa, which is symmetric). A star placed anywhere in onlyA would
+        // eliminate all of shared (via the shared region) and, because it sees all
+        // of onlyB, would leave regB with no valid cell — contradiction. So the
+        // star for both regions must land in shared.
+        const onlyASeesAllOnlyB = onlyA.every(a => onlyB.every(b => sees(a, b)));
+        if (!onlyASeesAllOnlyB) continue;
 
         const targets = shared.filter(i => this.game.state[i] === CELL.NONE);
         if (targets.length === 0) continue;
@@ -737,7 +746,7 @@ export class PuzzleSolver {
     candidates.sort((a, b) => (a.shared[0] ?? 0) - (b.shared[0] ?? 0));
     return candidates.map(({ shared, onlyA, onlyB }) => ({
       boardIdx: undefined,
-      description: `These two regions overlap everywhere except one row or column. A star anywhere in any non-shared cell would make one region unsolvable.`,
+      description: `These two regions overlap. Any star placed in a non-shared cell would see all the non-shared cells of the other region, making that region unsolvable. Both stars must land in the shared cells.`,
       highlights: shared
         .filter(i => this.game.state[i] === CELL.NONE)
         .map(i => ({ idx: i, color: 'hint-source-blue' })),
