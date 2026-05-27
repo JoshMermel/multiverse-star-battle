@@ -723,10 +723,27 @@ class CompositeScorer:
 
     def rule_crossboard_partial_overlap(self, p):
         """
-        MATCH: Two regions (one per board) whose non-shared available cells
-        all fall in a single row or column.
-        ACTION: Those non-shared cells must be dots.
+        MATCH: Two regions (one per board) that partially overlap, where every
+        cell in onlyA sees every cell in onlyB (and vice versa, which is
+        symmetric).
+        ACTION: Those non-shared cells (onlyA | onlyB) must be dots.
+
+        Reasoning: if regA's star landed in onlyA it would eliminate all shared
+        cells (same region) and, because it sees all of onlyB, would leave regB
+        with no valid cell — contradiction. Symmetrically for regB. So both
+        stars must land in the shared cells.
+
+        Two cells see each other when a star in one eliminates the other:
+        same row, same column, or 8-adjacent.
+
+        The old check (all non-shared cells in one row/col) is a strict subset
+        of this condition and is no longer needed separately.
         """
+        def sees(i, j):
+            ri, ci = p.get_rc(i)
+            rj, cj = p.get_rc(j)
+            return ri == rj or ci == cj or (abs(ri - rj) <= 1 and abs(ci - cj) <= 1)
+
         unsolved_b1 = [c for c, idxs in p.regions[0].items()
                        if not any(p.grid[i] == "x" for i in idxs)]
         unsolved_b2 = [c for c, idxs in p.regions[1].items()
@@ -740,13 +757,14 @@ class CompositeScorer:
                 r2_avail = {i for i in p.regions[1][r2_char] if p.grid[i] is None}
                 if not r2_avail:
                     continue
-                disjoint = (r1_avail - r2_avail) | (r2_avail - r1_avail)
-                if not (r1_avail & r2_avail) or not disjoint:
+                only_a = r1_avail - r2_avail
+                only_b = r2_avail - r1_avail
+                if not (r1_avail & r2_avail) or not (only_a or only_b):
                     continue
-                rows = {p.get_rc(idx)[0] for idx in disjoint}
-                cols = {p.get_rc(idx)[1] for idx in disjoint}
-                if len(rows) != 1 and len(cols) != 1:
+                # Every cell in onlyA must see every cell in onlyB.
+                if not all(sees(a, b) for a in only_a for b in only_b):
                     continue
+                disjoint = only_a | only_b
                 changes = sum(
                     p.validate_and_set(
                         idx, ".",
