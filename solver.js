@@ -175,16 +175,13 @@ export class PuzzleSolver {
       { key: 'seesTooMuch3',             fn: () => this.hintSeesTooMuch(3) },
       { key: 'seesTooMuchAll',           fn: () => this.hintSeesTooMuch(null) },
       { key: 'unitRegionSync2',          fn: () => this.hintUnitRegionSync(2) },
-      { key: 'mainDiagonalFill',         fn: () => this.hintMainDiagonalFill() },
-      { key: 'antiDiagonalFill',         fn: () => this.hintAntiDiagonalFill() },
-      { key: 'rotation180Fill',          fn: () => this.hintRotation180Fill() },
+      { key: 'symmetryFill',            fn: () => this.hintSymmetryFill() },
       // Hard
       { key: 'unitRegionSync3',          fn: () => this.hintUnitRegionSync(3) },
       { key: 'disjointUnitRegionSync2',  fn: () => this.hintDisjointUnitRegionSync(2) },
       { key: 'manyRegionsSync',          fn: () => this.hintManyRegionsSync() },
       { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
-      { key: 'rotation180',             fn: () => this.hintRotation180() },
-      { key: 'diagonalReflection',       fn: () => this.hintDiagonalReflection() },
+      { key: 'symmetryDeduction',        fn: () => this.hintSymmetryDeduction() },
       // Expert
       { key: 'disjointUnitRegionSync3',  fn: () => this.hintDisjointUnitRegionSync(3) },
       { key: 'crossBoardPinned2Row',     fn: () => this.hintCrossBoardRegionPinned(2, "Row") },
@@ -994,51 +991,82 @@ export class PuzzleSolver {
     return { description, highlights: [], marks, boardIdx: undefined };
   }
 
-  hintDiagonalReflection() {
+  // Umbrella: collect all applicable symmetry-fill hints (copy stars/dots by symmetry).
+  // Each active symmetry axis produces one hint; the player can cycle between them.
+  hintSymmetryFill() {
     const n = this.n;
-    const variants = [
-      {
-        active: this.isMainDiagonalSymmetric,
-        mirrorFn: i => (i % n) * n + Math.floor(i / n),
-        description: this.mainDiagCrossBoard && this.mainDiagInternal
-          ? `The two boards are reflections of each other across the main diagonal (↘), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-          : this.mainDiagInternal
-          ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-          : `The two boards are reflections of each other across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-      },
-      {
-        active: this.isAntiDiagonalSymmetric,
-        mirrorFn: i => (n-1 - i%n) * n + (n-1 - Math.floor(i/n)),
-        description: this.antiDiagCrossBoard && this.antiDiagInternal
-          ? `The two boards are reflections of each other across the anti-diagonal (↙), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-          : this.antiDiagInternal
-          ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-          : `The two boards are reflections of each other across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-      },
-    ];
     const results = [];
-    for (const { active, mirrorFn, description } of variants) {
-      if (!active) continue;
-      const hint = this._hintSymmetry(mirrorFn, description);
+
+    if (this.internalRotation180 || this.crossboardRotation180) {
+      const hint = this._hintSymmetryFill(
+        i => (n * n - 1) - i,
+        `The solution has 180° rotational symmetry.`
+      );
       if (hint) results.push(hint);
     }
+
+    if (this.isMainDiagonalSymmetric) {
+      const desc = this.mainDiagInternal && !this.mainDiagCrossBoard
+        ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution is symmetric.`
+        : `The solution is symmetric across the main diagonal (↘).`;
+      const hint = this._hintSymmetryFill(i => (i % n) * n + Math.floor(i / n), desc);
+      if (hint) results.push(hint);
+    }
+
+    if (this.isAntiDiagonalSymmetric) {
+      const desc = this.antiDiagInternal && !this.antiDiagCrossBoard
+        ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution is symmetric.`
+        : `The solution is symmetric across the anti-diagonal (↙).`;
+      const hint = this._hintSymmetryFill(
+        i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
+        desc
+      );
+      if (hint) results.push(hint);
+    }
+
     return results.length > 0 ? results : null;
   }
 
-  hintRotation180() {
-    const hasInternal   = this.internalRotation180;
-    const hasCrossboard = this.crossboardRotation180;
-    if (!hasInternal && !hasCrossboard) return null;
-
+  // Umbrella: collect all applicable symmetry-deduction hints (cells that see their mirror).
+  // Each active symmetry axis produces one hint; the player can cycle between them.
+  hintSymmetryDeduction() {
     const n = this.n;
-    const description = hasInternal && hasCrossboard
-      ? `Each board has 180° rotational symmetry, and the boards are also 180° rotations of each other. Any cell that "sees" its own rotation cannot be a star.`
-      : hasInternal
-      ? `Each board independently has 180° rotational symmetry. Any cell that "sees" its own rotation cannot be a star.`
-      : `The two boards are 180° rotations of each other. Any cell that "sees" its counterpart on the rotated board cannot be a star.`;
+    const results = [];
 
-    const hint = this._hintSymmetry(i => (n * n - 1) - i, description);
-    return hint ? [hint] : null;
+    if (this.internalRotation180 || this.crossboardRotation180) {
+      const description = this.internalRotation180 && this.crossboardRotation180
+        ? `Each board has 180° rotational symmetry, and the boards are also 180° rotations of each other. Any cell that "sees" its own rotation cannot be a star.`
+        : this.internalRotation180
+        ? `Each board independently has 180° rotational symmetry. Any cell that "sees" its own rotation cannot be a star.`
+        : `The two boards are 180° rotations of each other. Any cell that "sees" its counterpart on the rotated board cannot be a star.`;
+      const hint = this._hintSymmetry(i => (n * n - 1) - i, description);
+      if (hint) results.push(hint);
+    }
+
+    if (this.isMainDiagonalSymmetric) {
+      const description = this.mainDiagCrossBoard && this.mainDiagInternal
+        ? `The two boards are reflections of each other across the main diagonal (↘), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+        : this.mainDiagInternal
+        ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+        : `The two boards are reflections of each other across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`;
+      const hint = this._hintSymmetry(i => (i % n) * n + Math.floor(i / n), description);
+      if (hint) results.push(hint);
+    }
+
+    if (this.isAntiDiagonalSymmetric) {
+      const description = this.antiDiagCrossBoard && this.antiDiagInternal
+        ? `The two boards are reflections of each other across the anti-diagonal (↙), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+        : this.antiDiagInternal
+        ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+        : `The two boards are reflections of each other across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`;
+      const hint = this._hintSymmetry(
+        i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
+        description
+      );
+      if (hint) results.push(hint);
+    }
+
+    return results.length > 0 ? results : null;
   }
 
   _hintSymmetryFill(mirrorFn, description) {
@@ -1063,47 +1091,14 @@ export class PuzzleSolver {
     if (marks.length === 0) return null;
 
     const filling = starMarks.length > 0 ? 'stars' : 'dots';
-    return [{
+    return {
       description: `${description} You can copy ${filling} across by symmetry.`,
       highlights: marks.map(({ idx }) => ({
         idx: mirrorFn(idx), color: 'hint-source-blue'
       })),
       marks,
       boardIdx: undefined
-    }];
-  }
-
-  hintRotation180Fill() {
-    if (!this.internalRotation180 && !this.crossboardRotation180) return null;
-    const n = this.n;
-    return this._hintSymmetryFill(
-      i => (n * n - 1) - i,
-      `The solution has 180° rotational symmetry.`
-    );
-  }
-
-  hintMainDiagonalFill() {
-    if (!this.isMainDiagonalSymmetric) return null;
-    const n = this.n;
-    const desc = this.mainDiagInternal && !this.mainDiagCrossBoard
-      ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution is symmetric.`
-      : `The solution is symmetric across the main diagonal (↘).`;
-    return this._hintSymmetryFill(
-      i => (i % n) * n + Math.floor(i / n),
-      desc
-    );
-  }
-
-  hintAntiDiagonalFill() {
-    if (!this.isAntiDiagonalSymmetric) return null;
-    const n = this.n;
-    const desc = this.antiDiagInternal && !this.antiDiagCrossBoard
-      ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution is symmetric.`
-      : `The solution is symmetric across the anti-diagonal (↙).`;
-    return this._hintSymmetryFill(
-      i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
-      desc
-    );
+    };
   }
 
   hintFromSolution() {
