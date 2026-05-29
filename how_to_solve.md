@@ -464,9 +464,26 @@ techniques for pointing out implied regions are too vague.
 
 ### Both-or-Neither
 
+<a
+href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=25">
+<img src="images/only_empty.png" width="600"></img> </a>
+
 This is a technique I see a teammate use sometimes. He'll point out two cells
 that must be equal, then say ~"oh, but if both are stars, then there's a
 contradiction", and mark dots in both.
+
+In this case, look at the two regions on the right of board 2. They almost fit
+in columns G and H, but not quite. The exceptions are that G4 isn't covered and
+F3 is covered. If we put a star at G4, then one of those region's stars would
+need to spill outside of cols {G,H} and land in F3. Similarly, if we put at dot
+at G4, then we can make a 2-col observation and also put a dot at F3.
+
+But observe - F3 and G4 touch each other, so we can't put stars at both.
+Therefore we must put stars at both. This instance is a lot like
+partial-overlap; but the techinqe can be applied whenever placing both stars
+would cause a contradiction.
+
+---
 
 I suspect that there are more human-viable rules that I don't know about. If you
 think of one - please let me know!
@@ -497,9 +514,9 @@ difficulty puzzles range from 25-311, "hard" ranges from 39-367, "expert" ranges
 from 92-1236, and "grandmaster" ranges from 145-3548.
 
 Notice how the [hardest
-beginner](https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=25)
+beginner](https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=26)
 puzzle has a score higher than the [easiest
-grandmaster](https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=26)
+grandmaster](https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=27)
 puzzle - what's up with that?! That beginner puzzle reqires a ton of
 applications of beginner tier techniques, each one only placing a few dots at a
 time. That grandmaster puzzle is trivial, except a crux which requires a
