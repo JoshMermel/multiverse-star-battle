@@ -466,7 +466,7 @@ techniques for pointing out implied regions are too vague.
 
 <a
 href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=25">
-<img src="images/only_empty.png" width="600"></img> </a>
+<img src="images/both_or_neither.png" width="600"></img> </a>
 
 This is a technique I see a teammate use sometimes. He'll point out two cells
 that must be equal, then say ~"oh, but if both are stars, then there's a
