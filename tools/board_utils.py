@@ -18,6 +18,10 @@ from functools import lru_cache
 
 ALPHABET = string.ascii_uppercase + string.ascii_lowercase
 
+# Sentinel character for void cells: cells that belong to no region and can
+# never hold a star.  Must not appear in ALPHABET.
+VOID_CHAR = "*"
+
 # The 8 (forward, inverse) index-map pairs for all rotations/reflections,
 # keyed by board size n.  Precomputed on first use and cached.
 # Intentionally mutable module-level state: n is always small and the
@@ -206,15 +210,20 @@ def pretty_print(flat_board, n):
 
 def canonical_relabel(board_str):
     """
-    Relabels regions so the first unique character found in the 
+    Relabels regions so the first unique region character found in the
     string is mapped to 'A', the second to 'B', and so on.
+
+    VOID_CHAR ('*') is not a region identifier and is passed through
+    unchanged without consuming a label slot.
     """
     mapping = {}
     next_label_idx = 0
     new_chars = []
     for char in board_str:
+        if char == VOID_CHAR:
+            new_chars.append(VOID_CHAR)
+            continue
         if char not in mapping:
-            # ALPHABET is defined in board_utils.py
             mapping[char] = ALPHABET[next_label_idx]
             next_label_idx += 1
         new_chars.append(mapping[char])

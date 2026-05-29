@@ -73,6 +73,11 @@ class StarBattleGame {
     this.solution = puzzleData.solution;
     this.regions = [puzzleData.board1, puzzleData.board2];
 
+    // Build the void set from board1 (both boards share the same void mask).
+    this.voidCells = new Set(
+      [...puzzleData.board1].reduce((acc, ch, i) => { if (ch === '*') acc.push(i); return acc; }, [])
+    );
+
     this.state = new Array(this.n * this.n).fill(CELL.NONE);
     this.history = [JSON.stringify(this.state)];
     this.historyIdx = 0;
@@ -120,6 +125,7 @@ class StarBattleGame {
   // Handle initial pointer action on a cell. Left-click cycles states and
   // begins drag sessions; right-click toggles stars directly.
   handleStart(idx, isRightClick) {
+    if (this.voidCells?.has(idx)) return;
     const toast = document.getElementById('toast');
     const isWinToast = toast.classList.contains('toast-win') &&
       !toast.classList.contains('toast-hidden');
@@ -148,6 +154,7 @@ class StarBattleGame {
 
   // Paint dots on empty cells during drag actions.
   handleDrag(idx) {
+    if (this.voidCells?.has(idx)) return;
     if (!this.isDragging || this.draggedIndices.includes(idx)) return;
     this.draggedIndices.push(idx);
     document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
@@ -189,6 +196,7 @@ class StarBattleGame {
 
   // Apply state change to a cell, update visuals, validate, and persist.
   applyState(idx, type, { suppressWinToast = false, debounceMs } = {}) {
+    if (this.voidCells?.has(idx)) return;
     if (this.state[idx] === type) return;
     this.state[idx] = type;
     document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {

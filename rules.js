@@ -37,8 +37,9 @@ export function applyRules(GameClass) {
       }
     }
 
-    // Apply dots to empty cells only.
+    // Apply dots to empty cells only (never void cells).
     for (const i of toFill) {
+      if (this.voidCells?.has(i)) continue;
       if (this.state[i] === CELL.NONE) {
         this.state[i] = CELL.DOT;
         document.querySelectorAll(`.cell[data-index="${i}"]`).forEach(cell => {
@@ -90,14 +91,15 @@ export function applyRules(GameClass) {
     };
 
 
+    const isVoid = (i) => this.voidCells?.has(i);
     for (let i = 0; i < n; i++) {
-      checkGroup(Array.from({ length: n }, (_, k) => i * n + k));
-      checkGroup(Array.from({ length: n }, (_, k) => k * n + i));
+      checkGroup(Array.from({ length: n }, (_, k) => i * n + k).filter(i => !isVoid(i)));
+      checkGroup(Array.from({ length: n }, (_, k) => k * n + i).filter(i => !isVoid(i)));
     }
 
 
     this.regions.forEach(regionString => {
-      const regionIds = [...new Set(regionString.split(''))];
+      const regionIds = [...new Set(regionString.split(''))].filter(id => id !== '*');
       regionIds.forEach(id => {
         const indices = [];
         for (let j = 0; j < regionString.length; j++) {

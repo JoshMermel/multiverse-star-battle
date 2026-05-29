@@ -10,7 +10,7 @@ tracking both the total score and the highest-tier rule needed.
 import string
 from itertools import combinations
 
-from board_utils import get_neighbors_8
+from board_utils import VOID_CHAR, get_neighbors_8
 
 
 # Tier ordering for display and sorting. UNSOLVED sorts last.
@@ -29,9 +29,30 @@ class StarBattlePuzzle:
         self.n = n
         self.grid = [None] * (n * n)
         self.canonical_solution = solution_str
+
+        # Voids: cells that belong to no region and can never hold a star.
+        # Both boards must share the same void mask (voids are a property of
+        # the puzzle layout, not of individual boards).
+        self.void_cells = frozenset(
+            i for i, ch in enumerate(board_1) if ch == VOID_CHAR
+        )
+
+        # Pre-fill void cells as dots so the solver never considers them.
+        for i in self.void_cells:
+            self.grid[i] = "."
+
         self.regions = [self._map_regions(board_1), self._map_regions(board_2)]
-        self.row_indices = [list(range(r * n, (r + 1) * n)) for r in range(n)]
-        self.col_indices = [list(range(c, n * n, n)) for c in range(n)]
+
+        # Row/col index lists exclude void cells so that constraint checks
+        # (e.g. "does this row still need a star?") only consider live cells.
+        self.row_indices = [
+            [r * n + c for c in range(n) if (r * n + c) not in self.void_cells]
+            for r in range(n)
+        ]
+        self.col_indices = [
+            [r * n + c for r in range(n) if (r * n + c) not in self.void_cells]
+            for c in range(n)
+        ]
         self.cell_to_region = [list(board_1), list(board_2)]
         # Precomputed as sets for O(1) membership tests in _sees_too_much_n
         # and rule_triomino.
@@ -47,9 +68,11 @@ class StarBattlePuzzle:
         self.has_crossboard_rotation_180 = self._detect_crossboard_rotation_180()
 
     def _map_regions(self, board_str):
+        """Builds region→[cell_idx] mapping, skipping void cells."""
         mapping = {}
         for idx, char in enumerate(board_str):
-            mapping.setdefault(char, []).append(idx)
+            if char != VOID_CHAR:
+                mapping.setdefault(char, []).append(idx)
         return mapping
 
     def get_rc(self, idx):
@@ -107,14 +130,27 @@ class StarBattlePuzzle:
 
         Set src_board == dst_board to test a single board's internal symmetry.
         Set src_board=0, dst_board=1 (or vice versa) to test cross-board symmetry.
+
+        Void cells are skipped: a void is in no region and its mirror is
+        expected to also be void, so including them adds no information and
+        would cause spurious mismatches if the void mask is not itself symmetric.
         """
         total = self.n * self.n
         src = self.cell_to_region[src_board]
         dst = self.cell_to_region[dst_board]
         for i in range(total):
+            if i in self.void_cells:
+                continue
             mi = mirror_fn(i)
+            if mi in self.void_cells:
+                continue
             for j in range(i + 1, total):
-                if (src[i] == src[j]) != (dst[mi] == dst[mirror_fn(j)]):
+                if j in self.void_cells:
+                    continue
+                mj = mirror_fn(j)
+                if mj in self.void_cells:
+                    continue
+                if (src[i] == src[j]) != (dst[mi] == dst[mj]):
                     return False
         return True
 
@@ -277,7 +313,8 @@ class CompositeScorer:
                 print(f"  ERROR: {e}")
             return False, -999, "UNSOLVED"
 
-        solved = all(val is not None for val in puzzle.grid)
+        solved = all(val is not None for i, val in enumerate(puzzle.grid)
+                       if i not in puzzle.void_cells)
         if not solved:
             max_tier = "UNSOLVED"
         return solved, total_score, max_tier

@@ -39,10 +39,13 @@ import argparse
 import csv
 import os
 import statistics
+import random
 
 # Board generators
 from letter_generator import LetterGenerator
 from random_generator import RandomGenerator
+from subdivision_generator import SubdivisionGenerator
+from skyline_generator import SkylineGenerator
 from square_free_generator import SquareFreeGenerator
 from symmetric_generator import SymmetricGenerator
 from voronoi_generator import VoronoiGenerator
@@ -54,6 +57,7 @@ from self_comparator import SelfComparator
 from symmetric_pool_comparator import SymmetricPoolComparator
 from sudoku_comparator import SudokuComparator
 from venn_generator import VennGenerator
+from quad_aligned_generator import QuadAlignedGenerator
 
 # Scoring utils
 from scorer import StarBattlePuzzle, CompositeScorer, TIER_ORDER, _TIER_RANK
@@ -81,9 +85,10 @@ def _build_letter_pair(args, n, output_rows):
 # boilerplate so I don't need to write this every time when testing new
 # generators or comparators.
 def _build_tmp(args, n, output_rows):
-    #return SymmetricPoolComparator(VennGenerator(n), n, output_rows)
-    gen_a = SymmetricGenerator(n, symmetry_type="rot_180")
-    gen_b = SymmetricGenerator(n, symmetry_type="mirror")
+    # return SymmetricPoolComparator(SymmetricGenerator(n), n, output_rows, randomize_orientation_for_output=False, match_variants=False))
+    return SymmetricPoolComparator(RandomGenerator(n, n_voids=random.randint(3,15)), n, output_rows, match_variants=False)
+    gen_a = SymmetricGenerator(n, symmetry_type="diagonal")
+    gen_b = SymmetricGenerator(n, symmetry_type="rot_180")
     return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows)
 
 

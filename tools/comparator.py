@@ -1,5 +1,6 @@
 import random
 from abc import ABC, abstractmethod
+from board_utils import canonical_relabel, get_transformation_maps
 from generator import GenerationError
 from puzzle_deduper import PuzzleDeduper
 

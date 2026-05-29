@@ -8,7 +8,7 @@ export function applyRenderer(GameClass) {
   // Render cell grid and SVG region borders for a board.
   p.renderBoard = function (id, regionMap) {
     const wrapper = document.getElementById(id);
-    const grid = this._buildGrid();
+    const grid = this._buildGrid(this.voidCells ?? new Set());
     const svg = this._buildRegionSvg(regionMap);
 
     const axisLabelsOn = localStorage.getItem('setting-axis-labels') === 'true';
@@ -69,7 +69,7 @@ export function applyRenderer(GameClass) {
   };
 
   // Build cell grid element.
-  p._buildGrid = function () {
+  p._buildGrid = function (voidCells) {
     const grid = document.createElement('div');
     grid.className = 'star-battle-grid';
     grid.style.width = 'fit-content';
@@ -78,8 +78,13 @@ export function applyRenderer(GameClass) {
 
     for (let i = 0; i < this.n * this.n; i++) {
       const cell = document.createElement('div');
-      cell.className = 'cell';
       cell.dataset.index = i;
+      if (voidCells.has(i)) {
+        cell.className = 'cell cell--void';
+        grid.appendChild(cell);
+        continue;
+      }
+      cell.className = 'cell';
 
       // Synchronize hover state across boards on pointer devices.
       if (window.matchMedia('(pointer: fine)').matches) {
@@ -254,7 +259,10 @@ export function applyRenderer(GameClass) {
     for (const { idx, color } of [...hint.highlights, ...hint.marks]) {
       for (const sel of selectors) {
         const cell = document.querySelector(`${sel} [data-index="${idx}"]`);
-        if (cell) cell.classList.add(color);
+        // Only apply the color class if the cell exists and isn't a void square
+        if (cell && !cell.classList.contains('cell--void')) {
+          cell.classList.add(color);
+        }
       }
     }
 
