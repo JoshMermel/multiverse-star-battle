@@ -193,6 +193,17 @@ export function applyInput(GameClass) {
       }
     });
 
+    // Abort any in-progress drag when the pointer is cancelled by the browser
+    // (e.g. an incoming call or system gesture interrupts the touch stream).
+    window.addEventListener('pointercancel', () => this._abortDrag());
+
+    // Abort any in-progress drag when the user app-switches away. The page
+    // becomes hidden before the pointer stream ends, so pointerup never fires.
+    // On return (visibilityState === 'visible') the drag is already gone.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this._abortDrag();
+    });
+
     // Allow book links inside modal text to switch categories.
     document.addEventListener('click', (e) => {
       const link = e.target.closest('.book-link');
@@ -205,6 +216,16 @@ export function applyInput(GameClass) {
   };
 
   // --- Navigation & Menu Setup ---
+
+  // Silently discard an in-progress drag without committing any cell changes.
+  // Called when the pointer stream is interrupted (app-switch, incoming call,
+  // system gesture) so that stale drag highlights don't persist on return.
+  p._abortDrag = function () {
+    if (!this.isDragging && (!this.draggedIndices || this.draggedIndices.length === 0)) return;
+    this.isDragging = false;
+    this.draggedIndices = [];
+    this.clearDragHighlights();
+  };
 
   p.setupMenu = function () {
     const catSelect = document.getElementById('category-select');
