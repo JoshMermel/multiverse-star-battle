@@ -58,7 +58,9 @@ export function applyHistory(GameClass) {
       this.validate({ suppressWinToast });
     } else if (!isReset && storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {
       // Reconstruct board from solution if solved on another device.
-      this.state = [...this.solution].map(cell => cell === 'x' ? CELL.STAR : CELL.DOT);
+      this.state = [...this.solution].map((cell, i) =>
+        this.board1[i] === '*' ? CELL.NONE : cell === 'x' ? CELL.STAR : CELL.DOT
+      );
       this.history = [JSON.stringify(this.state)];
       this.historyIdx = 0;
       this.saveCurrentState();
