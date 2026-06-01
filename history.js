@@ -49,8 +49,14 @@ export function applyHistory(GameClass) {
 
   // Load saved state or reconstruct from solved history.
   p.loadProgress = function ({ suppressWinToast = false, isReset = false } = {}) {
+    // Guard: puzzle data must be fully initialized before loading progress.
+    if (!this.currentPuzzleUniqueId || !this.solution || !this.board1 || !this.n) {
+      console.warn('loadProgress called before puzzle was ready; skipping.');
+      return;
+    }
+
     const savedState = storageManager.getPuzzleState(this.currentPuzzleUniqueId);
-    if (savedState) {
+    if (savedState && savedState.length === this.n * this.n) {
       this.state = savedState;
       this.history = [JSON.stringify(this.state)];
       this.historyIdx = 0;
@@ -58,6 +64,19 @@ export function applyHistory(GameClass) {
       this.validate({ suppressWinToast });
     } else if (!isReset && storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {
       // Reconstruct board from solution if solved on another device.
+      // Guard: solution and board1 must be the right length.
+      if (!Array.isArray(this.solution) || this.solution.length !== this.n * this.n ||
+          !Array.isArray(this.board1) || this.board1.length !== this.n * this.n) {
+        console.warn('loadProgress: solution/board1 length mismatch; falling back to blank state.');
+        this.state = new Array(this.n * this.n).fill(CELL.NONE);
+        this.history = [JSON.stringify(this.state)];
+        this.historyIdx = 0;
+        this.updateVisuals();
+        this.validate({ suppressWinToast: true });
+        this.updateControls();
+        this.updateSolvedUI();
+        return;
+      }
       this.state = [...this.solution].map((cell, i) =>
         this.board1[i] === '*' ? CELL.NONE : cell === 'x' ? CELL.STAR : CELL.DOT
       );

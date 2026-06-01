@@ -158,7 +158,10 @@ class StorageManager {
         this._syncToCloud();
       }
     } catch (error) {
-      console.error("Error syncing from cloud", error);
+      // Firebase is unavailable. Log the error but do NOT call onCloudDataLoadedCallback —
+      // the game should already be running on local data, so retriggering loadProgress
+      // on a potentially uninitialized puzzle would cause crashes.
+      console.warn("Cloud sync unavailable; continuing with local data only.", error);
     }
   }
 
