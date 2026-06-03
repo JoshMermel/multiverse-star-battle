@@ -25,6 +25,7 @@
     {"id": "12x12_expert",        "label": "12x12 Expert",        "group": "12x12"},
     {"id": "8x8_symmetric",       "label": "8x8 Symmetric",       "group": "Symmetry",      "desc": "Each board has rotational or mirror symmetry"},
     {"id": "8x8_twin",            "label": "8x8 Twin",            "group": "Symmetry",      "desc": "Both boards are the same, one flipped or rotated"},
+    {"id": "half",                "label": "Half",                "group": "Symmetry",      "desc": "Each board has two identical halves"},
     {"id": "8x8_symmetric_twin",  "label": "8x8 Symmetric Twin",  "group": "Symmetry",      "desc": "Both Symmetric and Twin at once"},
     {"id": "6x6_equal_area",      "label": "6x6 Equal Area",      "group": "Special",       "desc": "All regions have equal area"},
     {"id": "8x8_equal_area",      "label": "8x8 Equal Area",      "group": "Special",       "desc": "All regions have equal area"},
