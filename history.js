@@ -58,7 +58,6 @@ export function applyHistory(GameClass) {
       this.validate({ suppressWinToast });
     } else if (!isReset && storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {
       // Reconstruct board from solution if solved on another device.
-      console.log(this.regions[0])
       this.state = [...this.solution].map((cell, i) =>
         this.currentPuzzle.board1[i] === '*' ? CELL.NONE : cell === 'x' ? CELL.STAR : CELL.DOT
       );
