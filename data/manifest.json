@@ -6,10 +6,9 @@
     "12x12":         { "icon": "12×12","blurb": "Beginner → Expert",               "desc": "Puzzles by size and difficulty" },
     "Symmetry":      { "icon": "🔀",   "blurb": "Puzzles with symmetry"},
     "Rectangles":    { "icon": "⊞",    "blurb": "Rectangles and squares"},
-    "Playground":    { "icon": "🛝",   "blurb": "Other ideas"},
-    "Showcase":      { "icon": "🌟",   "blurb": "Extra Special board patterns"},
+    "Playground":    { "icon": "🛝",   "blurb": "Other puzzle ideas"},
     "Impossible":    { "icon": "💀",   "blurb": "Puzzles too hard for humans"},
-    "Signoff":       { "icon": "💌",   "blurb": "A message from the creator"},
+    "Signoff":       { "icon": "💌",   "blurb": "A puzzle-y message from the creator"},
     "Experimental":  { "icon": "🧪",   "blurb": "Work in progress"}
   },
   "categories": [
@@ -33,13 +32,13 @@
     {"id": "venn",                "label": "Venn",                "group": "Rectangles",  "desc": "Boards inspired by venn diagrams"},
     {"id": "not_sudoku",          "label": "Not Sudoku",          "group": "Rectangles",  "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply"},
     {"id": "quadrants",           "label": "Quadrants",           "group": "Rectangles",  "desc": "Boards split into quadrants"},
-    {"id": "mondrian",            "label": "Mondrian",            "group": "Rectangles",  "desc": "Inspired by Mondrian"},
-    {"id": "voronoi",             "label": "Voronoi",             "group": "Playground",  "desc": "Regions generated like a voronoi diagram"},
+    {"id": "mondrian",            "label": "Mondrian",            "group": "Rectangles",  "desc": "Better to look at than to solve"},
     {"id": "6x6_square_free",     "label": "6x6 Square Free",     "group": "Playground",  "desc": "Regions have no 2x2 squares"},
     {"id": "8x8_square_free",     "label": "8x8 Square Free",     "group": "Playground",  "desc": "Regions have no 2x2 squares"},
-    {"id": "6x6_equal_area",      "label": "6x6 Equal Area",      "group": "Playground",  "desc": "All regions have equal area"},
-    {"id": "8x8_equal_area",      "label": "8x8 Equal Area",      "group": "Playground",  "desc": "All regions have equal area"},
+    {"id": "6x6_equal_area",      "label": "6x6 Equal Area",      "group": "Playground",  "desc": "All regions have equal area - quite hard"},
+    {"id": "8x8_equal_area",      "label": "8x8 Equal Area",      "group": "Playground",  "desc": "All regions have equal area - extremely hard"},
     {"id": "void",                "label": "Void",                "group": "Playground",  "desc": "Puzzles with voids"},
+    {"id": "voronoi",             "label": "Voronoi",             "group": "Playground",  "desc": "Regions generated like a voronoi diagram, feels different from random 8x8 though"},
     {"id": "not_for_humans",      "label": "Not For Humans",      "group": "Impossible"},
     {"id": "signoff",             "label": "Signoff",             "group": "Signoff"}
   ]
