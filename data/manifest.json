@@ -40,6 +40,7 @@
     {"id": "8x8_equal_area",      "label": "8x8 Equal Area",      "group": "Playground",  "desc": "All regions have equal area - extremely hard"},
     {"id": "void",                "label": "Void",                "group": "Playground",  "desc": "Puzzles with voids"},
     {"id": "voronoi",             "label": "Voronoi",             "group": "Playground",  "desc": "Regions generated like a voronoi diagram, feels different from random 8x8 though"},
+    {"id": "degenerate",          "label": "Degenerate",          "group": "Playground",  "desc": "One board is useless"},
     {"id": "not_for_humans",      "label": "Not For Humans",      "group": "Impossible"},
     {"id": "signoff",             "label": "Signoff",             "group": "Signoff"}
   ]
