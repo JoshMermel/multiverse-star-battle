@@ -29,7 +29,6 @@
     {"id": "8x8_twin",            "label": "Twin",                "group": "Symmetry",    "desc": "Both boards are the same, one flipped or rotated"},
     {"id": "half",                "label": "Half",                "group": "Symmetry",    "desc": "Each board has two identical halves"},
     {"id": "8x8_symmetric_twin",  "label": "Symmetric Twin",      "group": "Symmetry",    "desc": "Both Symmetric and Twin at once"},
-    {"id": "half_twin",           "label": "Half Twin",           "group": "Symmetry",    "desc": "Both Half and Twin at once"},
     {"id": "venn",                "label": "Venn",                "group": "Rectangles",  "desc": "Boards inspired by venn diagrams"},
     {"id": "not_sudoku",          "label": "Not Sudoku",          "group": "Rectangles",  "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply"},
     {"id": "quadrants",           "label": "Quadrants",           "group": "Rectangles",  "desc": "Boards split into quadrants"},
