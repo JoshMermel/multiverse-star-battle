@@ -523,15 +523,20 @@ export class PuzzleSolver {
     const n = this.n;
     const axisIndices = this.axisIndices[axis];
 
+    const starlessUnitIndices = Array.from({length: n}, (_, i) => i)
+      .filter(u => !axisIndices[u].some(i => this.vState(i) === CELL.STAR));
+
     const windows = adjacent
       ? Array.from({length: n - N + 1}, (_, startU) =>
-        Array.from({length: N}, (_, i) => axisIndices[startU + i]))
-        : this.getCombinations(Array.from({length: n}, (_, i) => i), N)
-        .map(combo => combo.map(u => axisIndices[u]));
+          Array.from({length: N}, (_, i) => axisIndices[startU + i]))
+          .filter(w => w.every(unitIdxs => !unitIdxs.some(i => this.vState(i) === CELL.STAR)))
+      : this.getCombinations(starlessUnitIndices, N)
+          .map(combo => combo.map(u => axisIndices[u]));
 
     const candidates = [];
     for (let bIdx = 0; bIdx < 2; bIdx++) {
       for (const windowIndices of windows) {
+
         const standard = this._hintRegionsTrappedInUnits(windowIndices, bIdx, axis);
         if (standard) candidates.push(standard);
 
