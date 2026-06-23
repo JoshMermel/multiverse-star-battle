@@ -576,17 +576,18 @@ class CompositeScorer:
 
     def _rule_n_unit_region_sync(self, p, n, axis):
         units = p.row_indices if axis == "row" else p.col_indices
+        starless_units = {u for u in range(p.n)
+                          if not any(p.grid[i] == "x" for i in units[u])}
         for b_idx in range(N_BOARDS):
             regions = p.regions[b_idx]
             unsolved_regs = [c for c, idxs in regions.items()
                              if not any(p.grid[i] == "x" for i in idxs)]
             for start_u in range(p.n - n + 1):
                 u_range = range(start_u, start_u + n)
-                unit_idxs = set().union(*(units[u] for u in u_range))
-                stars_in_window = sum(1 for idx in unit_idxs if p.grid[idx] == "x")
-                required_count = n - stars_in_window
-                if required_count <= 0:
+                if not all(u in starless_units for u in u_range):
                     continue
+                unit_idxs = set().union(*(units[u] for u in u_range))
+                required_count = n
                 avail_in_units = [i for i in unit_idxs if p.grid[i] is None]
                 if not avail_in_units:
                     continue
@@ -616,16 +617,15 @@ class CompositeScorer:
         ACTION: Marks cells outside the intersection as dots.
         """
         units = p.row_indices if axis == "row" else p.col_indices
+        starless_units = {u for u in range(p.n)
+                          if not any(p.grid[i] == "x" for i in units[u])}
         for b_idx in range(N_BOARDS):
             regions = p.regions[b_idx]
             unsolved_regs = [c for c, idxs in regions.items()
                              if not any(p.grid[i] == "x" for i in idxs)]
-            for combo in combinations(range(p.n), n):
+            for combo in combinations(starless_units, n):
                 unit_idxs = set().union(*(units[u] for u in combo))
-                stars_in_window = sum(1 for idx in unit_idxs if p.grid[idx] == "x")
-                required_count = n - stars_in_window
-                if required_count <= 0:
-                    continue
+                required_count = n
                 avail_in_units = [i for i in unit_idxs if p.grid[i] is None]
                 if not avail_in_units:
                     continue
