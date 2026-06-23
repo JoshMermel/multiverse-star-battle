@@ -144,6 +144,7 @@ input[type="number"]::-webkit-inner-spin-button {
   background: var(--bg-light);
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: relative;
 }
 
 #boards-wrapper {
@@ -411,10 +412,6 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 }
 
-@media (min-width: 601px) {
-  #help-btn { margin-left: auto; }
-}
-
 @media (max-width: 600px) {
   :root {
     --cell-size: clamp(30px, 85vw / var(--grid-n), 65px);
@@ -427,15 +424,19 @@ input[type="number"]::-webkit-inner-spin-button {
     padding: 12px 20px; /* Larger hit targets for mobile */
   }
   #controls {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
     gap: 8px;
   }
 
   /* Row 1: board state actions */
-  #undo-btn, #redo-btn, #reset-btn { flex: 1 1 30%; }
+  #undo-btn { grid-column: span 2; }
+  #redo-btn { grid-column: span 2; }
+  #reset-btn { grid-column: span 2; }
 
   /* Row 2: help and checking tools */
-  #check-btn, #hint-btn, #help-btn { flex: 1 1 30%; }
+  #check-btn { grid-column: span 3; }
+  #hint-btn  { grid-column: span 3; }
 
   /* Shorter label on mobile */
   #check-btn { font-size: 0; }
@@ -775,7 +776,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .bp-diff-btn.bp-selected .bp-diff-arrow { color: var(--primary-blue); }
 
 /* 12. HEADER BUTTONS */
-.settings-btn, .auth-btn {
+.settings-btn, .help-btn {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -783,20 +784,52 @@ input[type="number"]::-webkit-inner-spin-button {
   border-radius: 6px;
   transition: background 0.15s, color 0.15s;
 }
-.settings-btn:not(:disabled):hover, .auth-btn:not(:disabled):hover {
+.settings-btn:not(:disabled):hover, .help-btn:not(:disabled):hover {
   background: var(--border-light);
   color: var(--text-primary);
 }
 
-.settings-btn {
+.settings-btn, .help-btn {
   font-size: 1.3rem;
   padding: 6px 8px;
 }
 
+@media (min-width: 601px) {
+  .help-btn {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
 .auth-btn {
-  font-size: 0.9rem;
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: 0.85rem;
   font-weight: 600;
-  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1.5px solid var(--primary-blue);
+  background: transparent;
+  color: var(--primary-blue);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.auth-btn:not(:disabled):hover {
+  background: var(--primary-blue);
+  color: var(--bg-white);
+}
+
+/* Settings account zone */
+.settings-account-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 8px;
 }
 
 /* 13. SETTINGS MODAL */
