@@ -260,6 +260,7 @@ class CompositeScorer:
             # -- Symmetry - requires insight but not hard to apply -----------
             (self.rule_rotation_180,                        5, "Symmetry"),
             (self.rule_diagonal_symmetry,                   5, "Symmetry"),
+            (self.rule_diagonal_parity,                      15, "Symmetry"),
 
             # -- Expert -------------------------------------------------------
             (self.rule_3_disjoint_rows,                     45, "Expert"),
@@ -1074,6 +1075,72 @@ class CompositeScorer:
             if any(sees_own_mirror(fn) for fn in p.diagonal_symmetries):
                 changes += p.validate_and_set(i, ".", "DiagonalSymmetry", self.verbose)
         return changes
+
+
+    def rule_diagonal_parity(self, p):
+        """
+        MATCH: Puzzle has diagonal symmetry AND either: the diagonal has 1 empty
+        cell (parity determines its value); or parity is already satisfied and
+        all empty diagonal cells mutually see each other (by adjacency or shared
+        region) — meaning at most one could be a star, which would break parity,
+        so all must be dots.
+        ACTION: Sets the cell(s) accordingly.
+        """
+        n = p.n
+        changes = 0
+
+        def try_diag(diag_indices, label):
+            nonlocal changes
+            stars  = sum(1 for i in diag_indices if p.grid[i] == "x")
+            empties = [i for i in diag_indices if p.grid[i] is None]
+
+            if len(empties) == 1:
+                # One cell left — parity decides.
+                need_star = (stars % 2) != (n % 2)
+                val = "x" if need_star else "."
+                changes += p.validate_and_set(
+                    empties[0], val,
+                    f"DiagonalParity({label})", self.verbose)
+
+            elif len(empties) >= 2:
+                # Parity already satisfied: if all empties mutually see each
+                # other (adjacency or same region on either board), at most one
+                # could be a star — but that would break parity, so all are dots.
+                if (stars % 2) != (n % 2):
+                    return
+                def see(a, b):
+                    ra, ca = p.get_rc(a)
+                    rb, cb = p.get_rc(b)
+                    if abs(ra - rb) <= 1 and abs(ca - cb) <= 1:
+                        return True
+                    for b_idx in range(N_BOARDS):
+                        ca_reg = p.cell_to_region[b_idx][a]
+                        cb_reg = p.cell_to_region[b_idx][b]
+                        if ca_reg != VOID_CHAR and ca_reg == cb_reg:
+                            return True
+                    return False
+                if not all(see(a, b) for i, a in enumerate(empties)
+                           for b in empties[i+1:]):
+                    return
+                for idx in empties:
+                    changes += p.validate_and_set(
+                        idx, ".",
+                        f"DiagonalParity({label}) mutual-visibility",
+                        self.verbose)
+
+        if p.has_main_diagonal_symmetry:
+            main_diag = [k * n + k for k in range(n)]
+            try_diag(main_diag, "main")
+            if changes > 0:
+                return changes
+
+        if p.has_anti_diagonal_symmetry:
+            anti_diag = [k * n + (n - 1 - k) for k in range(n)]
+            try_diag(anti_diag, "anti")
+            if changes > 0:
+                return changes
+
+        return 0
 
     def rule_rotation_180(self, p):
         if not (p.has_internal_rotation_180 or p.has_crossboard_rotation_180):

@@ -236,7 +236,7 @@ export class PuzzleSolver {
       if (key !== this.currentHintType) {
         this.currentHintType  = key;
         this.currentHintIndex = 0;
-        this.currentHints = hints.slice().sort(() => Math.random() - 0.5);
+        this.currentHints     = hints.slice().sort(() => Math.random() - 0.5);
       }
 
       const hint = this.currentHints[this.currentHintIndex % this.currentHints.length];
@@ -1040,6 +1040,10 @@ export class PuzzleSolver {
     return results.length > 0 ? results : null;
   }
 
+
+  // Rule: diagonal-parity constraint.
+  // When the puzzle has diagonal symmetry the number of stars on that diagonal
+  // must share the same parity as N (even N → even count, odd N → odd count).
   hintSymmetryDeduction() {
     const n = this.n;
     const results = [];
@@ -1075,6 +1079,58 @@ export class PuzzleSolver {
         description
       );
       if (hint) results.push(hint);
+    }
+
+
+    const tryDiagParity = (diagIndices, dirLabel, crossBoard, internal) => {
+      const parity = n % 2 === 0 ? 'even' : 'odd';
+      const reason = crossBoard && internal
+        ? `The boards are ${dirLabel} reflections of each other and each has that symmetry internally`
+        : internal
+        ? `Each board independently has ${dirLabel} diagonal symmetry`
+        : `The boards are ${dirLabel} reflections of each other`;
+
+      const diagStars  = diagIndices.filter(i => this.vState(i) === CELL.STAR).length;
+      const diagEmpties = diagIndices.filter(i => this.vState(i) === CELL.NONE);
+
+      if (diagEmpties.length === 1) {
+        const needStar = (diagStars % 2) !== (n % 2);
+        const idx   = diagEmpties[0];
+        const color = needStar ? 'hint-target-green' : 'hint-target-yellow';
+        results.push({
+          description: `${reason}, so by parity the diagonal must have an ${parity} number of stars — this cell must be a ${needStar ? 'star' : 'dot'}.`,
+          highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
+            .map(i => ({ idx: i, color: 'hint-source-blue' })),
+          marks: [{ idx, color }],
+          boardIdx: undefined
+        });
+      } else if (diagEmpties.length >= 2) {
+        if ((diagStars % 2) !== (n % 2)) return;
+        // All empties must mutually see each other (adjacency or same region on either board).
+        const allSeeEachOther = diagEmpties.every((a, ai) => diagEmpties.every((b, bi) => {
+          if (ai === bi) return true;
+          const ra = Math.floor(a / n), ca = a % n;
+          const rb = Math.floor(b / n), cb = b % n;
+          return (Math.abs(ra - rb) <= 1 && Math.abs(ca - cb) <= 1)
+            || (this.game.regions[0] && this.game.regions[0][a] === this.game.regions[0][b] && this.game.regions[0][a] !== '*')
+            || (this.game.regions[1] && this.game.regions[1][a] === this.game.regions[1][b] && this.game.regions[1][a] !== '*');
+        }));
+        if (!allSeeEachOther) return;
+        results.push({
+          description: `${reason}, so by parity the diagonal must have an ${parity} number of stars — the remaining diagonal cells must all be dots.`,
+          highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
+            .map(i => ({ idx: i, color: 'hint-source-blue' })),
+          marks: diagEmpties.map(i => ({ idx: i, color: 'hint-target-yellow' })),
+          boardIdx: undefined
+        });
+      }
+    };
+
+    if (this.isMainDiagonalSymmetric) {
+      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + k), '↘', this.mainDiagCrossBoard, this.mainDiagInternal);
+    }
+    if (this.isAntiDiagonalSymmetric) {
+      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + (n - 1 - k)), '↙', this.antiDiagCrossBoard, this.antiDiagInternal);
     }
 
     return results.length > 0 ? results : null;
