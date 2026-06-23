@@ -232,13 +232,14 @@ export class PuzzleSolver {
       const hints = fn();
       if (!hints || hints.length === 0) continue;
 
-      // If a different (earlier) rule fires, reset the cycling index.
+      // If a different (earlier) rule fires, reset the cycling index and re-shuffle.
       if (key !== this.currentHintType) {
         this.currentHintType  = key;
         this.currentHintIndex = 0;
+        this.currentHints = hints.slice().sort(() => Math.random() - 0.5);
       }
 
-      const hint = hints[this.currentHintIndex % hints.length];
+      const hint = this.currentHints[this.currentHintIndex % this.currentHints.length];
       this.currentHintIndex++;
       return hint;
     }
