@@ -184,7 +184,7 @@ export function applyInput(GameClass) {
       this.draggedIndices = [];
 
       // Keep hints visible when switching board tabs.
-      if (e.target.closest('.board-tab')) return;
+      if (e.target.closest('.board-tab-toggle')) return;
 
       this.clearHintUI();
       const isWinToast = document.getElementById('toast').classList.contains('toast-win');

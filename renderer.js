@@ -329,11 +329,11 @@ export function applyRenderer(GameClass) {
       });
     }
 
-    // Bind tab click handlers.
-    document.querySelectorAll('.board-tab').forEach(btn => {
-      const board = parseInt(btn.dataset.board);
-      btn.onclick = () => this._showBoard(board);
-    });
+    // Bind toggle button click handler.
+    const toggleBtn = document.getElementById('board-tab-toggle');
+    if (toggleBtn) {
+      toggleBtn.onclick = () => this._showBoard(this._activeTabBoard === 1 ? 2 : 1);
+    }
   };
 
   p._showBoard = function (boardNum) {
@@ -342,9 +342,15 @@ export function applyRenderer(GameClass) {
       const isVisible = (i + 1) === boardNum;
       el.classList.toggle('tab-visible', isVisible);
     });
-    document.querySelectorAll('.board-tab').forEach(btn => {
-      btn.classList.toggle('board-tab--active', parseInt(btn.dataset.board) === boardNum);
-    });
+    const toggleBtn = document.getElementById('board-tab-toggle');
+    if (toggleBtn) {
+      const other = boardNum === 1 ? 2 : 1;
+      toggleBtn.innerHTML =
+        `<span class="tab-num ${boardNum === 1 ? 'tab-num--active' : ''}">Board 1</span>` +
+        `<span class="tab-sep">⇄</span>` +
+        `<span class="tab-num ${boardNum === 2 ? 'tab-num--active' : ''}">Board 2</span>`;
+      toggleBtn.setAttribute('aria-label', `Switch to Board ${other}`);
+    }
   };
 
   p._applyShowTimer = function (on) {
