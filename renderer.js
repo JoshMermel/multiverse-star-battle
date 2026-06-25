@@ -329,11 +329,14 @@ export function applyRenderer(GameClass) {
       });
     }
 
-    // Bind tab click handlers.
-    document.querySelectorAll('.board-tab').forEach(btn => {
-      const board = parseInt(btn.dataset.board);
-      btn.onclick = () => this._showBoard(board);
-    });
+    // Bind swap button click handler.
+    const swapBtn = document.getElementById('board-swap-btn');
+    if (swapBtn) {
+      swapBtn.onclick = () => {
+        const nextBoard = (this._activeTabBoard ?? 1) === 1 ? 2 : 1;
+        this._showBoard(nextBoard);
+      };
+    }
   };
 
   p._showBoard = function (boardNum) {
@@ -342,9 +345,11 @@ export function applyRenderer(GameClass) {
       const isVisible = (i + 1) === boardNum;
       el.classList.toggle('tab-visible', isVisible);
     });
-    document.querySelectorAll('.board-tab').forEach(btn => {
-      btn.classList.toggle('board-tab--active', parseInt(btn.dataset.board) === boardNum);
-    });
+    const swapBtn = document.getElementById('board-swap-btn');
+    if (swapBtn) {
+      const targetBoard = boardNum === 1 ? 2 : 1;
+      swapBtn.textContent = `Swap to Board ${targetBoard}`;
+    }
   };
 
   p._applyShowTimer = function (on) {
