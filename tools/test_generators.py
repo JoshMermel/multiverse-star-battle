@@ -18,6 +18,7 @@ from font_data import FONT_7x5
 from generator import MIN_SOLUTIONS
 from random_generator import RandomGenerator
 from letter_generator import LetterGenerator, _render_letter
+from subdivision_generator import SubdivisionGenerator
 from square_free_generator import SquareFreeGenerator
 from symmetric_generator import SymmetricGenerator
 from voting_district_generator import VotingDistrictGenerator
@@ -301,6 +302,27 @@ class TestSymmetricGenerator:
         sym_type, board, _, gen, n = sym_board_solutions
         assert_board_symmetric(board, n, gen)
 
+    def test_diagonal_joins(self, board_size):
+        # Generate diagonal boards and verify at least one has a seed join
+        # (a region containing non-adjacent diagonal cells).
+        n = 8
+        found_join = False
+        for _ in range(50):
+            gen = SymmetricGenerator(n, symmetry_type='diagonal')
+            grid = gen._full_ctx().try_fill()
+            if grid is None:
+                continue
+            diag_labels = [grid[i * n + i] for i in range(n)]
+            for L in set(diag_labels):
+                indices = [i for i, val in enumerate(diag_labels) if val == L]
+                if len(indices) > 1 and max(indices) - min(indices) >= len(indices):
+                    found_join = True
+                    break
+            if found_join:
+                break
+        assert found_join, "Expected to find at least one board where a region has a seed join (non-contiguous diagonal cells)"
+
+
 
 # ── VotingDistrictGenerator ───────────────────────────────────────────────────
 
@@ -352,6 +374,27 @@ class TestVoronoiGenerator:
     @pytest.fixture
     def board_and_solutions(self, board_size):
         gen = VoronoiGenerator(board_size)
+        return gen.generate(), board_size
+
+    def test_correct_region_count(self, board_and_solutions):
+        (board, _), board_size = board_and_solutions
+        assert_board_valid(board, board_size)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        (board, _), board_size = board_and_solutions
+        assert_board_valid(board, board_size)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        (_, solutions), _ = board_and_solutions
+        assert_ambiguous(solutions)
+
+# ── SubdivisionGenerator ───────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("board_size", [6, 7, 8, 9])
+class TestSubdivisionGenerator:
+    @pytest.fixture
+    def board_and_solutions(self, board_size):
+        gen = SubdivisionGenerator(board_size)
         return gen.generate(), board_size
 
     def test_correct_region_count(self, board_and_solutions):
