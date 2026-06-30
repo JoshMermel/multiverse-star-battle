@@ -33,10 +33,11 @@ class SymmetricPoolComparator(Comparator):
     board; board_2 is the matched pool entry in its original orientation.
     """
 
-    def __init__(self, generator, n, output_rows, match_variants=True):
+    def __init__(self, generator, n, output_rows, match_variants=True, diagonal_alignment='any'):
         super().__init__(n, output_rows)
         self.generator = generator
         self.match_variants = match_variants
+        self.diagonal_alignment = diagonal_alignment
         # Pool of (flat_board, solution_set) awaiting a match.
         self.pool = []
 
@@ -51,7 +52,15 @@ class SymmetricPoolComparator(Comparator):
         # rotations/reflections; with False we only check the board as
         # generated (identity transform only).
         if self.match_variants:
-            candidates = get_board_variants(flat, solutions, self.n)
+            all_variants = get_board_variants(flat, solutions, self.n)
+            if self.diagonal_alignment == 'aligned':
+                # Preserve the main diagonal: identity (0), rot180 (2), flip_diag (6), flip_antidiag (7)
+                candidates = [all_variants[0], all_variants[2], all_variants[6], all_variants[7]]
+            elif self.diagonal_alignment == 'misaligned':
+                # Map main diagonal to anti-diagonal: rot90 (1), rot270 (3), flip_h (4), flip_v (5)
+                candidates = [all_variants[1], all_variants[3], all_variants[4], all_variants[5]]
+            else:
+                candidates = all_variants
         else:
             candidates = [(flat, solutions)]
 
