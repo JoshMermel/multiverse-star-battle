@@ -44,9 +44,6 @@ solver in javascript, and integrated it into the gui. This turned into the
 
 ### The rules of the puzzle
 
-
-
-
 <a
 href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=1">
 <img src="images/only_empty.png" width="600"></img> </a>
@@ -300,6 +297,13 @@ diagonal reflection must be a dot.
 
 I find this technique frustratingly powerful. It's easy to spot, and trivializes
 many puzzles that would otherwise be very difficult.
+
+TODO(jmerm): diagonal parity, e.g. 
+
+one-empty: puzzle_47315_flip_antidiag,8,ABBBBBCCAAABBCCCAAABDCECAABBDDEEAFFDDDGGFFFFDGGGHFFFDGGGHHFDDGGG,AAAAABCCDAAABBBCDAADBBBBDDDDEBBEDDEEEEEEDFFEEGGGFFHHGGGGFFFHGGGG,......x.....x.....x............x.x...........x..x..........x....,484,Grandmaster,True
+two-empties: puzzle_13930_flip_diag,8,AABBBCCCAABBBCCCAABBBCCCABBBDDCCEBBBBDCFEEGGGGFFEEGGGHFFHHHHHHFF,AAAABBBBAAABBBBBCCDEEBBBCDDFEFFFCDDFFFFFCDDFFFFFCGGFFHHHCGGGHHHH,.x............x...x.........x...x............x.........x...x....,463,Grandmaster,True
+
+this is Grandmaster without parity arguments, but Symmetry with them.
 
 #### Rot180
 
