@@ -107,6 +107,12 @@ class StarBattleGame {
       this.renderBoard(`board${idx + 1}`, regionString);
     });
 
+    // TODO(jmerm): there must be a better way to trigger this at the right
+    // time. Right now it runs before boards load.
+    const tabToggle = document.getElementById('setting-tab-mode');
+    localStorage.setItem('setting-tab-mode', tabToggle.checked);
+    this._applyTabMode(tabToggle.checked);
+
     this.updateVisuals();
 
     this.showToastOnLoad(categoryId, puzzleData.id);
