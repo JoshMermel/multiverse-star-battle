@@ -17,31 +17,46 @@ from board_utils import VOID_CHAR, get_neighbors_8
 TIER_ORDER = ["Beginner", "Medium", "Hard", "Symmetry", "Expert", "Grandmaster", "UNSOLVED"]
 _TIER_RANK = {tier: i for i, tier in enumerate(TIER_ORDER)}
 
-# Number of boards in a Multiverse Star Battle puzzle.
-N_BOARDS = 2
-
-
 class StarBattlePuzzle:
     """Holds the mutable solving state for one puzzle during scoring."""
 
-    def __init__(self, n, board_1, board_2, solution_str, name):
+    def __init__(self, n, boards, solution_str, name):
+        """
+        boards: a sequence of board strings (one per "universe"). A
+        Multiverse Star Battle puzzle may have any number of boards >= 1;
+        classic single-board Star Battle is the n_boards == 1 case.
+        """
         self.name = name
         self.n = n
         self.grid = [None] * (n * n)
         self.canonical_solution = solution_str
 
+        boards = list(boards)
+        self.n_boards = len(boards)
+        if self.n_boards < 1:
+            raise ValueError("A puzzle must have at least one board.")
+
         # Voids: cells that belong to no region and can never hold a star.
-        # Both boards must share the same void mask (voids are a property of
+        # All boards must share the same void mask (voids are a property of
         # the puzzle layout, not of individual boards).
         self.void_cells = frozenset(
-            i for i, ch in enumerate(board_1) if ch == VOID_CHAR
+            i for i, ch in enumerate(boards[0]) if ch == VOID_CHAR
         )
+        for b_idx, board_str in enumerate(boards[1:], start=1):
+            other_voids = frozenset(
+                i for i, ch in enumerate(board_str) if ch == VOID_CHAR
+            )
+            if other_voids != self.void_cells:
+                raise ValueError(
+                    f"Board {b_idx + 1} has a different void mask than board 1; "
+                    "all boards in a puzzle must share the same voids."
+                )
 
         # Pre-fill void cells as dots so the solver never considers them.
         for i in self.void_cells:
             self.grid[i] = "."
 
-        self.regions = [self._map_regions(board_1), self._map_regions(board_2)]
+        self.regions = [self._map_regions(b) for b in boards]
 
         # Row/col index lists exclude void cells so that constraint checks
         # (e.g. "does this row still need a star?") only consider live cells.
@@ -53,12 +68,12 @@ class StarBattlePuzzle:
             [r * n + c for r in range(n) if (r * n + c) not in self.void_cells]
             for c in range(n)
         ]
-        self.cell_to_region = [list(board_1), list(board_2)]
+        self.cell_to_region = [list(b) for b in boards]
         # Precomputed as sets for O(1) membership tests in _sees_too_much_n
         # and rule_triomino.
         self.region_sets = [
             {char: set(idxs) for char, idxs in self.regions[b].items()}
-            for b in range(N_BOARDS)
+            for b in range(self.n_boards)
         ]
         self._neighbor_map = {i: get_neighbors_8(i, n) for i in range(n * n)}
         self.diagonal_symmetries = self._detect_diagonal_symmetries()
@@ -154,10 +169,32 @@ class StarBattlePuzzle:
                     return False
         return True
 
+    def _internal_symmetry(self, mirror_fn):
+        """True if EVERY board independently has the symmetry given by mirror_fn."""
+        return all(
+            self._check_pairwise_symmetry(mirror_fn, src_board=b, dst_board=b)
+            for b in range(self.n_boards)
+        )
+
+    def _crossboard_symmetry(self, mirror_fn):
+        """
+        True if board 2 is a mirror image of board 1 under mirror_fn.
+
+        This "boards are images of each other" notion of symmetry is only
+        well-defined for exactly two boards, so it's skipped (treated as not
+        applying) for any other board count; the "all boards independently
+        symmetric" check (_internal_symmetry) still applies regardless of
+        board count.
+        """
+        if self.n_boards != 2:
+            return False
+        return self._check_pairwise_symmetry(mirror_fn, src_board=0, dst_board=1)
+
     def _detect_single_diagonal_symmetry(self, candidate_idx):
         """
         Returns True if the diagonal symmetry at candidates[candidate_idx]
-        applies (either cross-board or internal).
+        applies (either cross-board, only meaningful for 2 boards, or every
+        board independently having the symmetry).
         candidate_idx 0 = main diagonal, 1 = anti-diagonal.
         """
         n = self.n
@@ -166,12 +203,7 @@ class StarBattlePuzzle:
             lambda i, n=n: (n-1 - i % n) * n + (n-1 - i // n),
         ]
         fn = candidates[candidate_idx]
-        cross_board = self._check_pairwise_symmetry(fn, src_board=0, dst_board=1)
-        internal = (
-            self._check_pairwise_symmetry(fn, src_board=0, dst_board=0)
-            and self._check_pairwise_symmetry(fn, src_board=1, dst_board=1)
-        )
-        return cross_board or internal
+        return self._crossboard_symmetry(fn) or self._internal_symmetry(fn)
 
     def _detect_diagonal_symmetries(self):
         n = self.n
@@ -180,34 +212,27 @@ class StarBattlePuzzle:
             lambda i, n=n: (n-1 - i % n) * n + (n-1 - i // n),  # anti-diagonal
         ]
         # A diagonal symmetry applies if either:
-        #   (a) board 2 is a diagonal reflection of board 1 (cross-board), OR
-        #   (b) both boards independently have that diagonal symmetry (internal).
+        #   (a) board 2 is a diagonal reflection of board 1 (cross-board;
+        #       only meaningful when there are exactly 2 boards), OR
+        #   (b) every board independently has that diagonal symmetry (internal).
         # In both cases uniqueness forces the solution to respect the symmetry.
         result = []
         for fn in candidates:
-            cross_board = self._check_pairwise_symmetry(fn, src_board=0, dst_board=1)
-            internal = (
-                self._check_pairwise_symmetry(fn, src_board=0, dst_board=0)
-                and self._check_pairwise_symmetry(fn, src_board=1, dst_board=1)
-            )
-            if cross_board or internal:
+            if self._crossboard_symmetry(fn) or self._internal_symmetry(fn):
                 result.append(fn)
         return result
 
     def _detect_internal_rotation_180(self):
-        """True if BOTH boards independently have 180-degree rotational symmetry."""
+        """True if EVERY board independently has 180-degree rotational symmetry."""
         total = self.n * self.n
         mirror_fn = lambda i: total - 1 - i
-        return (
-            self._check_pairwise_symmetry(mirror_fn, src_board=0, dst_board=0)
-            and self._check_pairwise_symmetry(mirror_fn, src_board=1, dst_board=1)
-        )
+        return self._internal_symmetry(mirror_fn)
 
     def _detect_crossboard_rotation_180(self):
-        """True if board 2 is a 180-degree rotation of board 1."""
+        """True if board 2 is a 180-degree rotation of board 1 (2-board puzzles only)."""
         total = self.n * self.n
         mirror_fn = lambda i: total - 1 - i
-        return self._check_pairwise_symmetry(mirror_fn, src_board=0, dst_board=1)
+        return self._crossboard_symmetry(mirror_fn)
 
 
 class CompositeScorer:
@@ -244,6 +269,8 @@ class CompositeScorer:
             (self.rule_sees_too_much,                       18, "Medium"),
             (self.rule_2_adjacent_rows,                     20, "Medium"),
             (self.rule_2_adjacent_cols,                     20, "Medium"),
+            (self.rule_2_row_col_line_sync_rows,            22, "Medium"),
+            (self.rule_2_row_col_line_sync_cols,            22, "Medium"),
             (self.rule_main_diagonal_fill,                  20, "Medium"),
             (self.rule_anti_diagonal_fill,                  20, "Medium"),
             (self.rule_rotation_180_fill,                   20, "Medium"),
@@ -251,6 +278,8 @@ class CompositeScorer:
             # -- Hard ---------------------------------------------------------
             (self.rule_3_adjacent_rows,                     25, "Hard"),
             (self.rule_3_adjacent_cols,                     25, "Hard"),
+            (self.rule_3_row_col_line_sync_rows,            28, "Hard"),
+            (self.rule_3_row_col_line_sync_cols,            28, "Hard"),
             (self.rule_2_disjoint_rows,                     30, "Hard"),
             (self.rule_2_disjoint_cols,                     30, "Hard"),
             (self.rule_many_adjacent_rows,                  35, "Hard"),
@@ -265,6 +294,8 @@ class CompositeScorer:
             # -- Expert -------------------------------------------------------
             (self.rule_3_disjoint_rows,                     45, "Expert"),
             (self.rule_3_disjoint_cols,                     45, "Expert"),
+            (self.rule_many_row_col_line_sync_rows,         55, "Expert"),
+            (self.rule_many_row_col_line_sync_cols,         55, "Expert"),
             (self.rule_2_region_pinned_crossboard_rows,     50, "Expert"),
             (self.rule_2_region_pinned_crossboard_cols,     50, "Expert"),
             (self.rule_3_region_pinned_crossboard_rows,     60, "Expert"),
@@ -370,7 +401,7 @@ class CompositeScorer:
             for i in p.row_indices[sr] + p.col_indices[sc]:
                 star_changes += self._internal_set(p, i, ".", "Row/Col Limit", silent)
 
-            for b_idx in range(N_BOARDS):
+            for b_idx in range(p.n_boards):
                 reg_char = p.cell_to_region[b_idx][s_idx]
                 for i in p.regions[b_idx][reg_char]:
                     star_changes += self._internal_set(
@@ -405,7 +436,7 @@ class CompositeScorer:
             [(p.get_row_indices(r), f"Row {r+1}") for r in range(p.n)] +
             [(p.get_col_indices(c), f"Col {string.ascii_uppercase[c]}") for c in range(p.n)] +
             [(idxs, f"B{b+1} Reg {rc}")
-             for b in range(N_BOARDS) for rc, idxs in p.regions[b].items()]
+             for b in range(p.n_boards) for rc, idxs in p.regions[b].items()]
         )
         for idxs, label in containers:
             if any(p.grid[i] == "x" for i in idxs):
@@ -479,7 +510,7 @@ class CompositeScorer:
 
     def _sees_too_much_n(self, p, n_target=None, n_min=None, label_suffix=""):
         changes = 0
-        for b_idx in range(N_BOARDS):
+        for b_idx in range(p.n_boards):
             for r_char, r_indices in p.regions[b_idx].items():
                 if any(p.grid[i] == "x" for i in r_indices):
                     continue
@@ -510,7 +541,7 @@ class CompositeScorer:
 
     def _rule_region_combo_contains_region_combo(self, p, n):
         combo_sets = []
-        for b_idx in range(N_BOARDS):
+        for b_idx in range(p.n_boards):
             regions = p.regions[b_idx]
             for chars in combinations(list(regions.keys()), n):
                 if any(any(p.grid[i] == "x" for i in regions[c]) for c in chars):
@@ -579,7 +610,7 @@ class CompositeScorer:
         units = p.row_indices if axis == "row" else p.col_indices
         starless_units = {u for u in range(p.n)
                           if not any(p.grid[i] == "x" for i in units[u])}
-        for b_idx in range(N_BOARDS):
+        for b_idx in range(p.n_boards):
             regions = p.regions[b_idx]
             unsolved_regs = [c for c, idxs in regions.items()
                              if not any(p.grid[i] == "x" for i in idxs)]
@@ -620,7 +651,7 @@ class CompositeScorer:
         units = p.row_indices if axis == "row" else p.col_indices
         starless_units = {u for u in range(p.n)
                           if not any(p.grid[i] == "x" for i in units[u])}
-        for b_idx in range(N_BOARDS):
+        for b_idx in range(p.n_boards):
             regions = p.regions[b_idx]
             unsolved_regs = [c for c, idxs in regions.items()
                              if not any(p.grid[i] == "x" for i in idxs)]
@@ -687,6 +718,86 @@ class CompositeScorer:
 
         return 0
 
+    def rule_2_row_col_line_sync_rows(self, p):
+        return self._rule_axis_line_sync(p, n=2, axis="row")
+
+    def rule_2_row_col_line_sync_cols(self, p):
+        return self._rule_axis_line_sync(p, n=2, axis="col")
+
+    def rule_3_row_col_line_sync_rows(self, p):
+        return self._rule_axis_line_sync(p, n=3, axis="row")
+
+    def rule_3_row_col_line_sync_cols(self, p):
+        return self._rule_axis_line_sync(p, n=3, axis="col")
+
+    def rule_many_row_col_line_sync_rows(self, p):
+        for n in range(4, p.n):
+            changes = self._rule_axis_line_sync(p, n, axis="row")
+            if changes > 0:
+                return changes
+        return 0
+
+    def rule_many_row_col_line_sync_cols(self, p):
+        for n in range(4, p.n):
+            changes = self._rule_axis_line_sync(p, n, axis="col")
+            if changes > 0:
+                return changes
+        return 0
+
+    def _rule_axis_line_sync(self, p, n, axis):
+        """
+        MATCH: N rows (or N columns) whose empty cells are confined to
+        exactly N columns (or N rows) — the pure row<->column analogue of
+        _apply_pin_rule, with no region information involved at all. Works
+        identically on regular and irregular boards.
+
+        This is the general "N rows subset of N cols, so the rest of those
+        N cols must be dots" deduction (and symmetrically for N cols subset
+        of N rows). Python port of hintRowColLineSync / _hintAxisLineTrapped
+        in solver.js.
+
+        ACTION: Marks the remaining empty cells in those N other-axis units
+        as dots.
+        """
+        units = p.row_indices if axis == "row" else p.col_indices
+        other_units = p.col_indices if axis == "row" else p.row_indices
+        starless_units = [u for u in range(p.n)
+                          if not any(p.grid[i] == "x" for i in units[u])]
+
+        for combo in combinations(starless_units, n):
+            unit_idxs = set().union(*(units[u] for u in combo))
+
+            stars_in_window = sum(1 for i in unit_idxs if p.grid[i] == "x")
+            required_count = n - stars_in_window
+            if required_count <= 0:
+                continue
+
+            avail_in_units = [i for i in unit_idxs if p.grid[i] is None]
+            if not avail_in_units:
+                continue
+
+            # Which units of the OTHER axis do these empty cells touch?
+            if axis == "row":
+                touched_other = {i % p.n for i in avail_in_units}
+            else:
+                touched_other = {i // p.n for i in avail_in_units}
+
+            if len(touched_other) != required_count:
+                continue
+
+            other_union = set().union(*(other_units[u] for u in touched_other))
+            changes = sum(
+                p.validate_and_set(
+                    idx, ".",
+                    f"AxisLineSync({n}-{axis} combo {combo})",
+                    self.verbose)
+                for idx in other_union
+                if idx not in unit_idxs and p.grid[idx] is None
+            )
+            if changes > 0:
+                return changes
+        return 0
+
     def rule_2_region_pinned_crossboard_rows(self, p):
         return self._rule_crossboard_n_region_pinned(p, n=2, axis="row")
 
@@ -706,7 +817,7 @@ class CompositeScorer:
         ACTION: All other cells in those rows/cols are dots.
         """
         unsolved_regions = []
-        for b_idx in range(N_BOARDS):
+        for b_idx in range(p.n_boards):
             for r_char, idxs in p.regions[b_idx].items():
                 available = [i for i in idxs if p.grid[i] is None]
                 if available and not any(p.grid[i] == "x" for i in idxs):
@@ -761,9 +872,9 @@ class CompositeScorer:
 
     def rule_crossboard_partial_overlap(self, p):
         """
-        MATCH: Two regions (one per board) that partially overlap, where every
-        cell in onlyA sees every cell in onlyB (and vice versa, which is
-        symmetric).
+        MATCH: Two regions from two different boards that partially overlap,
+        where every cell in onlyA sees every cell in onlyB (and vice versa,
+        which is symmetric). Checked across every pair of distinct boards.
         ACTION: Those non-shared cells (onlyA | onlyB) must be dots.
 
         Reasoning: if regA's star landed in onlyA it would eliminate all shared
@@ -782,36 +893,38 @@ class CompositeScorer:
             rj, cj = p.get_rc(j)
             return ri == rj or ci == cj or (abs(ri - rj) <= 1 and abs(ci - cj) <= 1)
 
-        unsolved_b1 = [c for c, idxs in p.regions[0].items()
-                       if not any(p.grid[i] == "x" for i in idxs)]
-        unsolved_b2 = [c for c, idxs in p.regions[1].items()
-                       if not any(p.grid[i] == "x" for i in idxs)]
+        for b1, b2 in combinations(range(p.n_boards), 2):
+            unsolved_b1 = [c for c, idxs in p.regions[b1].items()
+                           if not any(p.grid[i] == "x" for i in idxs)]
+            unsolved_b2 = [c for c, idxs in p.regions[b2].items()
+                           if not any(p.grid[i] == "x" for i in idxs)]
 
-        for r1_char in unsolved_b1:
-            r1_avail = {i for i in p.regions[0][r1_char] if p.grid[i] is None}
-            if not r1_avail:
-                continue
-            for r2_char in unsolved_b2:
-                r2_avail = {i for i in p.regions[1][r2_char] if p.grid[i] is None}
-                if not r2_avail:
+            for r1_char in unsolved_b1:
+                r1_avail = {i for i in p.regions[b1][r1_char] if p.grid[i] is None}
+                if not r1_avail:
                     continue
-                only_a = r1_avail - r2_avail
-                only_b = r2_avail - r1_avail
-                if not (r1_avail & r2_avail) or not (only_a or only_b):
-                    continue
-                # Every cell in onlyA must see every cell in onlyB.
-                if not all(sees(a, b) for a in only_a for b in only_b):
-                    continue
-                disjoint = only_a | only_b
-                changes = sum(
-                    p.validate_and_set(
-                        idx, ".",
-                        f"Cross-board partial overlap R1:{r1_char}/R2:{r2_char}",
-                        self.verbose)
-                    for idx in disjoint if p.grid[idx] is None
-                )
-                if changes > 0:
-                    return changes
+                for r2_char in unsolved_b2:
+                    r2_avail = {i for i in p.regions[b2][r2_char] if p.grid[i] is None}
+                    if not r2_avail:
+                        continue
+                    only_a = r1_avail - r2_avail
+                    only_b = r2_avail - r1_avail
+                    if not (r1_avail & r2_avail) or not (only_a or only_b):
+                        continue
+                    # Every cell in onlyA must see every cell in onlyB.
+                    if not all(sees(a, b) for a in only_a for b in only_b):
+                        continue
+                    disjoint = only_a | only_b
+                    changes = sum(
+                        p.validate_and_set(
+                            idx, ".",
+                            f"Cross-board partial overlap "
+                            f"B{b1+1}:{r1_char}/B{b2+1}:{r2_char}",
+                            self.verbose)
+                        for idx in disjoint if p.grid[idx] is None
+                    )
+                    if changes > 0:
+                        return changes
         return 0
 
     def rule_lookahead_half_stage_single_board(self, p):
@@ -832,7 +945,7 @@ class CompositeScorer:
         is board-agnostic geometry).
         """
         for test_idx in (i for i, val in enumerate(p.grid) if val is None):
-            for b_idx in range(N_BOARDS):
+            for b_idx in range(p.n_boards):
                 # Find the region this cell belongs to on b_idx.
                 reg_char = p.cell_to_region[b_idx][test_idx]
                 reg_indices = p.regions[b_idx][reg_char]
@@ -1066,9 +1179,8 @@ class CompositeScorer:
                     return True
                 if mirror in p._neighbor_map[i]:
                     return True
-                if p.cell_to_region[0][i] == p.cell_to_region[0][mirror]:
-                    return True
-                if p.cell_to_region[1][i] == p.cell_to_region[1][mirror]:
+                if any(p.cell_to_region[b][i] == p.cell_to_region[b][mirror]
+                       for b in range(p.n_boards)):
                     return True
                 return False
 
@@ -1113,7 +1225,7 @@ class CompositeScorer:
                     rb, cb = p.get_rc(b)
                     if abs(ra - rb) <= 1 and abs(ca - cb) <= 1:
                         return True
-                    for b_idx in range(N_BOARDS):
+                    for b_idx in range(p.n_boards):
                         ca_reg = p.cell_to_region[b_idx][a]
                         cb_reg = p.cell_to_region[b_idx][b]
                         if ca_reg != VOID_CHAR and ca_reg == cb_reg:
@@ -1159,8 +1271,8 @@ class CompositeScorer:
             conflicts = (
                 ri == mr or ci == mc
                 or mirror in p._neighbor_map[i]
-                or p.cell_to_region[0][i] == p.cell_to_region[0][mirror]
-                or p.cell_to_region[1][i] == p.cell_to_region[1][mirror]
+                or any(p.cell_to_region[b][i] == p.cell_to_region[b][mirror]
+                       for b in range(p.n_boards))
             )
             if conflicts:
                 changes += p.validate_and_set(i, ".", "Rotation180", self.verbose)

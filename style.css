@@ -1,6 +1,7 @@
 /* 1. CONFIGURATION & VARIABLES */
 :root {
   --grid-n: 8; /* Updated by JS */
+  --board-count: 2; /* Updated by JS to the actual number of boards */
   --cell-size: min(60px, 85vw / var(--grid-n));
   --line-thin: 1px solid #ccc;
 
@@ -153,7 +154,23 @@ input[type="number"]::-webkit-inner-spin-button {
   align-items: center;
   gap: 20px;
   width: 100%;
+  max-width: 100%;
   min-height: 400px;
+}
+
+/* Thin, theme-colored scrollbar for the boards row when it overflows
+   horizontally (desktop, 3+ boards or a large grid). Falls back silently
+   on browsers without scrollbar styling support. */
+#boards-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+#boards-wrapper::-webkit-scrollbar { height: 10px; }
+#boards-wrapper::-webkit-scrollbar-track { background: transparent; }
+#boards-wrapper::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+  border-radius: 6px;
+  border: 2px solid var(--bg-white);
 }
 
 /* 4. MENU & INPUT COMPONENTS */
@@ -403,12 +420,28 @@ input[type="number"]::-webkit-inner-spin-button {
 /* 8. RESPONSIVE DESIGN */
 @media (min-width: 900px) {
   :root {
-    --cell-size: min(55px, 42vw / var(--grid-n));
+    /* Same total width budget as before (84vw split between 2 boards = 42vw
+       each), now divided across however many boards are actually present.
+       Floor of 28px keeps cells legible/tappable — once boards hit that
+       floor, #boards-wrapper scrolls horizontally instead of squishing further. */
+    --cell-size: clamp(28px, calc(84vw / var(--board-count) / var(--grid-n)), 55px);
   }
   #boards-wrapper {
     flex-direction: row;
-    justify-content: center;
+    justify-content: safe center;
+    align-items: flex-start;
     gap: 40px;
+    /* When boards don't fit (large N and/or 3+ boards), scroll horizontally
+       within the wrapper instead of overflowing the whole page. */
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 4px 12px 16px;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 20px;
+  }
+  #boards-wrapper .board-container {
+    scroll-snap-align: center;
+    flex: none;
   }
 }
 

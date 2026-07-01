@@ -43,14 +43,65 @@ export function applyPuzzleLoader(GameClass) {
     const lines = text.split('\n');
     const puzzles = [];
     let id = 1;
+    let headers = [];
     for (const raw of lines) {
       const line = raw.trim();
       if (!line || line.startsWith('#')) continue;
       const cols = line.split(',');
-      if (cols[0] === 'name') continue;
-      const [name, N, board_1, board_2, solution, score, tier, is_solved] = cols;
-      if (!name || !N || !board_1 || !board_2 || !solution) continue;
-      puzzles.push({ id: id++, name, N: parseInt(N, 10), board1: board_1, board2: board_2, solution, tier: tier || '' });
+      if (cols[0] === 'name') {
+        headers = cols.map(c => c.trim());
+        continue;
+      }
+      if (headers.length === 0) {
+        const [name, N, board_1, board_2, solution, score, tier, is_solved] = cols;
+        if (!name || !N || !board_1 || !board_2 || !solution) continue;
+        puzzles.push({
+          id: id++,
+          name,
+          N: parseInt(N, 10),
+          boards: [board_1, board_2],
+          board1: board_1,
+          board2: board_2,
+          solution,
+          tier: tier || ''
+        });
+        continue;
+      }
+
+      const rowObj = {};
+      headers.forEach((h, idx) => {
+        rowObj[h] = cols[idx] ? cols[idx].trim() : '';
+      });
+
+      if (!rowObj.name || !rowObj.N || !rowObj.solution) continue;
+
+      const boards = [];
+      const boardKeys = Object.keys(rowObj)
+        .filter(k => k.toLowerCase().startsWith('board'))
+        .sort((a, b) => {
+          const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+          const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+          return numA - numB;
+        });
+
+      boardKeys.forEach(k => {
+        if (rowObj[k]) {
+          boards.push(rowObj[k]);
+        }
+      });
+
+      if (boards.length === 0) continue;
+
+      puzzles.push({
+        id: id++,
+        name: rowObj.name,
+        N: parseInt(rowObj.N, 10),
+        boards,
+        board1: boards[0] || '',
+        board2: boards[1] || '',
+        solution: rowObj.solution,
+        tier: rowObj.tier || ''
+      });
     }
     return puzzles;
   };
@@ -60,8 +111,7 @@ export function applyPuzzleLoader(GameClass) {
   // Generate a stable 16-character hash of the puzzle configuration.
   p.computePuzzleId = async function (puzzleData) {
     const stable = JSON.stringify({
-      board1: puzzleData.board1,
-      board2: puzzleData.board2,
+      boards: puzzleData.boards || [puzzleData.board1, puzzleData.board2],
       solution: puzzleData.solution,
     });
     const hashBuffer = await crypto.subtle.digest(

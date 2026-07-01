@@ -251,6 +251,10 @@ href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=12">
 Three regions are fully contained in columns {C, E, H}, so the rest of those
 columns must contain dots.
 
+TODO(jmerm) explain new rule that was expose by
+puzzle_3415,6,ABCDEFABCDEFABCDEFABCDEFABCDEFABCDEF,AABCCDABBBCDEBBBBDEEBBBDEFBBBBEFFBBB,...x..x..........x.x........x...x...,117,Hard,True
+
+
 ### Symmetry
 
 Sometimes we can tell, just from the structure of the boards, that the solution

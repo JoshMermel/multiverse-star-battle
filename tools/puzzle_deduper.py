@@ -1,7 +1,8 @@
 """
 puzzle_deduper.py
 
-Canonical deduplication for Multiverse Star Battle puzzle pairs.
+Canonical deduplication for Multiverse Star Battle puzzle groups (any
+number of boards >= 1).
 
 Used by comparator.py during generation and by gen_puzzles.py during
 standalone scoring. Import PuzzleDeduper from here rather than from
@@ -13,11 +14,11 @@ from board_utils import get_transformation_maps, canonical_relabel
 
 class PuzzleDeduper:
     """
-    Tracks seen puzzle pairs across all 8 dihedral orientations.
-    Board order is ignored — (A, B) and (B, A) are the same puzzle.
+    Tracks seen puzzle groups across all 8 dihedral orientations.
+    Board order is ignored — (A, B, C) and (C, A, B) are the same puzzle.
 
     A stable canonical fingerprint is computed by applying all 8 transforms
-    to the pair, relabeling each result, sorting the two boards within each
+    to the group, relabeling each result, sorting the boards within each
     transform (to ignore board order), then taking the lexicographic minimum
     across all 8 — so every orientation of the same puzzle maps to the same
     single string, and both register() and is_duplicate() use it.
@@ -34,17 +35,18 @@ class PuzzleDeduper:
         return "".join(result)
 
     @staticmethod
-    def _canonical_fingerprint(b1, b2, n):
+    def _canonical_fingerprint(boards, n):
         candidates = []
         for forward_map, _ in get_transformation_maps(n):
-            tb1 = canonical_relabel(PuzzleDeduper._apply(b1, forward_map, n))
-            tb2 = canonical_relabel(PuzzleDeduper._apply(b2, forward_map, n))
-            a, b = sorted([tb1, tb2])  # ignore board order
-            candidates.append(f"{a}|{b}")
+            transformed = sorted(
+                canonical_relabel(PuzzleDeduper._apply(b, forward_map, n))
+                for b in boards
+            )
+            candidates.append("|".join(transformed))
         return min(candidates)  # stable across all orientations
 
-    def is_duplicate(self, b1, b2, n):
-        return self._canonical_fingerprint(b1, b2, n) in self._seen
+    def is_duplicate(self, boards, n):
+        return self._canonical_fingerprint(boards, n) in self._seen
 
-    def register(self, b1, b2, n):
-        self._seen.add(self._canonical_fingerprint(b1, b2, n))
+    def register(self, boards, n):
+        self._seen.add(self._canonical_fingerprint(boards, n))

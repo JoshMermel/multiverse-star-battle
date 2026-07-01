@@ -59,7 +59,7 @@ export function applyHistory(GameClass) {
     } else if (!isReset && storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {
       // Reconstruct board from solution if solved on another device.
       this.state = [...this.solution].map((cell, i) =>
-        this.currentPuzzle.board1[i] === '*' ? CELL.NONE : cell === 'x' ? CELL.STAR : CELL.DOT
+        this.regions[0][i] === '*' ? CELL.NONE : cell === 'x' ? CELL.STAR : CELL.DOT
       );
       this.history = [JSON.stringify(this.state)];
       this.historyIdx = 0;

@@ -45,4 +45,4 @@ class SudokuComparator(Comparator):
 
         common = solutions & self.sudoku_solutions
         if len(common) == 1:
-            self._emit(self._next_puzzle_name(), self.sudoku_flat, flat, next(iter(common)))
+            self._emit(self._next_puzzle_name(), [flat, self.sudoku_flat], next(iter(common)))

@@ -19,10 +19,13 @@ Scoring usage:
     python3 gen_puzzles.py score --input puzzles.csv --puzzle puzzle_42 --verbose
 
 Generation output: CSV to stdout and to --output file.
-Columns: name, N, board_1, board_2, solution
+Columns: name, N, board_1 .. board_N, solution (N = comparator.board_count,
+which depends on mode — most modes pair 2 boards, but e.g. a triple-matching
+mode would have board_1, board_2, board_3).
 
 Scoring output: CSV to --output file (default: puzzles_scored.csv).
-Columns: name, N, board_1, board_2, solution, score, tier, is_solved
+Columns: same as the input file (whatever board_1 .. board_N columns it
+has), plus score, tier, is_solved.
 
 Module layout
 -------------
@@ -38,26 +41,29 @@ gen_puzzles.py    CLI
 import argparse
 import csv
 import os
+import re
 import statistics
 import random
 
 # Board generators
+from almost_degenerate_generator import AlmostDegenerateGenerator
 from letter_generator import LetterGenerator
+from quad_aligned_generator import QuadAlignedGenerator
 from random_generator import RandomGenerator
 from subdivision_generator import SubdivisionGenerator
-from skyline_generator import SkylineGenerator
 from square_free_generator import SquareFreeGenerator
 from symmetric_generator import SymmetricGenerator
+from venn_generator import VennGenerator
 from voronoi_generator import VoronoiGenerator
 from voting_district_generator import VotingDistrictGenerator
 
 # Comparators for pairing puzzles
 from asymmetric_pool_comparator import AsymmetricPoolComparator
+from half_generator import HalfGenerator
 from self_comparator import SelfComparator
 from symmetric_pool_comparator import SymmetricPoolComparator
 from sudoku_comparator import SudokuComparator
-from venn_generator import VennGenerator
-from quad_aligned_generator import QuadAlignedGenerator
+from triple_comparator import TripleComparator
 
 # Scoring utils
 from scorer import StarBattlePuzzle, CompositeScorer, TIER_ORDER, _TIER_RANK
@@ -85,11 +91,10 @@ def _build_letter_pair(args, n, output_rows):
 # boilerplate so I don't need to write this every time when testing new
 # generators or comparators.
 def _build_tmp(args, n, output_rows):
-    # return SymmetricPoolComparator(SymmetricGenerator(n), n, output_rows, randomize_orientation_for_output=False, match_variants=False))
-    return SymmetricPoolComparator(RandomGenerator(n, n_voids=random.randint(3,15)), n, output_rows, match_variants=False)
-    gen_a = SymmetricGenerator(n, symmetry_type="diagonal")
-    gen_b = SymmetricGenerator(n, symmetry_type="rot_180")
-    return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows)
+    gen_a = RandomGenerator(n)
+    return TripleComparator(gen_a, n, output_rows)
+    gen_b = SymmetricGenerator(n, symmetry_type="none", translation_type="hsplit")
+    return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows, match_variants=False)
 
 
 # Maps mode names to factory lambdas.
@@ -107,6 +112,16 @@ MODES = {
 }
 
 
+def _board_columns(fieldnames):
+    """
+    Returns the board_N column names present in `fieldnames` (a row dict's
+    keys or a CSV fieldnames list), sorted numerically by N.
+    """
+    cols = [f for f in fieldnames if re.fullmatch(r'board_\d+', f)]
+    cols.sort(key=lambda f: int(f.split('_')[1]))
+    return cols
+
+
 def _scored_output_path(input_path, explicit_output=None):
     """Derive a scored-output filename from the input path, unless overridden."""
     if explicit_output:
@@ -119,13 +134,17 @@ def run_generation(args):
     output_rows = []
     print("# Mode: {0} | n={1} | count={2}".format(
         args.mode, args.n, args.count), flush=True)
-    print("name,N,board_1,board_2,solution", flush=True)
 
     comparator = MODES[args.mode](args, args.n, output_rows)
+
+    board_cols = [f'board_{i}' for i in range(1, comparator.board_count + 1)]
+    fieldnames = ['name', 'N'] + board_cols + ['solution']
+    print(",".join(fieldnames), flush=True)
+
     comparator.run(args.count)
 
     with open(args.output, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['name', 'N', 'board_1', 'board_2', 'solution'])
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(output_rows)
 
@@ -160,19 +179,23 @@ def run_scoring(args):
     with open(input_file, mode='r') as f:
         reader = csv.DictReader(f)
         original_fieldnames = reader.fieldnames or []
+        board_cols = _board_columns(original_fieldnames)
+        if not board_cols:
+            print("Error: no board_N columns found in {0}.".format(input_file))
+            return
         for row in reader:
             if args.puzzle and row['name'] != args.puzzle:
                 continue
             n = int(row['N'])
+            boards = [row[c] for c in board_cols]
             if deduper is not None:
-                if deduper.is_duplicate(row['board_1'], row['board_2'], n):
+                if deduper.is_duplicate(boards, n):
                     skipped_count += 1
                     continue
-                deduper.register(row['board_1'], row['board_2'], n)
+                deduper.register(boards, n)
             total += 1
             puzzle = StarBattlePuzzle(
-                int(row['N']), row['board_1'], row['board_2'],
-                row['solution'], row['name']
+                n, boards, row['solution'], row['name']
             )
             solved, score, tier = scorer.solve(puzzle)
             if solved:

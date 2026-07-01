@@ -28,15 +28,16 @@ export class PuzzleSolver {
     // Precompute and cache board symmetry properties.
     const mainDiagFn = i => (i % this.n) * this.n + Math.floor(i / this.n);
     const antiDiagFn = i => (this.n-1 - i%this.n) * this.n + (this.n-1 - Math.floor(i/this.n));
-    this.isMainDiagonalSymmetric = this._isBoardSymmetric(mainDiagFn) || this._computeInternalDiagonalSymmetry(mainDiagFn);
-    this.isAntiDiagonalSymmetric = this._isBoardSymmetric(antiDiagFn) || this._computeInternalDiagonalSymmetry(antiDiagFn);
+    const numBoards = this.game.regions.length;
+    this.isMainDiagonalSymmetric = (numBoards === 2 && this._isBoardSymmetric(mainDiagFn)) || this._computeInternalDiagonalSymmetry(mainDiagFn);
+    this.isAntiDiagonalSymmetric = (numBoards === 2 && this._isBoardSymmetric(antiDiagFn)) || this._computeInternalDiagonalSymmetry(antiDiagFn);
     // Track specific symmetry types for hint descriptions.
-    this.mainDiagCrossBoard   = this._isBoardSymmetric(mainDiagFn);
+    this.mainDiagCrossBoard   = (numBoards === 2) && this._isBoardSymmetric(mainDiagFn);
     this.mainDiagInternal     = this._computeInternalDiagonalSymmetry(mainDiagFn);
-    this.antiDiagCrossBoard   = this._isBoardSymmetric(antiDiagFn);
+    this.antiDiagCrossBoard   = (numBoards === 2) && this._isBoardSymmetric(antiDiagFn);
     this.antiDiagInternal     = this._computeInternalDiagonalSymmetry(antiDiagFn);
     this.internalRotation180   = this._computeInternalRotation180();
-    this.crossboardRotation180 = this._computeCrossboardRotation180();
+    this.crossboardRotation180 = (numBoards === 2) && this._computeCrossboardRotation180();
 
     // Hint cycling state.
     this.lastStateString  = null;
@@ -195,11 +196,14 @@ export class PuzzleSolver {
       { key: 'seesTooMuch3',             fn: () => this.hintSeesTooMuch(3) },
       { key: 'seesTooMuchAll',           fn: () => this.hintSeesTooMuch(null) },
       { key: 'unitRegionSync2',          fn: () => this.hintUnitRegionSync(2) },
+      { key: 'rowColLineSync2',          fn: () => this.hintRowColLineSync(2) },
       { key: 'symmetryFill',            fn: () => this.hintSymmetryFill() },
       // Hard
       { key: 'unitRegionSync3',          fn: () => this.hintUnitRegionSync(3) },
+      { key: 'rowColLineSync3',          fn: () => this.hintRowColLineSync(3) },
       { key: 'disjointUnitRegionSync2',  fn: () => this.hintDisjointUnitRegionSync(2) },
       { key: 'manyRegionsSync',          fn: () => this.hintManyRegionsSync() },
+      { key: 'manyRowColLineSync',       fn: () => this.hintManyRowColLineSync() },
       { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
       { key: 'symmetryDeduction',        fn: () => this.hintSymmetryDeduction() },
       // Expert
@@ -288,7 +292,7 @@ export class PuzzleSolver {
   // Rule: Check for unsolved regions containing exactly one cell.
   hintSingleCellRegion() {
     const candidates = [];
-    for (let bIdx = 0; bIdx < 2; bIdx++) {
+    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
       for (const region of this.getUnsolvedRegions(bIdx)) {
         if (region.indices.length === 1 && this.vState(region.indices[0]) === CELL.NONE) {
           candidates.push(region);
@@ -387,7 +391,7 @@ export class PuzzleSolver {
     const n = this.n;
     const candidates = [];
 
-    for (let bIdx = 0; bIdx < 2; bIdx++) {
+    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
       for (const region of this.getUnsolvedRegions(bIdx)) {
         const empty = region.indices.filter(i => this.vState(i) === CELL.NONE);
         if (empty.length !== 2) continue;
@@ -535,7 +539,7 @@ export class PuzzleSolver {
           .map(combo => combo.map(u => axisIndices[u]));
 
     const candidates = [];
-    for (let bIdx = 0; bIdx < 2; bIdx++) {
+    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
       for (const windowIndices of windows) {
 
         const standard = this._hintRegionsTrappedInUnits(windowIndices, bIdx, axis);
@@ -576,6 +580,98 @@ export class PuzzleSolver {
     }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.highlights[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? 0));
+    return candidates;
+  }
+
+  // Check "N rows/cols whose empties are confined to N cells of the other axis" deduction.
+  // This is the cross-axis analogue of _hintRegionsTrappedInUnits: instead of trapping N
+  // rows/cols inside N regions, it traps N rows inside N columns (or vice versa) directly,
+  // with no region information involved at all.
+  _hintAxisLineTrapped(unitCombo, axisLabel) {
+    const n = this.n;
+    const otherAxisLabel = axisLabel === "Row" ? "Column" : "Row";
+    const otherAxisIndices = this.axisIndices[otherAxisLabel];
+
+    const windowIndices = unitCombo.flat();
+    const windowSet = new Set(windowIndices);
+
+    const starsInWindow = windowIndices.filter(i => this.vState(i) === CELL.STAR).length;
+    const requiredCount = unitCombo.length - starsInWindow;
+    if (requiredCount <= 0) return null;
+
+    const availInUnits = windowIndices.filter(i => this.vState(i) === CELL.NONE);
+    if (availInUnits.length === 0) return null;
+
+    // Which units of the OTHER axis do these empty cells actually touch?
+    const touchedOther = new Set(
+      availInUnits.map(i => axisLabel === "Row" ? i % n : Math.floor(i / n))
+    );
+    if (touchedOther.size !== requiredCount) return null;
+
+    // Every other-axis unit touched is now "used up" by this window — any of its empty
+    // cells outside the window can no longer hold a star.
+    const targets = [];
+    for (const otherIdx of touchedOther) {
+      for (const idx of otherAxisIndices[otherIdx]) {
+        if (!windowSet.has(idx) && this.vState(idx) === CELL.NONE) targets.push(idx);
+      }
+    }
+    if (targets.length === 0) return null;
+
+    const targetSet = new Set(targets);
+    const N = unitCombo.length;
+    const axisWord = axisLabel.toLowerCase();
+    const otherWord = otherAxisLabel.toLowerCase();
+    const unitsPhrase = N === 1 ? `this ${axisWord}` : `these ${N} ${axisWord}s`;
+    const otherPhrase = requiredCount === 1 ? `${otherWord}` : `${otherWord}s`;
+
+    return {
+      boardIdx: undefined,
+      description: `All empty cells in ${unitsPhrase} fall within ${requiredCount} ${otherPhrase}, so the rest of ${requiredCount === 1 ? 'that' : 'those'} ${otherPhrase} must be dots.`,
+      highlights: availInUnits.filter(i => !targetSet.has(i)).map(idx => ({ idx, color: 'hint-source-blue' })),
+      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
+    };
+  }
+
+  // Find all row<->column line-sync hints for a window size of N.
+  _hintAxisLineSyncAll(N, axis) {
+    const n = this.n;
+    const axisIndices = this.axisIndices[axis];
+
+    const starlessUnitIndices = Array.from({ length: n }, (_, i) => i)
+      .filter(u => !axisIndices[u].some(i => this.vState(i) === CELL.STAR));
+
+    const candidates = [];
+    for (const combo of this.getCombinations(starlessUnitIndices, N)) {
+      const unitCombo = combo.map(u => axisIndices[u]);
+      const hint = this._hintAxisLineTrapped(unitCombo, axis);
+      if (hint) candidates.push(hint);
+    }
+    return candidates;
+  }
+
+  // Rule: N rows (or N columns) whose empty cells are confined to N columns (or N rows) —
+  // no region information needed, works identically on regular and irregular boards.
+  hintRowColLineSync(N) {
+    const candidates = [];
+    for (const axis of ["Row", "Column"]) {
+      candidates.push(...this._hintAxisLineSyncAll(N, axis));
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.highlights[0]?.idx ?? a.marks[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? b.marks[0]?.idx ?? 0));
+    return candidates;
+  }
+
+  // Rule: same as above but for window sizes 4+ (mirrors hintManyRegionsSync).
+  hintManyRowColLineSync() {
+    const candidates = [];
+    for (let n = 4; n < this.n; n++) {
+      for (const axis of ["Row", "Column"]) {
+        candidates.push(...this._hintAxisLineSyncAll(n, axis));
+      }
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.highlights[0]?.idx ?? a.marks[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? b.marks[0]?.idx ?? 0));
     return candidates;
   }
 
@@ -622,7 +718,8 @@ export class PuzzleSolver {
 
   // Rule: Check regions where all empty cells are visible to an external cell.
   hintSeesTooMuch(nTarget = null) {
-    const regionUnits = [0, 1].flatMap(bIdx => this.getUnsolvedRegions(bIdx))
+    const regionUnits = Array.from({ length: this.game.regions.length }, (_, bIdx) => bIdx)
+      .flatMap(bIdx => this.getUnsolvedRegions(bIdx))
       .filter(u => nTarget === null || u.indices.filter(i => this.vState(i) === CELL.NONE).length === nTarget);
     return this._hintSeesTooMuchForUnits(regionUnits);
   }
@@ -643,7 +740,7 @@ export class PuzzleSolver {
   hintRegionSubsetSync(N) {
     const comboSets = [];
 
-    for (let bIdx = 0; bIdx < 2; bIdx++) {
+    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
       for (const combo of this.getCombinations(this.getUnsolvedRegions(bIdx), N)) {
         comboSets.push({
           label: `Board ${bIdx + 1} Combo (${combo.map(r => r.label.split(' ').pop()).join(',')})`,
@@ -681,7 +778,7 @@ export class PuzzleSolver {
     const n = this.n;
 
     // Build unsolved region descriptors from both boards
-    const unsolvedRegions = [0, 1].flatMap(bIdx =>
+    const unsolvedRegions = Array.from({ length: this.game.regions.length }, (_, bIdx) => bIdx).flatMap(bIdx =>
       this.getUnsolvedRegions(bIdx)
       .filter(reg => reg.indices.some(i => this.vState(i) === CELL.NONE))
       .map(reg => ({
@@ -732,34 +829,40 @@ export class PuzzleSolver {
     const n = this.n;
     const candidates = [];
 
-    const board0Regions = this.getUnsolvedRegions(0);
-    const board1Regions = this.getUnsolvedRegions(1);
+    const numBoards = this.game.regions.length;
 
-    for (const regA of board0Regions) {
-      for (const regB of board1Regions) {
-        const setA = new Set(regA.indices.filter(i => this.vState(i) !== CELL.DOT));
-        const setB = new Set(regB.indices.filter(i => this.vState(i) !== CELL.DOT));
+    for (let boardA = 0; boardA < numBoards; boardA++) {
+      for (let boardB = boardA + 1; boardB < numBoards; boardB++) {
+        const boardARegions = this.getUnsolvedRegions(boardA);
+        const boardBRegions = this.getUnsolvedRegions(boardB);
 
-        const shared  = [...setA].filter(i => setB.has(i));
-        const onlyA   = [...setA].filter(i => !setB.has(i));
-        const onlyB   = [...setB].filter(i => !setA.has(i));
-        const disjoint = [...onlyA, ...onlyB];
+        for (const regA of boardARegions) {
+          for (const regB of boardBRegions) {
+            const setA = new Set(regA.indices.filter(i => this.vState(i) !== CELL.DOT));
+            const setB = new Set(regB.indices.filter(i => this.vState(i) !== CELL.DOT));
 
-        if (shared.length === 0 || disjoint.length === 0) continue;
+            const shared  = [...setA].filter(i => setB.has(i));
+            const onlyA   = [...setA].filter(i => !setB.has(i));
+            const onlyB   = [...setB].filter(i => !setA.has(i));
+            const disjoint = [...onlyA, ...onlyB];
 
-        const sees = (i, j) => {
-          const ri = Math.floor(i / n), ci = i % n;
-          const rj = Math.floor(j / n), cj = j % n;
-          return ri === rj || ci === cj || (Math.abs(ri - rj) <= 1 && Math.abs(ci - cj) <= 1);
-        };
+            if (shared.length === 0 || disjoint.length === 0) continue;
 
-        const onlyASeesAllOnlyB = onlyA.every(a => onlyB.every(b => sees(a, b)));
-        if (!onlyASeesAllOnlyB) continue;
+            const sees = (i, j) => {
+              const ri = Math.floor(i / n), ci = i % n;
+              const rj = Math.floor(j / n), cj = j % n;
+              return ri === rj || ci === cj || (Math.abs(ri - rj) <= 1 && Math.abs(ci - cj) <= 1);
+            };
 
-        const targets = shared.filter(i => this.vState(i) === CELL.NONE);
-        if (targets.length === 0) continue;
+            const onlyASeesAllOnlyB = onlyA.every(a => onlyB.every(b => sees(a, b)));
+            if (!onlyASeesAllOnlyB) continue;
 
-        candidates.push({ shared, onlyA, onlyB });
+            const targets = shared.filter(i => this.vState(i) === CELL.NONE);
+            if (targets.length === 0) continue;
+
+            candidates.push({ shared, onlyA, onlyB });
+          }
+        }
       }
     }
 
@@ -790,7 +893,7 @@ export class PuzzleSolver {
       const row = Math.floor(testIdx / n);
       const col = testIdx % n;
 
-      for (const bIdx of [0, 1]) {
+      for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
         const boardReg = this._getRegionsContaining(testIdx)
           .find(r => r.boardIdx === bIdx);
         if (!boardReg) continue; 
@@ -922,6 +1025,7 @@ export class PuzzleSolver {
   }
 
   _isBoardSymmetric(mirrorFn) {
+    if (this.game.regions.length !== 2) return false;
     const n = this.n;
     const [r1, r2] = this.game.regions;
     for (let i = 0; i < n * n; i++) {
@@ -938,13 +1042,13 @@ export class PuzzleSolver {
 
   _computeInternalDiagonalSymmetry(mirrorFn) {
     const total = this.n * this.n;
-    const [r1, r2] = this.game.regions;
-    for (let i = 0; i < total; i++) {
-      const mi = mirrorFn(i);
-      for (let j = i + 1; j < total; j++) {
-        const mj = mirrorFn(j);
-        if ((r1[i] === r1[j]) !== (r1[mi] === r1[mj])) return false;
-        if ((r2[i] === r2[j]) !== (r2[mj] === r2[mi])) return false; // Fixed minor typo here too
+    for (const r of this.game.regions) {
+      for (let i = 0; i < total; i++) {
+        const mi = mirrorFn(i);
+        for (let j = i + 1; j < total; j++) {
+          const mj = mirrorFn(j);
+          if ((r[i] === r[j]) !== (r[mi] === r[mj])) return false;
+        }
       }
     }
     return true;
@@ -953,17 +1057,18 @@ export class PuzzleSolver {
   _computeInternalRotation180() {
     const total = this.n * this.n;
     const mirrorFn = i => total - 1 - i;
-    const [r1, r2] = this.game.regions;
-    for (let i = 0; i < total; i++) {
-      for (let j = i + 1; j < total; j++) {
-        if ((r1[i] === r1[j]) !== (r1[mirrorFn(i)] === r1[mirrorFn(j)])) return false;
-        if ((r2[i] === r2[j]) !== (r2[mirrorFn(i)] === r2[mirrorFn(j)])) return false;
+    for (const r of this.game.regions) {
+      for (let i = 0; i < total; i++) {
+        for (let j = i + 1; j < total; j++) {
+          if ((r[i] === r[j]) !== (r[mirrorFn(i)] === r[mirrorFn(j)])) return false;
+        }
       }
     }
     return true;
   }
 
   _computeCrossboardRotation180() {
+    if (this.game.regions.length !== 2) return false;
     const total = this.n * this.n;
     const mirrorFn = i => total - 1 - i;
     const [r1, r2] = this.game.regions;
@@ -979,8 +1084,7 @@ export class PuzzleSolver {
 
   _hintSymmetry(mirrorFn, description) {
     const n = this.n;
-    const cellToRegion0 = this.buildCellToRegionMap(0);
-    const cellToRegion1 = this.buildCellToRegionMap(1);
+    const cellToRegionMaps = this.game.regions.map((_, bIdx) => this.buildCellToRegionMap(bIdx));
 
     const marks = [];
     for (let i = 0; i < n * n; i++) {
@@ -995,8 +1099,7 @@ export class PuzzleSolver {
       const seesOwnMirror =
         r === mr || c === mc ||
         this.getNeighbors(i).includes(mirror) ||
-        (cellToRegion0[i] && cellToRegion0[i] === cellToRegion0[mirror]) ||
-        (cellToRegion1[i] && cellToRegion1[i] === cellToRegion1[mirror]);
+        cellToRegionMaps.some(map => map[i] && map[i] === map[mirror]);
 
       if (seesOwnMirror) marks.push({ idx: i, color: 'hint-target-yellow' });
     }
@@ -1106,14 +1209,13 @@ export class PuzzleSolver {
         });
       } else if (diagEmpties.length >= 2) {
         if ((diagStars % 2) !== (n % 2)) return;
-        // All empties must mutually see each other (adjacency or same region on either board).
+        // All empties must mutually see each other (adjacency or same region on any board).
         const allSeeEachOther = diagEmpties.every((a, ai) => diagEmpties.every((b, bi) => {
           if (ai === bi) return true;
           const ra = Math.floor(a / n), ca = a % n;
           const rb = Math.floor(b / n), cb = b % n;
           return (Math.abs(ra - rb) <= 1 && Math.abs(ca - cb) <= 1)
-            || (this.game.regions[0] && this.game.regions[0][a] === this.game.regions[0][b] && this.game.regions[0][a] !== '*')
-            || (this.game.regions[1] && this.game.regions[1][a] === this.game.regions[1][b] && this.game.regions[1][a] !== '*');
+            || this.game.regions.some(r => r[a] === r[b] && r[a] !== '*');
         }));
         if (!allSeeEachOther) return;
         results.push({

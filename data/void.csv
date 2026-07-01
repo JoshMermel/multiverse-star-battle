@@ -1,3 +1,4 @@
+name,N,board_1,board_2,solution,score,tier,is_solved
 puzzle_381,9,**AABBB***AAA*CBB*AAADDDBBBAEEDDDBBBE*EEFFB*BEEEEFFBBBEEGGHHBBI*GGG*HHH***GGGHH**,**AABBB***AAA*BBC*AADEEBBCCAADDDBBCCD*DDDDB*CDDDDFFGGCHHHDFGGGG*HHD*GGG***HHIII**,..x...........x......x............x.x............x............x.x.............x..,14,Beginner,True
 puzzle_465,9,AA*B*C*CCAABBCCCCC*BBB*DCC*EBBBDDCCC*B*FDD*C*BBFFGGGCC*BFF*GGH*FFFFGGIHHFF*F*G*HH,AA*B*C*CCABBBBCCCC*BBB*CCC*DDDEEECCC*D*EEE*F*EEEEEGGFF*HHE*GGG*HHHGGGGIIHH*G*G*II,.x..........x..........x...x...............x.....x......x............x..........x,14,Beginner,True
 puzzle_61,9,AA*BCC*DDAAAB*CDDD*EABDDDD*FEEBDGDDDF*EBBBD*HFEEBBDDHH*EEBBDDD*EEBB*IIDDEE*III*DD,AA*ABB*CCAAAA*DDDC*AAADDDD*EAAADDDDDE*AAFFD*DEEEEFFGGG*EEFFFGG*HEEE*IIIIHH*EII*II,....x............x..x...........x...x...............x....x...........x...x.......,14,Beginner,True

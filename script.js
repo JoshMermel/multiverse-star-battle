@@ -71,23 +71,42 @@ class StarBattleGame {
 
     this.n = puzzleData.N;
     this.solution = puzzleData.solution;
-    this.regions = [puzzleData.board1, puzzleData.board2];
+    this.regions = puzzleData.boards || [puzzleData.board1, puzzleData.board2];
 
-    // Build the void set from board1 (both boards share the same void mask).
+    // Build the void set from first board (all boards share the same void mask).
     this.voidCells = new Set(
-      [...puzzleData.board1].reduce((acc, ch, i) => { if (ch === '*') acc.push(i); return acc; }, [])
+      [...this.regions[0]].reduce((acc, ch, i) => { if (ch === '*') acc.push(i); return acc; }, [])
     );
 
     this.state = new Array(this.n * this.n).fill(CELL.NONE);
     this.history = [JSON.stringify(this.state)];
     this.historyIdx = 0;
 
-    document.getElementById('board1').innerHTML = '';
-    document.getElementById('board2').innerHTML = '';
+    // Dynamically clear existing board containers from boards-wrapper.
+    document.querySelectorAll('#boards-wrapper .board-container').forEach(el => el.remove());
     document.documentElement.style.setProperty('--grid-n', this.n);
+    document.documentElement.style.setProperty('--board-count', this.regions.length);
 
-    this.renderBoard('board1', this.regions[0]);
-    this.renderBoard('board2', this.regions[1]);
+    // Create and append containers for each board dynamically.
+    const boardsWrapper = document.getElementById('boards-wrapper');
+    this.regions.forEach((regionString, idx) => {
+      const section = document.createElement('section');
+      section.className = 'board-container';
+      section.setAttribute('aria-label', `Board ${idx + 1}`);
+
+      const h2 = document.createElement('h2');
+      h2.textContent = `Board ${idx + 1}`;
+      section.appendChild(h2);
+
+      const boardDiv = document.createElement('div');
+      boardDiv.id = `board${idx + 1}`;
+      boardDiv.className = 'grid-wrapper';
+      section.appendChild(boardDiv);
+
+      boardsWrapper.appendChild(section);
+      this.renderBoard(`board${idx + 1}`, regionString);
+    });
+
     this.updateVisuals();
 
     this.showToastOnLoad(categoryId, puzzleData.id);

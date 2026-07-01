@@ -57,7 +57,7 @@ class AsymmetricPoolComparator(Comparator):
         for variant_board, variant_sols in candidates:
             common = variant_sols & sols_b
             if len(common) == 1:
-                self._emit(self._next_puzzle_name(), variant_board, flat_b, next(iter(common)))
+                self._emit(self._next_puzzle_name(), [variant_board, flat_b], next(iter(common)))
                 return
 
         self.pool.append((flat_b, sols_b))

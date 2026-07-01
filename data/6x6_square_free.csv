@@ -1,3 +1,4 @@
+name,N,board_1,board_2,solution,score,tier,is_solved
 puzzle_2692,6,AABBBCABBCCCABCCDDAECFDFACCFFFAACCCF,AAAAABACCDBBAEEDDBAAEFDBEAEFFBEEEBBB,.....x..x.......x..x.......x..x.....,9,Beginner,True
 puzzle_16887,6,AAAAAABACCCCDAAAACDDDCCCEFFFFFEEEEEE,ABBBCCAADDDCEAAADCEEADDDFEAADAFFFAAA,...x..x..........x.x........x...x...,9,Beginner,True
 puzzle_25,6,AAAAAAABBBCABBDECCBDDEECFDFFECFFFEEE,AAABBBACABDDACCBBDCCEEEDCEEDEDCCFDDD,x........x.......x.x........x...x...,10,Beginner,True

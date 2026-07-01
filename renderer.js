@@ -254,7 +254,7 @@ export function applyRenderer(GameClass) {
   p.applyHintUI = function (hint) {
     const selectors = (hint.boardIdx !== undefined)
       ? [`#board${hint.boardIdx + 1}`]
-      : ['#board1', '#board2'];
+      : this.regions.map((_, i) => `#board${i + 1}`);
 
     for (const { idx, color } of [...hint.highlights, ...hint.marks]) {
       for (const sel of selectors) {
@@ -317,11 +317,12 @@ export function applyRenderer(GameClass) {
   };
 
   p._applyTabMode = function (on) {
-    document.body.classList.toggle('tab-mode', on);
+    const isTabNeeded = on && this.regions && this.regions.length > 1;
+    document.body.classList.toggle('tab-mode', isTabNeeded);
     const tabs = document.getElementById('board-tabs');
-    tabs.setAttribute('aria-hidden', on ? 'false' : 'true');
+    tabs.setAttribute('aria-hidden', isTabNeeded ? 'false' : 'true');
 
-    if (on) {
+    if (isTabNeeded) {
       this._showBoard(this._activeTabBoard ?? 1);
     } else {
       document.querySelectorAll('.board-container').forEach(el => {
@@ -332,8 +333,14 @@ export function applyRenderer(GameClass) {
     // Bind swap button click handler.
     const swapBtn = document.getElementById('board-swap-btn');
     if (swapBtn) {
+      if (this.regions && this.regions.length <= 1) {
+        swapBtn.style.display = 'none';
+      } else {
+        swapBtn.style.display = '';
+      }
       swapBtn.onclick = () => {
-        const nextBoard = (this._activeTabBoard ?? 1) === 1 ? 2 : 1;
+        const total = this.regions ? this.regions.length : 2;
+        const nextBoard = ((this._activeTabBoard ?? 1) % total) + 1;
         this._showBoard(nextBoard);
       };
     }
@@ -347,7 +354,8 @@ export function applyRenderer(GameClass) {
     });
     const swapBtn = document.getElementById('board-swap-btn');
     if (swapBtn) {
-      const targetBoard = boardNum === 1 ? 2 : 1;
+      const total = this.regions ? this.regions.length : 2;
+      const targetBoard = (boardNum % total) + 1;
       swapBtn.textContent = `Swap to Board ${targetBoard}`;
     }
   };

@@ -8,6 +8,15 @@ from puzzle_deduper import PuzzleDeduper
 _ATTEMPTS_PER_PAIR = 500
 
 class Comparator(ABC):
+    """
+    board_count: how many boards each emitted puzzle group contains. Defaults
+    to 2 (the classic pairwise case). Subclasses that emit groups of a
+    different size (e.g. TripleComparator) must override this so callers
+    (e.g. gen_puzzles.py) know how many board_N columns to expect before
+    any puzzles have actually been generated.
+    """
+    board_count = 2
+
     def __init__(self, n, output_rows, randomize_orientation_for_output=True):
         self.n = n
         self.output_rows = output_rows
@@ -43,19 +52,20 @@ class Comparator(ABC):
         base = f"puzzle_{self.pairs_found + 1}"
         return f"{base}_{suffix}" if suffix else base
 
-    def _emit(self, name, board_1, board_2, solution):
+    def _emit(self, name, boards, solution):
         """
-        Records a matched pair. Handles optional transformation and 
-        mandatory canonicalization
+        Records a matched group of boards (any length >= 1). Handles optional
+        orientation randomization and mandatory canonicalization.
+
+        boards: list of board strings, in the order they should be presented
+        (e.g. board_1, board_2, ..., board_N in the output row).
         """
-        final_b1 = board_1
-        final_b2 = board_2
+        final_boards = list(boards)
         final_sol = solution
 
         # 1. Handle Randomization (if enabled)
         if self.randomize_orientation_for_output:
-            if random.random() < 0.5:
-                final_b1, final_b2 = final_b2, final_b1
+            random.shuffle(final_boards)
 
             all_maps = get_transformation_maps(self.n)
             forward_map, _ = random.choice(all_maps)
@@ -67,8 +77,7 @@ class Comparator(ABC):
                     res[forward_map[i]] = char
                 return "".join(res)
 
-            final_b1 = apply_tr(final_b1)
-            final_b2 = apply_tr(final_b2)
+            final_boards = [apply_tr(b) for b in final_boards]
 
             # Apply transform to solution
             sol_list = ["."] * (self.n * self.n)
@@ -78,20 +87,18 @@ class Comparator(ABC):
             final_sol = "".join(sol_list)
 
         # 2. Mandatory Canonicalization — each board independently
-        final_b1 = canonical_relabel(final_b1)
-        final_b2 = canonical_relabel(final_b2)
+        final_boards = [canonical_relabel(b) for b in final_boards]
 
-        if self._deduper.is_duplicate(final_b1, final_b2, self.n):
+        if self._deduper.is_duplicate(final_boards, self.n):
             return
-        self._deduper.register(final_b1, final_b2, self.n)
+        self._deduper.register(final_boards, self.n)
 
-        row = {
-            'name': name, 
-            'N': self.n, 
-            'board_1': final_b1,
-            'board_2': final_b2, 
-            'solution': final_sol
-        }
+        row = {'name': name, 'N': self.n}
+        for i, b in enumerate(final_boards, start=1):
+            row[f'board_{i}'] = b
+        row['solution'] = final_sol
         self.output_rows.append(row)
-        print(f"{name},{self.n},{final_b1},{final_b2},{final_sol}", flush=True)
+
+        boards_csv = ",".join(final_boards)
+        print(f"{name},{self.n},{boards_csv},{final_sol}", flush=True)
         self.pairs_found += 1

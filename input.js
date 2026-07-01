@@ -118,10 +118,13 @@ export function applyInput(GameClass) {
       localStorage.setItem('setting-axis-labels', axisLabelsToggle.checked);
       // Re-render boards to apply/remove labels.
       if (this.currentPuzzle && this.regions) {
-        document.getElementById('board1').innerHTML = '';
-        document.getElementById('board2').innerHTML = '';
-        this.renderBoard('board1', this.regions[0]);
-        this.renderBoard('board2', this.regions[1]);
+        this.regions.forEach((regionString, idx) => {
+          const boardEl = document.getElementById(`board${idx + 1}`);
+          if (boardEl) {
+            boardEl.innerHTML = '';
+            this.renderBoard(`board${idx + 1}`, regionString);
+          }
+        });
         this.updateVisuals();
       }
     });

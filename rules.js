@@ -9,22 +9,22 @@ export function applyRules(GameClass) {
     const row = Math.floor(idx / n);
     const col = idx % n;
 
-    // Collect cells to dot (row, column, and board 1 region).
-    const regionId = this.regions[0][idx];
     const toFill = new Set();
 
     for (let i = 0; i < n * n; i++) {
       const r = Math.floor(i / n), c = i % n;
-      if (r === row || c === col || this.regions[0][i] === regionId) {
+      if (r === row || c === col) {
         toFill.add(i);
       }
     }
 
-    // Add cells from board 2 region (groupings may differ from board 1).
-    const regionId2 = this.regions[1][idx];
-    for (let i = 0; i < n * n; i++) {
-      if (this.regions[1][i] === regionId2) toFill.add(i);
-    }
+    // Add cells from region on all boards.
+    this.regions.forEach(regionString => {
+      const regionId = regionString[idx];
+      for (let i = 0; i < n * n; i++) {
+        if (regionString[i] === regionId) toFill.add(i);
+      }
+    });
 
     // Add adjacent cells (stars cannot touch orthogonally or diagonally).
     for (let dr = -1; dr <= 1; dr++) {
