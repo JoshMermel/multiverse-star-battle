@@ -836,21 +836,27 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* 12. HEADER BUTTONS */
 .settings-btn, .help-btn {
-  background: none;
-  border: none;
+  background: var(--bg-light);
+  border: 1px solid var(--border-light);
   color: var(--text-secondary);
   line-height: 1;
-  border-radius: 6px;
-  transition: background 0.15s, color 0.15s;
+  border-radius: 50%;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .settings-btn:not(:disabled):hover, .help-btn:not(:disabled):hover {
-  background: var(--border-light);
-  color: var(--text-primary);
+  background: var(--primary-blue-hover-bg);
+  border-color: var(--primary-blue);
+  color: var(--primary-blue);
 }
 
 .settings-btn, .help-btn {
   font-size: 1.3rem;
-  padding: 6px 8px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (min-width: 601px) {
