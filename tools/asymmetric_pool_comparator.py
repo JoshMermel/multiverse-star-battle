@@ -46,7 +46,7 @@ class AsymmetricPoolComparator(Comparator):
                 if len(common) == 1:
                     # pop(i) is safe here because we return immediately after.
                     self.pool.pop(i)
-                    self._emit(self._next_puzzle_name(), variant_board, pool_flat, next(iter(common)))
+                    self._emit(self._next_puzzle_name(), [variant_board, pool_flat], next(iter(common)))
                     return
 
         result_b = self._generate_safe(self.generator_b)
