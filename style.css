@@ -447,21 +447,20 @@ input[type="number"]::-webkit-inner-spin-button {
 
 @media (max-width: 600px) {
   :root {
-    /* Floor of 28px: below this, cells are too small to tap reliably.
-       Once the board hits that floor it overflows #boards-wrapper and
-       the user can side-scroll rather than squinting at tiny cells. */
     --cell-size: clamp(28px, 85vw / var(--grid-n), 65px);
   }
 
   /* Contain horizontal overflow inside the wrapper, not the page body.
-     padding-inline-end gives a right gutter (Chrome respects trailing
-     padding in scroll containers). The left gutter must be applied to
-     the first child instead — Chrome silently drops padding-inline-start
-     from the scrollable content width, making it unreachable by scrolling. */
+     padding-inline-end gives a right gutter (Chrome includes trailing
+     padding in scroll width). The left gutter must go on the first child —
+     Chrome drops padding-inline-start from scroll width, making it
+     unreachable. padding-block-end extends the wrapper's touch target
+     below the board so swipe-to-scroll works there too. */
   #boards-wrapper {
     overflow-x: auto;
     overflow-y: visible;
     padding-inline-end: 16px;
+    padding-block-end: 32px;
     box-sizing: border-box;
     scrollbar-width: thin;
     scrollbar-color: var(--border-strong) transparent;
