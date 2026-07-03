@@ -10,6 +10,16 @@ export function applyPuzzleLoader(GameClass) {
     return catId === 'daily';
   };
 
+  // Get today's date in the Boston timezone as an ISO-like YYYY-MM-DD string.
+  p._getBostonDateStr = function () {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+  };
+
   // Check if today is Sunday in the Boston timezone.
   p.isSunday = function () {
     const day = new Intl.DateTimeFormat('en-US', {
@@ -21,15 +31,7 @@ export function applyPuzzleLoader(GameClass) {
 
   // Calculate today's stable puzzle index from the Unix epoch.
   p.getDailyPuzzleIndex = function (total) {
-    // Use ISO-like local format (YYYY-MM-DD) for reliable parsing.
-    const bostonDateStr = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/New_York',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).format(new Date());
-
-    const midnightBoston = new Date(bostonDateStr).getTime();
+    const midnightBoston = new Date(this._getBostonDateStr()).getTime();
     const msPerDay = 24 * 60 * 60 * 1000;
     const daysSinceEpoch = Math.floor(midnightBoston / msPerDay);
 
@@ -153,7 +155,10 @@ export function applyPuzzleLoader(GameClass) {
 
   // Load today's daily puzzles from all tiers (including expert on Sundays).
   p.loadDailyCategory = async function (targetSlot = 1) {
-    if (!this.puzzleCache.has('daily')) {
+    // Keyed by date (not a fixed 'daily' key) so a tab left open across
+    // midnight fetches fresh puzzles instead of reusing yesterday's cache.
+    const cacheKey = `daily_${this._getBostonDateStr()}`;
+    if (!this.puzzleCache.has(cacheKey)) {
       const isSunday = this.isSunday();
 
       const fetches = [
@@ -179,10 +184,10 @@ export function applyPuzzleLoader(GameClass) {
         };
       });
 
-      this.puzzleCache.set('daily', dailyPuzzles);
+      this.puzzleCache.set(cacheKey, dailyPuzzles);
     }
 
-    this.loadedPuzzles = this.puzzleCache.get('daily');
+    this.loadedPuzzles = this.puzzleCache.get(cacheKey);
     const total = this.loadedPuzzles.length;
 
     const puzInput = document.getElementById('puzzle-input');
