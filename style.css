@@ -447,7 +447,27 @@ input[type="number"]::-webkit-inner-spin-button {
 
 @media (max-width: 600px) {
   :root {
-    --cell-size: clamp(30px, 85vw / var(--grid-n), 65px);
+    /* Floor of 28px: below this, cells are too small to tap reliably.
+       Once the board hits that floor it overflows #boards-wrapper and
+       the user can scroll it side-to-side rather than squinting at tiny cells. */
+    --cell-size: clamp(28px, 85vw / var(--grid-n), 65px);
+  }
+
+  /* When a large board overflows the viewport, contain the scroll inside
+     the wrapper (not the page body) and add symmetric padding so the board
+     doesn't butt up against the screen edges. scroll-padding-inline ensures
+     the board starts/ends with breathing room when scroll-snap kicks in. */
+  #boards-wrapper {
+    overflow-x: auto;
+    overflow-y: visible;
+    /* Left/right padding creates visible gutters; the negative margin
+       compensates so the wrapper still aligns with the rest of the page,
+       and box-sizing:border-box keeps the scrollport the right width. */
+    padding-inline: 16px;
+    box-sizing: border-box;
+    scroll-padding-inline: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
   }
   .menu-container {
     flex-direction: column;
