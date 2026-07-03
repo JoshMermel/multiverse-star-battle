@@ -34,7 +34,6 @@
     {"id": "12x12_mono",          "label": "1 Boards",            "group": "12x12"},
     {"id": "8x8_symmetric",       "label": "Symmetric",           "group": "Symmetry",         "desc": "Each board has rotational or mirror symmetry"},
     {"id": "8x8_twin",            "label": "Twin",                "group": "Symmetry",         "desc": "Both boards are the same, one flipped or rotated"},
-    {"id": "half",                "label": "Half",                "group": "Symmetry",         "desc": "Each board has two identical halves"},
     {"id": "8x8_symmetric_twin",  "label": "Symmetric Twin",      "group": "Symmetry",         "desc": "Both Symmetric and Twin at once"},
     {"id": "venn",                "label": "Venn",                "group": "Rectangles",       "desc": "Boards inspired by venn diagrams"},
     {"id": "not_sudoku",          "label": "Not Sudoku",          "group": "Rectangles",       "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply"},
@@ -47,7 +46,8 @@
     {"id": "voronoi",             "label": "Voronoi",             "group": "Playground",       "desc": "Regions generated like a voronoi diagram, feels different from random 8x8 though"},
     {"id": "mondrian",            "label": "Mondrian",            "group": "Rejects",          "desc": "Inspired by Mondrian"},
     {"id": "almost_degenerate",   "label": "Almost Degenerate",   "group": "Rejects",          "desc": "One board is almost useless"},
-    {"id": "giants",              "label": "Giants",              "group": "Rejects",          "desc": "Too big - desktop only"},
+    {"id": "giants",              "label": "Giants",          "group": "Rejects",          "desc": "Too big - desktop only"},
+    {"id": "giant_mono",          "label": "Giant mono",          "group": "Rejects",          "desc": "Too big - desktop only"},
     {"id": "not_for_humans",      "label": "Not For Humans",      "group": "Impossible"},
     {"id": "signoff",             "label": "Signoff",             "group": "Signoff"}
   ]
