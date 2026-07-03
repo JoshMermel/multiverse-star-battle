@@ -151,7 +151,11 @@ input[type="number"]::-webkit-inner-spin-button {
 #boards-wrapper {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* `safe center`: center the board when it fits; fall back to start-alignment
+     when the board is wider than the container so the left edge stays reachable
+     by scrolling. Without `safe`, centering splits overflow equally left and
+     right but browsers clamp scroll to 0, making the left portion unreachable. */
+  align-items: safe center;
   gap: 20px;
   width: 100%;
   max-width: 100%;
@@ -447,15 +451,17 @@ input[type="number"]::-webkit-inner-spin-button {
 
 @media (max-width: 600px) {
   :root {
-    --cell-size: clamp(28px, 85vw / var(--grid-n), 65px);
+    /* Divide by (grid-n + 1) to account for the row-label column, which is
+       one cell-size wide and makes the labeled grid (N+1) cells across. */
+    --cell-size: clamp(28px, calc(85vw / (var(--grid-n) + 1)), 65px);
   }
 
   /* Contain horizontal overflow inside the wrapper, not the page body.
      padding-inline-end gives a right gutter (Chrome includes trailing
-     padding in scroll width). The left gutter must go on the first child —
+     padding in scroll width). Left gutter goes on the first child —
      Chrome drops padding-inline-start from scroll width, making it
-     unreachable. padding-block-end extends the wrapper's touch target
-     below the board so swipe-to-scroll works there too. */
+     unreachable. padding-block-end extends the touch target below the
+     board so swipe-to-scroll works there too. */
   #boards-wrapper {
     overflow-x: auto;
     overflow-y: visible;
