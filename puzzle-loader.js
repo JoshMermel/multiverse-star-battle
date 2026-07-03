@@ -10,6 +10,19 @@ export function applyPuzzleLoader(GameClass) {
     return catId === 'daily';
   };
 
+  // Recall the last puzzle visited in a book, so returning to it resumes
+  // where the user left off instead of jumping back to puzzle 1. Daily
+  // puzzles aren't tracked this way, since "position" doesn't apply there.
+  p._getRememberedPuzzleNum = function (catId) {
+    const val = parseInt(localStorage.getItem(`sb_last_puz_${catId}`), 10);
+    return Number.isInteger(val) && val > 0 ? val : 1;
+  };
+
+  // Remember the current puzzle position for a book.
+  p._rememberPuzzlePosition = function (catId, puzNum) {
+    localStorage.setItem(`sb_last_puz_${catId}`, String(puzNum));
+  };
+
   // Get today's date in the Boston timezone as an ISO-like YYYY-MM-DD string.
   p._getBostonDateStr = function () {
     return new Intl.DateTimeFormat('en-CA', {

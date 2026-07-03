@@ -444,7 +444,8 @@ export function applyInput(GameClass) {
     const catSelect = document.getElementById('category-select');
     const currentNameEl = document.getElementById('bpb-current-name');
     catSelect.value = catId;
-    catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: 1 } }));
+    const targetPuz = this._getRememberedPuzzleNum(catId);
+    catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz } }));
     const opt = catSelect.querySelector(`option[value="${catId}"]`);
     if (opt) currentNameEl.textContent = opt.textContent;
   };

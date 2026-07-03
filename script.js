@@ -51,10 +51,12 @@ class StarBattleGame {
         const isArbitraryCsv = catId && !manifestCat && !catId.startsWith('daily_');
 
         if (isArbitraryCsv) {
-          await this.loadCategory(catId, puzNum);
+          await this.loadCategory(catId, puzNum ?? this._getRememberedPuzzleNum(catId));
         } else {
-          catSelect.value = manifestCat ? manifestCat.id : this.categories[0].id;
-          catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: puzNum } }));
+          const targetCatId = manifestCat ? manifestCat.id : this.categories[0].id;
+          catSelect.value = targetCatId;
+          const targetPuz = puzNum ?? this._getRememberedPuzzleNum(targetCatId);
+          catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz } }));
         }
       }
     } catch (e) {
@@ -118,6 +120,9 @@ class StarBattleGame {
     this.loadProgress({ suppressWinToast: true });
     this.updateControls();
     this.updateUrlParams(categoryId, puzzleData.id);
+    if (!this.isDailyCategory(categoryId)) {
+      this._rememberPuzzlePosition(categoryId, puzzleData.id);
+    }
 
     this.solver = new PuzzleSolver(this);
 
@@ -267,12 +272,21 @@ class StarBattleGame {
 
     // Map daily labels to slot indices. Expert is restricted to Sundays.
     const dailySlotMap = { beginner: 1, medium: 2, hard: 3, expert: 4 };
-    let puzNum = (catId === 'daily' && puzzleParam in dailySlotMap)
-      ? dailySlotMap[puzzleParam]
-      : parseInt(puzzleParam, 10) || 1;
-
-    if (catId === 'daily' && puzNum === 4 && !this.isSunday()) {
-      puzNum = 3;
+    let puzNum;
+    if (catId === 'daily') {
+      puzNum = (puzzleParam in dailySlotMap)
+        ? dailySlotMap[puzzleParam]
+        : parseInt(puzzleParam, 10) || 1;
+      if (puzNum === 4 && !this.isSunday()) {
+        puzNum = 3;
+      }
+    } else if (puzzleParam !== null) {
+      // Explicit puzzle number in the URL (e.g. a shared link) always wins.
+      puzNum = parseInt(puzzleParam, 10) || 1;
+    } else {
+      // No puzzle specified in the URL — null lets the caller fall back to
+      // the remembered position for this book instead of assuming puzzle 1.
+      puzNum = null;
     }
 
     return { catId, puzNum };
