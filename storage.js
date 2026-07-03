@@ -19,6 +19,10 @@ class StorageManager {
     this.onAuthChangeCallback = null;
     this.onCloudDataLoadedCallback = null;
     this._solvedCache = JSON.parse(localStorage.getItem('sb_solved') || '[]');
+    // Solve times and in-progress elapsed times are local-only: unlike
+    // _solvedCache, they are never pushed to or pulled from Firestore.
+    this._solveTimesCache = JSON.parse(localStorage.getItem('sb_solve_times') || '{}');
+    this._elapsedTimesCache = JSON.parse(localStorage.getItem('sb_elapsed_times') || '{}');
 
     // Clean up obsolete uncompressed save data.
     for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -112,12 +116,54 @@ class StorageManager {
     }
   }
 
+  // --- Solve Times (local-only; never synced to the cloud) ---
+
+  // Get the best recorded solve time (in seconds) for a puzzle, or null if none.
+  getSolveTime(puzzleId) {
+    const val = this._solveTimesCache[puzzleId];
+    return typeof val === 'number' ? val : null;
+  }
+
+  // Persist a solve time only if it beats (is lower than) any previously
+  // recorded time for this puzzle.
+  saveSolveTime(puzzleId, seconds) {
+    const existing = this._solveTimesCache[puzzleId];
+    if (typeof existing === 'number' && existing <= seconds) return;
+    this._solveTimesCache[puzzleId] = seconds;
+    localStorage.setItem('sb_solve_times', JSON.stringify(this._solveTimesCache));
+  }
+
+  // --- In-progress Timer (local-only; never synced to the cloud) ---
+
+  // Get the saved in-progress elapsed time (in seconds) for an unsolved puzzle.
+  getElapsedTime(puzzleId) {
+    const val = this._elapsedTimesCache[puzzleId];
+    return typeof val === 'number' ? val : null;
+  }
+
+  // Persist the current in-progress elapsed time for an unsolved puzzle.
+  saveElapsedTime(puzzleId, seconds) {
+    this._elapsedTimesCache[puzzleId] = seconds;
+    localStorage.setItem('sb_elapsed_times', JSON.stringify(this._elapsedTimesCache));
+  }
+
+  // Clear a puzzle's in-progress elapsed time (e.g. once it's been solved).
+  clearElapsedTime(puzzleId) {
+    if (puzzleId in this._elapsedTimesCache) {
+      delete this._elapsedTimesCache[puzzleId];
+      localStorage.setItem('sb_elapsed_times', JSON.stringify(this._elapsedTimesCache));
+    }
+  }
+
   clearAllPuzzleData() {
     this._solvedCache = [];
+    this._solveTimesCache = {};
+    this._elapsedTimesCache = {};
     const keysToDelete = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key === 'sb_solved' || key.startsWith('sb_v2_state_')) {
+      if (key === 'sb_solved' || key === 'sb_solve_times' || key === 'sb_elapsed_times' ||
+        key.startsWith('sb_v2_state_')) {
         keysToDelete.push(key);
       }
     }

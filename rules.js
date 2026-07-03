@@ -126,6 +126,19 @@ export function applyRules(GameClass) {
     // Check win condition.
     if (this.isSolved() && errorIndices.size === 0) {
       this.markAsSolved();
+
+      // Only treat this as a genuine fresh solve — not a reload or
+      // reconstruction of a puzzle that was already solved — when the win
+      // toast isn't suppressed. Puzzle-load call sites always suppress it.
+      if (!suppressWinToast) {
+        const finalElapsed = this.timerStartTime
+          ? Math.floor((Date.now() - this.timerStartTime) / 1000)
+          : this.timerElapsedTime;
+        this.timerElapsedTime = finalElapsed;
+        this._updateTimerDisplay(finalElapsed);
+        this.recordSolveTime(finalElapsed);
+      }
+
       this._stopTimer();
       const toast = document.getElementById('toast');
       const winToastAlreadyVisible = toast.classList.contains('toast-win') &&

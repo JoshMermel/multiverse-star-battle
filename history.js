@@ -111,6 +111,13 @@ export function applyHistory(GameClass) {
       this.updateControls();
       this.validate();
       this.updateSolvedUI();
+
+      // Reset the solve timer, since any saved time for this puzzle is gone.
+      this.timerElapsedTime = 0;
+      this._updateTimerDisplay(0);
+      this._stopTimer();
+      this.timerStartTime = Date.now();
+      this._startTimer();
     }
 
     this.showToast('Cleared all puzzle saves.', 'info');
@@ -120,5 +127,25 @@ export function applyHistory(GameClass) {
   p.markAsSolved = function () {
     storageManager.markPuzzleSolved(this.currentPuzzleUniqueId);
     this._updateSolvedBadge(storageManager.getSolvedList());
+  };
+
+  // Persist a fresh solve time as the new best if it beats any prior one,
+  // and clear the (now irrelevant) in-progress elapsed time for this puzzle.
+  p.recordSolveTime = function (seconds) {
+    storageManager.saveSolveTime(this.currentPuzzleUniqueId, seconds);
+    storageManager.clearElapsedTime(this.currentPuzzleUniqueId);
+  };
+
+  // Persist the current puzzle's in-progress timer so it can resume from
+  // here next time it's loaded. Called before switching to a different
+  // puzzle, and when the tab is hidden/closed. Solved puzzles don't need
+  // this — their best time is already tracked via recordSolveTime.
+  p._persistTimerProgress = function () {
+    if (!this.currentPuzzleUniqueId || !this.state) return;
+    if (this.isSolved()) return;
+    const elapsed = this.timerStartTime
+      ? Math.floor((Date.now() - this.timerStartTime) / 1000)
+      : this.timerElapsedTime;
+    storageManager.saveElapsedTime(this.currentPuzzleUniqueId, elapsed);
   };
 }

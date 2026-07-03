@@ -67,6 +67,10 @@ class StarBattleGame {
 
   // Initialize game state for a new puzzle and render both boards.
   async loadPuzzle(puzzleData, categoryId) {
+    // Save the outgoing puzzle's timer progress before we switch away from
+    // it, so it resumes correctly if revisited later.
+    this._persistTimerProgress();
+
     this.currentPuzzleUniqueId = await this.computePuzzleId(puzzleData);
     this.currentCategoryId = categoryId;
     this.currentPuzzle = puzzleData;
@@ -126,12 +130,19 @@ class StarBattleGame {
 
     this.solver = new PuzzleSolver(this);
 
-    // Initialize timer for the puzzle
+    // Initialize the timer for this puzzle. A solved puzzle shows its best
+    // recorded time and stays stopped; an unsolved puzzle resumes from any
+    // previously saved progress (or starts fresh at 0 if there is none).
     this._stopTimer();
-    this.timerElapsedTime = 0;
-    this._updateTimerDisplay(0);
-    if (!this.isSolved()) {
-      this.timerStartTime = Date.now();
+    if (this.isSolved()) {
+      const bestTime = storageManager.getSolveTime(this.currentPuzzleUniqueId) ?? 0;
+      this.timerElapsedTime = bestTime;
+      this._updateTimerDisplay(bestTime);
+    } else {
+      const savedElapsed = storageManager.getElapsedTime(this.currentPuzzleUniqueId) ?? 0;
+      this.timerElapsedTime = savedElapsed;
+      this._updateTimerDisplay(savedElapsed);
+      this.timerStartTime = Date.now() - savedElapsed * 1000;
       this._startTimer();
     }
   }

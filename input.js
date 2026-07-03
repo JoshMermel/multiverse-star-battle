@@ -211,9 +211,18 @@ export function applyInput(GameClass) {
     // Abort any in-progress drag when the user app-switches away. The page
     // becomes hidden before the pointer stream ends, so pointerup never fires.
     // On return (visibilityState === 'visible') the drag is already gone.
+    // Also persist the timer here, since backgrounding the tab is a common
+    // way a session ends without ever switching puzzles.
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') this._abortDrag();
+      if (document.visibilityState === 'hidden') {
+        this._abortDrag();
+        this._persistTimerProgress();
+      }
     });
+
+    // Fallback for closing/navigating away from the tab entirely — more
+    // reliable than visibilitychange on some mobile browsers.
+    window.addEventListener('pagehide', () => this._persistTimerProgress());
 
     // Allow book links inside modal text to switch categories.
     document.addEventListener('click', (e) => {
