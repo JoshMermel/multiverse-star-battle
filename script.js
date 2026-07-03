@@ -107,11 +107,10 @@ class StarBattleGame {
       this.renderBoard(`board${idx + 1}`, regionString);
     });
 
-    // TODO(jmerm): there must be a better way to trigger this at the right
-    // time. Right now it runs before boards load.
-    const tabToggle = document.getElementById('setting-tab-mode');
-    localStorage.setItem('setting-tab-mode', tabToggle.checked);
-    this._applyTabMode(tabToggle.checked);
+    // Tab mode depends on the board containers created just above, so (like
+    // axis labels) it's applied here per puzzle load rather than at initial
+    // settings setup, where the boards don't exist yet.
+    this._applyTabMode(localStorage.getItem('setting-tab-mode') === 'true');
 
     this.updateVisuals();
 

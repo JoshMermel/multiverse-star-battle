@@ -107,9 +107,10 @@ export function applyInput(GameClass) {
     autoFillDotsToggle.checked = savedAutoFillDots;
     showTimerToggle.checked = savedShowTimer;
     this._applyDarkMode(savedDark);
-    this._applyTabMode(savedTab);
     this._applyShowTimer(savedShowTimer);
-    // Note: Axis labels are applied during puzzle load once boards exist.
+    // Note: Tab mode and axis labels both depend on board containers that
+    // don't exist yet at settings-setup time, so they're applied during
+    // puzzle load instead (see loadPuzzle / renderBoard).
 
     darkToggle.addEventListener('change', () => {
       localStorage.setItem('setting-dark-mode', darkToggle.checked);
