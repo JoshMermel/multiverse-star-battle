@@ -196,18 +196,17 @@ export class PuzzleSolver {
       { key: 'seesTooMuch3',             fn: () => this.hintSeesTooMuch(3) },
       { key: 'seesTooMuchAll',           fn: () => this.hintSeesTooMuch(null) },
       { key: 'unitRegionSync2',          fn: () => this.hintUnitRegionSync(2) },
-      { key: 'rowColLineSync2',          fn: () => this.hintRowColLineSync(2) },
       { key: 'symmetryFill',            fn: () => this.hintSymmetryFill() },
       // Hard
       { key: 'unitRegionSync3',          fn: () => this.hintUnitRegionSync(3) },
-      { key: 'rowColLineSync3',          fn: () => this.hintRowColLineSync(3) },
       { key: 'disjointUnitRegionSync2',  fn: () => this.hintDisjointUnitRegionSync(2) },
+      { key: 'rowColLineSync2',          fn: () => this.hintRowColLineSync(2) },
       { key: 'manyRegionsSync',          fn: () => this.hintManyRegionsSync() },
-      { key: 'manyRowColLineSync',       fn: () => this.hintManyRowColLineSync() },
       { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
       { key: 'symmetryDeduction',        fn: () => this.hintSymmetryDeduction() },
       // Expert
       { key: 'disjointUnitRegionSync3',  fn: () => this.hintDisjointUnitRegionSync(3) },
+      { key: 'rowColLineSync3',          fn: () => this.hintRowColLineSync(3) },
       { key: 'crossBoardPinned2Row',     fn: () => this.hintCrossBoardRegionPinned(2, "Row") },
       { key: 'crossBoardPinned2Col',     fn: () => this.hintCrossBoardRegionPinned(2, "Col") },
       { key: 'crossBoardPinned3Row',     fn: () => this.hintCrossBoardRegionPinned(3, "Row") },
@@ -656,19 +655,6 @@ export class PuzzleSolver {
     const candidates = [];
     for (const axis of ["Row", "Column"]) {
       candidates.push(...this._hintAxisLineSyncAll(N, axis));
-    }
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => (a.highlights[0]?.idx ?? a.marks[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? b.marks[0]?.idx ?? 0));
-    return candidates;
-  }
-
-  // Rule: same as above but for window sizes 4+ (mirrors hintManyRegionsSync).
-  hintManyRowColLineSync() {
-    const candidates = [];
-    for (let n = 4; n < this.n; n++) {
-      for (const axis of ["Row", "Column"]) {
-        candidates.push(...this._hintAxisLineSyncAll(n, axis));
-      }
     }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.highlights[0]?.idx ?? a.marks[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? b.marks[0]?.idx ?? 0));

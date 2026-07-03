@@ -269,8 +269,6 @@ class CompositeScorer:
             (self.rule_sees_too_much,                       18, "Medium"),
             (self.rule_2_adjacent_rows,                     20, "Medium"),
             (self.rule_2_adjacent_cols,                     20, "Medium"),
-            (self.rule_2_row_col_line_sync_rows,            22, "Medium"),
-            (self.rule_2_row_col_line_sync_cols,            22, "Medium"),
             (self.rule_main_diagonal_fill,                  20, "Medium"),
             (self.rule_anti_diagonal_fill,                  20, "Medium"),
             (self.rule_rotation_180_fill,                   20, "Medium"),
@@ -278,10 +276,10 @@ class CompositeScorer:
             # -- Hard ---------------------------------------------------------
             (self.rule_3_adjacent_rows,                     25, "Hard"),
             (self.rule_3_adjacent_cols,                     25, "Hard"),
-            (self.rule_3_row_col_line_sync_rows,            28, "Hard"),
-            (self.rule_3_row_col_line_sync_cols,            28, "Hard"),
             (self.rule_2_disjoint_rows,                     30, "Hard"),
             (self.rule_2_disjoint_cols,                     30, "Hard"),
+            (self.rule_2_row_col_line_sync_rows,            30, "Hard"),
+            (self.rule_2_row_col_line_sync_cols,            30, "Hard"),
             (self.rule_many_adjacent_rows,                  35, "Hard"),
             (self.rule_many_adjacent_cols,                  35, "Hard"),
             (self.rule_region_contains_region,              40, "Hard"),
@@ -294,8 +292,8 @@ class CompositeScorer:
             # -- Expert -------------------------------------------------------
             (self.rule_3_disjoint_rows,                     45, "Expert"),
             (self.rule_3_disjoint_cols,                     45, "Expert"),
-            (self.rule_many_row_col_line_sync_rows,         55, "Expert"),
-            (self.rule_many_row_col_line_sync_cols,         55, "Expert"),
+            (self.rule_3_row_col_line_sync_rows,            45, "Expert"),
+            (self.rule_3_row_col_line_sync_cols,            45, "Expert"),
             (self.rule_2_region_pinned_crossboard_rows,     50, "Expert"),
             (self.rule_2_region_pinned_crossboard_cols,     50, "Expert"),
             (self.rule_3_region_pinned_crossboard_rows,     60, "Expert"),
@@ -729,20 +727,6 @@ class CompositeScorer:
 
     def rule_3_row_col_line_sync_cols(self, p):
         return self._rule_axis_line_sync(p, n=3, axis="col")
-
-    def rule_many_row_col_line_sync_rows(self, p):
-        for n in range(4, p.n):
-            changes = self._rule_axis_line_sync(p, n, axis="row")
-            if changes > 0:
-                return changes
-        return 0
-
-    def rule_many_row_col_line_sync_cols(self, p):
-        for n in range(4, p.n):
-            changes = self._rule_axis_line_sync(p, n, axis="col")
-            if changes > 0:
-                return changes
-        return 0
 
     def _rule_axis_line_sync(self, p, n, axis):
         """
