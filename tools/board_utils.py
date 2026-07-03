@@ -157,6 +157,43 @@ def get_board_variants(flat_board, solutions, n):
     return variants
 
 
+def voronoi_flood_fill(grid, n):
+    """
+    Star-biased contiguous region growth, used by SolutionFirstGenerator.
+
+    Unlike flood_fill (which maintains one global random frontier, letting
+    a single region snake arbitrarily far across the board before its
+    neighbours are ever considered), this grows every seeded region
+    outward one ring at a time in lockstep, with random tie-breaking
+    within each ring. The result is a jittered Voronoi tessellation: every
+    region stays roughly centered on its own seed cell, which is exactly
+    the bias needed when seeds are a fixed star placement and the goal is
+    regions that plausibly force that placement as the unique solution.
+
+    `grid` must already have exactly one seed cell filled in per region
+    (region id or VOID_CHAR); all other cells must be None. Void cells are
+    left untouched and never grow. Mutates and returns `grid`, or returns
+    None if any cell was unreachable (only possible if voids disconnect
+    the board into isolated pockets).
+    """
+    frontier = [i for i, v in enumerate(grid) if v is not None and v != VOID_CHAR]
+
+    while frontier:
+        random.shuffle(frontier)
+        next_frontier = []
+        for idx in frontier:
+            for nb in get_neighbors_4(idx, n):
+                if grid[nb] is None:
+                    grid[nb] = grid[idx]
+                    next_frontier.append(nb)
+        frontier = next_frontier
+
+    if any(v is None for v in grid):
+        return None
+
+    return grid
+
+
 def flood_fill(grid, n, excluded_region=None, reject_singletons=False):
     unfilled_count = sum(1 for cell in grid if cell is None)
     
