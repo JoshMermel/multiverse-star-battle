@@ -67,6 +67,13 @@ export function applyInput(GameClass) {
   p.setupHelpModal = function () {
     const { open } = this.setupModal('help-modal');
     document.getElementById('help-btn').onclick = open;
+
+    // Auto-open the help modal the very first time a user visits, then
+    // remember that they've seen it so it won't pop up again.
+    if (!localStorage.getItem('has-seen-help-modal')) {
+      localStorage.setItem('has-seen-help-modal', 'true');
+      open();
+    }
   };
 
   // Set up reset confirmation modal.
