@@ -8,10 +8,25 @@ const firebaseConfig = {
   appId: "1:125582722457:web:76e185dca1bbec297d7f08"
 };
 
-// Initialize Firebase.
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
+// Initialize Firebase, if the SDK actually loaded. If it didn't — e.g. the
+// page loaded offline (a flight, a dead connection, a CDN outage) before
+// these scripts were ever cached — `firebase` is undefined, and letting
+// this throw here would crash the entire module graph (script.js imports
+// this file, so nothing in the game would run at all). Instead, fall back
+// to local-only mode: everything in this file that touches localStorage
+// still works fine; only cross-device cloud sync is unavailable.
+const firebaseAvailable = typeof firebase !== 'undefined';
+let db = null;
+let auth = null;
+if (firebaseAvailable) {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    auth = firebase.auth();
+  } catch (err) {
+    console.warn("Firebase failed to initialize; continuing in local-only mode.", err);
+  }
+}
 
 class StorageManager {
   constructor() {
@@ -32,18 +47,20 @@ class StorageManager {
       }
     }
 
-    auth.onAuthStateChanged(user => {
-      this.user = user;
-      if (this.onAuthChangeCallback) this.onAuthChangeCallback(user);
-      if (user) {
-        this._syncFromCloud();
-      }
-    });
+    if (auth) {
+      auth.onAuthStateChanged(user => {
+        this.user = user;
+        if (this.onAuthChangeCallback) this.onAuthChangeCallback(user);
+        if (user) {
+          this._syncFromCloud();
+        }
+      });
 
-    // Handle redirect sign-in callback.
-    auth.getRedirectResult().catch(error => {
-      console.error("Redirect sign-in error", error);
-    });
+      // Handle redirect sign-in callback.
+      auth.getRedirectResult().catch(error => {
+        console.error("Redirect sign-in error", error);
+      });
+    }
   }
 
   setCallbacks({ onAuthChange, onCloudDataLoaded }) {
@@ -53,6 +70,10 @@ class StorageManager {
   }
 
   async signIn() {
+    if (!auth) {
+      console.warn("Cloud sign-in is unavailable right now (Firebase didn't load).");
+      return;
+    }
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
       await auth.signInWithPopup(provider);
@@ -62,6 +83,7 @@ class StorageManager {
   }
 
   async signOut() {
+    if (!auth) return;
     try {
       await auth.signOut();
     } catch (error) {
