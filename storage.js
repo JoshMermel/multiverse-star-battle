@@ -125,10 +125,12 @@ class StorageManager {
   }
 
   // Persist a solve time only if it beats (is lower than) any previously
-  // recorded time for this puzzle.
+  // recorded time for this puzzle. A stored 0 isn't a real solve time — it
+  // means no time was ever recorded (e.g. solved before the timer feature
+  // existed, or solved on another device) — so it's always overwritten.
   saveSolveTime(puzzleId, seconds) {
     const existing = this._solveTimesCache[puzzleId];
-    if (typeof existing === 'number' && existing <= seconds) return;
+    if (typeof existing === 'number' && existing > 0 && existing <= seconds) return;
     this._solveTimesCache[puzzleId] = seconds;
     localStorage.setItem('sb_solve_times', JSON.stringify(this._solveTimesCache));
   }

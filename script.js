@@ -23,6 +23,15 @@ class StarBattleGame {
     this.timerInterval = null;
     this.timerStartTime = null;
     this.timerElapsedTime = 0;
+    // True once the player has made their first move this puzzle-session.
+    // Gates auto-resume (validate()) so the timer never starts on its own
+    // before the player has actually touched the board.
+    this._timerStarted = false;
+    // True once this puzzle has been solved this session. Once set, the
+    // timer stays stopped for good (even if the player later undoes a star
+    // and "unsolves" it) — solve time was already recorded at the moment of
+    // solving, so there's nothing further to time.
+    this._timerLocked = false;
     // Set up global listeners before game initialization.
     this.setupGlobalListeners();
     document.addEventListener('DOMContentLoaded', () => this.initGame());
@@ -65,6 +74,14 @@ class StarBattleGame {
 
   // Initialize game state for a new puzzle and render both boards.
   async loadPuzzle(puzzleData, categoryId) {
+    // Flush the outgoing puzzle's timer progress before switching away —
+    // currentPuzzleUniqueId and this.state are about to change, and
+    // _persistTimerProgress needs the old ones to save against the right
+    // puzzle. (No-ops safely on the very first load, since there's no prior
+    // puzzle yet.)
+    this._persistTimerProgress();
+    this._stopTimer();
+
     this.currentPuzzleUniqueId = await this.computePuzzleId(puzzleData);
     this.currentCategoryId = categoryId;
     this.currentPuzzle = puzzleData;
@@ -121,14 +138,28 @@ class StarBattleGame {
 
     this.solver = new PuzzleSolver(this);
 
-    // Initialize timer for the puzzle
+    // Initialize the timer for this puzzle. It does NOT start running yet —
+    // it stays paused until the player's first move (see _startTimerIfNeeded),
+    // so simply browsing to a puzzle never burns solve time. If there's a
+    // saved in-progress elapsed time for an unsolved puzzle, resume from
+    // there instead of zero; if the puzzle is already solved, show its
+    // recorded best time instead of zeroing it out.
     this._stopTimer();
-    this.timerElapsedTime = 0;
-    this._updateTimerDisplay(0);
-    if (!this.isSolved()) {
-      this.timerStartTime = Date.now();
-      this._startTimer();
+    this._timerStarted = false;
+    this._timerLocked = false;
+    this.timerStartTime = null;
+    if (this.isSolved()) {
+      // Defaults to 0 only if no time was ever recorded for this puzzle
+      // (e.g. solved before the timer feature existed, or solved on
+      // another device).
+      const bestTime = storageManager.getSolveTime(this.currentPuzzleUniqueId);
+      this.timerElapsedTime = typeof bestTime === 'number' ? bestTime : 0;
+      this._timerLocked = true;
+    } else {
+      const savedElapsed = storageManager.getElapsedTime(this.currentPuzzleUniqueId);
+      this.timerElapsedTime = typeof savedElapsed === 'number' ? savedElapsed : 0;
     }
+    this._updateTimerDisplay(this.timerElapsedTime);
   }
 
   showToastOnLoad(catId, puzId) {
@@ -222,6 +253,7 @@ class StarBattleGame {
   applyState(idx, type, { suppressWinToast = false, debounceMs } = {}) {
     if (this.voidCells?.has(idx)) return;
     if (this.state[idx] === type) return;
+    this._startTimerIfNeeded();
     this.state[idx] = type;
     document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
       this.updateCellVisual(cell, type);
@@ -307,6 +339,38 @@ class StarBattleGame {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
     }
+  }
+
+  // Start the timer the first (and only the first) time the player actually
+  // makes a move this puzzle-session. Later pauses (tab switches) resume
+  // through _resumeTimerFromBackground / validate() instead of this method.
+  _startTimerIfNeeded() {
+    if (this._timerStarted || this._timerLocked || this.isSolved()) return;
+    this._timerStarted = true;
+    this.timerStartTime = Date.now() - (this.timerElapsedTime * 1000);
+    this._startTimer();
+  }
+
+  // Pause the timer when the tab is backgrounded. Freezes timerElapsedTime
+  // at the current value and clears timerStartTime so the timer reads as
+  // genuinely stopped (not just throttled) until the tab regains focus.
+  _pauseTimerForBackground() {
+    if (this.timerStartTime) {
+      this.timerElapsedTime = Math.floor((Date.now() - this.timerStartTime) / 1000);
+      this._updateTimerDisplay(this.timerElapsedTime);
+    }
+    this._stopTimer();
+    this.timerStartTime = null;
+    this._persistTimerProgress();
+  }
+
+  // Resume the timer when the tab regains focus — but only if the player
+  // had already started playing this session (never auto-starts a fresh,
+  // untouched puzzle) and it isn't already solved.
+  _resumeTimerFromBackground() {
+    if (!this._timerStarted || this._timerLocked || this.isSolved()) return;
+    this.timerStartTime = Date.now() - (this.timerElapsedTime * 1000);
+    this._startTimer();
   }
 }
 

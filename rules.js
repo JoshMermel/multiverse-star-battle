@@ -140,6 +140,11 @@ export function applyRules(GameClass) {
       }
 
       this._stopTimer();
+      this.timerStartTime = null;
+      // Lock the timer stopped for the rest of this session — even if the
+      // player later undoes a star and un-solves the board, solve time was
+      // already recorded above and shouldn't resume counting.
+      this._timerLocked = true;
       const toast = document.getElementById('toast');
       const winToastAlreadyVisible = toast.classList.contains('toast-win') &&
         !toast.classList.contains('toast-hidden');
@@ -147,8 +152,13 @@ export function applyRules(GameClass) {
         this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
       }
     } else {
-      // Resume timer if it is stopped/paused and puzzle is not solved.
-      if (!this.timerInterval) {
+      // Resume the timer if it was already started this session but is
+      // currently stopped/paused (e.g. an undo landed back on a solved
+      // state momentarily, or a background-pause somehow left it stopped).
+      // Gated on _timerStarted so this never fires as a way of starting the
+      // timer for a puzzle the player hasn't actually touched yet — that's
+      // _startTimerIfNeeded's job, triggered only by a real move.
+      if (this._timerStarted && !this._timerLocked && !this.timerInterval) {
         this.timerStartTime = Date.now() - (this.timerElapsedTime * 1000);
         this._startTimer();
       }

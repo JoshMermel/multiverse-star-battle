@@ -42,9 +42,11 @@ export function applyHistory(GameClass) {
     }
   };
 
-  // Persist current state to localStorage.
+  // Persist current state to localStorage, along with the timer's
+  // in-progress elapsed time so a resumed session picks up where it left off.
   p.saveCurrentState = function () {
     storageManager.savePuzzleState(this.currentPuzzleUniqueId, this.state);
+    this._persistTimerProgress();
   };
 
   // Load saved state or reconstruct from solved history.
@@ -87,11 +89,14 @@ export function applyHistory(GameClass) {
     this.updateVisuals();
     this.updateControls();
 
-    // Reset the solve timer.
+    // Reset the solve timer. Like a fresh puzzle load, it doesn't start
+    // running again until the player makes their next move.
     this.timerElapsedTime = 0;
     this._updateTimerDisplay(0);
-    this.timerStartTime = Date.now();
-    this._startTimer();
+    this._timerStarted = false;
+    this._timerLocked = false;
+    this._stopTimer();
+    this.timerStartTime = null;
 
     this.validate();
     this.saveCurrentState();
@@ -113,11 +118,13 @@ export function applyHistory(GameClass) {
       this.updateSolvedUI();
 
       // Reset the solve timer, since any saved time for this puzzle is gone.
+      // As with a fresh load, it stays paused until the player's next move.
       this.timerElapsedTime = 0;
       this._updateTimerDisplay(0);
+      this._timerStarted = false;
+      this._timerLocked = false;
       this._stopTimer();
-      this.timerStartTime = Date.now();
-      this._startTimer();
+      this.timerStartTime = null;
     }
 
     this.showToast('Cleared all puzzle saves.', 'info');

@@ -210,13 +210,16 @@ export function applyInput(GameClass) {
 
     // Abort any in-progress drag when the user app-switches away. The page
     // becomes hidden before the pointer stream ends, so pointerup never fires.
-    // On return (visibilityState === 'visible') the drag is already gone.
-    // Also persist the timer here, since backgrounding the tab is a common
-    // way a session ends without ever switching puzzles.
+    // Also pause the solve timer here — backgrounding the tab shouldn't count
+    // as active solve time — and persist the elapsed progress, since this is
+    // a common way a session ends without ever switching puzzles. When the
+    // tab regains focus, resume the timer from where it left off.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
         this._abortDrag();
-        this._persistTimerProgress();
+        this._pauseTimerForBackground();
+      } else if (document.visibilityState === 'visible') {
+        this._resumeTimerFromBackground();
       }
     });
 
