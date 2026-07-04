@@ -7,7 +7,7 @@
     "Symmetry":         { "icon": "🔀",   "blurb": "Puzzles with symmetry"},
     "Rectangles":       { "icon": "⊞",    "blurb": "Rectangles and squares"},
     "Playground":       { "icon": "🛝",   "blurb": "Other puzzle ideas"},
-    "Rejects":          { "icon": "😑",   "blurb": "Better to look at than to play"},
+    "Curiosities":      { "icon": "🤔",   "blurb": "Interesting to look at, less fun to solve"},
     "Impossible":       { "icon": "💀",   "blurb": "Puzzles too hard for humans"},
     "Signoff":          { "icon": "💌",   "blurb": "A puzzle-y message from the creator"},
     "Experimental":     { "icon": "🧪",   "blurb": "Work in progress"}
@@ -44,11 +44,11 @@
     {"id": "8x8_equal_area",      "label": "8x8 Equal Area",      "group": "Playground",       "desc": "All regions have equal area - extremely hard"},
     {"id": "void",                "label": "Void",                "group": "Playground",       "desc": "Puzzles with voids"},
     {"id": "voronoi",             "label": "Voronoi",             "group": "Playground",       "desc": "Regions generated like a voronoi diagram, feels different from random 8x8 though"},
-    {"id": "mondrian",            "label": "Mondrian",            "group": "Rejects",          "desc": "Inspired by Mondrian"},
-    {"id": "almost_degenerate",   "label": "Almost Degenerate",   "group": "Rejects",          "desc": "One board is almost useless"},
-    {"id": "giants",              "label": "Giants",              "group": "Rejects",          "desc": "Too big - desktop only"},
-    {"id": "giant_mono",          "label": "Giant mono",          "group": "Rejects",          "desc": "Too big - desktop only"},
-    {"id": "half_dozen",          "label": "6 Boards",            "group": "Rejects",          "desc": "Is more better?"},
+    {"id": "mondrian",            "label": "Mondrian",            "group": "Curiosities",      "desc": "Inspired by Mondrian"},
+    {"id": "almost_degenerate",   "label": "Almost Degenerate",   "group": "Curiosities",      "desc": "One board is almost useless"},
+    {"id": "giants",              "label": "Giants",              "group": "Curiosities",      "desc": "Too big - desktop only"},
+    {"id": "giant_mono",          "label": "Giant mono",          "group": "Curiosities",      "desc": "Too big - desktop only"},
+    {"id": "half_dozen",          "label": "6 Boards",            "group": "Curiosities",      "desc": "Is more better?"},
     {"id": "not_for_humans",      "label": "Not For Humans",      "group": "Impossible"},
     {"id": "signoff",             "label": "Signoff",             "group": "Signoff"}
   ]
