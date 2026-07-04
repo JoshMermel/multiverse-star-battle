@@ -455,7 +455,15 @@ class _RectContext:
             return count
 
         elif self.sym_type == 'rot_180':
-            return random.choice([i for i in range(K // 2) if i % 2 == K % 2])
+            return 2
+            if (R + C) % 2 != 0:
+                return None
+            is_odd = (R % 2 != 0)
+            max_possible = min(R // 2, C // 2) + (1 if is_odd else 0)
+            max_possible = min(max_possible, K)
+            # (K - i) must be even so regular seeds can be placed in pairs
+            valid_counts = [i for i in range(max_possible + 1) if (K - i) % 2 == 0]
+            return random.choice(valid_counts) if valid_counts else 0
 
         return 0
 
@@ -656,49 +664,24 @@ class _RectContext:
                 labels_used += 1
 
         elif self.sym_type == 'rot_180':
-            # Place `count` rotationally-symmetric region seeds.  Each seed is a
-            # pair of cells that are 180-degree images of each other through the
-            # centre of the (possibly rectangular) sub-board.  For even dimensions
-            # the centre lies between cells, so every cell has a distinct image
-            # and there are no fixed points.  For odd dimensions there is one
-            # fixed-point centre cell; the original code handles it via is_odd.
-            #
-            # Strategy: pick `count` seed pairs from cells in the top half of the
-            # sub-board (r < R//2, or r == R//2 with c < C//2 for odd R).
-            # Each pair occupies (r, c) and its 180-image (R-1-r, C-1-c).
-            is_odd_r = (R % 2 != 0)
-            is_odd_c = (C % 2 != 0)
+            is_odd = (R % 2 != 0)
+            for layer in range(count):
+                if is_odd and layer == 0:
+                    grid[self.idx(R // 2, C // 2)] = label_offset + labels_used
+                else:
+                    offset_val = 0 if is_odd else -1
+                    r_min = (R // 2) - layer + offset_val
+                    r_max = (R // 2) + layer
+                    c_min = (C // 2) - layer + offset_val
+                    c_max = (C // 2) + layer
 
-            # Build candidate cells in the "top half" (unique up to 180-rotation).
-            candidates = []
-            for r2 in range(R // 2):
-                for c2 in range(C):
-                    candidates.append((r2, c2))
-            if is_odd_r:
-                # Middle row: only cells in the left half are independent.
-                mid_r2 = R // 2
-                for c2 in range(C // 2):
-                    candidates.append((mid_r2, c2))
-                if is_odd_c:
-                    # True centre cell — its own image; one fixed-point seed.
-                    candidates.append((R // 2, C // 2))
-
-            random.shuffle(candidates)
-            placed = 0
-            for r2, c2 in candidates:
-                if placed >= count:
-                    break
-                img_r, img_c = R - 1 - r2, C - 1 - c2
-                cell = self.idx(r2, c2)
-                img_cell = self.idx(img_r, img_c)
-                if cell is None or grid[cell] is not None:
-                    continue
-                grid[cell] = label_offset + labels_used
+                    for r2 in range(r_min, r_max + 1):
+                        for c2 in range(c_min, c_max + 1):
+                            if r2 == r_min or r2 == r_max or c2 == c_min or c2 == c_max:
+                                cell = self.idx(r2, c2)
+                                if cell is not None:
+                                    grid[cell] = label_offset + labels_used
                 labels_used += 1
-                if img_cell != cell and img_cell is not None and grid[img_cell] is None:
-                    grid[img_cell] = label_offset + labels_used
-                    labels_used += 1
-                placed += 1
 
         return labels_used
 
