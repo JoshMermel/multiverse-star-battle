@@ -51,12 +51,10 @@ class StarBattleGame {
         const isArbitraryCsv = catId && !manifestCat && !catId.startsWith('daily_');
 
         if (isArbitraryCsv) {
-          await this.loadCategory(catId, puzNum ?? this._getRememberedPuzzleNum(catId));
+          await this.loadCategory(catId, puzNum);
         } else {
-          const targetCatId = manifestCat ? manifestCat.id : this.categories[0].id;
-          catSelect.value = targetCatId;
-          const targetPuz = puzNum ?? this._getRememberedPuzzleNum(targetCatId);
-          catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz } }));
+          catSelect.value = manifestCat ? manifestCat.id : this.categories[0].id;
+          catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: puzNum } }));
         }
       }
     } catch (e) {
@@ -67,10 +65,6 @@ class StarBattleGame {
 
   // Initialize game state for a new puzzle and render both boards.
   async loadPuzzle(puzzleData, categoryId) {
-    // Save the outgoing puzzle's timer progress before we switch away from
-    // it, so it resumes correctly if revisited later.
-    this._persistTimerProgress();
-
     this.currentPuzzleUniqueId = await this.computePuzzleId(puzzleData);
     this.currentCategoryId = categoryId;
     this.currentPuzzle = puzzleData;
@@ -91,7 +85,12 @@ class StarBattleGame {
     // Dynamically clear existing board containers from boards-wrapper.
     document.querySelectorAll('#boards-wrapper .board-container').forEach(el => el.remove());
     document.documentElement.style.setProperty('--grid-n', this.n);
+    // boards-per-row: ceil(sqrt(N)) gives a roughly square grid layout
+    // (e.g. 4 boards → 2×2, 6 boards → 3×2, 9 boards → 3×3).
     document.documentElement.style.setProperty('--board-count', this.regions.length);
+    document.documentElement.style.setProperty(
+      '--boards-per-row', Math.ceil(Math.sqrt(this.regions.length))
+    );
 
     // Create and append containers for each board dynamically.
     const boardsWrapper = document.getElementById('boards-wrapper');
@@ -113,36 +112,21 @@ class StarBattleGame {
       this.renderBoard(`board${idx + 1}`, regionString);
     });
 
-    // Tab mode depends on the board containers created just above, so (like
-    // axis labels) it's applied here per puzzle load rather than at initial
-    // settings setup, where the boards don't exist yet.
-    this._applyTabMode(localStorage.getItem('setting-tab-mode') === 'true');
-
     this.updateVisuals();
 
     this.showToastOnLoad(categoryId, puzzleData.id);
     this.loadProgress({ suppressWinToast: true });
     this.updateControls();
     this.updateUrlParams(categoryId, puzzleData.id);
-    if (!this.isDailyCategory(categoryId)) {
-      this._rememberPuzzlePosition(categoryId, puzzleData.id);
-    }
 
     this.solver = new PuzzleSolver(this);
 
-    // Initialize the timer for this puzzle. A solved puzzle shows its best
-    // recorded time and stays stopped; an unsolved puzzle resumes from any
-    // previously saved progress (or starts fresh at 0 if there is none).
+    // Initialize timer for the puzzle
     this._stopTimer();
-    if (this.isSolved()) {
-      const bestTime = storageManager.getSolveTime(this.currentPuzzleUniqueId) ?? 0;
-      this.timerElapsedTime = bestTime;
-      this._updateTimerDisplay(bestTime);
-    } else {
-      const savedElapsed = storageManager.getElapsedTime(this.currentPuzzleUniqueId) ?? 0;
-      this.timerElapsedTime = savedElapsed;
-      this._updateTimerDisplay(savedElapsed);
-      this.timerStartTime = Date.now() - savedElapsed * 1000;
+    this.timerElapsedTime = 0;
+    this._updateTimerDisplay(0);
+    if (!this.isSolved()) {
+      this.timerStartTime = Date.now();
       this._startTimer();
     }
   }
@@ -283,21 +267,12 @@ class StarBattleGame {
 
     // Map daily labels to slot indices. Expert is restricted to Sundays.
     const dailySlotMap = { beginner: 1, medium: 2, hard: 3, expert: 4 };
-    let puzNum;
-    if (catId === 'daily') {
-      puzNum = (puzzleParam in dailySlotMap)
-        ? dailySlotMap[puzzleParam]
-        : parseInt(puzzleParam, 10) || 1;
-      if (puzNum === 4 && !this.isSunday()) {
-        puzNum = 3;
-      }
-    } else if (puzzleParam !== null) {
-      // Explicit puzzle number in the URL (e.g. a shared link) always wins.
-      puzNum = parseInt(puzzleParam, 10) || 1;
-    } else {
-      // No puzzle specified in the URL — null lets the caller fall back to
-      // the remembered position for this book instead of assuming puzzle 1.
-      puzNum = null;
+    let puzNum = (catId === 'daily' && puzzleParam in dailySlotMap)
+      ? dailySlotMap[puzzleParam]
+      : parseInt(puzzleParam, 10) || 1;
+
+    if (catId === 'daily' && puzNum === 4 && !this.isSunday()) {
+      puzNum = 3;
     }
 
     return { catId, puzNum };
