@@ -26,5 +26,5 @@ class SelfComparator(Comparator):
         for transform_name, (variant_board, variant_sols) in zip(TRANSFORM_NAMES[1:], variants[1:]):
             common = solutions & variant_sols
             if len(common) == 1:
-                self._emit(self._next_puzzle_name(transform_name), flat, variant_board, next(iter(common)))
+                self._emit(self._next_puzzle_name(transform_name), [flat, variant_board], next(iter(common)))
                 break
