@@ -8,7 +8,7 @@
 </head>
 <body>
   <header class="menu-container" aria-label="Puzzle controls">
-    <div class="menu-group">
+    <div class="menu-group menu-group--top">
       <select id="category-select" aria-hidden="true" tabindex="-1"></select>
       <button id="book-picker-btn" aria-haspopup="dialog" aria-label="Choose book">
         <span class="bpb-label">
@@ -17,12 +17,11 @@
         </span>
         <span class="bpb-chevron">▼</span>
       </button>
+      <span id="timer-container" style="display: none;">
+        <span id="timer-display" class="timer-display" aria-label="Solve timer">00:00</span>
+      </span>
       <button id="settings-btn" class="settings-btn" aria-label="Settings" aria-haspopup="dialog">⚙</button>
       <button id="help-btn" class="help-btn" aria-label="Instructions" aria-haspopup="dialog">?</button>
-    </div>
-
-    <div class="menu-group" id="timer-container" style="display: none;">
-      <span id="timer-display" class="timer-display" aria-label="Solve timer">00:00</span>
     </div>
 
     <div class="menu-group puzzle-nav">
@@ -215,6 +214,20 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script type="module" src="script.js"></script>
+
+  <script>
+    // Register the offline service worker. This caches the app shell and
+    // opportunistically caches puzzle data as it's fetched, so the game
+    // keeps working across reloads and app restarts with no network —
+    // e.g. for playing offline on a flight.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((err) => {
+          console.warn('Service worker registration failed:', err);
+        });
+      });
+    }
+  </script>
 
 </body>
 </html>

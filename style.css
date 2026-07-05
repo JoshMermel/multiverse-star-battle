@@ -475,6 +475,24 @@ input[type="number"]::-webkit-inner-spin-button {
     flex-direction: column;
     gap: 15px;
   }
+  /* The top row now always holds book/timer/settings/help together (the
+     timer used to be its own .menu-group, which meant enabling it inserted
+     a whole extra stacked row instead of just widening this one). Tighten
+     things up a bit so all four fit comfortably on narrow phones whether
+     or not the timer is showing. */
+  .menu-group--top {
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  #book-picker-btn {
+    max-width: 130px;
+  }
+  #timer-container .timer-display {
+    padding: 5px 10px;
+    font-size: 1rem;
+    min-width: 56px;
+  }
   .step-btn {
     padding: 12px 20px; /* Larger hit targets for mobile */
   }
