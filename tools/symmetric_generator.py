@@ -455,7 +455,6 @@ class _RectContext:
             return count
 
         elif self.sym_type == 'rot_180':
-            return 2
             if (R + C) % 2 != 0:
                 return None
             is_odd = (R % 2 != 0)
