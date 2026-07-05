@@ -1,9 +1,9 @@
 {
   "groups": {
     "__ungrouped__":    { "icon": "📅" },
-    "8x8":              { "icon": "8×8",  "blurb": "Beginner → Expert",               "desc": "Puzzles by size and difficulty" },
-    "6x6":              { "icon": "6×6",  "blurb": "Beginner → Expert",               "desc": "Puzzles by size and difficulty" },
-    "12x12":            { "icon": "12×12","blurb": "Beginner → Expert",               "desc": "Puzzles by size and difficulty" },
+    "8x8":              { "icon": "8×8",  "blurb": "Beginner → Expert and more",      "desc": "Puzzles by size and difficulty" },
+    "6x6":              { "icon": "6×6",  "blurb": "Beginner → Expert and more",      "desc": "Puzzles by size and difficulty" },
+    "12x12":            { "icon": "12×12","blurb": "Beginner → Expert and more",      "desc": "Puzzles by size and difficulty" },
     "Symmetry":         { "icon": "🔀",   "blurb": "Puzzles with symmetry"},
     "Rectangles":       { "icon": "⊞",    "blurb": "Rectangles and squares"},
     "Playground":       { "icon": "🛝",   "blurb": "Other puzzle ideas"},
