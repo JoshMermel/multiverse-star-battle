@@ -1,6 +1,7 @@
 // Mixin for fetching, parsing, and caching puzzle data.
 
 export function applyPuzzleLoader(GameClass) {
+  console.log("applying");
   const p = GameClass.prototype;
 
   // --- Helpers ---

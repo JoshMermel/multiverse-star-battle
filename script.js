@@ -60,7 +60,7 @@ class StarBattleGame {
         const isArbitraryCsv = catId && !manifestCat && !catId.startsWith('daily_');
 
         if (isArbitraryCsv) {
-          await this.loadCategory(catId, puzNum);
+          await this.loadCategory(catId, puzNum ?? this._getRememberedPuzzleNum(catId));
         } else {
           catSelect.value = manifestCat ? manifestCat.id : this.categories[0].id;
           catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: puzNum } }));
@@ -129,12 +129,21 @@ class StarBattleGame {
       this.renderBoard(`board${idx + 1}`, regionString);
     });
 
+    // Tab mode depends on the board containers created just above, so (like
+    // axis labels) it's applied here per puzzle load rather than at initial
+    // settings setup, where the boards don't exist yet.
+    this._applyTabMode(localStorage.getItem('setting-tab-mode') === 'true');
+
     this.updateVisuals();
 
     this.showToastOnLoad(categoryId, puzzleData.id);
     this.loadProgress({ suppressWinToast: true });
     this.updateControls();
     this.updateUrlParams(categoryId, puzzleData.id);
+    if (!this.isDailyCategory(categoryId)) {
+      console.log("remembering");
+      this._rememberPuzzlePosition(categoryId, puzzleData.id);
+    }
 
     this.solver = new PuzzleSolver(this);
 
