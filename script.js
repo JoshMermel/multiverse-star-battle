@@ -141,7 +141,6 @@ class StarBattleGame {
     this.updateControls();
     this.updateUrlParams(categoryId, puzzleData.id);
     if (!this.isDailyCategory(categoryId)) {
-      console.log("remembering");
       this._rememberPuzzlePosition(categoryId, puzzleData.id);
     }
 
