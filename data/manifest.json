@@ -30,7 +30,7 @@
     {"id": "12x12_hard",          "label": "12x12 Hard",           "group": "12x12"},
     {"id": "12x12_expert",        "label": "12x12 Expert",         "group": "12x12"},
     {"id": "12x12_trio",          "label": "3 Boards",             "group": "12x12"},
-    {"id": "12x12_mono",          "label": "1 Boards",             "group": "12x12"},
+    {"id": "12x12_mono",          "label": "1 Board",             "group": "12x12"},
     {"id": "8x8_symmetric",       "label": "Symmetric",            "group": "Symmetry",         "desc": "Each board has rotational, mirror, or translation symmetry"},
     {"id": "8x8_twin",            "label": "Twin",                 "group": "Symmetry",         "desc": "Both boards are the same, one flipped or rotated"},
     {"id": "8x8_symmetric_twin",  "label": "Symmetric Twin",       "group": "Symmetry",         "desc": "Both Symmetric and Twin at once"},
