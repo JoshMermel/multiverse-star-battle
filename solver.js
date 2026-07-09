@@ -180,50 +180,69 @@ export class PuzzleSolver {
   // --- Hint Dispatch ---
 
   getHint() {
-    const rules = [
-      // Error validation
-      { key: 'checkForErrors',           fn: () => this.hintCheckForErrors() },
-      { key: 'alreadySolved',            fn: () => this.hintAlreadySolved() },
-      { key: 'multiStarRules',           fn: () => this.hintMultiStarRules() },
-      // Beginner
-      { key: 'singleCellRegion',         fn: () => this.hintSingleCellRegion() },
-      { key: 'onlyEmpty',                fn: () => this.hintOnlyEmpty() },
-      { key: 'excludeAdjacency',         fn: () => this.hintExcludeAdjacency() },
-      { key: 'excludeSolvedUnit',        fn: () => this.hintExcludeSolvedUnit() },
-      { key: 'domino',                   fn: () => this.hintDomino() },
-      { key: 'unitSeesTooMuch',          fn: () => this.hintUnitSeesTooMuch() },
-      { key: 'unitRegionSync1',          fn: () => this.hintUnitRegionSync(1) },
-      // Medium
-      { key: 'seesTooMuch2',             fn: () => this.hintSeesTooMuch(2) },
-      { key: 'seesTooMuch3',             fn: () => this.hintSeesTooMuch(3) },
-      { key: 'seesTooMuchAll',           fn: () => this.hintSeesTooMuch(null) },
-      { key: 'unitRegionSync2',          fn: () => this.hintUnitRegionSync(2) },
-      { key: 'symmetryFill',            fn: () => this.hintSymmetryFill() },
-      // Hard
-      { key: 'unitRegionSync3',          fn: () => this.hintUnitRegionSync(3) },
-      { key: 'disjointUnitRegionSync2',  fn: () => this.hintDisjointUnitRegionSync(2) },
-      { key: 'rowColLineSync2',          fn: () => this.hintRowColLineSync(2) },
-      { key: 'manyRegionsSync',          fn: () => this.hintManyRegionsSync() },
-      { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
-      { key: 'symmetryDeduction',        fn: () => this.hintSymmetryDeduction() },
-      // Expert
-      { key: 'disjointUnitRegionSync3',  fn: () => this.hintDisjointUnitRegionSync(3) },
-      { key: 'rowColLineSync3',          fn: () => this.hintRowColLineSync(3) },
-      { key: 'crossBoardPinned2Row',     fn: () => this.hintCrossBoardRegionPinned(2, "Row") },
-      { key: 'crossBoardPinned2Col',     fn: () => this.hintCrossBoardRegionPinned(2, "Col") },
-      { key: 'crossBoardPinned3Row',     fn: () => this.hintCrossBoardRegionPinned(3, "Row") },
-      { key: 'crossBoardPinned3Col',     fn: () => this.hintCrossBoardRegionPinned(3, "Col") },
-      { key: 'partialOverlap',           fn: () => this.hintPartialOverlap() },
-      { key: 'lookaheadHalfSingleBoard', fn: () => this.hintLookaheadHalfSingleBoard() },
-      { key: 'lookaheadHalf',            fn: () => this.hintLookaheadHalf() },
-      { key: 'regionSubsetSync2',        fn: () => this.hintRegionSubsetSync(2) },
-      // Grandmaster
-      { key: 'lookahead1',              fn: () => this.hintLookahead(1) },
-      { key: 'lookahead2',              fn: () => this.hintLookahead(2) },
-      { key: 'lookahead3',              fn: () => this.hintLookahead(3) },
-      { key: 'lookahead8',              fn: () => this.hintLookahead(8) },
-      { key: 'fromSolution',            fn: () => this.hintFromSolution() },
-    ];
+    let rules = [];
+    if (this.starsPerGroup === 1) {
+      rules = [
+        // Error validation
+        { key: 'checkForErrors',           fn: () => this.hintCheckForErrors() },
+        { key: 'alreadySolved',            fn: () => this.hintAlreadySolved() },
+        // Beginner
+        { key: 'singleCellRegion',         fn: () => this.hintSingleCellRegion() },
+        { key: 'onlyEmpty',                fn: () => this.hintOnlyEmpty() },
+        { key: 'excludeAdjacency',         fn: () => this.hintExcludeAdjacency() },
+        { key: 'excludeSolvedUnit',        fn: () => this.hintExcludeSolvedUnit() },
+        { key: 'domino',                   fn: () => this.hintDomino() },
+        { key: 'unitSeesTooMuch',          fn: () => this.hintUnitSeesTooMuch() },
+        { key: 'unitRegionSync1',          fn: () => this.hintUnitRegionSync(1) },
+        // Medium
+        { key: 'seesTooMuch2',             fn: () => this.hintSeesTooMuch(2) },
+        { key: 'seesTooMuch3',             fn: () => this.hintSeesTooMuch(3) },
+        { key: 'seesTooMuchAll',           fn: () => this.hintSeesTooMuch(null) },
+        { key: 'unitRegionSync2',          fn: () => this.hintUnitRegionSync(2) },
+        { key: 'symmetryFill',            fn: () => this.hintSymmetryFill() },
+        // Hard
+        { key: 'unitRegionSync3',          fn: () => this.hintUnitRegionSync(3) },
+        { key: 'disjointUnitRegionSync2',  fn: () => this.hintDisjointUnitRegionSync(2) },
+        { key: 'rowColLineSync2',          fn: () => this.hintRowColLineSync(2) },
+        { key: 'manyRegionsSync',          fn: () => this.hintManyRegionsSync() },
+        { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
+        { key: 'symmetryDeduction',        fn: () => this.hintSymmetryDeduction() },
+        // Expert
+        { key: 'disjointUnitRegionSync3',  fn: () => this.hintDisjointUnitRegionSync(3) },
+        { key: 'rowColLineSync3',          fn: () => this.hintRowColLineSync(3) },
+        { key: 'crossBoardPinned2Row',     fn: () => this.hintCrossBoardRegionPinned(2, "Row") },
+        { key: 'crossBoardPinned2Col',     fn: () => this.hintCrossBoardRegionPinned(2, "Col") },
+        { key: 'crossBoardPinned3Row',     fn: () => this.hintCrossBoardRegionPinned(3, "Row") },
+        { key: 'crossBoardPinned3Col',     fn: () => this.hintCrossBoardRegionPinned(3, "Col") },
+        { key: 'partialOverlap',           fn: () => this.hintPartialOverlap() },
+        { key: 'lookaheadHalfSingleBoard', fn: () => this.hintLookaheadHalfSingleBoard() },
+        { key: 'lookaheadHalf',            fn: () => this.hintLookaheadHalf() },
+        { key: 'regionSubsetSync2',        fn: () => this.hintRegionSubsetSync(2) },
+        // Grandmaster
+        { key: 'lookahead1',              fn: () => this.hintLookahead(1) },
+        { key: 'lookahead2',              fn: () => this.hintLookahead(2) },
+        { key: 'lookahead3',              fn: () => this.hintLookahead(3) },
+        { key: 'lookahead8',              fn: () => this.hintLookahead(8) },
+        { key: 'fromSolution',            fn: () => this.hintFromSolution() },
+      ];
+    } else {
+      rules = [
+        // Error validation
+        { key: 'checkForErrors',           fn: () => this.hintCheckForErrors() },
+        { key: 'alreadySolved',            fn: () => this.hintAlreadySolved() },
+        // Multi-star validated/compatible rules
+        { key: 'onlyEmpty',                fn: () => this.hintOnlyEmpty() },
+        { key: 'excludeAdjacency',         fn: () => this.hintExcludeAdjacency() },
+        { key: 'excludeSolvedUnit',        fn: () => this.hintExcludeSolvedUnit() },
+        { key: 'unitRegionSync1',          fn: () => this.hintUnitRegionSync(1) },
+        { key: 'unitRegionSync2',          fn: () => this.hintUnitRegionSync(2) },
+        { key: 'unitRegionSync3',          fn: () => this.hintUnitRegionSync(3) },
+        { key: 'unitRegionSync4',          fn: () => this.hintUnitRegionSync(4) },
+        { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
+        { key: 'regionSubsetSync2',        fn: () => this.hintRegionSubsetSync(2) },
+        { key: 'fromSolution',            fn: () => this.hintFromSolution() },
+      ];
+    }
 
     // Detect board-state changes; reset cycling when the board changes.
     const stateString = this.game.state.join(',');
@@ -290,13 +309,6 @@ export class PuzzleSolver {
     }];
   }
 
-  // Scaffolding for multi-star specific rules (2-star, 3-star puzzles)
-  hintMultiStarRules() {
-    if (this.starsPerGroup <= 1) return null;
-    // Future 2-star/3-star specific rules will go here.
-    return null;
-  }
-
   // Rule: Check for unsolved regions containing exactly one cell.
   hintSingleCellRegion() {
     const candidates = [];
@@ -317,45 +329,51 @@ export class PuzzleSolver {
     }));
   }
 
-  // Rule: Check for units with no star and exactly one empty cell.
+  // Rule: Check for units where empty cells equal the remaining needed stars.
   hintOnlyEmpty() {
+    const starsPerGroup = this.starsPerGroup || 1;
     const candidates = [];
     for (const unit of this.units) {
       const empty = unit.indices.filter(i => this.vState(i) === CELL.NONE);
-      const hasStar = unit.indices.some(i => this.vState(i) === CELL.STAR);
-      if (hasStar || empty.length !== 1) continue;
-      candidates.push(unit);
+      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
+      const needed = starsPerGroup - stars.length;
+      if (needed > 0 && empty.length === needed) {
+        candidates.push({ unit, empty, stars });
+      }
     }
     if (candidates.length === 0) return null;
-    candidates.sort((a, b) => a.indices[0] - b.indices[0]);
-    return candidates.map(unit => {
-      const empty = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+    candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
+    return candidates.map(({ unit, empty, stars }) => {
       const unitType = unit.label.includes("Row") ? "row"
         : unit.label.includes("Column") ? "column"
         : "region";
+      const description = starsPerGroup === 1
+        ? `Only one spot is left for a star in this ${unitType}.`
+        : `Exactly ${empty.length} spots are left for the remaining stars in this ${unitType}.`;
       return {
-        description: `Only one spot is left for a star in this ${unitType}.`,
+        description,
         highlights: unit.indices
-          .filter(i => i !== empty[0])
+          .filter(i => !empty.includes(i) && !stars.includes(i))
           .map(idx => ({ idx, color: 'hint-source-blue' })),
-        marks: [{ idx: empty[0], color: 'hint-target-green' }],
-        boardIdx: unit.boardIdx
+         marks: empty.map(idx => ({ idx, color: 'hint-target-green' })),
+         boardIdx: unit.boardIdx
       };
     });
   }
 
-  // Rule: Check for units that already have their star placed.
+  // Rule: Check for units that already have all their stars placed.
   hintExcludeSolvedUnit() {
+    const starsPerGroup = this.starsPerGroup || 1;
     const typeDescs = {
-      "Row": "This row already has its star.",
-      "Column": "This column already has its star.",
-      "Region": "This region already has its star.",
+      "Row": starsPerGroup === 1 ? "This row already has its star." : `This row already has its ${starsPerGroup} stars.`,
+      "Column": starsPerGroup === 1 ? "This column already has its star." : `This column already has its ${starsPerGroup} stars.`,
+      "Region": starsPerGroup === 1 ? "This region already has its star." : `This region already has its ${starsPerGroup} stars.`,
     };
     const candidates = [];
     for (const unit of this.units) {
       const stars = unit.indices.filter(idx => this.vState(idx) === CELL.STAR);
       const empty = unit.indices.filter(idx => this.vState(idx) === CELL.NONE);
-      if (stars.length > 0 && empty.length > 0) candidates.push(unit);
+      if (stars.length >= starsPerGroup && empty.length > 0) candidates.push(unit);
     }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.indices[0] - b.indices[0]);
