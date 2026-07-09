@@ -3,30 +3,44 @@ import { CELL } from './constants.js';
 export function applyRules(GameClass) {
   const p = GameClass.prototype;
 
-  // Fill empty cells in the same row, column, or region with dots when a star is placed.
+  // Fill empty cells in the same row, column, or region with dots when stars are placed.
   p._autoFillDots = function (idx) {
     const n = this.n;
     const row = Math.floor(idx / n);
     const col = idx % n;
+    const starsPerGroup = this.starsPerGroup || 1;
 
     const toFill = new Set();
 
-    for (let i = 0; i < n * n; i++) {
-      const r = Math.floor(i / n), c = i % n;
-      if (r === row || c === col) {
-        toFill.add(i);
-      }
+    // 1. Check Row
+    const rowIndices = Array.from({ length: n }, (_, k) => row * n + k);
+    const rowStars = rowIndices.filter(i => this.state[i] === CELL.STAR).length;
+    if (rowStars >= starsPerGroup) {
+      rowIndices.forEach(i => toFill.add(i));
     }
 
-    // Add cells from region on all boards.
+    // 2. Check Column
+    const colIndices = Array.from({ length: n }, (_, k) => k * n + col);
+    const colStars = colIndices.filter(i => this.state[i] === CELL.STAR).length;
+    if (colStars >= starsPerGroup) {
+      colIndices.forEach(i => toFill.add(i));
+    }
+
+    // 3. Check Regions
     this.regions.forEach(regionString => {
       const regionId = regionString[idx];
+      if (regionId === '*') return;
+      const regionIndices = [];
       for (let i = 0; i < n * n; i++) {
-        if (regionString[i] === regionId) toFill.add(i);
+        if (regionString[i] === regionId) regionIndices.push(i);
+      }
+      const regionStars = regionIndices.filter(i => this.state[i] === CELL.STAR).length;
+      if (regionStars >= starsPerGroup) {
+        regionIndices.forEach(i => toFill.add(i));
       }
     });
 
-    // Add adjacent cells (stars cannot touch orthogonally or diagonally).
+    // 4. Always add adjacent cells (stars cannot touch orthogonally or diagonally).
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
         if (dr === 0 && dc === 0) continue;
@@ -80,18 +94,20 @@ export function applyRules(GameClass) {
   p.validate = function ({ suppressWinToast = false, debounceMs = 0 } = {}) {
     const n = this.n;
     const errorIndices = new Set();
+    const starsPerGroup = this.starsPerGroup || 1;
+    const isVoid = (i) => this.voidCells?.has(i);
 
     const checkGroup = (indices) => {
       const stars = indices.filter(i => this.state[i] === CELL.STAR);
-      const allDots = indices.every(i => this.state[i] === CELL.DOT);
-      // Mark group as erroneous if it has multiple stars or is completely dotted.
-      if (stars.length > 1 || allDots) {
+      const playable = indices.filter(i => this.state[i] !== CELL.DOT && !isVoid(i));
+      // Mark group as erroneous if it has more stars than allowed,
+      // or if there are fewer playable cells than the required number of stars.
+      if (stars.length > starsPerGroup || playable.length < starsPerGroup) {
         indices.forEach(i => errorIndices.add(i));
       }
     };
 
 
-    const isVoid = (i) => this.voidCells?.has(i);
     for (let i = 0; i < n; i++) {
       checkGroup(Array.from({ length: n }, (_, k) => i * n + k).filter(i => !isVoid(i)));
       checkGroup(Array.from({ length: n }, (_, k) => k * n + i).filter(i => !isVoid(i)));

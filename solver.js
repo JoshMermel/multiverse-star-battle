@@ -5,6 +5,7 @@ export class PuzzleSolver {
   constructor(game) {
     this.game = game;
     this.n = game.n;
+    this.starsPerGroup = game.starsPerGroup || 1;
 
     // --- NEW: Track void cell indices virtually ---
     this.voidIndices = new Set();
@@ -183,6 +184,7 @@ export class PuzzleSolver {
       // Error validation
       { key: 'checkForErrors',           fn: () => this.hintCheckForErrors() },
       { key: 'alreadySolved',            fn: () => this.hintAlreadySolved() },
+      { key: 'multiStarRules',           fn: () => this.hintMultiStarRules() },
       // Beginner
       { key: 'singleCellRegion',         fn: () => this.hintSingleCellRegion() },
       { key: 'onlyEmpty',                fn: () => this.hintOnlyEmpty() },
@@ -286,6 +288,13 @@ export class PuzzleSolver {
       marks: [],
       boardIdx: undefined
     }];
+  }
+
+  // Scaffolding for multi-star specific rules (2-star, 3-star puzzles)
+  hintMultiStarRules() {
+    if (this.starsPerGroup <= 1) return null;
+    // Future 2-star/3-star specific rules will go here.
+    return null;
   }
 
   // Rule: Check for unsolved regions containing exactly one cell.

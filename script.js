@@ -88,6 +88,8 @@ class StarBattleGame {
 
     this.n = puzzleData.N;
     this.solution = puzzleData.solution;
+    const solutionStars = (this.solution.match(/x/g) || []).length;
+    this.starsPerGroup = Math.round(solutionStars / this.n) || 1;
     this.regions = puzzleData.boards || [puzzleData.board1, puzzleData.board2];
 
     // Build the void set from first board (all boards share the same void mask).
