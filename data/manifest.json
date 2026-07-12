@@ -49,6 +49,7 @@
     {"id": "half_dozen",          "label": "6 Boards",             "group": "Curiosities",      "desc": "Is more better?"},
     {"id": "not_for_humans",      "label": "Not For Humans",       "group": "Curiosities",      "desc": "The absolute hardest puzzles - too hard for human solvers."},
     {"id": "two_stars",           "label": "Two Stars",            "group": "Experimental",     "desc": "Two stars in each row/col/region. Early experiments"},
+    {"id": "two_stars_mono",      "label": "Two Stars Mono",       "group": "Experimental",     "desc": "Two stars in each row/col/region. One board. Early experiments"},
     {"id": "three_stars",         "label": "Three Stars",          "group": "Experimental",     "desc": "Three stars in each row/col/region. Early experiments"},
     {"id": "signoff",             "label": "Signoff",              "group": "Signoff"}
   ]
