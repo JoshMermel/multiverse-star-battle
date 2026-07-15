@@ -209,10 +209,14 @@ export class PuzzleSolver {
 
   // Enumerate every valid way to place a unit's remaining stars: combinations of the
   // unit's empty cells, of the size still needed, that don't touch each other or any
-  // star already placed in the unit (even diagonally), and that don't overload any
-  // OTHER row/column/region past its star quota. Returns null if the unit is already
-  // fully satisfied (no stars needed), or [] if it has no valid completions.
-  _enumerateUnitCompletions(unit) {
+  // star already placed in the unit (even diagonally). Returns null if the unit is
+  // already fully satisfied (no stars needed), or [] if it has no valid completions.
+  //
+  // When `strong` is true (the default), completions that would overload some OTHER
+  // row/column/region past its star quota are also filtered out. When false, only the
+  // adjacency rule above is applied — a cheaper but weaker over-approximation that
+  // ignores the rest of the board.
+  _enumerateUnitCompletions(unit, strong = true) {
     const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
     const needed = this.starsPerGroup - stars.length;
     if (needed <= 0) return null;
@@ -228,6 +232,7 @@ export class PuzzleSolver {
           if (this._cellsAdjacent(combo[i], combo[j])) return false;
         }
       }
+      if (!strong) return true;
 
       // Capacity: this combo must not push any OTHER row/column/region over its star
       // quota. (The unit being solved is exact by construction, so it's skipped here.)
@@ -298,23 +303,43 @@ export class PuzzleSolver {
     } else if (this.starsPerGroup === 2) {
       rules = [
         // Error validation
-        { key: 'checkForErrors',           fn: () => this.hintCheckForErrors() },
-        { key: 'alreadySolved',            fn: () => this.hintAlreadySolved() },
-        // Multi-star validated/compatible rules
-        { key: 'onlyEmpty',                fn: () => this.hintOnlyEmpty() },
-        { key: 'excludeAdjacency',         fn: () => this.hintExcludeAdjacency() },
-        { key: 'excludeSolvedUnit',        fn: () => this.hintExcludeSolvedUnit() },
-        // 2★-specific placement-enumeration rules
-        { key: 'unitPlacementForced',      fn: () => this.hintUnitPlacementForced() },
-        { key: 'externalDotFromPlacements',fn: () => this.hintExternalDotFromPlacements() },
-        { key: 'unitRegionSyncMulti1',     fn: () => this.hintUnitRegionSyncMulti(1) },
-        { key: 'unitRegionSyncMulti2',     fn: () => this.hintUnitRegionSyncMulti(2) },
-        { key: 'unitRegionSyncMulti3',     fn: () => this.hintUnitRegionSyncMulti(3) },
-        { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
-        { key: 'regionSubsetSync2',        fn: () => this.hintRegionSubsetSync(2) },
-        { key: 'fromSolution',            fn: () => this.hintFromSolution() },
+        { key: 'checkForErrors',                 fn: () => this.hintCheckForErrors() },
+        { key: 'alreadySolved',                  fn: () => this.hintAlreadySolved() },
+        // Beginner
+        { key: 'onlyEmpty',                      fn: () => this.hintOnlyEmpty() },
+        { key: 'excludeAdjacency',               fn: () => this.hintExcludeAdjacency() },
+        { key: 'excludeSolvedUnit',              fn: () => this.hintExcludeSolvedUnit() },
+        { key: 'unitPlacementForcedWeakAll',     fn: () => this.hintUnitPlacementForced(false, 'all_stars') },
+        { key: 'unitPlacementForcedWeakAny',     fn: () => this.hintUnitPlacementForced(false, 'any_star') },
+        { key: 'unitPlacementForcedWeakDots',    fn: () => this.hintUnitPlacementForced(false, 'dots') },
+        { key: 'externalDotFromPlacementsWeak',  fn: () => this.hintExternalDotFromPlacements(false) },
+        { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },
+        // Medium
+        { key: 'unitRegionSyncMulti2',           fn: () => this.hintUnitRegionSyncMulti(2) },
+        { key: 'unitPlacementForcedStrongAll',   fn: () => this.hintUnitPlacementForced(true, 'all_stars') },
+        // Hard
+        { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced(true, 'any_star') },
+        { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced(true, 'dots') },
+        { key: 'externalDotFromPlacementsStrong',fn: () => this.hintExternalDotFromPlacements(true) },
+        { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
+        { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
+        { key: 'unitRegionSyncMulti4Plus',       fn: () => {
+            const candidates = [];
+            for (let n = 4; n < this.n; n++) {
+              for (const axis of ["Row", "Column"]) {
+                candidates.push(...this._hintMultiWindowRegionSyncAll(n, axis));
+              }
+            }
+            return candidates.length > 0 ? candidates : null;
+          }
+        },
+        // Expert
+        { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
+        { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
+        { key: 'fromSolution',                  fn: () => this.hintFromSolution() },
       ];
     } else {
+      // 3★ and 4★+ puzzles use general rules
       rules = [
         // Error validation
         { key: 'checkForErrors',           fn: () => this.hintCheckForErrors() },
@@ -341,7 +366,6 @@ export class PuzzleSolver {
       const hints = fn();
       if (!hints || hints.length === 0) continue;
 
-      // If a different (earlier) rule fires, reset the cycling index and re-shuffle.
       if (key !== this.currentHintType) {
         this.currentHintType  = key;
         this.currentHintIndex = 0;
@@ -497,21 +521,26 @@ export class PuzzleSolver {
     }));
   }
 
-  // --- 2★-specific rules ---
+  // --- 2★/3★-specific rules ---
   // These rely on enumerating every valid way to complete a still-unsatisfied unit's
-  // stars (respecting non-adjacency), which is only cheap enough to brute-force when
-  // a unit needs at most 2 stars.
+  // stars (respecting non-adjacency), which is only cheap enough to brute-force through
+  // 3★ (i.e. at most 3 stars still needed per unit). Each comes in a weak and strong
+  // form (see _enumerateUnitCompletions): weak only rules out completions that touch
+  // each other or an existing star; strong also rules out completions that would
+  // overload some other row/column/region. Strong finds everything weak does, plus
+  // more, but its reasoning is a bit more involved, so weak is offered as the easier
+  // hint first.
 
-  // Rule (2★): For a row/column/region that has no stars placed yet, enumerate every
-  // valid way to place its 2 non-touching stars inside it. A cell present in every
-  // valid placement must be a star; a cell present in none of them must be a dot.
-  hintUnitPlacementForced() {
+  // Rule (2★/3★): For a row/column/region that has no stars placed yet, enumerate every
+  // valid way to place its starsPerGroup non-touching stars inside it. A cell present in
+  // every valid placement must be a star; a cell present in none of them must be a dot.
+  hintUnitPlacementForced(strong = true) {
     const candidates = [];
     for (const unit of this.units) {
       const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
       if (stars.length > 0) continue; // only consider units with no stars placed yet
 
-      const combos = this._enumerateUnitCompletions(unit);
+      const combos = this._enumerateUnitCompletions(unit, strong);
       if (!combos || combos.length === 0) continue;
 
       const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
@@ -525,15 +554,17 @@ export class PuzzleSolver {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
 
+    const caveat = strong ? ", also accounting for other rows/columns/regions' star limits," : "";
     const hints = [];
     for (const { unit, forcedStars, forcedDots } of candidates) {
       const unitType = unit.label.includes("Row") ? "row"
         : unit.label.includes("Column") ? "column"
         : "region";
+      const starsWord = `${this.starsPerGroup} non-touching star${this.starsPerGroup === 1 ? '' : 's'}`;
 
       if (forcedStars.length > 0) {
         hints.push({
-          description: `Every way to place this ${unitType}'s 2 non-touching stars includes the marked cell, so it must be a star.`,
+          description: `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it must be a star.`,
           highlights: unit.indices
             .filter(i => this.vState(i) === CELL.NONE && !forcedStars.includes(i))
             .map(idx => ({ idx, color: 'hint-source-blue' })),
@@ -543,7 +574,7 @@ export class PuzzleSolver {
       }
       if (forcedDots.length > 0) {
         hints.push({
-          description: `No valid way to place this ${unitType}'s 2 non-touching stars uses the marked cell, so it must be a dot.`,
+          description: `No valid way to place this ${unitType}'s ${starsWord}${caveat} uses the marked cell, so it must be a dot.`,
           highlights: unit.indices
             .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
             .map(idx => ({ idx, color: 'hint-source-blue' })),
@@ -555,14 +586,14 @@ export class PuzzleSolver {
     return hints;
   }
 
-  // Rule (2★): For each unsatisfied row/column/region, enumerate every valid way to
+  // Rule (2★/3★): For each unsatisfied row/column/region, enumerate every valid way to
   // place its remaining star(s). If some cell outside the unit is adjacent (including
   // diagonally) to a star in EVERY one of those placements, then whichever placement
   // turns out to be true, that cell would end up touching a star — so it must be a dot.
-  hintExternalDotFromPlacements() {
+  hintExternalDotFromPlacements(strong = true) {
     const candidates = [];
     for (const unit of this.units) {
-      const combos = this._enumerateUnitCompletions(unit);
+      const combos = this._enumerateUnitCompletions(unit, strong);
       if (!combos || combos.length === 0) continue;
 
       const unitSet = new Set(unit.indices);
@@ -586,12 +617,13 @@ export class PuzzleSolver {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
 
+    const caveat = strong ? " (accounting for other rows/columns/regions' star limits)" : "";
     return candidates.map(({ unit, targets }) => {
       const unitType = unit.label.includes("Row") ? "row"
         : unit.label.includes("Column") ? "column"
         : "region";
       return {
-        description: `Wherever this ${unitType}'s remaining star(s) end up, one will always touch the marked cell(s), so they must be dots.`,
+        description: `Wherever this ${unitType}'s remaining star(s) end up${caveat}, one will always touch the marked cell(s), so they must be dots.`,
         highlights: unit.indices
           .filter(i => this.vState(i) === CELL.NONE)
           .map(idx => ({ idx, color: 'hint-source-blue' })),
@@ -599,6 +631,93 @@ export class PuzzleSolver {
         boardIdx: unit.boardIdx
       };
     });
+  }
+
+  hintDisjointUnitRegionSyncMulti(N) {
+    const candidates = [];
+    // Finds combinations of N rows or columns that are not necessarily adjacent
+    for (const axis of ["Row", "Column"]) {
+      const axisIndices = this.axisIndices[axis];
+      const starlessUnitIndices = Array.from({length: this.n}, (_, i) => i)
+        .filter(u => !axisIndices[u].some(i => this.vState(i) === CELL.STAR));
+      
+      for (const combo of this.getCombinations(starlessUnitIndices, N)) {
+        const unitCombo = combo.map(u => axisIndices[u]);
+        for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+          const trapped = this._hintMultiRegionsTrappedInUnits(unitCombo, bIdx, axis);
+          if (trapped) candidates.push(trapped);
+          const covered = this._hintMultiUnitsCoveredByRegions(unitCombo, bIdx, axis);
+          if (covered) candidates.push(covered);
+        }
+      }
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.highlights[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? 0));
+    return candidates;
+  }
+
+  hintUnitPlacementForced(strong = true, filterCondition = null) {
+    const candidates = [];
+    for (const unit of this.units) {
+      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
+      if (stars.length > 0) continue;
+
+      const combos = this._enumerateUnitCompletions(unit, strong);
+      if (!combos || combos.length === 0) continue;
+
+      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+      let forcedStars = avail.filter(cell => combos.every(combo => combo.includes(cell)));
+      let forcedDots  = avail.filter(cell => !combos.some(combo => combo.includes(cell)));
+
+      const needed = this.starsPerGroup - stars.length;
+      
+      if (filterCondition === 'all_stars') {
+        if (forcedStars.length !== needed) forcedStars = [];
+        forcedDots = [];
+      } else if (filterCondition === 'any_star') {
+        if (forcedStars.length === 0 || forcedStars.length === needed) forcedStars = [];
+        forcedDots = [];
+      } else if (filterCondition === 'dots') {
+        forcedStars = [];
+      }
+
+      if (forcedStars.length > 0 || forcedDots.length > 0) {
+        candidates.push({ unit, forcedStars, forcedDots });
+      }
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
+
+    const caveat = strong ? ", also accounting for other rows/columns/regions' star limits," : "";
+    const hints = [];
+    for (const { unit, forcedStars, forcedDots } of candidates) {
+      const unitType = unit.label.includes("Row") ? "row"
+        : unit.label.includes("Column") ? "column"
+        : "region";
+      const starsWord = `${this.starsPerGroup} non-touching star${this.starsPerGroup === 1 ? '' : 's'}`;
+
+      if (forcedStars.length > 0) {
+        hints.push({
+          description: `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it must be a star.`,
+          highlights: unit.indices
+            .filter(i => this.vState(i) === CELL.NONE && !forcedStars.includes(i))
+            .map(idx => ({ idx, color: 'hint-source-blue' })),
+          marks: forcedStars.map(idx => ({ idx, color: 'hint-target-green' })),
+          boardIdx: unit.boardIdx
+        });
+      }
+      if (forcedDots.length > 0) {
+        hints.push({
+          description: `No valid way to place this ${unitType}'s ${starsWord}${caveat} uses the marked cell, so it must be a dot.`,
+          highlights: unit.indices
+            .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
+            .map(idx => ({ idx, color: 'hint-source-blue' })),
+          marks: forcedDots.map(idx => ({ idx, color: 'hint-target-yellow' })),
+          boardIdx: unit.boardIdx
+        });
+      }
+    }
+    return hints;
   }
 
   // Rule: Check for domino patterns in unsolved regions.
@@ -798,7 +917,7 @@ export class PuzzleSolver {
     return candidates;
   }
 
-  // --- 2★-generalized row/col <-> region sync ---
+  // --- 2★/3★-generalized row/col <-> region sync ---
   // These mirror _hintUnitsCoveredByRegions / _hintRegionsTrappedInUnits above, but
   // work off each region's remaining star COUNT (via getRegionsNeedingStars) rather
   // than just whether it has any star at all, so they stay correct when a region or
@@ -891,7 +1010,7 @@ export class PuzzleSolver {
     };
   }
 
-  // Find all 2★-generalized sync hints for a window of N adjacent rows/cols.
+  // Find all 2★/3★-generalized sync hints for a window of N adjacent rows/cols.
   _hintMultiWindowRegionSyncAll(N, axis) {
     const n = this.n;
     const axisIndices = this.axisIndices[axis];
@@ -912,7 +1031,7 @@ export class PuzzleSolver {
     return candidates;
   }
 
-  // Rule (2★): Check N adjacent rows/columns synchronized with the regions they touch,
+  // Rule (2★/3★): Check N adjacent rows/columns synchronized with the regions they touch,
   // accounting for units and regions that can hold more than 1 star.
   hintUnitRegionSyncMulti(N) {
     const candidates = [];
