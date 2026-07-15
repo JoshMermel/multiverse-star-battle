@@ -333,6 +333,7 @@ export class PuzzleSolver {
             return candidates.length > 0 ? candidates : null;
           }
         },
+        { key: 'unitCompletionSatisfiesOtherUnit', fn: () => this.hintUnitCompletionSatisfiesOtherUnit() },
         // Expert
         { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
         { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
@@ -534,59 +535,6 @@ export class PuzzleSolver {
   // Rule (2★/3★): For a row/column/region that has no stars placed yet, enumerate every
   // valid way to place its starsPerGroup non-touching stars inside it. A cell present in
   // every valid placement must be a star; a cell present in none of them must be a dot.
-  hintUnitPlacementForced(strong = true) {
-    const candidates = [];
-    for (const unit of this.units) {
-      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
-      if (stars.length > 0) continue; // only consider units with no stars placed yet
-
-      const combos = this._enumerateUnitCompletions(unit, strong);
-      if (!combos || combos.length === 0) continue;
-
-      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
-      const forcedStars = avail.filter(cell => combos.every(combo => combo.includes(cell)));
-      const forcedDots  = avail.filter(cell => !combos.some(combo => combo.includes(cell)));
-
-      if (forcedStars.length > 0 || forcedDots.length > 0) {
-        candidates.push({ unit, forcedStars, forcedDots });
-      }
-    }
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
-
-    const caveat = strong ? ", also accounting for other rows/columns/regions' star limits," : "";
-    const hints = [];
-    for (const { unit, forcedStars, forcedDots } of candidates) {
-      const unitType = unit.label.includes("Row") ? "row"
-        : unit.label.includes("Column") ? "column"
-        : "region";
-      const starsWord = `${this.starsPerGroup} non-touching star${this.starsPerGroup === 1 ? '' : 's'}`;
-
-      if (forcedStars.length > 0) {
-        hints.push({
-          description: `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it must be a star.`,
-          highlights: unit.indices
-            .filter(i => this.vState(i) === CELL.NONE && !forcedStars.includes(i))
-            .map(idx => ({ idx, color: 'hint-source-blue' })),
-          marks: forcedStars.map(idx => ({ idx, color: 'hint-target-green' })),
-          boardIdx: unit.boardIdx
-        });
-      }
-      if (forcedDots.length > 0) {
-        hints.push({
-          description: `No valid way to place this ${unitType}'s ${starsWord}${caveat} uses the marked cell, so it must be a dot.`,
-          highlights: unit.indices
-            .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
-            .map(idx => ({ idx, color: 'hint-source-blue' })),
-          marks: forcedDots.map(idx => ({ idx, color: 'hint-target-yellow' })),
-          boardIdx: unit.boardIdx
-        });
-      }
-    }
-    return hints;
-  }
-
-  // Rule (2★/3★): For each unsatisfied row/column/region, enumerate every valid way to
   // place its remaining star(s). If some cell outside the unit is adjacent (including
   // diagonally) to a star in EVERY one of those placements, then whichever placement
   // turns out to be true, that cell would end up touching a star — so it must be a dot.
@@ -631,6 +579,78 @@ export class PuzzleSolver {
         boardIdx: unit.boardIdx
       };
     });
+  }
+
+  // Row/Column/Region, based on a unit's label. Rows and columns never target each
+  // other or themselves in hintUnitCompletionSatisfiesOtherUnit -- only cross-type
+  // pairings (row<->region, column<->region, row<->column) are checked.
+  _unitKind(unit) {
+    if (unit.label.startsWith("Row")) return "row";
+    if (unit.label.startsWith("Column")) return "column";
+    return "region";
+  }
+
+  // Rule (2★/3★): For a row/column/region with missing stars, enumerate every valid
+  // way to place its remaining stars (strong -- i.e. also respecting other units'
+  // limits). If EVERY one of those completions exactly fills up some OTHER row/column/
+  // region (of a different type), then that other unit's entire remaining quota is
+  // guaranteed to come from this unit no matter which completion turns out to be true
+  // -- so any of its other empty cells (outside this unit) must be dots. Checked in
+  // both directions: a region's placements can force a row or column, and a row's or
+  // column's placements can force a region (or the other axis).
+  hintUnitCompletionSatisfiesOtherUnit() {
+    const candidates = [];
+    for (const unit of this.units) {
+      const combos = this._enumerateUnitCompletions(unit, true);
+      if (!combos || combos.length === 0) continue;
+
+      const sourceKind = this._unitKind(unit);
+      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+
+      // Other units (of a different type) that share at least one candidate cell
+      // with this one -- only these could possibly be "always satisfied".
+      const seenLabels = new Set();
+      const others = [];
+      for (const idx of avail) {
+        for (const otherUnit of this._unitsByCell[idx]) {
+          if (otherUnit.label === unit.label) continue;
+          if (this._unitKind(otherUnit) === sourceKind) continue;
+          if (seenLabels.has(otherUnit.label)) continue;
+          seenLabels.add(otherUnit.label);
+          others.push(otherUnit);
+        }
+      }
+
+      for (const other of others) {
+        const otherStars = other.indices.filter(i => this.vState(i) === CELL.STAR).length;
+        const otherNeeded = this.starsPerGroup - otherStars;
+        if (otherNeeded <= 0) continue;
+
+        const otherSet = new Set(other.indices);
+        const allSatisfy = combos.every(combo =>
+          combo.filter(c => otherSet.has(c)).length === otherNeeded
+        );
+        if (!allSatisfy) continue;
+
+        const unitSet = new Set(unit.indices);
+        const targets = other.indices.filter(idx => !unitSet.has(idx) && this.vState(idx) === CELL.NONE);
+        if (targets.length > 0) {
+          candidates.push({ unit, other, targets });
+        }
+      }
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
+
+    return candidates.map(({ unit, other, targets }) => ({
+      description: `Every valid way to place this ${this._unitKind(unit)}'s remaining star(s) completely fills up this ${this._unitKind(other)} too, so the rest of that ${this._unitKind(other)} must be dots.`,
+      highlights: unit.indices
+        .filter(i => this.vState(i) === CELL.NONE)
+        .map(idx => ({ idx, color: 'hint-source-blue' })),
+      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
+      boardIdx: unit.boardIdx ?? other.boardIdx
+    }));
   }
 
   hintDisjointUnitRegionSyncMulti(N) {
