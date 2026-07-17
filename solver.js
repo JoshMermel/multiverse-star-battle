@@ -216,9 +216,15 @@ export class PuzzleSolver {
   // row/column/region past its star quota are also filtered out. When false, only the
   // adjacency rule above is applied — a cheaper but weaker over-approximation that
   // ignores the rest of the board.
-  _enumerateUnitCompletions(unit, strong = true) {
+  //
+  // `quota` defaults to starsPerGroup (the normal case: how many stars a real unit
+  // needs), but can be overridden for synthetic combined units -- e.g. a pair of
+  // adjacent rows needs 2 * starsPerGroup in total. The capacity check below still
+  // enforces starsPerGroup on any OTHER real unit a combo touches (including the two
+  // individual rows/cols/regions making up a pair), since that's never overridden.
+  _enumerateUnitCompletions(unit, strong = true, quota = this.starsPerGroup) {
     const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
-    const needed = this.starsPerGroup - stars.length;
+    const needed = quota - stars.length;
     if (needed <= 0) return null;
 
     const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
@@ -335,8 +341,13 @@ export class PuzzleSolver {
         },
         { key: 'unitCompletionSatisfiesOtherUnit', fn: () => this.hintUnitCompletionSatisfiesOtherUnit() },
         // Expert
+        { key: 'pairPlacementForcedAll',         fn: () => this.hintPairPlacementForced(true, 'all_stars') },
+        { key: 'pairPlacementForcedAny',         fn: () => this.hintPairPlacementForced(true, 'any_star') },
+        { key: 'pairPlacementForcedDots',        fn: () => this.hintPairPlacementForced(true, 'dots') },
         { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
         { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
+        { key: 'regionSubsetSync3',              fn: () => this.hintRegionSubsetSync(3) },
+        { key: 'regionSubsetSync4',              fn: () => this.hintRegionSubsetSync(4) },
         { key: 'fromSolution',                  fn: () => this.hintFromSolution() },
       ];
     } else {
@@ -729,6 +740,114 @@ export class PuzzleSolver {
       if (forcedDots.length > 0) {
         hints.push({
           description: `No valid way to place this ${unitType}'s ${starsWord}${caveat} uses the marked cell, so it must be a dot.`,
+          highlights: unit.indices
+            .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
+            .map(idx => ({ idx, color: 'hint-source-blue' })),
+          marks: forcedDots.map(idx => ({ idx, color: 'hint-target-yellow' })),
+          boardIdx: unit.boardIdx
+        });
+      }
+    }
+    return hints;
+  }
+
+  // Build synthetic "pair" units: adjacent row pairs, adjacent column pairs, and every
+  // pair of regions from the same board. Used by hintPairPlacementForced, which applies
+  // the same placement-enumeration reasoning as hintUnitPlacementForced but to a
+  // combined pair of units at once (needing 2 * starsPerGroup stars total) rather than
+  // a single one.
+  _buildPairUnits() {
+    const pairs = [];
+
+    for (let r = 0; r < this.n - 1; r++) {
+      pairs.push({
+        indices: [...this.axisIndices.Row[r], ...this.axisIndices.Row[r + 1]],
+        label: `Rows ${r + 1}-${r + 2}`,
+        boardIdx: undefined
+      });
+    }
+
+    for (let c = 0; c < this.n - 1; c++) {
+      pairs.push({
+        indices: [...this.axisIndices.Column[c], ...this.axisIndices.Column[c + 1]],
+        label: `Columns ${String.fromCharCode(65 + c)}-${String.fromCharCode(66 + c)}`,
+        boardIdx: undefined
+      });
+    }
+
+    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+      const regionsOnBoard = this.units.filter(u => u.label.includes("Region") && u.boardIdx === bIdx);
+      for (const [a, b] of this.getCombinations(regionsOnBoard, 2)) {
+        pairs.push({
+          indices: [...a.indices, ...b.indices],
+          label: `${a.label} + ${b.label}`,
+          boardIdx: bIdx
+        });
+      }
+    }
+
+    return pairs;
+  }
+
+  // Rule (2★): Same idea as hintUnitPlacementForced, but applied to a pair of adjacent
+  // rows, a pair of adjacent columns, or a pair of regions from the same board, treated
+  // as one combined unit needing 2 * starsPerGroup non-touching stars in total. A cell
+  // present in every valid completion of the pair must be a star; a cell present in
+  // none of them must be a dot -- exactly as before, just over a bigger combined space.
+  hintPairPlacementForced(strong = true, filterCondition = null) {
+    const quota = 2 * this.starsPerGroup;
+    const candidates = [];
+    for (const unit of this._buildPairUnits()) {
+      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
+      if (stars.length > 0) continue;
+
+      const combos = this._enumerateUnitCompletions(unit, strong, quota);
+      if (!combos || combos.length === 0) continue;
+
+      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+      let forcedStars = avail.filter(cell => combos.every(combo => combo.includes(cell)));
+      let forcedDots  = avail.filter(cell => !combos.some(combo => combo.includes(cell)));
+
+      const needed = quota - stars.length;
+
+      if (filterCondition === 'all_stars') {
+        if (forcedStars.length !== needed) forcedStars = [];
+        forcedDots = [];
+      } else if (filterCondition === 'any_star') {
+        if (forcedStars.length === 0 || forcedStars.length === needed) forcedStars = [];
+        forcedDots = [];
+      } else if (filterCondition === 'dots') {
+        forcedStars = [];
+      }
+
+      if (forcedStars.length > 0 || forcedDots.length > 0) {
+        candidates.push({ unit, forcedStars, forcedDots });
+      }
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
+
+    const caveat = strong ? ", also accounting for other rows/columns/regions' star limits," : "";
+    const hints = [];
+    for (const { unit, forcedStars, forcedDots } of candidates) {
+      const pairType = unit.label.startsWith("Rows") ? "pair of rows"
+        : unit.label.startsWith("Columns") ? "pair of columns"
+        : "pair of regions";
+      const starsWord = `${quota} non-touching stars`;
+
+      if (forcedStars.length > 0) {
+        hints.push({
+          description: `Every way to place this ${pairType}' ${starsWord}${caveat} includes the marked cell, so it must be a star.`,
+          highlights: unit.indices
+            .filter(i => this.vState(i) === CELL.NONE && !forcedStars.includes(i))
+            .map(idx => ({ idx, color: 'hint-source-blue' })),
+          marks: forcedStars.map(idx => ({ idx, color: 'hint-target-green' })),
+          boardIdx: unit.boardIdx
+        });
+      }
+      if (forcedDots.length > 0) {
+        hints.push({
+          description: `No valid way to place this ${pairType}' ${starsWord}${caveat} uses the marked cell, so it must be a dot.`,
           highlights: unit.indices
             .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
             .map(idx => ({ idx, color: 'hint-source-blue' })),
@@ -1204,19 +1323,39 @@ export class PuzzleSolver {
   }
 
   // Rule: Identify subsets where regions are nested within others.
-  hintRegionSubsetSync(N) {
+  // Build region combos (per board) whose TOTAL remaining star need sums to exactly K.
+  // Unlike a plain "N regions" combo (which implicitly assumed 1 star per region),
+  // this also picks up partially-solved regions (e.g. a region needing exactly 1 more
+  // star) and lets different-sized combos be compared against each other -- e.g. one
+  // region needing 2 stars vs two different regions each needing 1.
+  _buildRegionNeedComboSets(K) {
     const comboSets = [];
 
     for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
-      for (const combo of this.getCombinations(this.getUnsolvedRegions(bIdx), N)) {
-        comboSets.push({
-          label: `Board ${bIdx + 1} Combo (${combo.map(r => r.label.split(' ').pop()).join(',')})`,
-          indices: new Set(combo.flatMap(r => r.indices.filter(i => this.vState(i) !== CELL.DOT))),
-          boardIdx: bIdx,
-          regions: combo
-        });
+      const needing = this.getRegionsNeedingStars(bIdx);
+
+      // A combo's size can never exceed K, since every member needs >= 1 star.
+      for (let size = 1; size <= K; size++) {
+        for (const combo of this.getCombinations(needing, size)) {
+          const total = combo.reduce((sum, e) => sum + e.remaining, 0);
+          if (total !== K) continue;
+
+          const regions = combo.map(e => e.region);
+          comboSets.push({
+            label: `Board ${bIdx + 1} Combo (${regions.map(r => r.label.split(' ').pop()).join(',')})`,
+            indices: new Set(regions.flatMap(r => r.indices.filter(i => this.vState(i) === CELL.NONE))),
+            boardIdx: bIdx,
+            regions
+          });
+        }
       }
     }
+
+    return comboSets;
+  }
+
+  hintRegionSubsetSync(K) {
+    const comboSets = this._buildRegionNeedComboSets(K);
 
     const candidates = [];
     for (let i = 0; i < comboSets.length; i++) {
@@ -1232,12 +1371,13 @@ export class PuzzleSolver {
         const targets = Array.from(setB.indices)
           .filter(idx => !setA.indices.has(idx) && this.vState(idx) === CELL.NONE);
 
-        if (targets.length > 0) candidates.push({ setA, targets });
+        if (targets.length > 0) candidates.push({ setA, setB, targets });
       }
     }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
-    return candidates.map(({ setA, targets }) => this.formatSubsetHint(setA.regions, targets, setA.boardIdx));
+    return candidates.map(({ setA, setB, targets }) =>
+      this.formatSubsetHint(setA.regions, setB.regions, targets, setA.boardIdx));
   }
 
   // Rule: Check cross-board pinned regions.
@@ -1756,15 +1896,16 @@ export class PuzzleSolver {
 
   // --- Hint Formatters ---
 
-  formatSubsetHint(sourceRegs, targets, bIdx) {
+  formatSubsetHint(sourceRegs, targetRegs, targets, bIdx) {
     const targetSet = new Set(targets);
     const sourceHighlights = sourceRegs.flatMap(r =>
       r.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
     ).map(idx => ({ idx, color: 'hint-source-blue' }));
 
-    const description = sourceRegs.length === 1
-      ? `One region is a subset of another.`
-      : `${sourceRegs.length} regions are a subset of ${sourceRegs.length} other regions.`;
+    const sourcePhrase = sourceRegs.length === 1 ? "One region" : `A group of ${sourceRegs.length} regions`;
+    const targetPhrase = targetRegs.length === 1 ? "another region" : `a group of ${targetRegs.length} other regions`;
+    const description = `${sourcePhrase} needs exactly as many stars as ${targetPhrase}, and all of its candidate cells `
+      + `fall inside theirs too -- so the rest of ${targetRegs.length === 1 ? "that region" : "those regions"} must be dots.`;
 
     return {
       boardIdx: undefined,
