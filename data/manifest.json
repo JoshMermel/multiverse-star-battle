@@ -8,6 +8,7 @@
     "Rectangles":       { "icon": "⊞",    "blurb": "Rectangles and squares"},
     "Playground":       { "icon": "🛝",   "blurb": "Other puzzle ideas"},
     "Curiosities":      { "icon": "🤔",   "blurb": "Interesting to look at, less fun to solve"},
+    "Two Stars":        { "icon": "⭐⭐", "blurb": "Two stars in each row, column, and region", "desc": "Still experimental" },
     "Signoff":          { "icon": "💌",   "blurb": "A puzzle-y message from the creator"},
     "Experimental":     { "icon": "🧪",   "blurb": "Work in progress"}
   },
@@ -48,8 +49,12 @@
     {"id": "giant_mono",          "label": "Giant mono",           "group": "Curiosities",      "desc": "Too big - desktop only"},
     {"id": "half_dozen",          "label": "6 Boards",             "group": "Curiosities",      "desc": "Is more better?"},
     {"id": "not_for_humans",      "label": "Not For Humans",       "group": "Curiosities",      "desc": "The absolute hardest puzzles - too hard for human solvers."},
-    {"id": "two_stars",           "label": "Two Stars",            "group": "Experimental",     "desc": "Two stars in each row/col/region. Early experiments"},
-    {"id": "two_stars_mono",      "label": "Two Stars Mono",       "group": "Experimental",     "desc": "Two stars in each row/col/region. One board. Early experiments"},
+    {"id": "two_stars_beginner",  "label": "Beginner",             "group": "Two Stars"},
+    {"id": "two_stars_medium",    "label": "Medium",               "group": "Two Stars"},
+    {"id": "two_stars_hard",      "label": "Hard",                 "group": "Two Stars"},
+    {"id": "two_stars_expert",    "label": "Expert",               "group": "Two Stars"},
+    {"id": "two_stars_unsolved",  "label": "Unsolved",             "group": "Two Stars"},
+    {"id": "two_stars_mono",      "label": "One Board",            "group": "Two Stars"},
     {"id": "three_stars",         "label": "Three Stars",          "group": "Experimental",     "desc": "Three stars in each row/col/region. Early experiments"},
     {"id": "signoff",             "label": "Signoff",              "group": "Signoff"}
   ]
