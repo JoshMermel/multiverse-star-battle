@@ -329,6 +329,7 @@ export class PuzzleSolver {
         { key: 'externalDotFromPlacementsStrong',fn: () => this.hintExternalDotFromPlacements(true) },
         { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
         { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
+        { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
         { key: 'unitRegionSyncMulti4Plus',       fn: () => {
             const candidates = [];
             for (let n = 4; n < this.n; n++) {
@@ -341,13 +342,16 @@ export class PuzzleSolver {
         },
         { key: 'unitCompletionSatisfiesOtherUnit', fn: () => this.hintUnitCompletionSatisfiesOtherUnit() },
         // Expert
-        { key: 'pairPlacementForcedAll',         fn: () => this.hintPairPlacementForced(true, 'all_stars') },
-        { key: 'pairPlacementForcedAny',         fn: () => this.hintPairPlacementForced(true, 'any_star') },
-        { key: 'pairPlacementForcedDots',        fn: () => this.hintPairPlacementForced(true, 'dots') },
-        { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
-        { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
         { key: 'regionSubsetSync3',              fn: () => this.hintRegionSubsetSync(3) },
         { key: 'regionSubsetSync4',              fn: () => this.hintRegionSubsetSync(4) },
+        { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
+        { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
+        { key: 'lookaheadDots',                  fn: () => this.hintLookaheadDots() },
+        // Grandmaster
+        { key: 'lookaheadLoop1',                 fn: () => this.hintLookahead(1) },
+        { key: 'lookaheadLoop2',                 fn: () => this.hintLookahead(2) },
+        { key: 'lookaheadLoop3',                 fn: () => this.hintLookahead(3) },
+        { key: 'lookaheadLoop8',                 fn: () => this.hintLookahead(8) },
         { key: 'fromSolution',                  fn: () => this.hintFromSolution() },
       ];
     } else {
@@ -740,114 +744,6 @@ export class PuzzleSolver {
       if (forcedDots.length > 0) {
         hints.push({
           description: `No valid way to place this ${unitType}'s ${starsWord}${caveat} uses the marked cell, so it must be a dot.`,
-          highlights: unit.indices
-            .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
-            .map(idx => ({ idx, color: 'hint-source-blue' })),
-          marks: forcedDots.map(idx => ({ idx, color: 'hint-target-yellow' })),
-          boardIdx: unit.boardIdx
-        });
-      }
-    }
-    return hints;
-  }
-
-  // Build synthetic "pair" units: adjacent row pairs, adjacent column pairs, and every
-  // pair of regions from the same board. Used by hintPairPlacementForced, which applies
-  // the same placement-enumeration reasoning as hintUnitPlacementForced but to a
-  // combined pair of units at once (needing 2 * starsPerGroup stars total) rather than
-  // a single one.
-  _buildPairUnits() {
-    const pairs = [];
-
-    for (let r = 0; r < this.n - 1; r++) {
-      pairs.push({
-        indices: [...this.axisIndices.Row[r], ...this.axisIndices.Row[r + 1]],
-        label: `Rows ${r + 1}-${r + 2}`,
-        boardIdx: undefined
-      });
-    }
-
-    for (let c = 0; c < this.n - 1; c++) {
-      pairs.push({
-        indices: [...this.axisIndices.Column[c], ...this.axisIndices.Column[c + 1]],
-        label: `Columns ${String.fromCharCode(65 + c)}-${String.fromCharCode(66 + c)}`,
-        boardIdx: undefined
-      });
-    }
-
-    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
-      const regionsOnBoard = this.units.filter(u => u.label.includes("Region") && u.boardIdx === bIdx);
-      for (const [a, b] of this.getCombinations(regionsOnBoard, 2)) {
-        pairs.push({
-          indices: [...a.indices, ...b.indices],
-          label: `${a.label} + ${b.label}`,
-          boardIdx: bIdx
-        });
-      }
-    }
-
-    return pairs;
-  }
-
-  // Rule (2★): Same idea as hintUnitPlacementForced, but applied to a pair of adjacent
-  // rows, a pair of adjacent columns, or a pair of regions from the same board, treated
-  // as one combined unit needing 2 * starsPerGroup non-touching stars in total. A cell
-  // present in every valid completion of the pair must be a star; a cell present in
-  // none of them must be a dot -- exactly as before, just over a bigger combined space.
-  hintPairPlacementForced(strong = true, filterCondition = null) {
-    const quota = 2 * this.starsPerGroup;
-    const candidates = [];
-    for (const unit of this._buildPairUnits()) {
-      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
-      if (stars.length > 0) continue;
-
-      const combos = this._enumerateUnitCompletions(unit, strong, quota);
-      if (!combos || combos.length === 0) continue;
-
-      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
-      let forcedStars = avail.filter(cell => combos.every(combo => combo.includes(cell)));
-      let forcedDots  = avail.filter(cell => !combos.some(combo => combo.includes(cell)));
-
-      const needed = quota - stars.length;
-
-      if (filterCondition === 'all_stars') {
-        if (forcedStars.length !== needed) forcedStars = [];
-        forcedDots = [];
-      } else if (filterCondition === 'any_star') {
-        if (forcedStars.length === 0 || forcedStars.length === needed) forcedStars = [];
-        forcedDots = [];
-      } else if (filterCondition === 'dots') {
-        forcedStars = [];
-      }
-
-      if (forcedStars.length > 0 || forcedDots.length > 0) {
-        candidates.push({ unit, forcedStars, forcedDots });
-      }
-    }
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
-
-    const caveat = strong ? ", also accounting for other rows/columns/regions' star limits," : "";
-    const hints = [];
-    for (const { unit, forcedStars, forcedDots } of candidates) {
-      const pairType = unit.label.startsWith("Rows") ? "pair of rows"
-        : unit.label.startsWith("Columns") ? "pair of columns"
-        : "pair of regions";
-      const starsWord = `${quota} non-touching stars`;
-
-      if (forcedStars.length > 0) {
-        hints.push({
-          description: `Every way to place this ${pairType}' ${starsWord}${caveat} includes the marked cell, so it must be a star.`,
-          highlights: unit.indices
-            .filter(i => this.vState(i) === CELL.NONE && !forcedStars.includes(i))
-            .map(idx => ({ idx, color: 'hint-source-blue' })),
-          marks: forcedStars.map(idx => ({ idx, color: 'hint-target-green' })),
-          boardIdx: unit.boardIdx
-        });
-      }
-      if (forcedDots.length > 0) {
-        hints.push({
-          description: `No valid way to place this ${pairType}' ${starsWord}${caveat} uses the marked cell, so it must be a dot.`,
           highlights: unit.indices
             .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
             .map(idx => ({ idx, color: 'hint-source-blue' })),
@@ -1631,6 +1527,87 @@ export class PuzzleSolver {
     }));
   }
 
+  // Rule (2★+): speculatively place one star, add only the dots that single star
+  // directly implies (adjacency, plus any row/column/region it happens to complete),
+  // and check whether that already breaks some unit on ONE board's view alone.
+  //
+  // Unlike the 1★ version, placing a single star does NOT usually fill an entire
+  // row/column/region when starsPerGroup > 1 -- only units that already held
+  // (starsPerGroup - 1) stars get completed by this one placement. Region
+  // elimination is restricted to a single board at a time, so a contradiction is
+  // only accepted if it's visible from that board's viewpoint alone (or is
+  // board-agnostic row/col/adjacency geometry).
+  hintLookaheadDotsSingleBoard() {
+    const candidates = [];
+
+    const emptyIndices = this.game.state
+      .flatMap((val, idx) => this.vState(idx) === CELL.NONE ? [idx] : []);
+
+    for (const testIdx of emptyIndices) {
+      for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+        const boardReg = this._getRegionsContaining(testIdx)
+          .find(r => r.boardIdx === bIdx);
+        if (!boardReg) continue;
+
+        // Skip if this board's region has already reached quota (it's solved).
+        const existingRegStars = boardReg.indices.filter(i => this.vState(i) === CELL.STAR).length;
+        if (existingRegStars >= this.starsPerGroup) continue;
+
+        const sandboxState = [...this.game.state];
+        this.voidIndices.forEach(idx => { sandboxState[idx] = CELL.DOT; });
+        sandboxState[testIdx] = CELL.STAR;
+
+        this._applyStarPlacementDots(sandboxState, testIdx, bIdx);
+
+        const broken = this._findBrokenUnit(sandboxState);
+        if (!broken) continue;
+        if (broken.type === 'region' && broken.boardIdx !== bIdx) continue;
+
+        candidates.push({ testIdx, broken, boardIdx: bIdx });
+      }
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.testIdx - b.testIdx);
+    return candidates.map(({ testIdx, broken, boardIdx }) => ({
+      boardIdx,
+      description: `The blue cells can no longer reach their required star count if the circled cell holds a star.`,
+      highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
+      marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
+    }));
+  }
+
+  // Rule (2★+): same speculative single-star placement as hintLookaheadDotsSingleBoard,
+  // but region completion is checked across EVERY board the test cell belongs to, so
+  // contradictions that only surface when combining region information from multiple
+  // boards are also caught.
+  hintLookaheadDots() {
+    const candidates = [];
+
+    const emptyIndices = this.game.state
+      .flatMap((val, idx) => this.vState(idx) === CELL.NONE ? [idx] : []);
+
+    for (const testIdx of emptyIndices) {
+      const sandboxState = [...this.game.state];
+      this.voidIndices.forEach(idx => { sandboxState[idx] = CELL.DOT; });
+      sandboxState[testIdx] = CELL.STAR;
+
+      this._applyStarPlacementDots(sandboxState, testIdx, null);
+
+      const broken = this._findBrokenUnit(sandboxState);
+      if (broken) candidates.push({ testIdx, broken });
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.testIdx - b.testIdx);
+    return candidates.map(({ testIdx, broken }) => ({
+      boardIdx: broken.type === 'region' ? broken.boardIdx : undefined,
+      description: `The blue cells can no longer reach their required star count if the circled cell holds a star.`,
+      highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
+      marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
+    }));
+  }
+
   _isBoardSymmetric(mirrorFn) {
     if (this.game.regions.length !== 2) return false;
     const n = this.n;
@@ -1932,62 +1909,102 @@ export class PuzzleSolver {
 
   // --- Simulation ---
 
+  // Note: generalized to respect this.starsPerGroup (quota) rather than assuming
+  // quota === 1, so this same function backs both the 1★ and 2★+ lookahead rules.
+  // For starsPerGroup === 1 this reproduces the previous behavior exactly, since a
+  // unit reaches its quota the instant it gets its first star.
   _applySimulatedRules(state) {
-    const n = this.n;
+    const quota = this.starsPerGroup;
 
+    // Adjacency dots always apply, regardless of quota -- stars can never touch.
     for (let i = 0; i < state.length; i++) {
       if (state[i] !== CELL.STAR) continue;
-
-      const row = Math.floor(i / n);
-      const col = i % n;
-
-      for (let j = 0; j < n; j++) {
-        const rIdx = row * n + j;
-        const cIdx = j * n + col;
-        if (state[rIdx] === CELL.NONE && rIdx !== i) state[rIdx] = CELL.DOT;
-        if (state[cIdx] === CELL.NONE && cIdx !== i) state[cIdx] = CELL.DOT;
-      }
-
       for (const nb of this.getNeighbors(i)) {
         if (state[nb] === CELL.NONE) state[nb] = CELL.DOT;
       }
+    }
 
-      for (const reg of this._getRegionsContaining(i)) {
-        reg.indices.forEach(idx => {
+    // Any unit (row/column/region) that has reached its star quota gets the rest
+    // of its empty cells dotted out.
+    for (const u of this.units) {
+      const starCount = u.indices.filter(i => state[i] === CELL.STAR).length;
+      if (starCount === quota) {
+        u.indices.forEach(idx => {
           if (state[idx] === CELL.NONE) state[idx] = CELL.DOT;
         });
       }
     }
 
+    // Forced star fill: if a unit's remaining empty cells exactly match how many
+    // more stars it still needs, all of them must be stars.
     for (const u of this.units) {
       const noneIndices = u.indices.filter(i => state[i] === CELL.NONE);
       const starIndices = u.indices.filter(i => state[i] === CELL.STAR);
-      if (starIndices.length === 0 && noneIndices.length === 1) {
-        state[noneIndices[0]] = CELL.STAR;
+      const needed = quota - starIndices.length;
+      if (needed > 0 && noneIndices.length === needed) {
+        noneIndices.forEach(idx => { state[idx] = CELL.STAR; });
       }
     }
   }
 
+  // Applies only the dots DIRECTLY implied by placing a single star at `idx`:
+  // its neighbors always become dots, and any row/column/region that reaches
+  // its star quota as a RESULT of this one placement gets the rest of its empty
+  // cells dotted too. Unlike _applySimulatedRules this does one shallow pass
+  // local to `idx`, not a full-board propagation.
+  //
+  // When boardIdx is given, only that board's region (for `idx`) is considered;
+  // when null, every board's region containing `idx` is considered. Rows and
+  // columns are always board-agnostic.
+  _applyStarPlacementDots(state, idx, boardIdx = null) {
+    const n = this.n;
+    const quota = this.starsPerGroup;
+
+    for (const nb of this.getNeighbors(idx)) {
+      if (state[nb] === CELL.NONE) state[nb] = CELL.DOT;
+    }
+
+    const row = Math.floor(idx / n);
+    const col = idx % n;
+    [this.axisIndices.Row[row], this.axisIndices.Column[col]].forEach(indices => {
+      const starCount = indices.filter(i => state[i] === CELL.STAR).length;
+      if (starCount === quota) {
+        indices.forEach(i => { if (state[i] === CELL.NONE) state[i] = CELL.DOT; });
+      }
+    });
+
+    const regions = this._getRegionsContaining(idx)
+      .filter(r => boardIdx === null || r.boardIdx === boardIdx);
+    regions.forEach(reg => {
+      const starCount = reg.indices.filter(i => state[i] === CELL.STAR).length;
+      if (starCount === quota) {
+        reg.indices.forEach(i => { if (state[i] === CELL.NONE) state[i] = CELL.DOT; });
+      }
+    });
+  }
+
+  // Note: generalized to respect this.starsPerGroup (quota) rather than assuming
+  // quota === 1 -- a unit is broken once it can no longer possibly reach its
+  // quota (too few stars and no empty cells left to place more in).
   _findBrokenUnit(state) {
     const n = this.n;
+    const quota = this.starsPerGroup;
+    const isBroken = indices => {
+      const starCount = indices.filter(i => state[i] === CELL.STAR).length;
+      const hasEmpty = indices.some(i => state[i] === CELL.NONE);
+      return starCount < quota && !hasEmpty;
+    };
 
     for (let r = 0; r < n; r++) {
       const indices = this.axisIndices.Row[r];
-      if (!indices.some(i => state[i] === CELL.STAR) &&
-        !indices.some(i => state[i] === CELL.NONE)) {
-        return { type: 'row', label: `Row ${r + 1}`, indices };
-      }
+      if (isBroken(indices)) return { type: 'row', label: `Row ${r + 1}`, indices };
     }
     for (let c = 0; c < n; c++) {
       const indices = this.axisIndices.Column[c];
-      if (!indices.some(i => state[i] === CELL.STAR) &&
-        !indices.some(i => state[i] === CELL.NONE)) {
-        return { type: 'col', label: `Column ${String.fromCharCode(65 + c)}`, indices };
-      }
+      if (isBroken(indices)) return { type: 'col', label: `Column ${String.fromCharCode(65 + c)}`, indices };
     }
     for (const unit of this.units.filter(u => u.label.includes('Region'))) {
-      if (!unit.indices.some(i => state[i] === CELL.STAR) &&
-        !unit.indices.some(i => state[i] === CELL.NONE)) {
+      if (isBroken(unit.indices)) {
         return { type: 'region', label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx };
       }
     }
@@ -2004,11 +2021,12 @@ export class PuzzleSolver {
   }
 
   _isBoardBroken(state) {
+    const quota = this.starsPerGroup;
     for (const indices of this.units.map(u => u.indices)) {
       const starCount = indices.filter(i => state[i] === CELL.STAR).length;
       const hasEmpty = indices.some(i => state[i] === CELL.NONE);
-      if (starCount > 1) return true;
-      if (starCount === 0 && !hasEmpty) return true;
+      if (starCount > quota) return true;
+      if (starCount < quota && !hasEmpty) return true;
     }
     for (let i = 0; i < state.length; i++) {
       if (state[i] === CELL.STAR) {
