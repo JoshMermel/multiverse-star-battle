@@ -222,12 +222,12 @@ export class PuzzleSolver {
   // adjacent rows needs 2 * starsPerGroup in total. The capacity check below still
   // enforces starsPerGroup on any OTHER real unit a combo touches (including the two
   // individual rows/cols/regions making up a pair), since that's never overridden.
-  _enumerateUnitCompletions(unit, strong = true, quota = this.starsPerGroup) {
-    const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
+  _enumerateUnitCompletions(unit, strong = true, quota = this.starsPerGroup, state = this.game.state) {
+    const stars = unit.indices.filter(i => this.vState(i, state) === CELL.STAR);
     const needed = quota - stars.length;
     if (needed <= 0) return null;
 
-    const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+    const avail = unit.indices.filter(i => this.vState(i, state) === CELL.NONE);
     if (avail.length < needed) return [];
 
     return this.getCombinations(avail, needed).filter(combo => {
@@ -250,7 +250,7 @@ export class PuzzleSolver {
         }
       }
       for (const [otherUnit, addCount] of otherUnitCounts) {
-        const existing = otherUnit.indices.filter(i => this.vState(i) === CELL.STAR).length;
+        const existing = otherUnit.indices.filter(i => this.vState(i, state) === CELL.STAR).length;
         if (existing + addCount > this.starsPerGroup) return false;
       }
 
@@ -1988,23 +1988,25 @@ export class PuzzleSolver {
   // quota (too few stars and no empty cells left to place more in).
   _findBrokenUnit(state) {
     const n = this.n;
-    const quota = this.starsPerGroup;
-    const isBroken = indices => {
-      const starCount = indices.filter(i => state[i] === CELL.STAR).length;
-      const hasEmpty = indices.some(i => state[i] === CELL.NONE);
-      return starCount < quota && !hasEmpty;
+    
+    const isBroken = unit => {
+      const completions = this._enumerateUnitCompletions(unit, true, this.starsPerGroup, state);
+      // If completions is an empty array, the unit has no valid way to be completed
+      return completions !== null && completions.length === 0;
     };
 
     for (let r = 0; r < n; r++) {
       const indices = this.axisIndices.Row[r];
-      if (isBroken(indices)) return { type: 'row', label: `Row ${r + 1}`, indices };
+      const unit = { indices, label: `Row ${r + 1}` };
+      if (isBroken(unit)) return { type: 'row', label: unit.label, indices };
     }
     for (let c = 0; c < n; c++) {
       const indices = this.axisIndices.Column[c];
-      if (isBroken(indices)) return { type: 'col', label: `Column ${String.fromCharCode(65 + c)}`, indices };
+      const unit = { indices, label: `Column ${String.fromCharCode(65 + c)}` };
+      if (isBroken(unit)) return { type: 'col', label: unit.label, indices };
     }
     for (const unit of this.units.filter(u => u.label.includes('Region'))) {
-      if (isBroken(unit.indices)) {
+      if (isBroken(unit)) {
         return { type: 'region', label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx };
       }
     }
