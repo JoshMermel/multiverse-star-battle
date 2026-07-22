@@ -316,13 +316,13 @@ export class PuzzleSolver {
         { key: 'excludeAdjacency',               fn: () => this.hintExcludeAdjacency() },
         { key: 'excludeSolvedUnit',              fn: () => this.hintExcludeSolvedUnit() },
         { key: 'unitPlacementForcedWeakAll',     fn: () => this.hintUnitPlacementForced(false, 'all_stars') },
+        { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },
+        // Medium
         { key: 'unitPlacementForcedWeakAny',     fn: () => this.hintUnitPlacementForced(false, 'any_star') },
         { key: 'unitPlacementForcedWeakDots',    fn: () => this.hintUnitPlacementForced(false, 'dots') },
         { key: 'externalDotFromPlacementsWeak',  fn: () => this.hintExternalDotFromPlacements(false) },
-        { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },
-        // Medium
-        { key: 'unitRegionSyncMulti2',           fn: () => this.hintUnitRegionSyncMulti(2) },
         { key: 'unitPlacementForcedStrongAll',   fn: () => this.hintUnitPlacementForced(true, 'all_stars') },
+        { key: 'unitRegionSyncMulti2',           fn: () => this.hintUnitRegionSyncMulti(2) },
         // Hard
         { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced(true, 'any_star') },
         { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced(true, 'dots') },
