@@ -222,12 +222,26 @@ export class PuzzleSolver {
   // adjacent rows needs 2 * starsPerGroup in total. The capacity check below still
   // enforces starsPerGroup on any OTHER real unit a combo touches (including the two
   // individual rows/cols/regions making up a pair), since that's never overridden.
-  _enumerateUnitCompletions(unit, strong = true, quota = this.starsPerGroup, state = this.game.state) {
-    const stars = unit.indices.filter(i => this.vState(i, state) === CELL.STAR);
+  //
+  // `state` optionally overrides what counts as STAR/NONE/DOT for each cell -- pass a
+  // sandboxed lookahead state array to evaluate completions against a speculative board
+  // instead of the live game state. Defaults to null, meaning "read the real board via
+  // this.vState" (unchanged behavior for every existing call site).
+  //
+  // `visibleBoardIdx` optionally restricts the strong-mode capacity check to only
+  // consider OTHER units belonging to that one board (region units on a different
+  // board are ignored -- rows/columns are board-agnostic and always considered).
+  // Defaults to null (no restriction, the normal case). This exists so a "single
+  // board" lookahead check can reason about a shared row/column's capacity without
+  // silently pulling in the OTHER board's region layout, which that check is
+  // specifically meant not to depend on.
+  _enumerateUnitCompletions(unit, strong = true, quota = this.starsPerGroup, state = null, visibleBoardIdx = null) {
+    const readState = state ? (i => state[i]) : (i => this.vState(i));
+    const stars = unit.indices.filter(i => readState(i) === CELL.STAR);
     const needed = quota - stars.length;
     if (needed <= 0) return null;
 
-    const avail = unit.indices.filter(i => this.vState(i, state) === CELL.NONE);
+    const avail = unit.indices.filter(i => readState(i) === CELL.NONE);
     if (avail.length < needed) return [];
 
     return this.getCombinations(avail, needed).filter(combo => {
@@ -246,11 +260,12 @@ export class PuzzleSolver {
       for (const cell of combo) {
         for (const otherUnit of this._unitsByCell[cell]) {
           if (otherUnit.label === unit.label) continue;
+          if (visibleBoardIdx !== null && otherUnit.boardIdx !== undefined && otherUnit.boardIdx !== visibleBoardIdx) continue;
           otherUnitCounts.set(otherUnit, (otherUnitCounts.get(otherUnit) || 0) + 1);
         }
       }
       for (const [otherUnit, addCount] of otherUnitCounts) {
-        const existing = otherUnit.indices.filter(i => this.vState(i, state) === CELL.STAR).length;
+        const existing = otherUnit.indices.filter(i => readState(i) === CELL.STAR).length;
         if (existing + addCount > this.starsPerGroup) return false;
       }
 
@@ -1424,10 +1439,8 @@ export class PuzzleSolver {
           if (sandboxState[i] === CELL.NONE) sandboxState[i] = CELL.DOT;
         });
 
-        const broken = this._findBrokenUnit(sandboxState);
+        const broken = this._findBrokenUnit(sandboxState, bIdx);
         if (!broken) continue;
-
-        if (broken.type === 'region' && broken.boardIdx !== bIdx) continue;
 
         candidates.push({ testIdx, broken, boardIdx: bIdx });
       }
@@ -1559,9 +1572,8 @@ export class PuzzleSolver {
 
         this._applyStarPlacementDots(sandboxState, testIdx, bIdx);
 
-        const broken = this._findBrokenUnit(sandboxState);
+        const broken = this._findBrokenUnit(sandboxState, bIdx);
         if (!broken) continue;
-        if (broken.type === 'region' && broken.boardIdx !== bIdx) continue;
 
         candidates.push({ testIdx, broken, boardIdx: bIdx });
       }
@@ -1985,29 +1997,40 @@ export class PuzzleSolver {
 
   // Note: generalized to respect this.starsPerGroup (quota) rather than assuming
   // quota === 1 -- a unit is broken once it can no longer possibly reach its
-  // quota (too few stars and no empty cells left to place more in).
-  _findBrokenUnit(state) {
-    const n = this.n;
-    
-    const isBroken = unit => {
-      const completions = this._enumerateUnitCompletions(unit, true, this.starsPerGroup, state);
-      // If completions is an empty array, the unit has no valid way to be completed
-      return completions !== null && completions.length === 0;
-    };
+  // Uses the existing _enumerateUnitCompletions machinery to answer, for every unit,
+  // "is there at least one way to solve you given the placements of stars currently on
+  // the board?" -- i.e. can this row/column/region's remaining stars still be placed
+  // somewhere, respecting non-adjacency AND every other unit's remaining capacity.
+  // strong=true means a unit with zero valid completions (but still needing stars) is
+  // a genuine contradiction, catching not just "no empty cells left" but also subtler
+  // cases like a region whose only remaining candidates are jointly boxed in by other
+  // rows/columns/regions that don't have room for them.
+  //
+  // `visibleBoardIdx`, when given, restricts every check (which units get scanned, and
+  // what _enumerateUnitCompletions is allowed to reason about) to rows/columns and only
+  // that one board's regions -- for the "single board" lookahead rules, which are meant
+  // to only rely on information visible from one board.
+  _findBrokenUnit(state, visibleBoardIdx = null) {
+    const quota = this.starsPerGroup;
+    const units = visibleBoardIdx === null
+      ? this.units
+      : this.units.filter(u => u.boardIdx === undefined || u.boardIdx === visibleBoardIdx);
 
-    for (let r = 0; r < n; r++) {
-      const indices = this.axisIndices.Row[r];
-      const unit = { indices, label: `Row ${r + 1}` };
-      if (isBroken(unit)) return { type: 'row', label: unit.label, indices };
+    for (const unit of units) {
+      const combos = this._enumerateUnitCompletions(unit, true, quota, state, visibleBoardIdx);
+      if (combos !== null && combos.length === 0) {
+        const type = unit.label.includes('Region') ? 'region' : (unit.label.startsWith('Row') ? 'row' : 'col');
+        return { type, label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx };
+      }
     }
-    for (let c = 0; c < n; c++) {
-      const indices = this.axisIndices.Column[c];
-      const unit = { indices, label: `Column ${String.fromCharCode(65 + c)}` };
-      if (isBroken(unit)) return { type: 'col', label: unit.label, indices };
-    }
-    for (const unit of this.units.filter(u => u.label.includes('Region'))) {
-      if (isBroken(unit)) {
-        return { type: 'region', label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx };
+
+    // _enumerateUnitCompletions returns null once a unit is already at quota, so it
+    // doesn't itself catch a unit that's gone OVER quota -- check that separately.
+    for (const unit of units) {
+      const starCount = unit.indices.filter(i => state[i] === CELL.STAR).length;
+      if (starCount > quota) {
+        const type = unit.label.includes('Region') ? 'region' : (unit.label.startsWith('Row') ? 'row' : 'col');
+        return { type, label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx };
       }
     }
 
@@ -2022,13 +2045,19 @@ export class PuzzleSolver {
     return null;
   }
 
-  _isBoardBroken(state) {
+  _isBoardBroken(state, visibleBoardIdx = null) {
     const quota = this.starsPerGroup;
-    for (const indices of this.units.map(u => u.indices)) {
-      const starCount = indices.filter(i => state[i] === CELL.STAR).length;
-      const hasEmpty = indices.some(i => state[i] === CELL.NONE);
+    const units = visibleBoardIdx === null
+      ? this.units
+      : this.units.filter(u => u.boardIdx === undefined || u.boardIdx === visibleBoardIdx);
+
+    for (const unit of units) {
+      const combos = this._enumerateUnitCompletions(unit, true, quota, state, visibleBoardIdx);
+      if (combos !== null && combos.length === 0) return true;
+    }
+    for (const unit of units) {
+      const starCount = unit.indices.filter(i => state[i] === CELL.STAR).length;
       if (starCount > quota) return true;
-      if (starCount < quota && !hasEmpty) return true;
     }
     for (let i = 0; i < state.length; i++) {
       if (state[i] === CELL.STAR) {
