@@ -1439,10 +1439,10 @@ export class PuzzleSolver {
           if (sandboxState[i] === CELL.NONE) sandboxState[i] = CELL.DOT;
         });
 
-        const broken = this._findBrokenUnit(sandboxState, bIdx);
-        if (!broken) continue;
-
-        candidates.push({ testIdx, broken, boardIdx: bIdx });
+        const brokenUnits = this._findAllBrokenUnits(sandboxState, bIdx);
+        for (const broken of brokenUnits) {
+          candidates.push({ testIdx, broken, boardIdx: bIdx });
+        }
       }
     }
 
@@ -1490,8 +1490,10 @@ export class PuzzleSolver {
         });
       }
 
-      const broken = this._findBrokenUnit(sandboxState);
-      if (broken) candidates.push({ testIdx, broken });
+      const brokenUnits = this._findAllBrokenUnits(sandboxState);
+      for (const broken of brokenUnits) {
+        candidates.push({ testIdx, broken });
+      }
     }
 
     if (candidates.length === 0) return null;
@@ -1506,7 +1508,6 @@ export class PuzzleSolver {
 
   // Rule: Multi-stage lookahead for contradiction checking.
   hintLookahead(nStages) {
-    const n = this.n;
     const candidates = [];
 
     const emptyIndices = this.game.state
@@ -1572,10 +1573,10 @@ export class PuzzleSolver {
 
         this._applyStarPlacementDots(sandboxState, testIdx, bIdx);
 
-        const broken = this._findBrokenUnit(sandboxState, bIdx);
-        if (!broken) continue;
-
-        candidates.push({ testIdx, broken, boardIdx: bIdx });
+        const brokenUnits = this._findAllBrokenUnits(sandboxState, bIdx);
+        for (const broken of brokenUnits) {
+          candidates.push({ testIdx, broken, boardIdx: bIdx });
+        }
       }
     }
 
@@ -1606,8 +1607,10 @@ export class PuzzleSolver {
 
       this._applyStarPlacementDots(sandboxState, testIdx, null);
 
-      const broken = this._findBrokenUnit(sandboxState);
-      if (broken) candidates.push({ testIdx, broken });
+      const brokenUnits = this._findAllBrokenUnits(sandboxState);
+      for (const broken of brokenUnits) {
+        candidates.push({ testIdx, broken });
+      }
     }
 
     if (candidates.length === 0) return null;
@@ -1995,8 +1998,6 @@ export class PuzzleSolver {
     });
   }
 
-  // Note: generalized to respect this.starsPerGroup (quota) rather than assuming
-  // quota === 1 -- a unit is broken once it can no longer possibly reach its
   // Uses the existing _enumerateUnitCompletions machinery to answer, for every unit,
   // "is there at least one way to solve you given the placements of stars currently on
   // the board?" -- i.e. can this row/column/region's remaining stars still be placed
@@ -2006,21 +2007,29 @@ export class PuzzleSolver {
   // cases like a region whose only remaining candidates are jointly boxed in by other
   // rows/columns/regions that don't have room for them.
   //
+  // Returns EVERY broken unit found (not just the first), so a candidate placement that
+  // simultaneously breaks several rows/columns/regions surfaces all of them as separate,
+  // independently valid reasons -- used by the lookahead hint rules so the player can
+  // cycle through every one of them via the hint button, rather than only ever seeing
+  // whichever happens to be checked first.
+  //
   // `visibleBoardIdx`, when given, restricts every check (which units get scanned, and
   // what _enumerateUnitCompletions is allowed to reason about) to rows/columns and only
   // that one board's regions -- for the "single board" lookahead rules, which are meant
   // to only rely on information visible from one board.
-  _findBrokenUnit(state, visibleBoardIdx = null) {
+  _findAllBrokenUnits(state, visibleBoardIdx = null) {
     const quota = this.starsPerGroup;
     const units = visibleBoardIdx === null
       ? this.units
       : this.units.filter(u => u.boardIdx === undefined || u.boardIdx === visibleBoardIdx);
 
+    const broken = [];
+    const unitType = unit => unit.label.includes('Region') ? 'region' : (unit.label.startsWith('Row') ? 'row' : 'col');
+
     for (const unit of units) {
       const combos = this._enumerateUnitCompletions(unit, true, quota, state, visibleBoardIdx);
       if (combos !== null && combos.length === 0) {
-        const type = unit.label.includes('Region') ? 'region' : (unit.label.startsWith('Row') ? 'row' : 'col');
-        return { type, label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx };
+        broken.push({ type: unitType(unit), label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx });
       }
     }
 
@@ -2029,20 +2038,29 @@ export class PuzzleSolver {
     for (const unit of units) {
       const starCount = unit.indices.filter(i => state[i] === CELL.STAR).length;
       if (starCount > quota) {
-        const type = unit.label.includes('Region') ? 'region' : (unit.label.startsWith('Row') ? 'row' : 'col');
-        return { type, label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx };
+        broken.push({ type: unitType(unit), label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx });
       }
     }
 
+    // One adjacency violation is enough to report; there's no useful per-unit breakdown
+    // to enumerate further here (unlike rows/columns/regions, "adjacency" isn't a unit
+    // players can be shown a bounded set of cells for in the same way).
     for (let i = 0; i < state.length; i++) {
       if (state[i] === CELL.STAR) {
         if (this.getNeighbors(i).some(nb => state[nb] === CELL.STAR)) {
-          return { type: 'adjacency', label: 'adjacency', indices: [] };
+          broken.push({ type: 'adjacency', label: 'adjacency', indices: [] });
+          break;
         }
       }
     }
 
-    return null;
+    return broken;
+  }
+
+  // Convenience wrapper: just the first broken unit found (or null), for callers that
+  // only need to know whether something's broken, not every reason why.
+  _findBrokenUnit(state, visibleBoardIdx = null) {
+    return this._findAllBrokenUnits(state, visibleBoardIdx)[0] ?? null;
   }
 
   _isBoardBroken(state, visibleBoardIdx = null) {
