@@ -48,7 +48,6 @@
     {"id": "two_star_equal_area",   "label": "9x9 Equal Area (2★)",     "group": "Playground",       "desc": "All regions have equal area - extremely hard"},
     {"id": "voronoi",               "label": "Voronoi",                 "group": "Playground",       "desc": "Regions generated like a voronoi diagram, feels different from random 8x8 though"},
     {"id": "void",                  "label": "Void",                    "group": "Curiosities",      "desc": "Puzzles with voids"},
-    {"id": "void_mono",             "label": "Void 1 board",            "group": "Curiosities",      "desc": "1-board puzzles with voids"},
     {"id": "giants",                "label": "Giants",                  "group": "Curiosities",      "desc": "Too big - desktop only"},
     {"id": "giant_mono",            "label": "Giant 1 board",           "group": "Curiosities",      "desc": "Too big - desktop only"},
     {"id": "quadruplets",           "label": "Identical Quadruplets",   "group": "Curiosities",      "desc": "Four identical boards with a unique shared solution"},
