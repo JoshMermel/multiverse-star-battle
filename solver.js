@@ -37,16 +37,15 @@ export class PuzzleSolver {
     // Precompute and cache board symmetry properties.
     const mainDiagFn = i => (i % this.n) * this.n + Math.floor(i / this.n);
     const antiDiagFn = i => (this.n-1 - i%this.n) * this.n + (this.n-1 - Math.floor(i/this.n));
-    const numBoards = this.game.regions.length;
-    this.isMainDiagonalSymmetric = (numBoards === 2 && this._isBoardSymmetric(mainDiagFn)) || this._computeInternalDiagonalSymmetry(mainDiagFn);
-    this.isAntiDiagonalSymmetric = (numBoards === 2 && this._isBoardSymmetric(antiDiagFn)) || this._computeInternalDiagonalSymmetry(antiDiagFn);
+    this.isMainDiagonalSymmetric = this._isBoardSymmetric(mainDiagFn) || this._computeInternalDiagonalSymmetry(mainDiagFn);
+    this.isAntiDiagonalSymmetric = this._isBoardSymmetric(antiDiagFn) || this._computeInternalDiagonalSymmetry(antiDiagFn);
     // Track specific symmetry types for hint descriptions.
-    this.mainDiagCrossBoard   = (numBoards === 2) && this._isBoardSymmetric(mainDiagFn);
+    this.mainDiagCrossBoard   = this._isBoardSymmetric(mainDiagFn);
     this.mainDiagInternal     = this._computeInternalDiagonalSymmetry(mainDiagFn);
-    this.antiDiagCrossBoard   = (numBoards === 2) && this._isBoardSymmetric(antiDiagFn);
+    this.antiDiagCrossBoard   = this._isBoardSymmetric(antiDiagFn);
     this.antiDiagInternal     = this._computeInternalDiagonalSymmetry(antiDiagFn);
     this.internalRotation180   = this._computeInternalRotation180();
-    this.crossboardRotation180 = (numBoards === 2) && this._computeCrossboardRotation180();
+    this.crossboardRotation180 = this._computeCrossboardRotation180();
 
     // Hint cycling state.
     this.lastStateString  = null;
@@ -1623,20 +1622,69 @@ export class PuzzleSolver {
     }));
   }
 
-  _isBoardSymmetric(mirrorFn) {
-    if (this.game.regions.length !== 2) return false;
-    const n = this.n;
-    const [r1, r2] = this.game.regions;
-    for (let i = 0; i < n * n; i++) {
-      const mirror = mirrorFn(i);
-      for (let j = i + 1; j < n * n; j++) {
-        const mj = mirrorFn(j);
-        const sameRegionBoard1 = r1[i] === r1[j];
-        const sameRegionBoard2 = r2[mirror] === r2[mj];
-        if (sameRegionBoard1 !== sameRegionBoard2) return false;
+  // Checks whether board B's region layout is exactly what you'd get by applying
+  // `transformFn` to board A's region layout -- the pairwise primitive behind every
+  // "these two boards are reflections/rotations of each other" symmetry check.
+  _regionsAreTransformPartners(regionsA, regionsB, transformFn) {
+    const total = this.n * this.n;
+    for (let i = 0; i < total; i++) {
+      const ti = transformFn(i);
+      for (let j = i + 1; j < total; j++) {
+        const tj = transformFn(j);
+        const sameOnA = regionsA[i] === regionsA[j];
+        const sameOnBTransformed = regionsB[ti] === regionsB[tj];
+        if (sameOnA !== sameOnBTransformed) return false;
       }
     }
     return true;
+  }
+
+  // True when every board can be paired off with exactly one OTHER board such that
+  // applying `transformFn` to one board's region layout produces its partner's layout.
+  // Applying the transform to the whole multi-board puzzle then just permutes boards
+  // pairwise (partner <-> partner) while leaving the overall constraint set -- rows,
+  // columns, and every board's regions -- unchanged as a set, so the (unique) solution
+  // must itself be invariant under the transform. Requires an even number of boards.
+  //
+  // This subsumes the old "exactly two boards, and they're partners" check: with two
+  // boards there's only one possible pairing, so it's a strict generalization to any
+  // even number of boards where a valid pairing exists (not necessarily board[i] paired
+  // with board[i+1] -- any perfect matching works, e.g. board1<->board3, board2<->board4).
+  //
+  // `transformFn` is always an involution here (diagonal reflection or 180° rotation),
+  // which makes "A is B's transform-partner" a symmetric relation (if applying it to A
+  // gives B, applying it to B gives back A) -- so this reduces to a perfect-matching
+  // existence check over the "is a transform-partner of" graph.
+  _isBoardSymmetric(transformFn) {
+    const numBoards = this.game.regions.length;
+    if (numBoards === 0 || numBoards % 2 !== 0) return false;
+
+    const partners = Array.from({ length: numBoards }, () => new Array(numBoards).fill(false));
+    for (let i = 0; i < numBoards; i++) {
+      for (let j = i + 1; j < numBoards; j++) {
+        if (this._regionsAreTransformPartners(this.game.regions[i], this.game.regions[j], transformFn)) {
+          partners[i][j] = partners[j][i] = true;
+        }
+      }
+    }
+
+    const used = new Array(numBoards).fill(false);
+    const findMatching = () => {
+      const i = used.indexOf(false);
+      if (i === -1) return true;
+      used[i] = true;
+      for (let j = i + 1; j < numBoards; j++) {
+        if (!used[j] && partners[i][j]) {
+          used[j] = true;
+          if (findMatching()) return true;
+          used[j] = false;
+        }
+      }
+      used[i] = false;
+      return false;
+    };
+
+    return findMatching();
   }
 
   _computeInternalDiagonalSymmetry(mirrorFn) {
@@ -1667,18 +1715,8 @@ export class PuzzleSolver {
   }
 
   _computeCrossboardRotation180() {
-    if (this.game.regions.length !== 2) return false;
     const total = this.n * this.n;
-    const mirrorFn = i => total - 1 - i;
-    const [r1, r2] = this.game.regions;
-    for (let i = 0; i < total; i++) {
-      for (let j = i + 1; j < total; j++) {
-        const sameOnBoard1 = r1[i] === r1[j];
-        const sameOnBoard2Mirrored = r2[mirrorFn(i)] === r2[mirrorFn(j)];
-        if (sameOnBoard1 !== sameOnBoard2Mirrored) return false;
-      }
-    }
-    return true;
+    return this._isBoardSymmetric(i => total - 1 - i);
   }
 
   _hintSymmetry(mirrorFn, description) {
@@ -1752,30 +1790,30 @@ export class PuzzleSolver {
 
     if (this.internalRotation180 || this.crossboardRotation180) {
       const description = this.internalRotation180 && this.crossboardRotation180
-        ? `Each board has 180° rotational symmetry, and the boards are also 180° rotations of each other. Any cell that "sees" its own rotation cannot be a star.`
+        ? `Each board has 180° rotational symmetry, and every board is also paired with another board that's its 180° rotation. Any cell that "sees" its own rotation cannot be a star.`
         : this.internalRotation180
         ? `Each board independently has 180° rotational symmetry. Any cell that "sees" its own rotation cannot be a star.`
-        : `The two boards are 180° rotations of each other. Any cell that "sees" its counterpart on the rotated board cannot be a star.`;
+        : `Every board is paired with another board that's its 180° rotation. Any cell that "sees" its counterpart on the paired board cannot be a star.`;
       const hint = this._hintSymmetry(i => (n * n - 1) - i, description);
       if (hint) results.push(hint);
     }
 
     if (this.isMainDiagonalSymmetric) {
       const description = this.mainDiagCrossBoard && this.mainDiagInternal
-        ? `The two boards are reflections of each other across the main diagonal (↘), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+        ? `Every board is paired with another board that's its reflection across the main diagonal (↘), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
         : this.mainDiagInternal
         ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-        : `The two boards are reflections of each other across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`;
+        : `Every board is paired with another board that's its reflection across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`;
       const hint = this._hintSymmetry(i => (i % n) * n + Math.floor(i / n), description);
       if (hint) results.push(hint);
     }
 
     if (this.isAntiDiagonalSymmetric) {
       const description = this.antiDiagCrossBoard && this.antiDiagInternal
-        ? `The two boards are reflections of each other across the anti-diagonal (↙), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+        ? `Every board is paired with another board that's its reflection across the anti-diagonal (↙), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
         : this.antiDiagInternal
         ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-        : `The two boards are reflections of each other across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`;
+        : `Every board is paired with another board that's its reflection across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`;
       const hint = this._hintSymmetry(
         i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
         description
@@ -1787,10 +1825,10 @@ export class PuzzleSolver {
     const tryDiagParity = (diagIndices, dirLabel, crossBoard, internal) => {
       const parity = n % 2 === 0 ? 'even' : 'odd';
       const reason = crossBoard && internal
-        ? `The boards are ${dirLabel} reflections of each other and each has that symmetry internally`
+        ? `Every board is paired with another board that's its ${dirLabel} reflection, and each also has that symmetry internally`
         : internal
         ? `Each board independently has ${dirLabel} diagonal symmetry`
-        : `The boards are ${dirLabel} reflections of each other`;
+        : `Every board is paired with another board that's its ${dirLabel} reflection`;
 
       const diagStars  = diagIndices.filter(i => this.vState(i) === CELL.STAR).length;
       const diagEmpties = diagIndices.filter(i => this.vState(i) === CELL.NONE);
