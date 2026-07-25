@@ -368,19 +368,100 @@ export class PuzzleSolver {
         { key: 'lookaheadLoop8',                 fn: () => this.hintLookahead(8) },
         { key: 'fromSolution',                  fn: () => this.hintFromSolution() },
       ];
-    } else {
-      // 3★ and 4★+ puzzles use general rules
+    } else if (this.starsPerGroup === 3) {
       rules = [
         // Error validation
-        { key: 'checkForErrors',           fn: () => this.hintCheckForErrors() },
-        { key: 'alreadySolved',            fn: () => this.hintAlreadySolved() },
-        // Multi-star validated/compatible rules
-        { key: 'onlyEmpty',                fn: () => this.hintOnlyEmpty() },
-        { key: 'excludeAdjacency',         fn: () => this.hintExcludeAdjacency() },
-        { key: 'excludeSolvedUnit',        fn: () => this.hintExcludeSolvedUnit() },
-        { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
-        { key: 'regionSubsetSync2',        fn: () => this.hintRegionSubsetSync(2) },
-        { key: 'fromSolution',            fn: () => this.hintFromSolution() },
+        { key: 'checkForErrors',                 fn: () => this.hintCheckForErrors() },
+        { key: 'alreadySolved',                  fn: () => this.hintAlreadySolved() },
+        // Beginner
+        { key: 'onlyEmpty',                      fn: () => this.hintOnlyEmpty() },
+        { key: 'excludeAdjacency',               fn: () => this.hintExcludeAdjacency() },
+        { key: 'excludeSolvedUnit',              fn: () => this.hintExcludeSolvedUnit() },
+        { key: 'unitPlacementForcedWeakAll',     fn: () => this.hintUnitPlacementForced(false, 'all_stars') },
+        { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },
+        // Medium
+        { key: 'unitPlacementForcedWeakAny',     fn: () => this.hintUnitPlacementForced(false, 'any_star') },
+        { key: 'unitPlacementForcedWeakDots',    fn: () => this.hintUnitPlacementForced(false, 'dots') },
+        { key: 'externalDotFromPlacementsWeak',  fn: () => this.hintExternalDotFromPlacements(false) },
+        { key: 'unitPlacementForcedStrongAll',   fn: () => this.hintUnitPlacementForced(true, 'all_stars') },
+        { key: 'unitRegionSyncMulti2',           fn: () => this.hintUnitRegionSyncMulti(2) },
+        // Hard
+        { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced(true, 'any_star') },
+        { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced(true, 'dots') },
+        { key: 'externalDotFromPlacementsStrong',fn: () => this.hintExternalDotFromPlacements(true) },
+        { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
+        { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
+        { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
+        { key: 'unitRegionSyncMulti4Plus',       fn: () => {
+            const candidates = [];
+            for (let n = 4; n < this.n; n++) {
+              for (const axis of ["Row", "Column"]) {
+                candidates.push(...this._hintMultiWindowRegionSyncAll(n, axis));
+              }
+            }
+            return candidates.length > 0 ? candidates : null;
+          }
+        },
+        { key: 'unitCompletionSatisfiesOtherUnit', fn: () => this.hintUnitCompletionSatisfiesOtherUnit() },
+        // Expert
+        { key: 'regionSubsetSync3',              fn: () => this.hintRegionSubsetSync(3) },
+        { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
+        { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
+        { key: 'lookaheadDots',                  fn: () => this.hintLookaheadDots() },
+        // Grandmaster
+        { key: 'lookaheadLoop1',                 fn: () => this.hintLookahead(1) },
+        { key: 'lookaheadLoop2',                 fn: () => this.hintLookahead(2) },
+        { key: 'lookaheadLoop3',                 fn: () => this.hintLookahead(3) },
+        { key: 'fromSolution',                  fn: () => this.hintFromSolution() },
+      ];
+    } else {
+      // 4★+ puzzles (>3 stars) fallback rules
+      rules = [
+        // Error validation
+        { key: 'checkForErrors',                 fn: () => this.hintCheckForErrors() },
+        { key: 'alreadySolved',                  fn: () => this.hintAlreadySolved() },
+        // Beginner
+        { key: 'onlyEmpty',                      fn: () => this.hintOnlyEmpty() },
+        { key: 'excludeAdjacency',               fn: () => this.hintExcludeAdjacency() },
+        { key: 'excludeSolvedUnit',              fn: () => this.hintExcludeSolvedUnit() },
+        { key: 'unitPlacementForcedWeakAll',     fn: () => this.hintUnitPlacementForced(false, 'all_stars') },
+        { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },
+        // Medium
+        { key: 'unitPlacementForcedWeakAny',     fn: () => this.hintUnitPlacementForced(false, 'any_star') },
+        { key: 'unitPlacementForcedWeakDots',    fn: () => this.hintUnitPlacementForced(false, 'dots') },
+        { key: 'externalDotFromPlacementsWeak',  fn: () => this.hintExternalDotFromPlacements(false) },
+        { key: 'unitPlacementForcedStrongAll',   fn: () => this.hintUnitPlacementForced(true, 'all_stars') },
+        { key: 'unitRegionSyncMulti2',           fn: () => this.hintUnitRegionSyncMulti(2) },
+        // Hard
+        { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced(true, 'any_star') },
+        { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced(true, 'dots') },
+        { key: 'externalDotFromPlacementsStrong',fn: () => this.hintExternalDotFromPlacements(true) },
+        { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
+        { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
+        { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
+        { key: 'unitRegionSyncMulti4Plus',       fn: () => {
+            const candidates = [];
+            for (let n = 4; n < this.n; n++) {
+              for (const axis of ["Row", "Column"]) {
+                candidates.push(...this._hintMultiWindowRegionSyncAll(n, axis));
+              }
+            }
+            return candidates.length > 0 ? candidates : null;
+          }
+        },
+        { key: 'unitCompletionSatisfiesOtherUnit', fn: () => this.hintUnitCompletionSatisfiesOtherUnit() },
+        // Expert
+        { key: 'regionSubsetSync3',              fn: () => this.hintRegionSubsetSync(3) },
+        { key: 'regionSubsetSync4',              fn: () => this.hintRegionSubsetSync(4) },
+        { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
+        { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
+        { key: 'lookaheadDots',                  fn: () => this.hintLookaheadDots() },
+        // Grandmaster
+        { key: 'lookaheadLoop1',                 fn: () => this.hintLookahead(1) },
+        { key: 'lookaheadLoop2',                 fn: () => this.hintLookahead(2) },
+        { key: 'lookaheadLoop3',                 fn: () => this.hintLookahead(3) },
+        { key: 'lookaheadLoop8',                 fn: () => this.hintLookahead(8) },
+        { key: 'fromSolution',                  fn: () => this.hintFromSolution() },
       ];
     }
 
@@ -709,7 +790,8 @@ export class PuzzleSolver {
     const candidates = [];
     for (const unit of this.units) {
       const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
-      if (stars.length > 0) continue;
+      const needed = this.starsPerGroup - stars.length;
+      if (needed <= 0) continue;
 
       const combos = this._enumerateUnitCompletions(unit, strong);
       if (!combos || combos.length === 0) continue;
@@ -717,8 +799,6 @@ export class PuzzleSolver {
       const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
       let forcedStars = avail.filter(cell => combos.every(combo => combo.includes(cell)));
       let forcedDots  = avail.filter(cell => !combos.some(combo => combo.includes(cell)));
-
-      const needed = this.starsPerGroup - stars.length;
       
       if (filterCondition === 'all_stars') {
         if (forcedStars.length !== needed) forcedStars = [];
