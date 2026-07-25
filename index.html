@@ -15,6 +15,7 @@
           <span class="bpb-eyebrow">Book</span>
           <span class="bpb-name" id="bpb-current-name">—</span>
         </span>
+        <span class="bpb-stars-badge" id="bpb-current-stars" title="Stars per row/column/region">1★</span>
         <span class="bpb-chevron">▼</span>
       </button>
       <span id="timer-container" style="display: none;">
@@ -168,7 +169,7 @@
         <button data-close aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
-        <p>Place exactly one star per row, column, and bold region on each board. Stars cannot touch each other, even diagonally.</p>
+        <p id="help-rule-text">Place exactly <strong id="help-stars-count">1 star</strong> per row, column, and bold region on each board. Stars cannot touch each other, even diagonally.</p>
 
         <p>The boards always match — changes to one board automatically take effect on all other boards too.</p>
 

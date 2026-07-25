@@ -472,7 +472,9 @@ export function applyInput(GameClass) {
 
     // Metadata is loaded from the manifest.
     const groupMeta = (g) => this.groups[g] ?? { icon: '📖', blurb: '', desc: '' };
-    const catDesc = (id) => this.categories.find(c => c.id === id)?.desc ?? '';
+    const catObj = (id) => this.categories.find(c => c.id === id);
+    const catDesc = (id) => catObj(id)?.desc ?? '';
+    const catStars = (id) => catObj(id)?.stars ?? 1;
 
     const getStructuredCategories = () => {
       const groups = [];
@@ -501,10 +503,12 @@ export function applyInput(GameClass) {
     modal.querySelectorAll('[data-close]').forEach(btn => btn.onclick = closeModal);
     openBtn.onclick = openModal;
 
-    const makeGroupCard = (name, icon, sub, desc, active) => {
+    const makeGroupCard = (name, icon, sub, desc, active, starsBadgeText) => {
       const card = document.createElement('button');
       card.className = 'bp-group-card' + (active ? ' bp-active' : '');
+      const starsBadgeHtml = starsBadgeText ? `<span class="bp-card-stars-badge">${starsBadgeText}</span>` : '';
       card.innerHTML = `
+        ${starsBadgeHtml}
         <span class="bp-icon">${icon}</span>
         <span class="bp-group-name">${name}</span>
         ${sub ? `<span class="bp-group-sub">${sub}</span>` : ''}
@@ -527,7 +531,8 @@ export function applyInput(GameClass) {
         if (g.group === '__ungrouped__') {
           g.cats.forEach(cat => {
             if (cat.id === 'tmp') return;
-            const card = makeGroupCard(cat.label, meta.icon, '', catDesc(cat.id), cat.id === activeCatId);
+            const numStars = catStars(cat.id);
+            const card = makeGroupCard(cat.label, meta.icon, '', catDesc(cat.id), cat.id === activeCatId, '★'.repeat(numStars));
             card.onclick = () => selectCategory(cat.id);
             grid.appendChild(card);
           });
@@ -535,13 +540,18 @@ export function applyInput(GameClass) {
         }
 
         if (g.cats.length === 1) {
-          const card = makeGroupCard(g.group, meta.icon, meta.blurb, catDesc(g.cats[0].id), isActive);
+          const numStars = catStars(g.cats[0].id);
+          const card = makeGroupCard(g.group, meta.icon, meta.blurb, catDesc(g.cats[0].id), isActive, '★'.repeat(numStars));
           card.onclick = () => selectCategory(g.cats[0].id);
           grid.appendChild(card);
           return;
         }
 
-        const card = makeGroupCard(g.group, meta.icon, meta.blurb, '', isActive);
+        // Collect all distinct star counts in this group
+        const starCounts = [...new Set(g.cats.map(c => catStars(c.id)))].sort((a, b) => a - b);
+        const badgeText = starCounts.map(s => '★'.repeat(s)).join(' / ');
+
+        const card = makeGroupCard(g.group, meta.icon, meta.blurb, '', isActive, badgeText);
         card.onclick = () => renderDrill(g);
         grid.appendChild(card);
       });
@@ -570,10 +580,11 @@ export function applyInput(GameClass) {
         const btn = document.createElement('button');
         const isSelected = cat.id === activeCatId;
         const desc = catDesc(cat.id);
+        const stars = catStars(cat.id);
         btn.className = 'bp-diff-btn' + (isSelected ? ' bp-selected' : '');
         btn.innerHTML = `
           <span class="bp-diff-label">
-            <span class="bp-diff-name">${cat.label}</span>
+            <span class="bp-diff-name">${cat.label} <span class="bp-diff-stars-badge">${'★'.repeat(stars)}</span></span>
             ${desc ? `<span class="bp-diff-desc">${desc}</span>` : ''}
           </span>
           <span class="bp-diff-arrow">${isSelected ? '✓' : '›'}</span>

@@ -138,6 +138,15 @@ class StarBattleGame {
 
     this.updateVisuals();
 
+    const starsBadge = document.getElementById('bpb-current-stars');
+    if (starsBadge) {
+      starsBadge.textContent = `${'★'.repeat(this.starsPerGroup)}`;
+    }
+    const helpStars = document.getElementById('help-stars-count');
+    if (helpStars) {
+      helpStars.textContent = this.starsPerGroup === 1 ? '1 star' : `${this.starsPerGroup} stars`;
+    }
+
     this.showToastOnLoad(categoryId, puzzleData.id);
     this.loadProgress({ suppressWinToast: true });
     this.updateControls();

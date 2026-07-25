@@ -739,6 +739,17 @@ input[type="number"]::-webkit-inner-spin-button {
   text-overflow: ellipsis;
   max-width: 130px;
 }
+#book-picker-btn .bpb-stars-badge {
+  font-size: 0.75rem;
+  color: #f59e0b;
+  font-weight: bold;
+  letter-spacing: -1px;
+  background: var(--bg-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  line-height: 1;
+}
 #book-picker-btn .bpb-chevron { color: #aaa; font-size: 0.7rem; flex-shrink: 0; }
 
 #bp-modal-body { padding-bottom: 24px; }
@@ -762,6 +773,7 @@ input[type="number"]::-webkit-inner-spin-button {
   background: var(--bg-card);
   transition: border-color 0.15s, background 0.15s, transform 0.1s;
   text-align: center;
+  position: relative;
 }
 .bp-group-card:not(:disabled):hover {
   border-color: var(--primary-blue);
@@ -771,6 +783,20 @@ input[type="number"]::-webkit-inner-spin-button {
 .bp-group-card.bp-active {
   border-color: var(--primary-blue);
   background: var(--primary-blue-active-bg);
+}
+.bp-group-card .bp-card-stars-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 0.7rem;
+  color: #f59e0b;
+  font-weight: bold;
+  letter-spacing: -1px;
+  background: var(--bg-white);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  line-height: 1;
 }
 .bp-group-card .bp-icon       { font-size: 1.6rem; line-height: 1; }
 .bp-group-card .bp-group-name { font-weight: 700; font-size: 0.88rem; }
@@ -837,7 +863,18 @@ input[type="number"]::-webkit-inner-spin-button {
   align-items: flex-start;
   gap: 2px;
 }
-.bp-diff-btn .bp-diff-name { font-weight: 600; }
+.bp-diff-btn .bp-diff-name { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.bp-diff-stars-badge {
+  font-size: 0.75rem;
+  color: #f59e0b;
+  font-weight: bold;
+  letter-spacing: -1px;
+  background: var(--bg-white);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  line-height: 1;
+}
 .bp-diff-btn .bp-diff-desc {
   font-size: 0.78rem;
   font-weight: 400;
