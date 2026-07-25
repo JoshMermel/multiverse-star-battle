@@ -50,7 +50,7 @@
     {"id": "void_mono",             "label": "Void 1 board",            "group": "Curiosities",      "desc": "1-board puzzles with voids"},
     {"id": "giants",                "label": "Giants",                  "group": "Curiosities",      "desc": "Too big - desktop only"},
     {"id": "giant_mono",            "label": "Giant 1 board",           "group": "Curiosities",      "desc": "Too big - desktop only"},
-    {"id": "quadruplets",           "label": "Identical Quadruples",    "group": "Curiosities",      "desc": "Four identical boards with a unique shared solution"},
+    {"id": "quadruplets",           "label": "Identical Quadruplets",   "group": "Curiosities",      "desc": "Four identical boards with a unique shared solution"},
     {"id": "half_dozen",            "label": "6 Boards",                "group": "Curiosities",      "desc": "Is more better?"},
     {"id": "not_for_humans",        "label": "Not For Humans",          "group": "Curiosities",      "desc": "The absolute hardest puzzles - too hard for human solvers."},
     {"id": "two_stars_beginner",    "label": "Beginner",                "group": "Two Stars"},
