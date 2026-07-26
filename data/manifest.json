@@ -62,6 +62,7 @@
     {"id": "giants",                "label": "Giants",                  "group": "Curiosities",      "desc": "Too big - desktop only", "stars": 1},
     {"id": "giant_mono",            "label": "Giant 1-board",           "group": "Curiosities",      "desc": "Too big - desktop only", "stars": 1},
     {"id": "quadruplets",           "label": "Identical Quadruplets",   "group": "Curiosities",      "desc": "Four identical boards with a unique shared solution", "stars": 1},
+    {"id": "symmetric_triplets",    "label": "Symmetric Triplets",      "group": "Curiosities",      "desc": "Three identical boards with internal symmetry", "stars": 1},
     {"id": "half_dozen",            "label": "6 Boards",                "group": "Curiosities",      "desc": "Is more better?", "stars": 1},
     {"id": "not_for_humans",        "label": "Not For Humans",          "group": "Curiosities",      "desc": "The absolute hardest puzzles - too hard for human solvers.", "stars": 1},
     {"id": "signoff",               "label": "Signoff",                 "group": "Signoff", "stars": 1}
