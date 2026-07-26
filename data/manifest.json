@@ -41,6 +41,7 @@
     {"id": "two_stars_mono",        "label": "1-Board",                 "group": "9x9", "stars": 2},
     {"id": "three_stars",           "label": "Two Boards",              "group": "13x13", "stars": 3},
     {"id": "three_stars_mono",      "label": "1-Board",                 "group": "13x13", "stars": 3},
+    {"id": "three_stars_trio",      "label": "3-Boards",                "group": "13x13", "stars": 3},
     {"id": "8x8_symmetric",         "label": "Symmetric",               "group": "Symmetry",         "desc": "Each board has rotational, mirror, or translation symmetry", "stars": 1},
     {"id": "symmetric_mono",        "label": "Symmetric 1-board",       "group": "Symmetry",         "desc": "One board with rotational, mirror, or translation symmetry", "stars": 1},
     {"id": "8x8_twin",              "label": "Twin",                    "group": "Symmetry",         "desc": "Both boards are the same, one flipped or rotated", "stars": 1},
