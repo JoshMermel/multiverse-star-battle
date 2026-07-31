@@ -19,7 +19,7 @@
 //    independent (one book's CSV doesn't call into another's), so plain
 //    per-file stale-while-revalidate is safe here — serve cached
 //    immediately, refresh that one file in the background.
-const SHELL_CACHE_NAME = 'msb-shell-v1';
+const SHELL_CACHE_NAME = 'msb-shell-v2';
 const DATA_CACHE_NAME = 'msb-data-v1';
 
 const APP_SHELL = [
@@ -34,6 +34,10 @@ const APP_SHELL = [
   './history.js',
   './storage.js',
   './solver.js',
+  './solver-core.js',
+  './solver-rules-common.js',
+  './solver-rules-single.js',
+  './solver-rules-multi.js',
   './constants.js',
   'https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js',
