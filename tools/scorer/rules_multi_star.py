@@ -260,40 +260,79 @@ class MultiStarRules:
 
     def _hint_multi_regions_trapped_or_covered(self, p, unit_combo, b_idx, axis):
         """
-        Calculates if regions are trapped inside the unit combo, or if the unit combo
-        is completely covered by a region, and applies the corresponding board marks/dots.
+        Quota-aware trapped/covered region <-> unit-combo sync for board
+        b_idx, generalizing the 1-star pin-rule pattern to units/regions
+        that can hold more than one star (compares summed remaining star
+        NEED, not a raw count of regions/cells -- see
+        get_regions_needing_stars). unit_combo is a list of unit index-lists
+        (rows or columns) and need not be adjacent, so this backs both the
+        4+-adjacent-window caller (_rule_multi_window_sync) and the disjoint
+        2-unit caller (rule_unit_region_sync_multi_2_disjoint).
+
+        This is the same two-case logic as _apply_pin_rule_multi (which
+        handles adjacent windows directly via start_u/u_range); this version
+        takes an already-built unit_combo instead so it also works for
+        disjoint combinations of units.
+
+        Bug history: this used to compare `p.regions` (a list of one
+        region-dict per board) against `b_idx` (an int) directly -- always
+        False, so region_cells was always empty and both branches below were
+        permanent no-ops. Fixed to use get_regions_needing_stars(b_idx) like
+        every other multi-star region-sync rule.
+
+        Trapped: regions on b_idx entirely confined to unit_combo's cells
+        collectively need exactly as many stars as unit_combo still needs ->
+        the rest of unit_combo (outside those regions) must be dots.
+
+        Covered: regions on b_idx touching unit_combo's available cells
+        collectively need exactly as many stars as unit_combo still needs ->
+        the rest of those regions (outside unit_combo) must be dots.
         """
-        changes = 0
+        n = len(unit_combo)
+        unit_idxs = set(idx for unit in unit_combo for idx in unit)
 
-        # 1. Check Trapped: Are all cells of region b_idx inside these units?
-        # Find all cells on the board belonging to region b_idx
-        region_cells = [i for i, reg in enumerate(p.regions) if reg == b_idx]
-        avail_region_cells = [i for i in region_cells if p.grid[i] is None]
+        stars_in_window = sum(1 for i in unit_idxs if p.grid[i] == "x")
+        required_count = n * p.stars_per_group - stars_in_window
+        if required_count <= 0:
+            return 0
 
-        # Flatten all cells inside our current combination of units
-        combo_cells = set(idx for unit in unit_combo for idx in unit)
+        avail_in_units = [i for i in unit_idxs if p.grid[i] is None]
+        if not avail_in_units:
+            return 0
 
-        # If there are available region cells, and they are ALL inside our unit combo:
-        if avail_region_cells and all(c in combo_cells for c in avail_region_cells):
-            # We can place stars in this region inside the units.
-            # Therefore, we can clear (place dots on) any OTHER available cells in these units
-            # that do NOT belong to this region.
-            for unit in unit_combo:
-                for idx in unit:
-                    if p.grid[idx] is None and idx not in region_cells:
-                        changes += self._internal_set(p, idx, ".", "Multi-region sync trapped (dots)", silent=False)
+        needing = p.get_regions_needing_stars(b_idx)
+
+        # Trapped: regions entirely confined to unit_combo.
+        pinned = [
+            entry for entry in needing
+            if (avail := [i for i in entry["unit"]["indices"] if p.grid[i] is None])
+            and all(i in unit_idxs for i in avail)
+        ]
+        total_pinned_needed = sum(entry["remaining"] for entry in pinned)
+        if pinned and total_pinned_needed == required_count:
+            reg_union = set().union(*(e["unit"]["indices"] for e in pinned))
+            label = f"MultiRegionSync({n}-{axis}, B{b_idx+1} trapped)"
+            changes = sum(
+                p.validate_and_set(idx, ".", label, self.verbose)
+                for idx in unit_idxs if idx not in reg_union and p.grid[idx] is None
+            )
             if changes > 0:
                 return changes
 
-        # 2. Check Covered: Do the cells of region b_idx completely cover the units?
-        # If the only available cells in these units belong to region b_idx:
-        avail_combo_cells = [idx for idx in combo_cells if p.grid[idx] is None]
-        if avail_combo_cells and all(c in region_cells for c in avail_combo_cells):
-            # Then no other region can have stars in these units.
-            # We can place dots in all other cells of region b_idx that lie OUTSIDE these units.
-            for idx in region_cells:
-                if p.grid[idx] is None and idx not in combo_cells:
-                    changes += self._internal_set(p, idx, ".", "Multi-region sync covered (dots)", silent=False)
+        # Covered: regions touching unit_combo's available cells.
+        touching_labels = {p.cell_to_region[b_idx][i] for i in avail_in_units}
+        touching = [
+            e for e in needing
+            if e["unit"]["label"].split(" ")[-1] in touching_labels
+        ]
+        total_touching_needed = sum(entry["remaining"] for entry in touching)
+        if touching and total_touching_needed == required_count:
+            reg_union = set().union(*(e["unit"]["indices"] for e in touching))
+            label = f"MultiRegionSync({n}-{axis}, B{b_idx+1} covering)"
+            changes = sum(
+                p.validate_and_set(idx, ".", label, self.verbose)
+                for idx in reg_union if idx not in unit_idxs and p.grid[idx] is None
+            )
             if changes > 0:
                 return changes
 
