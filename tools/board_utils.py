@@ -157,43 +157,6 @@ def get_board_variants(flat_board, solutions, n):
     return variants
 
 
-def voronoi_flood_fill(grid, n):
-    """
-    Star-biased contiguous region growth, used by SolutionFirstGenerator.
-
-    Unlike flood_fill (which maintains one global random frontier, letting
-    a single region snake arbitrarily far across the board before its
-    neighbours are ever considered), this grows every seeded region
-    outward one ring at a time in lockstep, with random tie-breaking
-    within each ring. The result is a jittered Voronoi tessellation: every
-    region stays roughly centered on its own seed cell, which is exactly
-    the bias needed when seeds are a fixed star placement and the goal is
-    regions that plausibly force that placement as the unique solution.
-
-    `grid` must already have exactly one seed cell filled in per region
-    (region id or VOID_CHAR); all other cells must be None. Void cells are
-    left untouched and never grow. Mutates and returns `grid`, or returns
-    None if any cell was unreachable (only possible if voids disconnect
-    the board into isolated pockets).
-    """
-    frontier = [i for i, v in enumerate(grid) if v is not None and v != VOID_CHAR]
-
-    while frontier:
-        random.shuffle(frontier)
-        next_frontier = []
-        for idx in frontier:
-            for nb in get_neighbors_4(idx, n):
-                if grid[nb] is None:
-                    grid[nb] = grid[idx]
-                    next_frontier.append(nb)
-        frontier = next_frontier
-
-    if any(v is None for v in grid):
-        return None
-
-    return grid
-
-
 def flood_fill(grid, n, excluded_region=None, reject_singletons=False):
     unfilled_count = sum(1 for cell in grid if cell is None)
     
@@ -265,3 +228,86 @@ def canonical_relabel(board_str):
             next_label_idx += 1
         new_chars.append(mapping[char])
     return "".join(new_chars)
+
+
+def voronoi_flood_fill(grid, n, size_variation=0.0):
+    """
+    Fills an n×n grid by flood-fill from the seeded cells (non-None values).
+
+    size_variation=0.0 (default): all seeds grow at equal rate, producing
+    roughly equal-sized regions.
+
+    size_variation > 0: each seed is assigned a random growth weight drawn
+    from Gamma(1/size_variation, 1), which is equivalent to one component
+    of a symmetric Dirichlet distribution with concentration 1/size_variation.
+    High-weight seeds grow faster and end up with more cells; low-weight
+    seeds get fewer. The coefficient of variation of region sizes scales
+    roughly as sqrt(size_variation), so:
+      0.5 → mild variation   (CV ≈ 0.7)
+      1.0 → moderate         (CV ≈ 1.0)
+      2.0 → strong           (CV ≈ 1.4)
+      4.0 → dramatic         (CV ≈ 2.0)
+
+    Implementation: at each step, a region is chosen proportional to its
+    weight (weighted random selection), then a random cell from that
+    region's frontier is claimed. This ensures high-weight regions get
+    more turns and therefore grow larger. A reverse map (cell → claiming
+    regions) avoids redundant frontier scans when a cell is claimed.
+
+    Returns the filled grid, or None if any cell couldn't be reached.
+    """
+    region_ids = [v for v in set(grid) if v is not None]
+    if not region_ids:
+        return grid
+
+    from collections import defaultdict
+
+    # Assign growth weights.
+    if size_variation > 0.0:
+        alpha = 1.0 / size_variation
+        weights = {rid: random.gammavariate(alpha, 1.0) for rid in region_ids}
+    else:
+        weights = {rid: 1.0 for rid in region_ids}
+
+    # Per-region frontier and reverse map: unfilled cell → set of adjacent regions.
+    region_frontier = {rid: set() for rid in region_ids}
+    cell_claimants = defaultdict(set)
+
+    for i in range(n * n):
+        if grid[i] is not None:
+            for nb in get_neighbors_4(i, n):
+                if grid[nb] is None:
+                    region_frontier[grid[i]].add(nb)
+                    cell_claimants[nb].add(grid[i])
+
+    while True:
+        active = [(rid, weights[rid]) for rid in region_ids if region_frontier[rid]]
+        if not active:
+            break
+
+        # Weighted random selection of which region grows next.
+        total_w = sum(w for _, w in active)
+        r = random.uniform(0.0, total_w)
+        chosen = active[-1][0]
+        for rid, w in active:
+            r -= w
+            if r <= 0.0:
+                chosen = rid
+                break
+
+        # Claim a random frontier cell for the chosen region.
+        cell = random.choice(list(region_frontier[chosen]))
+
+        # Remove from all frontiers (it's no longer unfilled).
+        for rid in cell_claimants[cell]:
+            region_frontier[rid].discard(cell)
+        del cell_claimants[cell]
+        grid[cell] = chosen
+
+        # Expand: newly exposed unfilled neighbours join this region's frontier.
+        for nb in get_neighbors_4(cell, n):
+            if grid[nb] is None and chosen not in cell_claimants[nb]:
+                region_frontier[chosen].add(nb)
+                cell_claimants[nb].add(chosen)
+
+    return grid if all(v is not None for v in grid) else None
