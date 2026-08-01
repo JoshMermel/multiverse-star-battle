@@ -455,6 +455,445 @@ class MultiStarRules:
                         return changes
         return 0
 
+    # -- At-least-1 / at-most-1 (2★+) ------------------------------------------
+    #
+    # A group of cells can be known to jointly hold "at least 1" star, or
+    # jointly hold "at most 1" star. Those facts feed two forcing checks:
+    #
+    # (a) N+1 candidates, N needed (_apply_at_most_one_forcing): a unit
+    #     needing exactly 2 more stars with exactly 3 remaining candidates
+    #     {x, y, z} -- if some pair among them is a subset of a known
+    #     at-most-1 group, that pair supplies at most 1 of the 2 needed
+    #     stars, so the third candidate must supply the other and is
+    #     forced to a star.
+    # (b) Q disjoint groups fill the quota (_apply_disjoint_quota_fill): a
+    #     unit needing exactly Q more stars -- if Q mutually disjoint
+    #     at-least-1 groups are found among its candidates, they
+    #     collectively guarantee exactly Q stars, so every other candidate
+    #     is forced to a dot.
+    #
+    # Three independent sources feed those checks, split deliberately by
+    # how explainable each one is to a human -- NOT pooled together, so a
+    # player who reaches a given hint is only ever shown a group that
+    # traces back to ONE kind of reasoning (see rule_clump_* vs
+    # rule_witness_* below for how that maps to tiers):
+    #
+    # Source 1 (region/line-split, aka "Rule of Clumps" / "Rule of
+    # Container Consumption", from krazydad -- an experienced Star Battle
+    # puzzle designer -- and matching his published tutorials): a region's
+    # remaining candidates in a single row or column ("in_line"), plus a
+    # small leftover "remainder" outside it. If the remainder can be
+    # PROVEN (by adjacency alone -- always sound, regardless of which
+    # units the cells belong to) to hold at most m stars, and the region
+    # still needs k stars overall, then in_line alone must supply at least
+    # (k - m) of them -- an at-least-N fact about in_line. Combined with
+    # the line's own remaining need, that also bounds how many stars the
+    # REST of the line (outside the region) can hold: 0 means the rest of
+    # the line is immediately all dots (applied directly, not through
+    # either forcing check above); exactly 1 registers the rest of the
+    # line as an at-most-1 group. in_line itself is only registered as a
+    # reusable at-least-1 group when (k - m) == 1 -- matching what
+    # _apply_disjoint_quota_fill assumes (a bound of 2+ would need the
+    # N-group forcing generalization noted below, not implemented yet;
+    # for a 2★ region k never exceeds 2, so this only excludes 3★+).
+    #
+    # Source 2 (line-pair box covering): for a pair of ADJACENT rows (or
+    # columns), try to cover every empty cell in that 2-line band with the
+    # fewest possible disjoint 2x2 boxes (any 2x2 footprint is always an
+    # at-most-1 group -- any two cells in it are mutually adjacent). If
+    # the minimum box count exactly matches the band's remaining star need
+    # (2 * stars_per_group, minus stars already placed), every box must
+    # supply EXACTLY one star -- so each box is simultaneously an
+    # at-least-1 AND an at-most-1 group. Board-agnostic (rows/columns are
+    # shared across every board) and doesn't involve region membership at
+    # all, unlike source 1.
+    #
+    # Source 1 and 2 are both "one geometric argument, visually checkable"
+    # techniques -- feed the Hard-tier rule_clump_* rules below.
+    #
+    # Source 3 (witness projection): some pair {i, j} can be at-least-1
+    # (from some unit's own valid completions -- no valid way to complete
+    # that unit leaves BOTH i and j empty; this itself requires exhaustive
+    # enumeration of a unit's completions, not just inspection). Pick any
+    # cell a forced to a dot if i were starred, and any cell b != a forced
+    # to a dot if j were starred: a and b can't both be stars, or i and j
+    # would both be forced empty, contradicting at-least-1. So {a, b} is
+    # at-most-1. This is a genuine two-hop chain (exhaustive completion
+    # check, then a hypothetical-placement projection) that isn't
+    # something a player can verify by inspection the way sources 1 and 2
+    # are -- feeds the Expert-tier rule_witness_* rules below.
+    #
+    # krazydad's generalization note on source 3: an at-least-1 group of
+    # size n projects (via one witness per member) to at-most-(n-1) over
+    # the witness tuple, which would let the forcing check fire for units
+    # needing 3+ stars too. Only the n=2 case is implemented here (already
+    # a complete technique for 2★, where no unit ever needs more than 2
+    # stars); the n=3+ generalization is a natural follow-up for 3★+, not
+    # implemented yet. Kept private to this rule family for now rather
+    # than exposed as shared helpers, since nothing else consumes them yet.
+
+    def _find_at_least_one_pairs(self, p):
+        """
+        Source 3's at-least-1 half. Every pair of candidate cells (i, j),
+        across every row/column/region on every board, such that no valid
+        way to complete that unit's remaining stars leaves both i and j
+        empty -- i.e. at least one of the pair must hold a star.
+        """
+        pairs = set()
+        for unit in p.units:
+            combos = self._enumerate_unit_completions(p, unit, strong=True)
+            if not combos:
+                continue
+            avail = [i for i in unit["indices"] if p.grid[i] is None]
+            for idx1 in range(len(avail)):
+                for idx2 in range(idx1 + 1, len(avail)):
+                    i, j = avail[idx1], avail[idx2]
+                    if all(i in combo or j in combo for combo in combos):
+                        pairs.add((i, j) if i < j else (j, i))
+        return pairs
+
+    def _cells_forced_to_dot_if_starred(self, p, idx):
+        """
+        Cells that would be forced to a dot as an immediate, one-step
+        consequence of placing a star at idx: its 8-neighbors (adjacency
+        always applies, regardless of quota), plus any row/column/region
+        containing idx that would reach its star quota as a RESULT of this
+        one placement (i.e. currently has quota - 1 stars). Deliberately
+        cheap/one-step -- not the full set of cells that would eventually
+        be excluded after further propagation -- since that's all the
+        soundness of the at-most-1 projection below actually needs.
+        """
+        quota = p.stars_per_group
+        forced = set(nb for nb in p._neighbor_map[idx] if p.grid[nb] is None)
+
+        r, c = p.get_rc(idx)
+        for unit_indices in (p.row_indices[r], p.col_indices[c]):
+            stars = sum(1 for i in unit_indices if p.grid[i] == "x")
+            if stars == quota - 1:
+                forced.update(i for i in unit_indices if i != idx and p.grid[i] is None)
+
+        for b_idx in range(p.n_boards):
+            reg_char = p.cell_to_region[b_idx][idx]
+            reg_indices = p.regions[b_idx][reg_char]
+            stars = sum(1 for i in reg_indices if p.grid[i] == "x")
+            if stars == quota - 1:
+                forced.update(i for i in reg_indices if i != idx and p.grid[i] is None)
+
+        return forced
+
+    def _derive_at_most_one_groups_from_witness_pairs(self, p, at_least_one_pairs):
+        """
+        Source 3's at-most-1 half: projects each at-least-1 pair {i, j} to
+        every at-most-1 witness pair {a, b}: a drawn from cells
+        forced-to-dot-if-i-starred, b drawn from cells
+        forced-to-dot-if-j-starred, a != b.
+        """
+        groups = set()
+        for (i, j) in at_least_one_pairs:
+            forced_by_i = self._cells_forced_to_dot_if_starred(p, i)
+            forced_by_j = self._cells_forced_to_dot_if_starred(p, j)
+            for a in forced_by_i:
+                for b in forced_by_j:
+                    if a != b:
+                        groups.add(frozenset((a, b)))
+        return groups
+
+    def _max_stars_fittable(self, p, cells):
+        """
+        Upper bound on how many stars could simultaneously occupy `cells`,
+        from mutual non-adjacency alone -- always a sound bound, regardless
+        of what units the cells belong to (adjacency is never allowed,
+        independent of quota). Brute-forces every subset, so only meant for
+        small cell sets (a "tiny clump", e.g. bounded by a 2x2 box -- which
+        always gives exactly 1 -- or smaller/sparser).
+        """
+        cells = list(cells)
+        best = 0
+        for mask in range(1, 1 << len(cells)):
+            subset = [cells[i] for i in range(len(cells)) if mask & (1 << i)]
+            if len(subset) <= best:
+                continue
+            if all(
+                not self._cells_adjacent(p, subset[a], subset[b])
+                for a in range(len(subset))
+                for b in range(a + 1, len(subset))
+            ):
+                best = len(subset)
+        return best
+
+    # Cap on the region's "leftover" cell count source 1 will analyze via
+    # _max_stars_fittable's brute force -- keeps it a "tiny clump" check,
+    # not a general (expensive, and mostly-useless-anyway-since-a-big-loose
+    # remainder rarely proves a tight bound) sub-region solver.
+    _LINE_SPLIT_REMAINDER_CAP = 4
+
+    def _region_line_split_facts(self, p):
+        """
+        Source 1 (see class-level comment above). Returns (changes,
+        at_most_one_groups, at_least_one_groups): changes > 0 if a "rest of
+        the line is entirely dots" deduction was applied directly;
+        at_most_one_groups is every "rest of line" cell set found to hold
+        at most 1 star instead; at_least_one_groups is every "in_line" cell
+        set proven to hold at least 1 star (only when that bound is
+        exactly 1 -- see class-level comment).
+        """
+        at_most_groups = set()
+        at_least_groups = set()
+
+        for b_idx in range(p.n_boards):
+            for r_char, r_indices in p.regions[b_idx].items():
+                avail = [i for i in r_indices if p.grid[i] is None]
+                if len(avail) < 2:
+                    continue
+                stars_in_region = sum(1 for i in r_indices if p.grid[i] == "x")
+                k = p.stars_per_group - stars_in_region
+                if k <= 0:
+                    continue
+
+                for axis, units in (("row", p.row_indices), ("col", p.col_indices)):
+                    lines = {}
+                    for i in avail:
+                        rr, cc = p.get_rc(i)
+                        key = rr if axis == "row" else cc
+                        lines.setdefault(key, []).append(i)
+
+                    for line_idx, in_line in lines.items():
+                        remainder = [i for i in avail if i not in in_line]
+                        if not remainder or len(remainder) > self._LINE_SPLIT_REMAINDER_CAP:
+                            continue
+                        m = self._max_stars_fittable(p, remainder)
+                        q = k - m
+                        if q < 1:
+                            continue  # remainder alone could already cover it
+
+                        if q == 1:
+                            at_least_groups.add(frozenset(in_line))
+
+                        line_indices = units[line_idx]
+                        line_stars = sum(1 for i in line_indices if p.grid[i] == "x")
+                        line_needed = p.stars_per_group - line_stars
+                        rest_of_line = [
+                            i for i in line_indices
+                            if p.grid[i] is None and i not in in_line
+                        ]
+                        if not rest_of_line:
+                            continue
+
+                        bound = line_needed - q
+                        if bound <= 0:
+                            label = (
+                                f"AtLeastOneLineSplit(B{b_idx+1} Reg {r_char} "
+                                f"vs {axis} {line_idx})"
+                            )
+                            changes = sum(
+                                p.validate_and_set(idx, ".", label, self.verbose)
+                                for idx in rest_of_line
+                            )
+                            if changes > 0:
+                                return changes, at_most_groups, at_least_groups
+                        elif bound == 1:
+                            at_most_groups.add(frozenset(rest_of_line))
+        return 0, at_most_groups, at_least_groups
+
+    def _find_line_pair_box_cover_groups(self, p):
+        """
+        Source 2 (see class-level comment above): for each pair of
+        ADJACENT rows (and separately, adjacent columns), try to cover
+        every empty cell in that 2-line band with the fewest possible
+        disjoint 2x2 boxes. If the minimum box count exactly matches the
+        band's remaining star need, every box is registered as BOTH an
+        at-least-1 and an at-most-1 group.
+
+        Board-agnostic: rows/columns are shared across every board, so
+        this never loops over p.n_boards, unlike source 1.
+        """
+        groups = set()
+        n = p.n
+
+        for axis, units in (("row", p.row_indices), ("col", p.col_indices)):
+            for start in range(n - 1):
+                window_indices = units[start] + units[start + 1]
+                avail = [i for i in window_indices if p.grid[i] is None]
+                if not avail:
+                    continue
+                stars_in_window = sum(1 for i in window_indices if p.grid[i] == "x")
+                required = 2 * p.stars_per_group - stars_in_window
+                if required <= 0:
+                    continue
+
+                # Positions along the OTHER axis (columns, if axis == "row")
+                # that have at least one empty cell in this band.
+                other_positions = sorted(set(
+                    (i % n if axis == "row" else i // n) for i in avail
+                ))
+
+                # Greedy minimum covering by width-2 spans: start a box at
+                # the leftmost uncovered position, extend one more position
+                # right, skip everything that box now covers, repeat. This
+                # is the standard optimal strategy for "minimum number of
+                # fixed-width intervals to cover a set of points", and
+                # naturally produces disjoint boxes (each skips past its
+                # own full span before the next one starts).
+                boxes = []
+                idx = 0
+                while idx < len(other_positions):
+                    c0 = other_positions[idx]
+                    boxes.append((c0, c0 + 1))
+                    idx += 1
+                    while idx < len(other_positions) and other_positions[idx] <= c0 + 1:
+                        idx += 1
+
+                if len(boxes) != required:
+                    continue
+
+                for (c0, c1) in boxes:
+                    box_cells = [
+                        i for i in avail
+                        if (i % n if axis == "row" else i // n) in (c0, c1)
+                    ]
+                    if box_cells:
+                        groups.add(frozenset(box_cells))
+
+        return groups
+
+    def _apply_at_most_one_forcing(self, p, at_most_one_groups):
+        """
+        For a unit needing exactly 2 more stars with exactly 3 remaining
+        candidates, if some pair among them is a subset of any known
+        at-most-1 group, that pair supplies at most 1 of the 2 needed
+        stars, so the third candidate is forced to a star.
+        """
+        for unit in p.units:
+            stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
+            needed = p.stars_per_group - stars
+            if needed != 2:
+                continue
+            avail = [i for i in unit["indices"] if p.grid[i] is None]
+            if len(avail) != needed + 1:
+                continue
+            for a, b in combinations(avail, 2):
+                pair = frozenset((a, b))
+                if any(pair <= group for group in at_most_one_groups):
+                    rem = [i for i in avail if i not in pair][0]
+                    if p.grid[rem] is None:
+                        changes = p.validate_and_set(
+                            rem, "x", "AtLeastOneForcing", self.verbose)
+                        if changes > 0:
+                            return changes
+        return 0
+
+    def _find_disjoint_group_combo(self, groups, k):
+        """
+        Backtracking search for k mutually disjoint groups among `groups`
+        (each a list/tuple/frozenset of cell indices). Returns the combo
+        (a list of k groups) if found, else None. `groups` and k are both
+        expected to be small in practice (k is a unit's remaining star
+        quota -- at most stars_per_group), so this is cheap.
+        """
+        def backtrack(start, chosen, used):
+            if len(chosen) == k:
+                return list(chosen)
+            for idx in range(start, len(groups)):
+                g = groups[idx]
+                if used & set(g):
+                    continue
+                result = backtrack(idx + 1, chosen + [g], used | set(g))
+                if result is not None:
+                    return result
+            return None
+        return backtrack(0, [], set())
+
+    def _apply_disjoint_quota_fill(self, p, at_least_one_groups):
+        """
+        For a unit needing exactly Q more stars: if Q mutually disjoint
+        at-least-1 groups can be found, all contained within the unit's
+        remaining candidates, those groups collectively guarantee exactly
+        Q stars -- matching the unit's remaining need exactly -- so every
+        other candidate in the unit, outside their union, must be a dot.
+
+        Q=2 (a still-fully-open 2★ unit) needs two disjoint at-least-1
+        groups; Q=1 (a unit already at quota-1, down to its last star)
+        needs just one -- that single group fully accounts for the unit's
+        last star, so the rest of its empties are dots. Both are the same
+        principle at different Q.
+        """
+        all_groups = list(at_least_one_groups)
+        for unit in p.units:
+            stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
+            q = p.stars_per_group - stars
+            if q <= 0:
+                continue
+            avail = set(i for i in unit["indices"] if p.grid[i] is None)
+            if len(avail) <= q:
+                continue  # nothing extra to eliminate even if this succeeds
+
+            relevant = [g for g in all_groups if set(g) <= avail]
+            if len(relevant) < q:
+                continue
+
+            combo = self._find_disjoint_group_combo(relevant, q)
+            if combo is None:
+                continue
+
+            covered = set()
+            for g in combo:
+                covered |= set(g)
+            targets = [i for i in avail if i not in covered]
+            if not targets:
+                continue
+
+            label = f"DisjointAtLeastOneQuotaFill({unit['label']}, Q={q})"
+            changes = sum(
+                p.validate_and_set(idx, ".", label, self.verbose) for idx in targets
+            )
+            if changes > 0:
+                return changes
+        return 0
+
+    # -- Hard tier: clump-sourced (sources 1 + 2, single geometric hop) -------
+
+    def rule_clump_direct_dots(self, p):
+        """Region/line-split's self-contained direct-dots case, standalone."""
+        changes, _, _ = self._region_line_split_facts(p)
+        return changes
+
+    def rule_clump_at_most_one_forcing(self, p):
+        """_apply_at_most_one_forcing fed only by sources 1 and 2."""
+        _, clump_groups, _ = self._region_line_split_facts(p)
+        box_groups = self._find_line_pair_box_cover_groups(p)
+        at_most_one_groups = clump_groups | box_groups
+        if not at_most_one_groups:
+            return 0
+        return self._apply_at_most_one_forcing(p, at_most_one_groups)
+
+    def rule_clump_disjoint_quota_fill(self, p):
+        """_apply_disjoint_quota_fill fed only by sources 1 and 2."""
+        _, _, clump_groups = self._region_line_split_facts(p)
+        box_groups = self._find_line_pair_box_cover_groups(p)
+        at_least_one_groups = clump_groups | box_groups
+        if not at_least_one_groups:
+            return 0
+        return self._apply_disjoint_quota_fill(p, at_least_one_groups)
+
+    # -- Expert tier: witness-sourced (source 3, two-hop chain) ---------------
+
+    def rule_witness_at_most_one_forcing(self, p):
+        """_apply_at_most_one_forcing fed only by source 3."""
+        at_least_pairs = self._find_at_least_one_pairs(p)
+        if not at_least_pairs:
+            return 0
+        witness_groups = self._derive_at_most_one_groups_from_witness_pairs(p, at_least_pairs)
+        if not witness_groups:
+            return 0
+        return self._apply_at_most_one_forcing(p, witness_groups)
+
+    def rule_witness_disjoint_quota_fill(self, p):
+        """_apply_disjoint_quota_fill fed only by source 3."""
+        at_least_pairs = self._find_at_least_one_pairs(p)
+        if not at_least_pairs:
+            return 0
+        return self._apply_disjoint_quota_fill(p, at_least_pairs)
+
     # -- Lookahead rules (2★+) --------------------------------------------------
     #
     # These are the multi-star analogues of the 1★ lookahead rules in

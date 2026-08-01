@@ -435,6 +435,446 @@ export function applyMultiStarRules(PuzzleSolver) {
     }));
   };
 
+  // --- At-least-1 / at-most-1 (2★+) ------------------------------------------
+  //
+  // JS port of the Python engine's tiered at-least-1/at-most-1 rule family
+  // (see tools/scorer/rules_multi_star.py for the fuller derivation
+  // comments). A group of cells can be known to jointly hold "at least 1"
+  // star, or jointly hold "at most 1" star. Those facts feed two forcing
+  // checks:
+  //
+  // (a) N+1 candidates, N needed (_applyAtMostOneForcing): a unit needing
+  //     exactly 2 more stars with exactly 3 remaining candidates
+  //     {x, y, z} -- if some pair among them is a subset of a known
+  //     at-most-1 group, that pair supplies at most 1 of the 2 needed
+  //     stars, so the third candidate must supply the other and is forced
+  //     to a star.
+  // (b) Q disjoint groups fill the quota (_applyDisjointQuotaFill): a unit
+  //     needing exactly Q more stars -- if Q mutually disjoint at-least-1
+  //     groups are found among its candidates, they collectively
+  //     guarantee exactly Q stars, so every other candidate is forced to
+  //     a dot.
+  //
+  // Three independent sources feed those checks, split deliberately by
+  // how explainable each one is to a human -- NOT pooled together, so a
+  // player who reaches a given hint is only ever shown a group that
+  // traces back to ONE kind of reasoning:
+  //
+  // Source 1 (region/line-split, aka "Rule of Clumps" / "Rule of
+  // Container Consumption", from krazydad -- an experienced Star Battle
+  // puzzle designer -- and matching his published tutorials): a region's
+  // remaining candidates in a single row or column ("inLine"), plus a
+  // small leftover "remainder" outside it. If the remainder can be
+  // PROVEN (by adjacency alone) to hold at most m stars, and the region
+  // still needs k stars overall, inLine alone must supply at least
+  // (k - m) of them -- an at-least-N fact about inLine, only kept as a
+  // reusable at-least-1 group when that bound is exactly 1. Combined with
+  // the line's own remaining need, this also bounds how many stars the
+  // REST of the line (outside the region) can hold: 0 means the rest of
+  // the line is immediately all dots (its own standalone hint); exactly 1
+  // registers the rest of the line as an at-most-1 group.
+  //
+  // Source 2 (line-pair box covering): for a pair of ADJACENT rows (or
+  // columns), try to cover every empty cell in that 2-line band with the
+  // fewest possible disjoint 2x2 boxes (any 2x2 footprint is always an
+  // at-most-1 group -- any two cells in it are mutually adjacent). If the
+  // minimum box count exactly matches the band's remaining star need,
+  // every box must supply EXACTLY one star -- so each box is
+  // simultaneously an at-least-1 AND an at-most-1 group. Board-agnostic,
+  // and doesn't involve region membership at all, unlike source 1.
+  //
+  // Sources 1 and 2 are both "one geometric argument, visually checkable"
+  // techniques -- feed the Hard-tier hintClump* rules below.
+  //
+  // Source 3 (witness projection): a pair {i, j} can be at-least-1 (no
+  // valid way to complete some unit leaves BOTH i and j empty -- this
+  // itself requires exhaustive enumeration of a unit's completions, not
+  // just inspection). Pick any cell a forced to a dot if i were starred,
+  // and any cell b != a forced to a dot if j were starred: a and b can't
+  // both be stars, or i and j would both be forced empty, contradicting
+  // at-least-1. So {a, b} is at-most-1. A genuine two-hop chain that
+  // isn't something a player can verify by inspection the way sources 1
+  // and 2 are -- feeds the Expert-tier hintWitness* rules below.
+  //
+  // Hint UI shows only the final forcing step (the at-most-1/at-least-1
+  // group and the forced cell), not the derivation chain behind it --
+  // matching how e.g. hintUnitPlacementForced doesn't re-derive
+  // _enumerateUnitCompletions for the player either.
+
+  p._groupKey = function (indices) {
+    return [...indices].sort((a, b) => a - b).join(',');
+  };
+
+  // Source 3's at-least-1 half.
+  p._findAtLeastOnePairs = function () {
+    const pairs = new Map(); // key -> [i, j]
+    for (const unit of this.units) {
+      const combos = this._enumerateUnitCompletions(unit, true);
+      if (!combos || combos.length === 0) continue;
+      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+      for (let idx1 = 0; idx1 < avail.length; idx1++) {
+        for (let idx2 = idx1 + 1; idx2 < avail.length; idx2++) {
+          const i = avail[idx1], j = avail[idx2];
+          if (combos.every(combo => combo.includes(i) || combo.includes(j))) {
+            const key = this._groupKey([i, j]);
+            if (!pairs.has(key)) pairs.set(key, [i, j]);
+          }
+        }
+      }
+    }
+    return pairs;
+  };
+
+  // Cells that would be forced to a dot as an immediate, one-step
+  // consequence of placing a star at idx: its neighbors (adjacency always
+  // applies, regardless of quota), plus any row/column/region containing
+  // idx that would reach its star quota as a RESULT of this one placement
+  // (i.e. currently has quota - 1 stars).
+  p._cellsForcedToDotIfStarred = function (idx) {
+    const n = this.n;
+    const quota = this.starsPerGroup;
+    const forced = new Set(this.getNeighbors(idx).filter(nb => this.vState(nb) === CELL.NONE));
+
+    const row = Math.floor(idx / n), col = idx % n;
+    for (const unitIndices of [this.axisIndices.Row[row], this.axisIndices.Column[col]]) {
+      const stars = unitIndices.filter(i => this.vState(i) === CELL.STAR).length;
+      if (stars === quota - 1) {
+        unitIndices.forEach(i => { if (i !== idx && this.vState(i) === CELL.NONE) forced.add(i); });
+      }
+    }
+
+    for (const reg of this._getRegionsContaining(idx)) {
+      const stars = reg.indices.filter(i => this.vState(i) === CELL.STAR).length;
+      if (stars === quota - 1) {
+        reg.indices.forEach(i => { if (i !== idx && this.vState(i) === CELL.NONE) forced.add(i); });
+      }
+    }
+
+    return forced;
+  };
+
+  // Source 3's at-most-1 half.
+  p._deriveAtMostOneGroupsFromWitnessPairs = function (atLeastOnePairs) {
+    const groups = new Map();
+    for (const [i, j] of atLeastOnePairs.values()) {
+      const forcedByI = this._cellsForcedToDotIfStarred(i);
+      const forcedByJ = this._cellsForcedToDotIfStarred(j);
+      for (const a of forcedByI) {
+        for (const b of forcedByJ) {
+          if (a !== b) {
+            const gkey = this._groupKey([a, b]);
+            if (!groups.has(gkey)) groups.set(gkey, [a, b]);
+          }
+        }
+      }
+    }
+    return groups;
+  };
+
+  // Upper bound on how many stars could simultaneously occupy `cells`,
+  // from mutual non-adjacency alone -- always sound regardless of what
+  // units the cells belong to. Brute-forces every subset, so only meant
+  // for small cell sets (a "tiny clump", e.g. bounded by a 2x2 box --
+  // which always gives exactly 1 -- or smaller/sparser).
+  p._maxStarsFittable = function (cells) {
+    const arr = [...cells];
+    const n = arr.length;
+    let best = 0;
+    for (let mask = 1; mask < (1 << n); mask++) {
+      const subset = [];
+      for (let i = 0; i < n; i++) {
+        if (mask & (1 << i)) subset.push(arr[i]);
+      }
+      if (subset.length <= best) continue;
+      let ok = true;
+      for (let a = 0; a < subset.length && ok; a++) {
+        for (let b = a + 1; b < subset.length; b++) {
+          if (this._cellsAdjacent(subset[a], subset[b])) { ok = false; break; }
+        }
+      }
+      if (ok) best = subset.length;
+    }
+    return best;
+  };
+
+  // Cap on the region's "leftover" cell count source 1 will analyze via
+  // _maxStarsFittable's brute force -- keeps it a "tiny clump" check, not
+  // a general (expensive, and mostly-useless-anyway-since-a-big-loose
+  // remainder rarely proves a tight bound) sub-region solver.
+  p._LINE_SPLIT_REMAINDER_CAP = 4;
+
+  // Source 1 (see class-level comment above). Returns { directDotHints,
+  // atMostGroups, atLeastGroups }: directDotHints is every "rest of the
+  // line is entirely dots" hint found; atMostGroups is every "rest of
+  // line" cell set found to hold at most 1 star instead; atLeastGroups is
+  // every "inLine" cell set proven to hold at least 1 star (only when
+  // that bound is exactly 1).
+  p._regionLineSplitFacts = function () {
+    const directDotHints = [];
+    const atMostGroups = new Map();
+    const atLeastGroups = new Map();
+    const cap = this._LINE_SPLIT_REMAINDER_CAP;
+    const n = this.n;
+
+    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+      const regionsOnBoard = this.units.filter(u => u.label.includes("Region") && u.boardIdx === bIdx);
+      for (const region of regionsOnBoard) {
+        const avail = region.indices.filter(i => this.vState(i) === CELL.NONE);
+        if (avail.length < 2) continue;
+        const starsInRegion = region.indices.filter(i => this.vState(i) === CELL.STAR).length;
+        const k = this.starsPerGroup - starsInRegion;
+        if (k <= 0) continue;
+
+        for (const axis of ["Row", "Column"]) {
+          const lines = new Map(); // lineIdx -> cells of `avail` in that line
+          for (const i of avail) {
+            const key = axis === "Row" ? Math.floor(i / n) : i % n;
+            if (!lines.has(key)) lines.set(key, []);
+            lines.get(key).push(i);
+          }
+
+          for (const [lineIdx, inLine] of lines) {
+            const inLineSet = new Set(inLine);
+            const remainder = avail.filter(i => !inLineSet.has(i));
+            if (remainder.length === 0 || remainder.length > cap) continue;
+            const m = this._maxStarsFittable(remainder);
+            const q = k - m;
+            if (q < 1) continue; // remainder alone could already cover it
+
+            if (q === 1) {
+              const inLineKey = this._groupKey(inLine);
+              if (!atLeastGroups.has(inLineKey)) atLeastGroups.set(inLineKey, inLine);
+            }
+
+            const lineIndices = this.axisIndices[axis][lineIdx];
+            const lineStars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
+            const lineNeeded = this.starsPerGroup - lineStars;
+            const restOfLine = lineIndices.filter(i => this.vState(i) === CELL.NONE && !inLineSet.has(i));
+            if (restOfLine.length === 0) continue;
+
+            const bound = lineNeeded - q;
+            const axisWord = axis.toLowerCase();
+            if (bound <= 0) {
+              directDotHints.push({
+                boardIdx: bIdx,
+                description: `This region still needs ${k} star${k === 1 ? '' : 's'}, but the small cluster outside this ${axisWord} (blue) can hold at most ${m}, so its portion in this ${axisWord} (blue) must supply the rest -- leaving no room for stars anywhere else in this ${axisWord}.`,
+                highlights: inLine.map(idx => ({ idx, color: 'hint-source-blue' }))
+                  .concat(remainder.map(idx => ({ idx, color: 'hint-source-blue' }))),
+                marks: restOfLine.map(idx => ({ idx, color: 'hint-target-yellow' })),
+              });
+            } else if (bound === 1) {
+              const gkey = this._groupKey(restOfLine);
+              if (!atMostGroups.has(gkey)) atMostGroups.set(gkey, restOfLine);
+            }
+          }
+        }
+      }
+    }
+
+    return { directDotHints, atMostGroups, atLeastGroups };
+  };
+
+  // Source 2 (see class-level comment above). Board-agnostic: rows/columns
+  // are shared across every board, so this never loops over per-board
+  // regions, unlike source 1.
+  p._findLinePairBoxCoverGroups = function () {
+    const groups = new Map();
+    const n = this.n;
+
+    for (const axis of ["Row", "Column"]) {
+      const units = this.axisIndices[axis];
+      for (let start = 0; start < n - 1; start++) {
+        const windowIndices = units[start].concat(units[start + 1]);
+        const avail = windowIndices.filter(i => this.vState(i) === CELL.NONE);
+        if (avail.length === 0) continue;
+        const starsInWindow = windowIndices.filter(i => this.vState(i) === CELL.STAR).length;
+        const required = 2 * this.starsPerGroup - starsInWindow;
+        if (required <= 0) continue;
+
+        // Positions along the OTHER axis (columns, if axis === "Row")
+        // that have at least one empty cell in this band.
+        const otherPositions = [...new Set(
+          avail.map(i => axis === "Row" ? i % n : Math.floor(i / n))
+        )].sort((a, b) => a - b);
+
+        // Greedy minimum covering by width-2 spans: start a box at the
+        // leftmost uncovered position, extend one more position right,
+        // skip everything that box now covers, repeat -- the standard
+        // optimal strategy for "minimum number of fixed-width intervals
+        // to cover a set of points", and naturally disjoint (each skips
+        // past its own full span before the next one starts).
+        const boxes = [];
+        let idx = 0;
+        while (idx < otherPositions.length) {
+          const c0 = otherPositions[idx];
+          boxes.push([c0, c0 + 1]);
+          idx++;
+          while (idx < otherPositions.length && otherPositions[idx] <= c0 + 1) idx++;
+        }
+
+        if (boxes.length !== required) continue;
+
+        for (const [c0, c1] of boxes) {
+          const boxCells = avail.filter(i => {
+            const pos = axis === "Row" ? i % n : Math.floor(i / n);
+            return pos === c0 || pos === c1;
+          });
+          if (boxCells.length > 0) {
+            const key = this._groupKey(boxCells);
+            if (!groups.has(key)) groups.set(key, boxCells);
+          }
+        }
+      }
+    }
+
+    return groups;
+  };
+
+  // For a unit needing exactly 2 more stars with exactly 3 remaining
+  // candidates, if some pair among them is a subset of any known
+  // at-most-1 group, that pair supplies at most 1 of the 2 needed stars,
+  // so the third candidate is forced to a star.
+  p._applyAtMostOneForcing = function (atMostOneGroups) {
+    const hints = [];
+    const groupArrays = [...atMostOneGroups.values()];
+    for (const unit of this.units) {
+      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
+      const needed = this.starsPerGroup - stars;
+      if (needed !== 2) continue;
+      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+      if (avail.length !== needed + 1) continue;
+
+      for (let x = 0; x < avail.length; x++) {
+        for (let y = x + 1; y < avail.length; y++) {
+          const a = avail[x], b = avail[y];
+          if (groupArrays.some(g => g.includes(a) && g.includes(b))) {
+            const rem = avail.find(i => i !== a && i !== b);
+            hints.push({
+              boardIdx: unit.boardIdx,
+              description: `At most one of the two blue-highlighted candidates can be a star (based on other constraints elsewhere on the board), so the remaining candidate must be a star.`,
+              highlights: [a, b].map(idx => ({ idx, color: 'hint-source-blue' })),
+              marks: [{ idx: rem, color: 'hint-target-green' }],
+            });
+          }
+        }
+      }
+    }
+    return hints;
+  };
+
+  // Backtracking search for k mutually disjoint groups among `groups`
+  // (each an array of cell indices). Returns the combo (an array of k
+  // groups) if found, else null. `groups` and k are both expected to be
+  // small in practice (k is a unit's remaining star quota -- at most
+  // starsPerGroup), so this is cheap.
+  p._findDisjointGroupCombo = function (groups, k) {
+    const backtrack = (start, chosen, used) => {
+      if (chosen.length === k) return chosen;
+      for (let idx = start; idx < groups.length; idx++) {
+        const g = groups[idx];
+        if (g.some(c => used.has(c))) continue;
+        const result = backtrack(idx + 1, [...chosen, g], new Set([...used, ...g]));
+        if (result) return result;
+      }
+      return null;
+    };
+    return backtrack(0, [], new Set());
+  };
+
+  // For a unit needing exactly Q more stars: if Q mutually disjoint
+  // at-least-1 groups can be found, all contained within the unit's
+  // remaining candidates, those groups collectively guarantee exactly Q
+  // stars -- matching the unit's remaining need exactly -- so every other
+  // candidate in the unit, outside their union, must be a dot.
+  //
+  // Q=2 (a still-fully-open 2★ unit) needs two disjoint at-least-1
+  // groups; Q=1 (a unit already at quota-1, down to its last star) needs
+  // just one -- that single group fully accounts for the unit's last
+  // star, so the rest of its empties are dots. Both are the same
+  // principle at different Q.
+  p._applyDisjointQuotaFill = function (atLeastOneGroups) {
+    const allGroups = [...atLeastOneGroups.values()];
+    const candidates = [];
+    for (const unit of this.units) {
+      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
+      const q = this.starsPerGroup - stars;
+      if (q <= 0) continue;
+      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+      if (avail.length <= q) continue; // nothing extra to eliminate even if this succeeds
+
+      const availSet = new Set(avail);
+      const relevant = allGroups.filter(g => g.every(c => availSet.has(c)));
+      if (relevant.length < q) continue;
+
+      const combo = this._findDisjointGroupCombo(relevant, q);
+      if (!combo) continue;
+
+      const covered = new Set(combo.flat());
+      const targets = avail.filter(i => !covered.has(i));
+      if (targets.length === 0) continue;
+
+      candidates.push({ unit, combo, targets });
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
+
+    return candidates.map(({ unit, combo, targets }) => ({
+      boardIdx: unit.boardIdx,
+      description: combo.length === 1
+        ? `At least one of the two blue-highlighted cells must be a star, and that's this unit's last remaining star -- so every other empty cell here must be a dot.`
+        : `Each of these ${combo.length} blue-highlighted pairs must contain a star, and that already accounts for every star this unit still needs -- so every other empty cell here must be a dot.`,
+      highlights: combo.flat().map(idx => ({ idx, color: 'hint-source-blue' })),
+      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
+    }));
+  };
+
+  // -- Hard tier: clump-sourced (sources 1 + 2, single geometric hop) --------
+
+  // Region/line-split's self-contained direct-dots case, standalone.
+  p.hintClumpDirectDots = function () {
+    const { directDotHints } = this._regionLineSplitFacts();
+    return directDotHints.length > 0 ? directDotHints : null;
+  };
+
+  // _applyAtMostOneForcing fed only by sources 1 and 2.
+  p.hintClumpAtMostOneForcing = function () {
+    const { atMostGroups } = this._regionLineSplitFacts();
+    const boxGroups = this._findLinePairBoxCoverGroups();
+    const atMostOneGroups = new Map([...atMostGroups, ...boxGroups]);
+    if (atMostOneGroups.size === 0) return null;
+    const hints = this._applyAtMostOneForcing(atMostOneGroups);
+    return hints.length > 0 ? hints : null;
+  };
+
+  // _applyDisjointQuotaFill fed only by sources 1 and 2.
+  p.hintClumpDisjointQuotaFill = function () {
+    const { atLeastGroups } = this._regionLineSplitFacts();
+    const boxGroups = this._findLinePairBoxCoverGroups();
+    const atLeastOneGroups = new Map([...atLeastGroups, ...boxGroups]);
+    if (atLeastOneGroups.size === 0) return null;
+    return this._applyDisjointQuotaFill(atLeastOneGroups);
+  };
+
+  // -- Expert tier: witness-sourced (source 3, two-hop chain) ----------------
+
+  // _applyAtMostOneForcing fed only by source 3.
+  p.hintWitnessAtMostOneForcing = function () {
+    const atLeastPairs = this._findAtLeastOnePairs();
+    if (atLeastPairs.size === 0) return null;
+    const witnessGroups = this._deriveAtMostOneGroupsFromWitnessPairs(atLeastPairs);
+    if (witnessGroups.size === 0) return null;
+    const hints = this._applyAtMostOneForcing(witnessGroups);
+    return hints.length > 0 ? hints : null;
+  };
+
+  // _applyDisjointQuotaFill fed only by source 3.
+  p.hintWitnessDisjointQuotaFill = function () {
+    const atLeastPairs = this._findAtLeastOnePairs();
+    if (atLeastPairs.size === 0) return null;
+    return this._applyDisjointQuotaFill(atLeastPairs);
+  };
+
   // --- Rule list for starsPerGroup >= 2 ---
   //
   // Used identically for 2★, 3★, and 4★+ puzzles -- those were three
@@ -474,10 +914,15 @@ export function applyMultiStarRules(PuzzleSolver) {
         }
       },
       { key: 'unitCompletionSatisfiesOtherUnit', fn: () => this.hintUnitCompletionSatisfiesOtherUnit() },
+      { key: 'clumpDirectDots',                fn: () => this.hintClumpDirectDots() },
+      { key: 'clumpAtMostOneForcing',          fn: () => this.hintClumpAtMostOneForcing() },
+      { key: 'clumpDisjointQuotaFill',         fn: () => this.hintClumpDisjointQuotaFill() },
       // Expert
+      { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
+      { key: 'witnessAtMostOneForcing',        fn: () => this.hintWitnessAtMostOneForcing() },
+      { key: 'witnessDisjointQuotaFill',       fn: () => this.hintWitnessDisjointQuotaFill() },
       { key: 'regionSubsetSync3',              fn: () => this.hintRegionSubsetSync(3) },
       { key: 'regionSubsetSync4',              fn: () => this.hintRegionSubsetSync(4) },
-      { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
       { key: 'lookaheadDots',                  fn: () => this.hintLookaheadDots() },
       // Grandmaster

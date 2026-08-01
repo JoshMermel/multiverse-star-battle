@@ -132,9 +132,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_region_subset_sync_2,                      65, "Hard"),
             (self.rule_unit_region_sync_multi_4_plus,             80, "Hard"),
             (self.rule_unit_completion_satisfies_other_unit,      85, "Hard"),
+            (self.rule_clump_direct_dots,                         86, "Hard"),
+            (self.rule_clump_at_most_one_forcing,                 87, "Hard"),
+            (self.rule_clump_disjoint_quota_fill,                 88, "Hard"),
 
             # -- Expert -------------------------------------------------------
             (self.rule_unit_region_sync_multi_2_disjoint,         100, "Expert"),
+            (self.rule_witness_at_most_one_forcing,               101, "Expert"),
+            (self.rule_witness_disjoint_quota_fill,               102, "Expert"),
             (self.rule_region_subset_sync_3,                      120, "Expert"),
             (self.rule_region_subset_sync_4,                      150, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),
