@@ -543,12 +543,11 @@ class _RectContext:
 
         elif self.sym_type == 'double_diagonal':
             n = R  # square
-            valid_anti = [k for k in range(2, count, 2)]
-            anti_count = random.choice(valid_anti) if valid_anti else 2
-            main_count = count - anti_count
 
             def _even_palindromic_partition(total, num_segs):
                 half = num_segs // 2
+                if half == 0:
+                    return []
                 if half == 1:
                     a = total // 2
                     return [a, total - a]
@@ -580,9 +579,66 @@ class _RectContext:
                     pos += part_size
 
             main_cells = [(i, i) for i in range(n)]
-            _seed_diagonal(main_cells, _even_palindromic_partition(n, main_count))
             anti_cells = [(i, n - 1 - i) for i in range(n)]
-            _seed_diagonal(anti_cells, _even_palindromic_partition(n, anti_count))
+
+            if n % 2 == 0:
+                # Even N: the diagonals never share a cell, so each is
+                # seeded independently exactly as before -- both counts
+                # even, no centre region.
+                valid_anti = [k for k in range(2, count, 2)]
+                anti_count = random.choice(valid_anti) if valid_anti else 2
+                main_count = count - anti_count
+                _seed_diagonal(main_cells, _even_palindromic_partition(n, main_count))
+                _seed_diagonal(anti_cells, _even_palindromic_partition(n, anti_count))
+            else:
+                # Odd N: main and anti-diagonal share the true centre
+                # cell (n//2, n//2). Reserve exactly one label for a
+                # single centre region that grows outward from that
+                # cell along BOTH diagonals (arm_main/arm_anti cells
+                # each direction, independently sized -- this is what
+                # lets the centre region span more than one cell along
+                # each diagonal). The rest of the straddle budget
+                # (count - 1, always even) splits into an even count of
+                # wing segments per diagonal, seeded on the leftover
+                # cells outside the centre's reach via the exact same
+                # (unmodified) wing logic as the even-N case -- removing
+                # an odd-length, symmetric chunk from the middle of an
+                # odd-length diagonal always leaves an even remainder,
+                # so nothing about the wing math has to change.
+                center = n // 2
+                wing_total_segs = count - 1
+                main_wing_segs = random.choice(range(0, wing_total_segs + 1, 2))
+                anti_wing_segs = wing_total_segs - main_wing_segs
+
+                # Grow the centre from the shared cell outward along each
+                # axis, leaving >= 1 cell per wing segment on each side.
+                max_arm_main = (n - 1 - main_wing_segs) // 2
+                max_arm_anti = (n - 1 - anti_wing_segs) // 2
+                arm_main = random.randint(0, max_arm_main)
+                arm_anti = random.randint(0, max_arm_anti)
+
+                center_label = label_offset + labels_used
+                labels_used += 1
+
+                def _seed_centre_arm(cells):
+                    for k, (r2, c2) in enumerate(cells):
+                        cell = self.idx(r2, c2)
+                        if grid[cell] is None:
+                            grid[cell] = center_label
+                        if k < len(cells) - 1:
+                            nr, nc = cells[k + 1]
+                            for br, bc in [(r2, nc), (nr, c2)]:
+                                bridge = self.idx(br, bc)
+                                if bridge is not None and grid[bridge] is None:
+                                    grid[bridge] = center_label
+
+                _seed_centre_arm(main_cells[center - arm_main:center + arm_main + 1])
+                _seed_centre_arm(anti_cells[center - arm_anti:center + arm_anti + 1])
+
+                main_leftover = main_cells[:center - arm_main] + main_cells[center + arm_main + 1:]
+                anti_leftover = anti_cells[:center - arm_anti] + anti_cells[center + arm_anti + 1:]
+                _seed_diagonal(main_leftover, _even_palindromic_partition(len(main_leftover), main_wing_segs))
+                _seed_diagonal(anti_leftover, _even_palindromic_partition(len(anti_leftover), anti_wing_segs))
 
         elif self.sym_type == 'double_mirror':
             mid_r, mid_c = R // 2, C // 2

@@ -267,7 +267,7 @@ class TestSquareFreGenerator:
 
 # ── SymmetricGenerator ────────────────────────────────────────────────────────
 
-SYMMETRY_TYPES = ['mirror', 'diagonal', 'double_mirror', 'rot_90', 'rot_180']
+SYMMETRY_TYPES = ['mirror', 'diagonal', 'double_mirror', 'double_diagonal', 'rot_90', 'rot_180']
 
 # TODO(jmerm): expand sizes here once other sizes work.
 @pytest.mark.parametrize("board_size", [5,6,7,8,9])
