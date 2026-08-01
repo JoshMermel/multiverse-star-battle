@@ -14,18 +14,18 @@ from board_utils import VOID_CHAR, get_neighbors_8
 class StarBattlePuzzle:
     """Holds the mutable solving state for one puzzle during scoring."""
 
-    def __init__(self, n, boards, solution_str, name, stars_per_group=1):
+    def __init__(self, n, boards, solution_str, name, stars_per_unit=1):
         """
         boards: a sequence of board strings (one per "universe"). A
         Multiverse Star Battle puzzle may have any number of boards >= 1;
         classic single-board Star Battle is the n_boards == 1 case.
 
-        stars_per_group: how many stars each row/column/region must contain.
+        stars_per_unit: how many stars each row/column/region must contain.
         Classic Star Battle is 1; "2★" and "3★" puzzles use 2 or 3.
         """
         self.name = name
         self.n = n
-        self.stars_per_group = stars_per_group
+        self.stars_per_unit = stars_per_unit
         self.grid = [None] * (n * n)
         self.canonical_solution = solution_str
 
@@ -135,7 +135,7 @@ class StarBattlePuzzle:
         for unit in self.units:
             if unit["board_idx"] != board_idx:
                 continue
-            remaining = self.stars_per_group - sum(1 for i in unit["indices"] if self.grid[i] == "x")
+            remaining = self.stars_per_unit - sum(1 for i in unit["indices"] if self.grid[i] == "x")
             if remaining > 0:
                 result.append({"unit": unit, "remaining": remaining})
         return result

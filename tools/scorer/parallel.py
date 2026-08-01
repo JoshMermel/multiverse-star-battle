@@ -8,7 +8,7 @@ help here (the GIL serializes them right back down to one core); this uses
 separate processes instead via concurrent.futures.ProcessPoolExecutor.
 
 Workers build their own StarBattlePuzzle/CompositeScorer from plain,
-picklable inputs (name/n/boards/solution/stars_per_group) rather than
+picklable inputs (name/n/boards/solution/stars_per_unit) rather than
 having those (larger, closure-bearing) objects passed across the process
 boundary.
 """
@@ -32,8 +32,8 @@ def _build_scorer(exclude_rule_names, verbose):
 
 
 def _score_one(task):
-    name, n, boards, solution, stars_per_group, exclude_rule_names, verbose = task
-    puzzle = StarBattlePuzzle(n, boards, solution, name, stars_per_group=stars_per_group)
+    name, n, boards, solution, stars_per_unit, exclude_rule_names, verbose = task
+    puzzle = StarBattlePuzzle(n, boards, solution, name, stars_per_unit=stars_per_unit)
     scorer = _build_scorer(exclude_rule_names, verbose)
     try:
         solved, score, tier = scorer.solve(puzzle)
@@ -44,7 +44,7 @@ def _score_one(task):
 
 def score_puzzles_parallel(puzzle_specs, exclude_rule_names=None, max_workers=None, verbose=False):
     """
-    puzzle_specs: iterable of (name, n, boards, solution, stars_per_group).
+    puzzle_specs: iterable of (name, n, boards, solution, stars_per_unit).
     `name` must be unique across the batch -- it's the key results are
     returned under, since ProcessPoolExecutor.map does not guarantee
     input-order completion under the hood the way this function surfaces
@@ -63,8 +63,8 @@ def score_puzzles_parallel(puzzle_specs, exclude_rule_names=None, max_workers=No
     value that didn't match the canonical solution), else None.
     """
     tasks = [
-        (name, n, boards, solution, stars_per_group, exclude_rule_names, verbose)
-        for name, n, boards, solution, stars_per_group in puzzle_specs
+        (name, n, boards, solution, stars_per_unit, exclude_rule_names, verbose)
+        for name, n, boards, solution, stars_per_unit in puzzle_specs
     ]
     if not tasks:
         return {}

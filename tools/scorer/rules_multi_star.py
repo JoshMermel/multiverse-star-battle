@@ -2,7 +2,7 @@
 rules_multi_star.py
 
 2-star+ rule_* implementations: everything written against an arbitrary
-p.stars_per_group rather than assuming exactly 1 star per row/col/region.
+p.stars_per_unit rather than assuming exactly 1 star per row/col/region.
 Python port of the "multi-star validated/compatible rules" section of
 solver.js. See rules_single_star.py for the 1★-only rules they generalize,
 and rules_common.py for the handful of rules shared verbatim by both
@@ -23,7 +23,7 @@ class MultiStarRules:
         for unit in p.units:
             indices = unit["indices"]
             stars = sum(1 for i in indices if p.grid[i] == "x")
-            needed = p.stars_per_group - stars
+            needed = p.stars_per_unit - stars
             if needed <= 0:
                 continue
             empty = [i for i in indices if p.grid[i] is None]
@@ -39,7 +39,7 @@ class MultiStarRules:
 
     def rule_exclude_adjacency(self, p, silent=False):
         """
-        Stars can never touch, regardless of stars_per_group. Python port of
+        Stars can never touch, regardless of stars_per_unit. Python port of
         hintExcludeAdjacency in solver.js (the adjacency-only portion of the
         1★ rule_sees_star).
         """
@@ -57,7 +57,7 @@ class MultiStarRules:
 
     def rule_exclude_solved_unit(self, p, silent=False):
         """
-        Once a unit has ALL of its stars_per_group stars placed, every other
+        Once a unit has ALL of its stars_per_unit stars placed, every other
         empty cell in it must be a dot. Python port of hintExcludeSolvedUnit
         in solver.js (the "unit is full" portion of the 1★ rule_sees_star,
         generalized from "has any star" to "has reached its quota").
@@ -66,7 +66,7 @@ class MultiStarRules:
         for unit in p.units:
             indices = unit["indices"]
             stars = sum(1 for i in indices if p.grid[i] == "x")
-            if stars < p.stars_per_group:
+            if stars < p.stars_per_unit:
                 continue
             local_changes = sum(
                 self._internal_set(p, i, ".", f"UnitSolved({unit['label']})", silent)
@@ -153,7 +153,7 @@ class MultiStarRules:
         changes = 0
         for unit in p.units:
             stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
-            needed = p.stars_per_group - stars
+            needed = p.stars_per_unit - stars
             if needed <= 0:
                 continue
 
@@ -230,7 +230,7 @@ class MultiStarRules:
 
             for other in others:
                 other_stars = sum(1 for i in other["indices"] if p.grid[i] == "x")
-                other_needed = p.stars_per_group - other_stars
+                other_needed = p.stars_per_unit - other_stars
                 if other_needed <= 0:
                     continue
 
@@ -292,7 +292,7 @@ class MultiStarRules:
         unit_idxs = set(idx for unit in unit_combo for idx in unit)
 
         stars_in_window = sum(1 for i in unit_idxs if p.grid[i] == "x")
-        required_count = n * p.stars_per_group - stars_in_window
+        required_count = n * p.stars_per_unit - stars_in_window
         if required_count <= 0:
             return 0
 
@@ -405,7 +405,7 @@ class MultiStarRules:
             unit_idxs = set().union(*(units[u] for u in u_range))
 
             stars_in_window = sum(1 for i in unit_idxs if p.grid[i] == "x")
-            required_count = n * p.stars_per_group - stars_in_window
+            required_count = n * p.stars_per_unit - stars_in_window
             if required_count <= 0:
                 continue
 
@@ -502,7 +502,7 @@ class MultiStarRules:
     # fewest possible disjoint 2x2 boxes (any 2x2 footprint is always an
     # at-most-1 group -- any two cells in it are mutually adjacent). If
     # the minimum box count exactly matches the band's remaining star need
-    # (2 * stars_per_group, minus stars already placed), every box must
+    # (2 * stars_per_unit, minus stars already placed), every box must
     # supply EXACTLY one star -- so each box is simultaneously an
     # at-least-1 AND an at-most-1 group. Board-agnostic (rows/columns are
     # shared across every board) and doesn't involve region membership at
@@ -563,7 +563,7 @@ class MultiStarRules:
         be excluded after further propagation -- since that's all the
         soundness of the at-most-1 projection below actually needs.
         """
-        quota = p.stars_per_group
+        quota = p.stars_per_unit
         forced = set(nb for nb in p._neighbor_map[idx] if p.grid[nb] is None)
 
         r, c = p.get_rc(idx)
@@ -646,7 +646,7 @@ class MultiStarRules:
                 if len(avail) < 2:
                     continue
                 stars_in_region = sum(1 for i in r_indices if p.grid[i] == "x")
-                k = p.stars_per_group - stars_in_region
+                k = p.stars_per_unit - stars_in_region
                 if k <= 0:
                     continue
 
@@ -671,7 +671,7 @@ class MultiStarRules:
 
                         line_indices = units[line_idx]
                         line_stars = sum(1 for i in line_indices if p.grid[i] == "x")
-                        line_needed = p.stars_per_group - line_stars
+                        line_needed = p.stars_per_unit - line_stars
                         rest_of_line = [
                             i for i in line_indices
                             if p.grid[i] is None and i not in in_line
@@ -717,7 +717,7 @@ class MultiStarRules:
                 if not avail:
                     continue
                 stars_in_window = sum(1 for i in window_indices if p.grid[i] == "x")
-                required = 2 * p.stars_per_group - stars_in_window
+                required = 2 * p.stars_per_unit - stars_in_window
                 if required <= 0:
                     continue
 
@@ -765,7 +765,7 @@ class MultiStarRules:
         """
         for unit in p.units:
             stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
-            needed = p.stars_per_group - stars
+            needed = p.stars_per_unit - stars
             if needed != 2:
                 continue
             avail = [i for i in unit["indices"] if p.grid[i] is None]
@@ -788,7 +788,7 @@ class MultiStarRules:
         (each a list/tuple/frozenset of cell indices). Returns the combo
         (a list of k groups) if found, else None. `groups` and k are both
         expected to be small in practice (k is a unit's remaining star
-        quota -- at most stars_per_group), so this is cheap.
+        quota -- at most stars_per_unit), so this is cheap.
         """
         def backtrack(start, chosen, used):
             if len(chosen) == k:
@@ -820,7 +820,7 @@ class MultiStarRules:
         all_groups = list(at_least_one_groups)
         for unit in p.units:
             stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
-            q = p.stars_per_group - stars
+            q = p.stars_per_unit - stars
             if q <= 0:
                 continue
             avail = set(i for i in unit["indices"] if p.grid[i] is None)
@@ -900,7 +900,7 @@ class MultiStarRules:
     # rules_single_star.py. The key difference: placing a single speculative
     # star in a 2★+ puzzle does NOT, by itself, fill an entire
     # row/column/region -- it only completes a unit that already held
-    # (stars_per_group - 1) stars. So "the dots implied by that star" means
+    # (stars_per_unit - 1) stars. So "the dots implied by that star" means
     # adjacency dots (always), plus unit-solved dots for any unit the
     # placement happens to complete.
 
@@ -915,7 +915,7 @@ class MultiStarRules:
         from that board's viewpoint (or is board-agnostic row/col/adjacency
         geometry).
         """
-        quota = p.stars_per_group
+        quota = p.stars_per_unit
         for test_idx in (i for i, val in enumerate(p.grid) if val is None):
             for b_idx in range(p.n_boards):
                 reg_char = p.cell_to_region[b_idx][test_idx]
@@ -968,7 +968,7 @@ class MultiStarRules:
         belongs to, so contradictions that only surface when combining
         region information from multiple boards are also caught.
         """
-        quota = p.stars_per_group
+        quota = p.stars_per_unit
         for test_idx in (i for i, val in enumerate(p.grid) if val is None):
             saved = p.copy_grid()
             p.grid[test_idx] = "x"

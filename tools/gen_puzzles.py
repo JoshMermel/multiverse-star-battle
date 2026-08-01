@@ -74,11 +74,11 @@ from puzzle_deduper import PuzzleDeduper
 # Mode wiring & CLI
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _build_sudoku_pair(n, output_rows):
+def _build_sudoku_pair(n, output_rows, stars_per_unit=1):
     if n != 9:
         raise ValueError("sudoku_pair mode requires --n 9")
     gen = RandomGenerator(n)
-    return SudokuComparator(gen, n, output_rows)
+    return SudokuComparator(gen, n, output_rows, stars_per_unit=stars_per_unit)
 
 
 def _build_letter_pair(args, n, output_rows):
@@ -108,8 +108,16 @@ MODES = {
     'letter_pair':          lambda a, n, r: _build_letter_pair(a, n, r),
     'voting_district_pair': lambda a, n, r: SymmetricPoolComparator(VotingDistrictGenerator(n), n, r),
     'tmp':                  lambda a, n, r: _build_tmp(a, n, r),
-    'sudoku_pair':          lambda a, n, r: _build_sudoku_pair(n, r),
+    'sudoku_pair':          lambda a, n, r: _build_sudoku_pair(n, r, stars_per_unit=a.stars),
 }
+
+# Modes whose underlying generator/comparator actually varies its region
+# layout by star count. Every other mode's algorithm intrinsically assumes
+# 1 star per row/column/region (their region-generation logic isn't
+# parameterized by it at all) -- --stars > 1 there would silently produce
+# a puzzle mislabeled with a quota its own layout was never built for, so
+# it's rejected explicitly instead (see run_generation).
+STARS_CAPABLE_MODES = {'sudoku_pair'}
 
 
 def _board_columns(fieldnames):
@@ -130,10 +138,32 @@ def _scored_output_path(input_path, explicit_output=None):
     return stem + "_scored" + (ext or ".csv")
 
 
+def _infer_stars_per_unit(n, solution):
+    """
+    How many stars each row/column/region must contain, inferred directly
+    from a puzzle's own solution string -- the most stars found in any one
+    row (max rather than row 0, in case row 0 happens to be entirely
+    void). Always correct, since the solution is already part of every
+    puzzle CSV -- no need to separately track or guess stars_per_unit at
+    scoring time the way run_scoring used to (a hardcoded guess).
+    """
+    return max(
+        (solution[r * n:(r + 1) * n].count('x') for r in range(n)),
+        default=1,
+    ) or 1
+
+
 def run_generation(args):
+    if args.stars != 1 and args.mode not in STARS_CAPABLE_MODES:
+        raise ValueError(
+            "--stars {0} requires a mode whose region layout actually "
+            "varies by star count; {1!r} doesn't support that (supported: "
+            "{2}).".format(args.stars, args.mode, ", ".join(sorted(STARS_CAPABLE_MODES)))
+        )
+
     output_rows = []
-    print("# Mode: {0} | n={1} | count={2}".format(
-        args.mode, args.n, args.count), flush=True)
+    print("# Mode: {0} | n={1} | count={2} | stars={3}".format(
+        args.mode, args.n, args.count, args.stars), flush=True)
 
     comparator = MODES[args.mode](args, args.n, output_rows)
 
@@ -172,7 +202,7 @@ def run_scoring(args):
 
     deduper = None if getattr(args, 'skip_dedup', False) else PuzzleDeduper()
     all_results = []
-    # (row_index into all_results, n, boards, solution, stars_per_group) for
+    # (row_index into all_results, n, boards, solution, stars_per_unit) for
     # every row that survives dedup -- deduper.is_duplicate/register must
     # stay a strictly sequential pass (it depends on accumulated state
     # across rows), so this loop is never parallelized; only the actual
@@ -199,7 +229,8 @@ def run_scoring(args):
                 deduper.register(boards, n)
             row_idx = len(all_results)
             all_results.append(row)
-            to_score.append((row_idx, n, boards, row['solution'], 1))
+            stars_per_unit = _infer_stars_per_unit(n, row['solution'])
+            to_score.append((row_idx, n, boards, row['solution'], stars_per_unit))
 
     total = len(to_score)
     solved_count = 0
@@ -209,10 +240,10 @@ def run_scoring(args):
         # unreadably across worker processes, and a single puzzle isn't
         # worth process-pool startup overhead.
         scorer = CompositeScorer(verbose=args.verbose)
-        for row_idx, n, boards, solution, stars_per_group in to_score:
+        for row_idx, n, boards, solution, stars_per_unit in to_score:
             row = all_results[row_idx]
             puzzle = StarBattlePuzzle(
-                n, boards, solution, row['name'], stars_per_group=stars_per_group)
+                n, boards, solution, row['name'], stars_per_unit=stars_per_unit)
             solved, score, tier = scorer.solve(puzzle)
             if solved:
                 solved_count += 1
@@ -225,11 +256,11 @@ def run_scoring(args):
         # row_idx rather than row['name'] since puzzle names aren't
         # guaranteed unique within a batch.
         specs = [
-            (str(row_idx), n, boards, solution, stars_per_group)
-            for row_idx, n, boards, solution, stars_per_group in to_score
+            (str(row_idx), n, boards, solution, stars_per_unit)
+            for row_idx, n, boards, solution, stars_per_unit in to_score
         ]
         results = score_puzzles_parallel(specs)
-        for row_idx, n, boards, solution, stars_per_group in to_score:
+        for row_idx, n, boards, solution, stars_per_unit in to_score:
             row = all_results[row_idx]
             solved, score, tier, error = results[str(row_idx)]
             if error:
@@ -317,6 +348,12 @@ Modes:
   voting_district_pair   Two boards where every region contains exactly N cells
   sudoku_pair            Fixed sudoku 3x3-box board paired with random boards (n=9 only)
 
+--stars (default 1) sets how many stars each row/column/region must
+contain. Only modes whose layout actually varies by star count support
+values > 1 -- currently just sudoku_pair; every other mode's underlying
+generator assumes 1 star intrinsically and rejects --stars > 1. Scoring
+never needs this flag -- it's inferred from each puzzle's own solution.
+
 Examples:
   python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100
   python3 gen_puzzles.py generate --mode symmetric_pair --n 6 --count 50 --output sym6.csv
@@ -324,6 +361,7 @@ Examples:
   python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100 --score-after
   python3 gen_puzzles.py generate --mode voting_district_pair --n 8 --count 100
   python3 gen_puzzles.py generate --mode sudoku_pair --n 9 --count 100
+  python3 gen_puzzles.py generate --mode sudoku_pair --n 9 --count 100 --stars 2
         """,
     )
     gen_p.add_argument("--mode", choices=list(MODES.keys()), required=True,
@@ -332,6 +370,10 @@ Examples:
                        help="Board size (default: 8)")
     gen_p.add_argument("--count", type=int, default=100,
                        help="Number of puzzle pairs to generate (default: 100)")
+    gen_p.add_argument("--stars", type=int, default=1,
+                       help="Stars per row/column/region (default: 1). Only modes whose "
+                            "layout actually varies by star count support values > 1 "
+                            "(currently: {0}).".format(", ".join(sorted(STARS_CAPABLE_MODES))))
     gen_p.add_argument("--output", type=str, default="puzzles.csv",
                        help="Output CSV file (default: puzzles.csv)")
     gen_p.add_argument("--char1", type=str, default=None,

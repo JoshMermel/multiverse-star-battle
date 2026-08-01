@@ -16,7 +16,7 @@ Internally the implementation is split across:
   engine.py             -- ScorerCore (solve loop + rule-count-agnostic helpers)
   rules_common.py       -- rules shared verbatim by every star count
   rules_single_star.py  -- rules that assume exactly 1 star per unit
-  rules_multi_star.py   -- rules generalized to stars_per_group >= 2
+  rules_multi_star.py   -- rules generalized to stars_per_unit >= 2
   composite_scorer.py   -- CompositeScorer, assembled from the pieces above
   parallel.py            -- score_puzzles_parallel, a process-pool batch scorer
 """

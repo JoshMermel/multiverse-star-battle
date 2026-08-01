@@ -6,7 +6,7 @@ row/column/region (e.g. "has any star" == "is solved"), plus the classic
 Star Battle deduction techniques (domino, triomino, sees-too-much,
 row/col <-> region sync, disjoint sync, cross-board pinning, partial
 overlap, lookahead, and symmetry-based rules) that only ever get wired into
-the 1★ rule list. See rules_multi_star.py for their stars_per_group >= 2
+the 1★ rule list. See rules_multi_star.py for their stars_per_unit >= 2
 generalizations, and rules_common.py for the handful of rules shared
 verbatim by both families.
 """

@@ -4,7 +4,7 @@ rules_common.py
 Rules referenced by both the 1-star and multi-star (2-star+) rule families:
 the region-subset-sync family. These already reason in terms of each
 region's remaining star *need* (via get_regions_needing_stars) rather than
-"has any star", so they work unmodified for any stars_per_group.
+"has any star", so they work unmodified for any stars_per_unit.
 """
 
 from itertools import combinations

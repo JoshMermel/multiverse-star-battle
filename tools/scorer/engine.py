@@ -44,11 +44,11 @@ class ScorerCore:
         if self.verbose:
             print(f"\n--- Solving: {puzzle.name} ---")
 
-        if puzzle.stars_per_group == 1:
+        if puzzle.stars_per_unit == 1:
             rules = self.rules_1star
-        elif puzzle.stars_per_group == 2:
+        elif puzzle.stars_per_unit == 2:
             rules = self.rules_2_star
-        elif puzzle.stars_per_group == 3:
+        elif puzzle.stars_per_unit == 3:
             rules = self.rules_3_star
         else:
             rules = self.rules_general_multi
@@ -93,9 +93,9 @@ class ScorerCore:
 
     def is_board_broken(self, p, visible_board_idx=None):
         """
-        Note: generalized to respect p.stars_per_group (quota) rather than
+        Note: generalized to respect p.stars_per_unit (quota) rather than
         assuming quota == 1, so this same function backs the 1★ AND 2★+
-        lookahead rules. For stars_per_group == 1 this reproduces the
+        lookahead rules. For stars_per_unit == 1 this reproduces the
         previous behavior exactly, since a unit is broken the moment it has
         no star and no empty cells left.
 
@@ -115,7 +115,7 @@ class ScorerCore:
         for the "single board" lookahead rules, which are meant to only rely
         on information visible from one board.
         """
-        quota = p.stars_per_group
+        quota = p.stars_per_unit
         units = p.units if visible_board_idx is None else [
             u for u in p.units if u["board_idx"] is None or u["board_idx"] == visible_board_idx
         ]
@@ -174,10 +174,10 @@ class ScorerCore:
         cheaper but weaker over-approximation that ignores the rest of the
         board. Python port of _enumerateUnitCompletions in solver.js.
 
-        `quota` defaults to p.stars_per_group (the normal case), but can be
+        `quota` defaults to p.stars_per_unit (the normal case), but can be
         overridden for synthetic combined units -- e.g. a pair of adjacent
-        rows needs 2 * stars_per_group in total. The capacity check below
-        still enforces stars_per_group on any OTHER real unit a combo
+        rows needs 2 * stars_per_unit in total. The capacity check below
+        still enforces stars_per_unit on any OTHER real unit a combo
         touches (including the two individual rows/cols/regions making up a
         pair), since that's never overridden.
 
@@ -191,7 +191,7 @@ class ScorerCore:
         that check is specifically meant not to depend on.
         """
         if quota is None:
-            quota = p.stars_per_group
+            quota = p.stars_per_unit
         indices = unit["indices"]
         stars = [i for i in indices if p.grid[i] == "x"]
         needed = quota - len(stars)
@@ -233,7 +233,7 @@ class ScorerCore:
                 overloaded = False
                 for add_count, other_unit in other_unit_counts.values():
                     existing = sum(1 for i in other_unit["indices"] if p.grid[i] == "x")
-                    if existing + add_count > p.stars_per_group:
+                    if existing + add_count > p.stars_per_unit:
                         overloaded = True
                         break
                 if overloaded:
