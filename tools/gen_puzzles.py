@@ -46,7 +46,6 @@ import statistics
 import random
 
 # Board generators
-from almost_degenerate_generator import AlmostDegenerateGenerator
 from letter_generator import LetterGenerator
 from quad_aligned_generator import QuadAlignedGenerator
 from random_generator import RandomGenerator
@@ -59,7 +58,6 @@ from voting_district_generator import VotingDistrictGenerator
 
 # Comparators for pairing puzzles
 from asymmetric_pool_comparator import AsymmetricPoolComparator
-from half_generator import HalfGenerator
 from self_comparator import SelfComparator
 from symmetric_pool_comparator import SymmetricPoolComparator
 from sudoku_comparator import SudokuComparator
