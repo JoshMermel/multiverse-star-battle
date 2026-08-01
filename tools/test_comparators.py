@@ -44,24 +44,32 @@ def output_rows():
 def test_self_comparator_normalization(output_rows):
     n = 4
     board = "ZZZZYYYYXXXXWWWW"
-    sol_match = "x" + "." * 15
-    
+    variant_board = "YYYYZZZZWWWWXXXX"
+    # Each board must be individually ambiguous (>1 solution) for
+    # _all_subsets_ambiguous to accept a 2-board collection, but the pair
+    # together must narrow down to exactly one shared solution.
+    sol_common = "x" + "." * 15
+    sol_a_only = "." + "x" + "." * 14
+    sol_b_only = "." * 2 + "x" + "." * 13
+
     with patch('self_comparator.get_board_variants') as mock_variants:
         mock_variants.return_value = [
-            (board, {sol_match}),
-            ("YYYYZZZZWWWWXXXX", {sol_match}),
+            (board, {sol_common, sol_a_only}),
+            (variant_board, {sol_common, sol_b_only}),
         ]
-        
-        gen = MockGenerator(n, [(board, {sol_match})])
+
+        gen = MockGenerator(n, [(board, {sol_common, sol_a_only})])
         comp = SelfComparator(gen, n, output_rows)
         comp.randomize_orientation_for_output = False
         comp._next_pair()
-        
+
         assert comp.pairs_found == 1
-        # Combined: ZZZZYYYYXXXXWWWW + YYYYZZZZWWWWXXXX
-        # Z->A, Y->B, X->C, W->D
+        # Each board is canonicalized independently. Both boards are four
+        # runs of four distinct region letters in reading order, so both
+        # normalize to the same pattern.
         assert output_rows[0]['board_1'] == "AAAABBBBCCCCDDDD"
-        assert output_rows[0]['board_2'] == "BBBBAAAADDDDCCCC"
+        assert output_rows[0]['board_2'] == "AAAABBBBCCCCDDDD"
+        assert output_rows[0]['solution'] == sol_common
 
 # ── SudokuComparator Tests ────────────────────────────────────────────────────
 
@@ -107,10 +115,10 @@ def test_symmetric_pool_matches_transform(output_rows):
         comp._next_pair() # Call 2: Matches OPOP against MMNN
 
     assert comp.pairs_found == 1
-    # Combined string for normalization: "OPOPM MNN"
-    # O->A, P->B, M->C, N->D
-    assert output_rows[0]['board_1'] == "ABAB" 
-    assert output_rows[0]['board_2'] == "CCDD"
+    # Each board is canonicalized independently.
+    # "OPOP": O->A, P->B. "MMNN": M->A, N->B.
+    assert output_rows[0]['board_1'] == "ABAB"
+    assert output_rows[0]['board_2'] == "AABB"
 
 # ── AsymmetricPoolComparator Tests ────────────────────────────────────────────
 
@@ -146,43 +154,45 @@ def test_asymmetric_pool_behavior(output_rows):
     assert comp.pairs_found == 1
     
     # Verify Ordering: Gen A must be board_1, Gen B (pooled) must be board_2.
-    # Combined for normalization: board_pattern_a + board_pattern_b
-    # "AAAAAAAA MMMMMMMM" + "CCCCCCCC DDDDDDDD"
-    # 'A' -> 'A', 'B' -> 'B', 'C' -> 'C', 'D' -> 'D'
+    # Each board is canonicalized independently: board_pattern_a is already
+    # "A"*8+"B"*8 so it's unchanged; board_pattern_b ("C"*8+"D"*8) relabels
+    # C->A, D->B, landing on the same pattern shape as board_pattern_a.
     res = output_rows[0]
     assert res['board_1'] == board_pattern_a
-    assert res['board_2'] == board_pattern_b
+    assert res['board_2'] == "A" * 8 + "B" * 8
     assert res['solution'] == sol_2
 
 # ── Normalization ──────────────────────────────────────────────────────────
 
 def test_comparator_randomization_and_normalization(output_rows):
     """
-    Verifies that when randomization is ON, boards are transformed and 
-    then correctly canonicalized as a pair.
+    Verifies that when randomization is ON, boards are shuffled/transformed
+    together and then each canonicalized independently.
     """
     n = 2
-    # Board 1: [M, M]  Board 2: [N, N]
-    #          [M, M]           [N, N]
-    board_1 = "MMMM"
-    board_2 = "NNNN"
+    # Board 1: [M, M]  Board 2: [O, O]
+    #          [N, N]           [P, P]
+    board_1 = "MMNN"
+    board_2 = "OOPP"
     sol = "x..."
-    
+
     # Simple Concrete Comparator to test base class _emit logic
     class SimpleComp(SymmetricPoolComparator):
         def _next_pair(self):
-            self._emit("test", board_1, board_2, sol)
+            self._emit("test", [board_1, board_2], sol)
 
     comp = SimpleComp(None, n, output_rows)
     comp.randomize_orientation_for_output = True
-    
+
     # Seed random for determinism in this specific test
-    random.seed(42) 
+    random.seed(42)
     comp._next_pair()
-    
+
     row = output_rows[0]
-    # Boards should be normalized to A and B regardless of random transform
-    assert set(row['board_1']) == {'A'}
-    assert set(row['board_2']) == {'B'}
+    # Each board is canonicalized independently, starting at 'A', regardless
+    # of the random shuffle/transform applied beforehand.
+    for board in (row['board_1'], row['board_2']):
+        assert set(board) == {'A', 'B'}
+        assert board[0] == 'A'
     # Solution should still have exactly one 'x'
     assert row['solution'].count('x') == 1
