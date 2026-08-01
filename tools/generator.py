@@ -34,8 +34,9 @@ class Generator(ABC):
     converts to a string.
     """
 
-    def __init__(self, n):
+    def __init__(self, n, stars_per_unit=1):
         self.n = n
+        self.stars_per_unit = stars_per_unit
 
     def generate(self, max_attempts=1000):
         """
@@ -70,21 +71,24 @@ class Generator(ABC):
         """
         return random.sample(range(n * n), n)
 
-    @staticmethod
-    def _make_result(grid, solutions=None):
+    def _make_result(self, grid, solutions=None, stars_per_unit=None):
         """
         Packages a completed grid into the _try_generate return value.
 
-        If solutions is not provided it is computed here.  Returns
-        (flat_board_string, solutions) if the board meets the minimum
-        ambiguity requirement, or None otherwise.
+        If solutions is not provided it is computed here, using
+        self.stars_per_unit (set at construction, default 1) unless a
+        caller overrides it explicitly.  Returns (flat_board_string,
+        solutions) if the board meets the minimum ambiguity requirement,
+        or None otherwise.
 
         Use this as the final return statement in every _try_generate
         implementation.
         """
+        if stars_per_unit is None:
+            stars_per_unit = self.stars_per_unit
         if solutions is None:
             n = int(len(grid) ** 0.5)
-            solutions = get_all_solutions(grid, n)
+            solutions = get_all_solutions(grid, n, stars_per_unit=stars_per_unit)
         if len(solutions) >= MIN_SOLUTIONS:
             return "".join(ALPHABET[v] for v in grid), solutions
         return None

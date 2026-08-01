@@ -41,8 +41,8 @@ class VotingDistrictGenerator(Generator):
     # Lower default than the base class because each attempt is expensive.
     DEFAULT_MAX_ATTEMPTS = 10
 
-    def __init__(self, n):
-        super().__init__(n)
+    def __init__(self, n, stars_per_unit=1):
+        super().__init__(n, stars_per_unit=stars_per_unit)
         self._moves_per_attempt = 4 * n * n
         # Precompute the full grid adjacency list — it never changes between moves.
         self._grid_adj = {idx: get_neighbors_4(idx, n) for idx in range(n * n)}

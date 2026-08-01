@@ -84,8 +84,8 @@ def _build_sudoku_pair(n, output_rows, stars_per_unit=1):
 def _build_letter_pair(args, n, output_rows):
     if not args.char1 or not args.char2:
         raise ValueError("--char1 and --char2 are required for letter_pair mode")
-    gen_a = LetterGenerator(n, args.char1[0].upper())
-    gen_b = LetterGenerator(n, args.char2[0].upper())
+    gen_a = LetterGenerator(n, args.char1[0].upper(), stars_per_unit=args.stars)
+    gen_b = LetterGenerator(n, args.char2[0].upper(), stars_per_unit=args.stars)
     return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows, randomize_orientation_for_output=False, match_variants=False)
 
 # boilerplate so I don't need to write this every time when testing new
@@ -101,23 +101,36 @@ def _build_tmp(args, n, output_rows):
 # To add a new mode: add one entry here — argparse choices are derived
 # automatically from this dict.
 MODES = {
-    'random_pair':          lambda a, n, r: SymmetricPoolComparator(RandomGenerator(n), n, r),
-    'symmetric_pair':       lambda a, n, r: SymmetricPoolComparator(SymmetricGenerator(n), n, r),
-    'self_entangled':       lambda a, n, r: SelfComparator(RandomGenerator(n), n, r),
-    'super_symmetric':      lambda a, n, r: SelfComparator(SymmetricGenerator(n), n, r),
+    'random_pair':          lambda a, n, r: SymmetricPoolComparator(RandomGenerator(n, stars_per_unit=a.stars), n, r),
+    'symmetric_pair':       lambda a, n, r: SymmetricPoolComparator(SymmetricGenerator(n, stars_per_unit=a.stars), n, r),
+    'self_entangled':       lambda a, n, r: SelfComparator(RandomGenerator(n, stars_per_unit=a.stars), n, r),
+    'super_symmetric':      lambda a, n, r: SelfComparator(SymmetricGenerator(n, stars_per_unit=a.stars), n, r),
     'letter_pair':          lambda a, n, r: _build_letter_pair(a, n, r),
-    'voting_district_pair': lambda a, n, r: SymmetricPoolComparator(VotingDistrictGenerator(n), n, r),
+    'voting_district_pair': lambda a, n, r: SymmetricPoolComparator(VotingDistrictGenerator(n, stars_per_unit=a.stars), n, r),
     'tmp':                  lambda a, n, r: _build_tmp(a, n, r),
     'sudoku_pair':          lambda a, n, r: _build_sudoku_pair(n, r, stars_per_unit=a.stars),
 }
 
 # Modes whose underlying generator/comparator actually varies its region
-# layout by star count. Every other mode's algorithm intrinsically assumes
-# 1 star per row/column/region (their region-generation logic isn't
-# parameterized by it at all) -- --stars > 1 there would silently produce
-# a puzzle mislabeled with a quota its own layout was never built for, so
-# it's rejected explicitly instead (see run_generation).
-STARS_CAPABLE_MODES = {'sudoku_pair'}
+# layout by star count (via Generator.stars_per_unit, or a comparator's own
+# stars_per_unit passthrough, e.g. SudokuComparator). 'tmp' is excluded
+# deliberately -- it's scratch/dev boilerplate for testing new generators,
+# edited by hand per experiment, not a stable mode to wire a flag through.
+STARS_CAPABLE_MODES = {
+    'random_pair', 'symmetric_pair', 'self_entangled', 'super_symmetric',
+    'letter_pair', 'voting_district_pair', 'sudoku_pair',
+}
+
+# Smallest board size that can plausibly fit a given star count. Non-touching
+# stars (including diagonally) mean an n x n board can hold at most
+# ceil(n/2)^2 stars total, since it can be tiled by that many disjoint 2x2
+# boxes each holding at most one star. n * stars must stay comfortably under
+# that bound, or the row/col/region quotas leave no room to actually place
+# regions -- e.g. n=8 with 2 stars hits the bound exactly (16 == 16), which
+# is too tight to be satisfiable in practice.
+MIN_N_FOR_STARS = {
+    2: 9,
+}
 
 
 def _board_columns(fieldnames):
@@ -159,6 +172,14 @@ def run_generation(args):
             "--stars {0} requires a mode whose region layout actually "
             "varies by star count; {1!r} doesn't support that (supported: "
             "{2}).".format(args.stars, args.mode, ", ".join(sorted(STARS_CAPABLE_MODES)))
+        )
+
+    min_n = MIN_N_FOR_STARS.get(args.stars)
+    if min_n is not None and args.n < min_n:
+        raise ValueError(
+            "--stars {0} requires --n >= {1} (an n x n board can hold at "
+            "most ~ceil(n/2)^2 non-touching stars, so n={2} can't fit "
+            "{0} stars per row/column/region).".format(args.stars, min_n, args.n)
         )
 
     output_rows = []
@@ -349,10 +370,9 @@ Modes:
   sudoku_pair            Fixed sudoku 3x3-box board paired with random boards (n=9 only)
 
 --stars (default 1) sets how many stars each row/column/region must
-contain. Only modes whose layout actually varies by star count support
-values > 1 -- currently just sudoku_pair; every other mode's underlying
-generator assumes 1 star intrinsically and rejects --stars > 1. Scoring
-never needs this flag -- it's inferred from each puzzle's own solution.
+contain. Every mode above supports it except tmp (scratch/dev boilerplate,
+edited by hand per experiment). Scoring never needs this flag -- it's
+inferred from each puzzle's own solution.
 
 Examples:
   python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100
@@ -361,7 +381,7 @@ Examples:
   python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100 --score-after
   python3 gen_puzzles.py generate --mode voting_district_pair --n 8 --count 100
   python3 gen_puzzles.py generate --mode sudoku_pair --n 9 --count 100
-  python3 gen_puzzles.py generate --mode sudoku_pair --n 9 --count 100 --stars 2
+  python3 gen_puzzles.py generate --mode symmetric_pair --n 9 --count 100 --stars 2
         """,
     )
     gen_p.add_argument("--mode", choices=list(MODES.keys()), required=True,
@@ -371,9 +391,8 @@ Examples:
     gen_p.add_argument("--count", type=int, default=100,
                        help="Number of puzzle pairs to generate (default: 100)")
     gen_p.add_argument("--stars", type=int, default=1,
-                       help="Stars per row/column/region (default: 1). Only modes whose "
-                            "layout actually varies by star count support values > 1 "
-                            "(currently: {0}).".format(", ".join(sorted(STARS_CAPABLE_MODES))))
+                       help="Stars per row/column/region (default: 1). Supported by every "
+                            "mode except tmp.")
     gen_p.add_argument("--output", type=str, default="puzzles.csv",
                        help="Output CSV file (default: puzzles.csv)")
     gen_p.add_argument("--char1", type=str, default=None,

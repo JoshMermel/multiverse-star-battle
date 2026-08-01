@@ -849,8 +849,9 @@ class SymmetricGenerator(Generator):
     # Kept for backward compat (used in demo loop below).
     _QUAD_SYMMETRIES = _QUAD_SYMMETRIES
 
-    def __init__(self, n, symmetry_type=None, translation_type='none', join_earlier_prob=0.2):
-        super().__init__(n)
+    def __init__(self, n, symmetry_type=None, translation_type='none', join_earlier_prob=0.2,
+                 stars_per_unit=1):
+        super().__init__(n, stars_per_unit=stars_per_unit)
         self.join_earlier_prob = join_earlier_prob
 
         # ── Resolve symmetry_type ─────────────────────────────────────────────

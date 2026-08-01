@@ -79,8 +79,8 @@ class LetterGenerator(Generator):
     construction time, giving more chances to escape bad configurations.
     """
 
-    def __init__(self, n, char):
-        super().__init__(n)
+    def __init__(self, n, char, stars_per_unit=1):
+        super().__init__(n, stars_per_unit=stars_per_unit)
         self.char = char.upper()
         # Validate that the character exists in the font.
         if not FONT_7x5.get(self.char):
