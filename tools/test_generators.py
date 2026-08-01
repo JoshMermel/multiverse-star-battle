@@ -15,7 +15,7 @@ from collections import deque
 
 from board_utils import ALPHABET, get_neighbors_4
 from font_data import FONT_7x5
-from generator import MIN_SOLUTIONS
+from generator import MIN_SOLUTIONS, GenerationError
 from random_generator import RandomGenerator
 from letter_generator import LetterGenerator
 from subdivision_generator import SubdivisionGenerator
@@ -23,6 +23,22 @@ from square_free_generator import SquareFreeGenerator
 from symmetric_generator import SymmetricGenerator
 from voting_district_generator import VotingDistrictGenerator
 from voronoi_generator import VoronoiGenerator
+
+
+# ── 2-star coverage ───────────────────────────────────────────────────────────
+#
+# Non-touching stars cap an n x n board at ~ceil(n/2)^2 total (see
+# gen_puzzles.py's MIN_N_FOR_STARS), so 2 stars per row/column/region needs
+# n >= 9 -- too small a board and there's no valid layout to find at all,
+# regardless of attempt budget. 9 is also the smallest size the app actually
+# ships 2-star puzzles at.
+TWO_STAR_N = 9
+# 2-star ambiguity is rarer than 1-star, so these generators need a much
+# larger attempt budget than their 1-star tests to reliably find one --
+# SymmetricGenerator's 'diagonal' symmetry is the worst case (~90-97%
+# success within this budget; the other symmetry types and generators are
+# comfortably reliable well before this).
+TWO_STAR_MAX_ATTEMPTS = 6000
 
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
@@ -90,6 +106,17 @@ def assert_ambiguous(solutions):
     )
 
 
+def assert_stars_per_unit(solutions, n, stars_per_unit):
+    """Asserts every row of every solution has exactly stars_per_unit stars."""
+    for solution in solutions:
+        for r in range(n):
+            row = solution[r * n:(r + 1) * n]
+            assert row.count('x') == stars_per_unit, (
+                f"Row {r} of solution {solution!r} has {row.count('x')} stars, "
+                f"expected {stars_per_unit}"
+            )
+
+
 # ── Symmetry checking ─────────────────────────────────────────────────────────
 
 def assert_board_symmetric(flat_board, n, gen):
@@ -148,6 +175,31 @@ class TestRandomGenerator:
     def test_is_ambiguous(self, board_and_solutions):
         (_, solutions), _ = board_and_solutions
         assert_ambiguous(solutions)
+
+
+class TestRandomGeneratorTwoStar:
+    """Verifies RandomGenerator can produce valid 2-star (stars_per_unit=2) boards."""
+
+    @pytest.fixture
+    def board_and_solutions(self):
+        gen = RandomGenerator(TWO_STAR_N, stars_per_unit=2)
+        return gen.generate(max_attempts=TWO_STAR_MAX_ATTEMPTS)
+
+    def test_correct_region_count(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_ambiguous(solutions)
+
+    def test_two_stars_per_row(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_stars_per_unit(solutions, TWO_STAR_N, 2)
 
 
 # ── LetterGenerator ───────────────────────────────────────────────────────────
@@ -223,6 +275,31 @@ class TestLetterGenerator:
             LetterGenerator(self.N, "1")  # digits are not in FONT_7x5
 
 
+class TestLetterGeneratorTwoStar:
+    """Verifies LetterGenerator can produce valid 2-star (stars_per_unit=2) boards."""
+
+    @pytest.fixture
+    def board_and_solutions(self):
+        gen = LetterGenerator(TWO_STAR_N, "T", stars_per_unit=2)
+        return gen.generate(max_attempts=TWO_STAR_MAX_ATTEMPTS)
+
+    def test_correct_region_count(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_ambiguous(solutions)
+
+    def test_two_stars_per_row(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_stars_per_unit(solutions, TWO_STAR_N, 2)
+
+
 # ── SquareFreeGenerator ───────────────────────────────────────────────────────
 
 def assert_no_2x2_block(flat_board, n):
@@ -263,6 +340,13 @@ class TestSquareFreGenerator:
         (board, _), board_size = board_and_solutions
         assert_no_2x2_block(board, board_size)
 
+
+# No TestSquareFreeGeneratorTwoStar: the skeletal (tree-shaped, no-2x2-block)
+# region growth this generator uses essentially never completes at N=9 with
+# stars_per_unit=2 -- even 500 raw fill attempts (before any solution-count
+# filtering) produced only 2 structurally-complete boards, and neither was
+# 2-star ambiguous. Not worth a flaky/slow test; revisit if the underlying
+# growth algorithm changes.
 
 
 # ── SymmetricGenerator ────────────────────────────────────────────────────────
@@ -323,6 +407,42 @@ class TestSymmetricGenerator:
         assert found_join, "Expected to find at least one board where a region has a seed join (non-contiguous diagonal cells)"
 
 
+class TestSymmetricGeneratorTwoStar:
+    """Verifies SymmetricGenerator can produce valid 2-star (stars_per_unit=2) boards."""
+
+    @pytest.fixture(params=SYMMETRY_TYPES)
+    def board_and_solutions(self, request):
+        sym_type = request.param
+        # 'diagonal' 2-star ambiguity is rare enough (~90-97% within
+        # TWO_STAR_MAX_ATTEMPTS) that a single generate() call still has a
+        # real chance of exhausting its budget. Retrying with a fresh
+        # generator (a fresh random seed) compounds independent chances --
+        # far more effective than a linearly larger attempt budget.
+        last_error = None
+        for _ in range(3):
+            gen = SymmetricGenerator(TWO_STAR_N, symmetry_type=sym_type, stars_per_unit=2)
+            try:
+                return gen.generate(max_attempts=TWO_STAR_MAX_ATTEMPTS)
+            except GenerationError as e:
+                last_error = e
+        raise last_error
+
+    def test_correct_region_count(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_ambiguous(solutions)
+
+    def test_two_stars_per_row(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_stars_per_unit(solutions, TWO_STAR_N, 2)
+
 
 # ── VotingDistrictGenerator ───────────────────────────────────────────────────
 
@@ -367,6 +487,42 @@ class TestVotingDistrictGenerator:
             )
 
 
+class TestVotingDistrictGeneratorTwoStar:
+    """Verifies VotingDistrictGenerator can produce valid 2-star (stars_per_unit=2) boards."""
+
+    @pytest.fixture
+    def board_and_solutions(self):
+        gen = VotingDistrictGenerator(TWO_STAR_N, stars_per_unit=2)
+        # ReCom generation is expensive per attempt, but doesn't need nearly
+        # as large a budget as the other generators to find 2-star ambiguity.
+        return gen.generate(max_attempts=30)
+
+    def test_correct_region_count(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_ambiguous(solutions)
+
+    def test_all_regions_equal_size(self, board_and_solutions):
+        board, _ = board_and_solutions
+        grid = parse_board(board)
+        regions = get_region_cells(grid)
+        for region_id, cells in regions.items():
+            assert len(cells) == TWO_STAR_N, (
+                f"Region {region_id} has {len(cells)} cells, expected {TWO_STAR_N}"
+            )
+
+    def test_two_stars_per_row(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_stars_per_unit(solutions, TWO_STAR_N, 2)
+
+
 # ── VoronoiGenerator ──────────────────────────────────────────────────────────
 
 @pytest.mark.parametrize("board_size", [6, 7, 8, 9])
@@ -388,6 +544,32 @@ class TestVoronoiGenerator:
         (_, solutions), _ = board_and_solutions
         assert_ambiguous(solutions)
 
+
+class TestVoronoiGeneratorTwoStar:
+    """Verifies VoronoiGenerator can produce valid 2-star (stars_per_unit=2) boards."""
+
+    @pytest.fixture
+    def board_and_solutions(self):
+        gen = VoronoiGenerator(TWO_STAR_N, stars_per_unit=2)
+        return gen.generate(max_attempts=TWO_STAR_MAX_ATTEMPTS)
+
+    def test_correct_region_count(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_ambiguous(solutions)
+
+    def test_two_stars_per_row(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_stars_per_unit(solutions, TWO_STAR_N, 2)
+
+
 # ── SubdivisionGenerator ───────────────────────────────────────────────────────────
 
 @pytest.mark.parametrize("board_size", [6, 7, 8, 9])
@@ -408,3 +590,28 @@ class TestSubdivisionGenerator:
     def test_is_ambiguous(self, board_and_solutions):
         (_, solutions), _ = board_and_solutions
         assert_ambiguous(solutions)
+
+
+class TestSubdivisionGeneratorTwoStar:
+    """Verifies SubdivisionGenerator can produce valid 2-star (stars_per_unit=2) boards."""
+
+    @pytest.fixture
+    def board_and_solutions(self):
+        gen = SubdivisionGenerator(TWO_STAR_N, stars_per_unit=2)
+        return gen.generate(max_attempts=TWO_STAR_MAX_ATTEMPTS)
+
+    def test_correct_region_count(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_ambiguous(solutions)
+
+    def test_two_stars_per_row(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_stars_per_unit(solutions, TWO_STAR_N, 2)

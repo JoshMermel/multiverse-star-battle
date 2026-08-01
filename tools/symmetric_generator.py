@@ -921,7 +921,15 @@ class SymmetricGenerator(Generator):
     def __init__(self, n, symmetry_type=None, translation_type='none', join_earlier_prob=0.2,
                  stars_per_unit=1):
         super().__init__(n, stars_per_unit=stars_per_unit)
-        self.join_earlier_prob = join_earlier_prob
+        # Reconnecting a new diagonal seed to an EARLIER (non-adjacent)
+        # region instead of extending the current one (see 'diagonal' in
+        # place_straddle_seeds) tends to produce small regions. That's fine
+        # at 1 star, but a small region often can't fit stars_per_unit
+        # non-touching stars while still leaving room for a second valid
+        # placement, so it makes 2-star+ boards much harder to find --
+        # always disable it above 1 star rather than let it fight the
+        # search.
+        self.join_earlier_prob = join_earlier_prob if stars_per_unit == 1 else 0.0
 
         # ── Resolve symmetry_type ─────────────────────────────────────────────
         # Python None means "pick randomly"; the string 'none' means "no symmetry".
