@@ -102,10 +102,7 @@ class VoidGenerator(Generator):
                     break
 
             if passed_trial:
-                print("passed! ", current_voids)
                 return current_voids
-            
-            print("failed! ", current_voids)
 
     def _attempt_fill(self):
         """Single puzzle generation pass using the assigned void mask."""

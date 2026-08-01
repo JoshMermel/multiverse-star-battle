@@ -867,31 +867,35 @@ class MultiStarRules:
     # adjacency dots (always), plus unit-solved dots for any unit the
     # placement happens to complete.
 
-    def rule_lookahead_dots_single_board(self, p):
+    def _rule_lookahead_dots_impl(self, p, single_board):
         """
-        2★+ analogue of rule_lookahead_half_stage_single_board. Place a star
-        speculatively and add only the dots that single star's placement
-        directly implies (adjacency, plus any row/column/region it happens
-        to complete), then check for a contradiction visible from ONE
-        board's region alone. Region completion is restricted to a single
-        board at a time, so a contradiction is only accepted if it's visible
-        from that board's viewpoint (or is board-agnostic row/col/adjacency
-        geometry).
+        Shared implementation for rule_lookahead_dots_single_board /
+        rule_lookahead_dots: speculatively place one star, add only the
+        dots that placement directly implies (adjacency, plus any
+        row/column/region it happens to complete), and check for a
+        contradiction. single_board=True checks each board in turn,
+        restricting region completion (and the resulting contradiction
+        check) to that one board's viewpoint; single_board=False checks
+        region completion across every board the test cell belongs to at
+        once, catching contradictions that only surface by combining
+        region information from multiple boards.
         """
         quota = p.stars_per_unit
-        for test_idx in (i for i, val in enumerate(p.grid) if val is None):
-            for b_idx in range(p.n_boards):
-                reg_char = p.cell_to_region[b_idx][test_idx]
-                reg_indices = p.regions[b_idx][reg_char]
+        board_scopes = range(p.n_boards) if single_board else [None]
 
-                # Skip if this board's region has already reached quota (solved).
-                if sum(1 for i in reg_indices if p.grid[i] == "x") >= quota:
-                    continue
+        for test_idx in (i for i, val in enumerate(p.grid) if val is None):
+            tr, tc = p.get_rc(test_idx)
+
+            for b_idx in board_scopes:
+                if single_board:
+                    reg_char = p.cell_to_region[b_idx][test_idx]
+                    reg_indices = p.regions[b_idx][reg_char]
+                    # Skip if this board's region has already reached quota (solved).
+                    if sum(1 for i in reg_indices if p.grid[i] == "x") >= quota:
+                        continue
 
                 saved = p.copy_grid()
                 p.grid[test_idx] = "x"
-
-                tr, tc = p.get_rc(test_idx)
 
                 # Adjacency dots always apply.
                 for nb in p._neighbor_map[test_idx]:
@@ -905,23 +909,36 @@ class MultiStarRules:
                             if p.grid[i] is None:
                                 p.grid[i] = "."
 
-                # Region dots (this board only), only if quota reached.
-                if sum(1 for i in reg_indices if p.grid[i] == "x") == quota:
-                    for i in reg_indices:
-                        if p.grid[i] is None:
-                            p.grid[i] = "."
+                # Region dots: this board only in single-board mode, every
+                # board the cell belongs to otherwise.
+                for b in ([b_idx] if single_board else range(p.n_boards)):
+                    reg_char = p.cell_to_region[b][test_idx]
+                    reg_indices = p.regions[b][reg_char]
+                    if sum(1 for i in reg_indices if p.grid[i] == "x") == quota:
+                        for i in reg_indices:
+                            if p.grid[i] is None:
+                                p.grid[i] = "."
 
-                broken = self._find_broken_unit_single_board(p, b_idx)
+                broken = (self._find_broken_unit_single_board(p, b_idx)
+                          if single_board else self.is_board_broken(p))
                 p.restore_grid(saved)
 
                 if broken:
-                    changes = p.validate_and_set(
-                        test_idx, ".",
-                        f"Lookahead-dots single-board (B{b_idx+1}) contradiction",
-                        self.verbose)
+                    label = (f"Lookahead-dots single-board (B{b_idx+1}) contradiction"
+                             if single_board else "Lookahead-dots contradiction")
+                    changes = p.validate_and_set(test_idx, ".", label, self.verbose)
                     if changes > 0:
                         return changes
         return 0
+
+    def rule_lookahead_dots_single_board(self, p):
+        """
+        2★+ analogue of rule_lookahead_half_stage_single_board. Region
+        completion is restricted to a single board at a time, so a
+        contradiction is only accepted if it's visible from that board's
+        viewpoint (or is board-agnostic row/col/adjacency geometry).
+        """
+        return self._rule_lookahead_dots_impl(p, single_board=True)
 
     def rule_lookahead_dots(self, p):
         """
@@ -931,42 +948,7 @@ class MultiStarRules:
         belongs to, so contradictions that only surface when combining
         region information from multiple boards are also caught.
         """
-        quota = p.stars_per_unit
-        for test_idx in (i for i, val in enumerate(p.grid) if val is None):
-            saved = p.copy_grid()
-            p.grid[test_idx] = "x"
-
-            tr, tc = p.get_rc(test_idx)
-
-            for nb in p._neighbor_map[test_idx]:
-                if p.grid[nb] is None:
-                    p.grid[nb] = "."
-
-            for unit in (p.row_indices[tr], p.col_indices[tc]):
-                if sum(1 for i in unit if p.grid[i] == "x") == quota:
-                    for i in unit:
-                        if p.grid[i] is None:
-                            p.grid[i] = "."
-
-            for b_idx in range(p.n_boards):
-                reg_char = p.cell_to_region[b_idx][test_idx]
-                reg_indices = p.regions[b_idx][reg_char]
-                if sum(1 for i in reg_indices if p.grid[i] == "x") == quota:
-                    for i in reg_indices:
-                        if p.grid[i] is None:
-                            p.grid[i] = "."
-
-            broken = self.is_board_broken(p)
-            p.restore_grid(saved)
-
-            if broken:
-                changes = p.validate_and_set(
-                    test_idx, ".",
-                    "Lookahead-dots contradiction",
-                    self.verbose)
-                if changes > 0:
-                    return changes
-        return 0
+        return self._rule_lookahead_dots_impl(p, single_board=False)
 
     def rule_lookahead_1_stage_multi(self, p):
         return self._lookahead_n_stages_multi(p, n_stages=1)

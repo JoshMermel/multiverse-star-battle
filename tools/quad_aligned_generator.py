@@ -1,5 +1,4 @@
 import random
-from board_solver import get_all_solutions
 from board_utils import get_neighbors_4, get_transformation_maps
 from generator import Generator
 

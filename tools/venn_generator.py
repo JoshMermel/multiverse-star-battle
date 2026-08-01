@@ -1,5 +1,4 @@
 import random
-from board_utils import pretty_print
 from generator import Generator
 
 

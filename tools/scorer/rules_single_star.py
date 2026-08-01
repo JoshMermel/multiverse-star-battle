@@ -748,6 +748,26 @@ class SingleStarRules:
         mirror_fn = lambda i: total - 1 - i
         return self._symmetry_fill(p, mirror_fn, "Rotation180Fill")
 
+    @staticmethod
+    def _cell_sees_own_mirror(p, i, mirror_fn):
+        """
+        Whether cell i "sees" its own mirror image under mirror_fn: same
+        row, same column, adjacent, or sharing a region on any board. A
+        cell that sees its own mirror can never be a star -- symmetry
+        would force both to be stars, but they'd conflict.
+        """
+        mirror = mirror_fn(i)
+        if mirror == i:
+            return False
+        ri, ci = p.get_rc(i)
+        mr, mc = p.get_rc(mirror)
+        if ri == mr or ci == mc:
+            return True
+        if mirror in p._neighbor_map[i]:
+            return True
+        return any(p.cell_to_region[b][i] == p.cell_to_region[b][mirror]
+                   for b in range(p.n_boards))
+
     def rule_diagonal_symmetry(self, p):
         if not p.diagonal_symmetries:
             return 0
@@ -755,23 +775,7 @@ class SingleStarRules:
         for i in range(p.n * p.n):
             if p.grid[i] is not None:
                 continue
-            ri, ci = p.get_rc(i)
-
-            def sees_own_mirror(mirror_fn):
-                mirror = mirror_fn(i)
-                if mirror == i:
-                    return False
-                mr, mc = p.get_rc(mirror)
-                if ri == mr or ci == mc:
-                    return True
-                if mirror in p._neighbor_map[i]:
-                    return True
-                if any(p.cell_to_region[b][i] == p.cell_to_region[b][mirror]
-                       for b in range(p.n_boards)):
-                    return True
-                return False
-
-            if any(sees_own_mirror(fn) for fn in p.diagonal_symmetries):
+            if any(self._cell_sees_own_mirror(p, i, fn) for fn in p.diagonal_symmetries):
                 changes += p.validate_and_set(i, ".", "DiagonalSymmetry", self.verbose)
         return changes
 
@@ -849,17 +853,6 @@ class SingleStarRules:
         for i in range(total):
             if p.grid[i] is not None:
                 continue
-            mirror = mirror_fn(i)
-            if mirror == i:
-                continue
-            ri, ci = p.get_rc(i)
-            mr, mc = p.get_rc(mirror)
-            conflicts = (
-                ri == mr or ci == mc
-                or mirror in p._neighbor_map[i]
-                or any(p.cell_to_region[b][i] == p.cell_to_region[b][mirror]
-                       for b in range(p.n_boards))
-            )
-            if conflicts:
+            if self._cell_sees_own_mirror(p, i, mirror_fn):
                 changes += p.validate_and_set(i, ".", "Rotation180", self.verbose)
         return changes

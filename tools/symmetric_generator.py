@@ -71,7 +71,6 @@ during straddle seeding before flood fill begins:
 import random
 from dataclasses import dataclass
 from typing import Optional
-from board_utils import get_neighbors_4, pretty_print, get_board_variants
 from generator import Generator
 
 

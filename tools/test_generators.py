@@ -17,7 +17,7 @@ from board_utils import ALPHABET, get_neighbors_4
 from font_data import FONT_7x5
 from generator import MIN_SOLUTIONS
 from random_generator import RandomGenerator
-from letter_generator import LetterGenerator, _render_letter
+from letter_generator import LetterGenerator
 from subdivision_generator import SubdivisionGenerator
 from square_free_generator import SquareFreeGenerator
 from symmetric_generator import SymmetricGenerator

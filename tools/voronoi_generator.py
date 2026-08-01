@@ -1,6 +1,6 @@
 import random
 import heapq
-from board_utils import get_neighbors_4, pretty_print
+from board_utils import get_neighbors_4
 from generator import Generator
 
 

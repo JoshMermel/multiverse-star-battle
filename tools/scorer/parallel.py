@@ -24,7 +24,7 @@ def _build_scorer(exclude_rule_names, verbose):
     scorer = CompositeScorer(verbose=verbose)
     if exclude_rule_names:
         exclude = set(exclude_rule_names)
-        for attr in ("rules_1star", "rules_2_star", "rules_3_star", "rules_general_multi"):
+        for attr in ("rules_1star", "rules_2_star", "rules_multi_capped"):
             setattr(scorer, attr, [
                 r for r in getattr(scorer, attr) if r[0].__name__ not in exclude
             ])

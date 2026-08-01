@@ -1,5 +1,4 @@
 import random
-from board_solver import get_all_solutions
 from board_utils import flood_fill, pretty_print
 from generator import Generator
 

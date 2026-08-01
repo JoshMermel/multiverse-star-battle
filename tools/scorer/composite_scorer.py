@@ -6,10 +6,9 @@ rule-family mixins (CommonRules, SingleStarRules, MultiStarRules), and
 builds the per-star-count rule tables.
 
 There is exactly one canonical multi-star rule table (MULTI_STAR_RULES):
-rules_2_star and rules_general_multi use it in full, and rules_3_star is
-derived from it via an explicit, documented tier cutoff (see
-TIER_CUTOFF_BY_STAR_COUNT) so the 3★ capability gap stays a single visible
-line instead of silently drifting out of sync with the other two.
+rules_2_star uses it in full, and rules_multi_capped -- used for every
+stars_per_unit >= 3 -- is derived from it via an explicit, documented tier
+cutoff (see MULTI_STAR_TIER_CUTOFF).
 """
 
 from .engine import ScorerCore, _TIER_RANK
@@ -18,9 +17,11 @@ from .rules_single_star import SingleStarRules
 from .rules_multi_star import MultiStarRules
 
 
-# 3★ puzzles don't get the Expert/Grandmaster tier of multi-star rules -- a
-# real capability gap versus 2★ and 4★+ puzzles, kept as-is deliberately.
-TIER_CUTOFF_BY_STAR_COUNT = {3: "Hard"}
+# 3+ star puzzles don't get the Expert/Grandmaster tier of multi-star rules
+# -- those rules aren't guaranteed correct or fast past 2 stars, so every
+# stars_per_unit >= 3 is capped at the same tier, a real capability gap vs.
+# 2★, kept as-is deliberately.
+MULTI_STAR_TIER_CUTOFF = "Hard"
 
 
 class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
@@ -141,16 +142,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
 
             # -- Grandmaster ----------------------------------------------------
             (self.rule_lookahead_1_stage_multi,                   220, "Grandmaster"),
-            (self.rule_lookahead_2_stages_multi,                  350, "Grandmaster"),
-            (self.rule_lookahead_3_stages_multi,                  650, "Grandmaster"),
+#            (self.rule_lookahead_2_stages_multi,                  350, "Grandmaster"),
+#            (self.rule_lookahead_3_stages_multi,                  650, "Grandmaster"),
         ]
 
         self.rules_2_star = multi_star_rules
-        self.rules_general_multi = multi_star_rules
 
-        # 3★ gets the same table with everything above the documented cutoff
-        # tier dropped (see TIER_CUTOFF_BY_STAR_COUNT above for why).
-        cutoff_tier = TIER_CUTOFF_BY_STAR_COUNT[3]
-        self.rules_3_star = [
-            r for r in multi_star_rules if _TIER_RANK[r[2]] <= _TIER_RANK[cutoff_tier]
+        # Every stars_per_unit >= 3 gets the same table with everything
+        # above MULTI_STAR_TIER_CUTOFF dropped.
+        self.rules_multi_capped = [
+            r for r in multi_star_rules if _TIER_RANK[r[2]] <= _TIER_RANK[MULTI_STAR_TIER_CUTOFF]
         ]

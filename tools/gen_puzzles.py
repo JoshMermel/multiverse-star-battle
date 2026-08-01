@@ -75,7 +75,7 @@ from puzzle_deduper import PuzzleDeduper
 def _build_sudoku_pair(n, output_rows, stars_per_unit=1):
     if n != 9:
         raise ValueError("sudoku_pair mode requires --n 9")
-    gen = RandomGenerator(n)
+    gen = RandomGenerator(n, stars_per_unit=stars_per_unit)
     return SudokuComparator(gen, n, output_rows, stars_per_unit=stars_per_unit)
 
 

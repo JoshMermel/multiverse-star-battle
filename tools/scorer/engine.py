@@ -48,10 +48,8 @@ class ScorerCore:
             rules = self.rules_1star
         elif puzzle.stars_per_unit == 2:
             rules = self.rules_2_star
-        elif puzzle.stars_per_unit == 3:
-            rules = self.rules_3_star
         else:
-            rules = self.rules_general_multi
+            rules = self.rules_multi_capped
 
         total_score = 0
         max_tier = "Beginner"

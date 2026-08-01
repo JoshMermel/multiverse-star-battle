@@ -86,9 +86,8 @@ class StarBattlePuzzle:
             for idx in unit["indices"]:
                 self.units_by_cell[idx].append(unit)
 
-        self.diagonal_symmetries = self._detect_diagonal_symmetries()
-        self.has_main_diagonal_symmetry  = self._detect_single_diagonal_symmetry(0)
-        self.has_anti_diagonal_symmetry  = self._detect_single_diagonal_symmetry(1)
+        self.diagonal_symmetries, self.has_main_diagonal_symmetry, self.has_anti_diagonal_symmetry = \
+            self._detect_diagonal_symmetries()
         self.has_internal_rotation_180 = self._detect_internal_rotation_180()
         self.has_crossboard_rotation_180 = self._detect_crossboard_rotation_180()
 
@@ -268,38 +267,25 @@ class StarBattlePuzzle:
 
         return find_matching()
 
-    def _detect_single_diagonal_symmetry(self, candidate_idx):
-        """
-        Returns True if the diagonal symmetry at candidates[candidate_idx]
-        applies (either every board is paired with a diagonal-reflection
-        partner board, or every board independently has the symmetry).
-        candidate_idx 0 = main diagonal, 1 = anti-diagonal.
-        """
-        n = self.n
-        candidates = [
-            lambda i, n=n: (i % n) * n + (i // n),
-            lambda i, n=n: (n-1 - i % n) * n + (n-1 - i // n),
-        ]
-        fn = candidates[candidate_idx]
-        return self._crossboard_symmetry(fn) or self._internal_symmetry(fn)
-
     def _detect_diagonal_symmetries(self):
+        """
+        Checks each diagonal candidate (main, then anti) exactly once and
+        returns (symmetric_fns, has_main, has_anti). A diagonal symmetry
+        applies if either:
+          (a) every board can be paired with another board that's its
+              diagonal reflection (cross-board; requires an even board
+              count and a valid pairing -- see _crossboard_symmetry), OR
+          (b) every board independently has that diagonal symmetry (internal).
+        In both cases uniqueness forces the solution to respect the symmetry.
+        """
         n = self.n
         candidates = [
-            lambda i, n=n: (i % n) * n + (i // n),           # main diagonal
+            lambda i, n=n: (i % n) * n + (i // n),              # main diagonal
             lambda i, n=n: (n-1 - i % n) * n + (n-1 - i // n),  # anti-diagonal
         ]
-        # A diagonal symmetry applies if either:
-        #   (a) every board can be paired with another board that's its
-        #       diagonal reflection (cross-board; requires an even board
-        #       count and a valid pairing -- see _crossboard_symmetry), OR
-        #   (b) every board independently has that diagonal symmetry (internal).
-        # In both cases uniqueness forces the solution to respect the symmetry.
-        result = []
-        for fn in candidates:
-            if self._crossboard_symmetry(fn) or self._internal_symmetry(fn):
-                result.append(fn)
-        return result
+        flags = [self._crossboard_symmetry(fn) or self._internal_symmetry(fn) for fn in candidates]
+        symmetric_fns = [fn for fn, ok in zip(candidates, flags) if ok]
+        return symmetric_fns, flags[0], flags[1]
 
     def _detect_internal_rotation_180(self):
         """True if EVERY board independently has 180-degree rotational symmetry."""
