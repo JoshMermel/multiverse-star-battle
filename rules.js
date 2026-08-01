@@ -1,4 +1,5 @@
 import { CELL } from './constants.js';
+import { getNeighbors8, rowIndices, colIndices } from './geometry.js';
 
 export function applyRules(GameClass) {
   const p = GameClass.prototype;
@@ -12,16 +13,16 @@ export function applyRules(GameClass) {
 
     const toFill = new Set();
 
-    const rowIndices = Array.from({ length: n }, (_, k) => row * n + k);
-    const rowStars = rowIndices.filter(i => this.state[i] === CELL.STAR).length;
+    const rowIdxs = rowIndices(n, row);
+    const rowStars = rowIdxs.filter(i => this.state[i] === CELL.STAR).length;
     if (rowStars >= starsPerGroup) {
-      rowIndices.forEach(i => toFill.add(i));
+      rowIdxs.forEach(i => toFill.add(i));
     }
 
-    const colIndices = Array.from({ length: n }, (_, k) => k * n + col);
-    const colStars = colIndices.filter(i => this.state[i] === CELL.STAR).length;
+    const colIdxs = colIndices(n, col);
+    const colStars = colIdxs.filter(i => this.state[i] === CELL.STAR).length;
     if (colStars >= starsPerGroup) {
-      colIndices.forEach(i => toFill.add(i));
+      colIdxs.forEach(i => toFill.add(i));
     }
 
     this.regions.forEach(regionString => {
@@ -39,15 +40,7 @@ export function applyRules(GameClass) {
 
     // Stars cannot touch orthogonally or diagonally, so adjacent cells are
     // always dotted regardless of row/column/region quotas.
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
-        if (dr === 0 && dc === 0) continue;
-        const nr = row + dr, nc = col + dc;
-        if (nr >= 0 && nr < n && nc >= 0 && nc < n) {
-          toFill.add(nr * n + nc);
-        }
-      }
-    }
+    getNeighbors8(idx, n).forEach(i => toFill.add(i));
 
     // Apply dots to empty cells only (never void cells).
     for (const i of toFill) {
@@ -72,16 +65,8 @@ export function applyRules(GameClass) {
     const errors = new Set();
     for (let i = 0; i < n * n; i++) {
       if (this.state[i] !== CELL.STAR) continue;
-      const r = Math.floor(i / n), c = i % n;
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          if (dr === 0 && dc === 0) continue;
-          const nr = r + dr, nc = c + dc;
-          if (nr >= 0 && nr < n && nc >= 0 && nc < n) {
-            const nb = nr * n + nc;
-            if (this.state[nb] === CELL.STAR) { errors.add(i); errors.add(nb); }
-          }
-        }
+      for (const nb of getNeighbors8(i, n)) {
+        if (this.state[nb] === CELL.STAR) { errors.add(i); errors.add(nb); }
       }
     }
     return errors;
@@ -105,12 +90,10 @@ export function applyRules(GameClass) {
       }
     };
 
-
     for (let i = 0; i < n; i++) {
-      checkGroup(Array.from({ length: n }, (_, k) => i * n + k).filter(i => !isVoid(i)));
-      checkGroup(Array.from({ length: n }, (_, k) => k * n + i).filter(i => !isVoid(i)));
+      checkGroup(rowIndices(n, i).filter(idx => !isVoid(idx)));
+      checkGroup(colIndices(n, i).filter(idx => !isVoid(idx)));
     }
-
 
     this.regions.forEach(regionString => {
       const regionIds = [...new Set(regionString.split(''))].filter(id => id !== '*');
@@ -122,7 +105,6 @@ export function applyRules(GameClass) {
         checkGroup(indices);
       });
     });
-
 
     for (const idx of this._getAdjacentErrorIndices()) {
       errorIndices.add(idx);

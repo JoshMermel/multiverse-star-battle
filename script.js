@@ -7,6 +7,11 @@ import { applyPuzzleLoader } from './puzzle-loader.js';
 import { applyRules } from './rules.js';
 import { applyHistory } from './history.js';
 
+// Daily puzzle tier labels, in slot order (slot 1 = beginner, ... slot 4 =
+// expert). Single source of truth for both the label -> slot and
+// slot -> label directions (readUrlParams / updateUrlParams).
+const DAILY_TIER_LABELS = ['beginner', 'medium', 'hard', 'expert'];
+
 class StarBattleGame {
   // --- Initialization ---
 
@@ -57,6 +62,12 @@ class StarBattleGame {
         // Load target category if specified in URL (handling custom CSVs directly),
         // otherwise default to the first manifest category.
         const manifestCat = this.categories.find(c => c.id === catId);
+        // data/daily_<tier>.csv files exist on disk and would otherwise look
+        // like valid arbitrary-CSV category IDs, but they're only meant to
+        // be reached through loadDailyCategory's "today's puzzle per tier"
+        // rotation (?book=daily&puzzle=<tier>) -- exclude them here so a
+        // stray ?book=daily_beginner doesn't bypass that and load the whole
+        // tier file as its own browsable book.
         const isArbitraryCsv = catId && !manifestCat && !catId.startsWith('daily_');
 
         if (isArbitraryCsv) {
@@ -306,8 +317,6 @@ class StarBattleGame {
     }
   }
 
-
-
   // --- URL Parameters ---
 
   // Read category and puzzle index from URL query parameters.
@@ -317,9 +326,9 @@ class StarBattleGame {
     const puzzleParam = params.get('puzzle');
 
     // Map daily labels to slot indices. Expert is restricted to Sundays.
-    const dailySlotMap = { beginner: 1, medium: 2, hard: 3, expert: 4 };
-    let puzNum = (catId === 'daily' && puzzleParam in dailySlotMap)
-      ? dailySlotMap[puzzleParam]
+    const slotFromLabel = DAILY_TIER_LABELS.indexOf(puzzleParam) + 1;
+    let puzNum = (catId === 'daily' && slotFromLabel > 0)
+      ? slotFromLabel
       : parseInt(puzzleParam, 10) || 1;
 
     if (catId === 'daily' && puzNum === 4 && !this.isSunday()) {
@@ -334,9 +343,8 @@ class StarBattleGame {
     const params = new URLSearchParams();
     params.set('book', catId);
     if (this.isDailyCategory(catId)) {
-      const dailyLabels = ['beginner', 'medium', 'hard', 'expert'];
       const slot = parseInt(document.getElementById('puzzle-input').value, 10);
-      params.set('puzzle', dailyLabels[slot - 1] ?? 'beginner');
+      params.set('puzzle', DAILY_TIER_LABELS[slot - 1] ?? 'beginner');
     } else {
       params.set('puzzle', puzNum);
     }

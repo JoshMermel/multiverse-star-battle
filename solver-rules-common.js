@@ -217,10 +217,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
       .flatMap((val, idx) => this.vState(idx) === CELL.NONE ? [idx] : []);
 
     for (const testIdx of emptyIndices) {
-      // Build simulated sandbox layout populated with the virtual void dots
-      let sandboxState = [...this.game.state];
-      this.voidIndices.forEach(idx => { sandboxState[idx] = CELL.DOT; });
-      sandboxState[testIdx] = CELL.STAR;
+      const sandboxState = this._buildSpeculativeState(testIdx);
 
       let broken = false;
       for (let i = 0; i < nStages; i++) {

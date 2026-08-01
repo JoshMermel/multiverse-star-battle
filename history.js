@@ -49,30 +49,43 @@ export function applyHistory(GameClass) {
     this._persistTimerProgress();
   };
 
+  // Replace the live board state, and reset history to a single fresh
+  // snapshot of it.
+  p._resetHistoryTo = function (state) {
+    this.state = state;
+    this.history = [JSON.stringify(state)];
+    this.historyIdx = 0;
+  };
+
+  // Reset the solve timer to a fresh, paused state. Like a fresh puzzle
+  // load, it doesn't start running again until the player's next move.
+  p._resetTimer = function () {
+    this.timerElapsedTime = 0;
+    this._updateTimerDisplay(0);
+    this._timerStarted = false;
+    this._timerLocked = false;
+    this._stopTimer();
+    this.timerStartTime = null;
+  };
+
   // Load saved state or reconstruct from solved history.
   p.loadProgress = function ({ suppressWinToast = false, isReset = false } = {}) {
     const savedState = storageManager.getPuzzleState(this.currentPuzzleUniqueId);
     if (savedState && savedState.length === this.n * this.n) {
-      this.state = savedState;
-      this.history = [JSON.stringify(this.state)];
-      this.historyIdx = 0;
+      this._resetHistoryTo(savedState);
       this.updateVisuals();
       this.validate({ suppressWinToast });
     } else if (!isReset && storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {
       // Reconstruct board from solution if solved on another device.
-      this.state = [...this.solution].map((cell, i) =>
+      this._resetHistoryTo([...this.solution].map((cell, i) =>
         this.regions[0][i] === '*' ? CELL.NONE : cell === 'x' ? CELL.STAR : CELL.DOT
-      );
-      this.history = [JSON.stringify(this.state)];
-      this.historyIdx = 0;
+      ));
       this.saveCurrentState();
       this.updateVisuals();
       this.validate({ suppressWinToast: true });
     } else {
       // Clear state if no progress or solved record exists.
-      this.state = new Array(this.n * this.n).fill(CELL.NONE);
-      this.history = [JSON.stringify(this.state)];
-      this.historyIdx = 0;
+      this._resetHistoryTo(new Array(this.n * this.n).fill(CELL.NONE));
       this.updateVisuals();
       this.validate({ suppressWinToast: true });
     }
@@ -82,35 +95,23 @@ export function applyHistory(GameClass) {
 
   p.doReset = function () {
     this.hideToast();
-    this.state.fill(CELL.NONE);
-    this.history = [JSON.stringify(this.state)];
-    this.historyIdx = 0;
+    this._resetHistoryTo(new Array(this.n * this.n).fill(CELL.NONE));
     this.clearHintUI();
     this.updateVisuals();
     this.updateControls();
 
-    // Reset the solve timer. Like a fresh puzzle load, it doesn't start
-    // running again until the player makes their next move.
-    this.timerElapsedTime = 0;
-    this._updateTimerDisplay(0);
-    this._timerStarted = false;
-    this._timerLocked = false;
-    this._stopTimer();
-    this.timerStartTime = null;
+    this._resetTimer();
 
     this.validate();
     this.saveCurrentState();
   };
 
   // Clear all saved puzzle data and reset active board.
-  p._clearAllSaveData = function () {
-    storageManager.clearAllPuzzleData();
-
+  p._clearAllSaveData = async function () {
+    await storageManager.clearAllPuzzleData();
 
     if (this.state) {
-      this.state.fill(CELL.NONE);
-      this.history = [JSON.stringify(this.state)];
-      this.historyIdx = 0;
+      this._resetHistoryTo(new Array(this.n * this.n).fill(CELL.NONE));
       this.clearHintUI();
       this.updateVisuals();
       this.updateControls();
@@ -118,13 +119,7 @@ export function applyHistory(GameClass) {
       this.updateSolvedUI();
 
       // Reset the solve timer, since any saved time for this puzzle is gone.
-      // As with a fresh load, it stays paused until the player's next move.
-      this.timerElapsedTime = 0;
-      this._updateTimerDisplay(0);
-      this._timerStarted = false;
-      this._timerLocked = false;
-      this._stopTimer();
-      this.timerStartTime = null;
+      this._resetTimer();
     }
 
     this.showToast('Cleared all puzzle saves.', 'info');

@@ -179,7 +179,7 @@ class StorageManager {
     }
   }
 
-  clearAllPuzzleData() {
+  async clearAllPuzzleData() {
     this._solvedCache = [];
     this._solveTimesCache = {};
     this._elapsedTimesCache = {};
@@ -192,7 +192,9 @@ class StorageManager {
       }
     }
     keysToDelete.forEach(k => localStorage.removeItem(k));
-    this._syncToCloud(true);
+    // Awaited so callers can be sure the cloud copy is actually cleared
+    // before anything else (e.g. a fresh sign-in) might re-merge stale data.
+    await this._syncToCloud(true);
   }
 
   // --- Cloud Sync ---

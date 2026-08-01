@@ -1,4 +1,5 @@
 import { CELL } from './constants.js';
+import { getNeighbors8, cellsAdjacent, rowIndices, colIndices } from './geometry.js';
 
 // Core solving engine: precomputation, generic unit/board helpers, the
 // getHint() dispatcher, simulation/lookahead machinery, and symmetry
@@ -77,14 +78,12 @@ export class PuzzleSolver {
 
     // Rows (Shared)
     for (let r = 0; r < n; r++) {
-      const indices = Array.from({ length: n }, (_, k) => r * n + k);
-      units.push({ indices, label: `Row ${r + 1}` });
+      units.push({ indices: rowIndices(n, r), label: `Row ${r + 1}` });
     }
 
     // Columns (Shared)
     for (let c = 0; c < n; c++) {
-      const indices = Array.from({ length: n }, (_, k) => k * n + c);
-      units.push({ indices, label: `Column ${String.fromCharCode(65 + c)}` });
+      units.push({ indices: colIndices(n, c), label: `Column ${String.fromCharCode(65 + c)}` });
     }
 
     if (!this.game.regions) {
@@ -138,15 +137,8 @@ export class PuzzleSolver {
   // Get cell indices grouped by axis (Row or Column).
   getAxisIndices(axis) {
     const n = this.n;
-    const result = [];
-    for (let i = 0; i < n; i++) {
-      const unitIdxs = [];
-      for (let j = 0; j < n; j++) {
-        unitIdxs.push(axis === "Row" ? i * n + j : j * n + i);
-      }
-      result.push(unitIdxs);
-    }
-    return result;
+    const build = axis === "Row" ? rowIndices : colIndices;
+    return Array.from({ length: n }, (_, i) => build(n, i));
   }
 
   // Map cell indices to region labels.
@@ -160,20 +152,7 @@ export class PuzzleSolver {
 
   // Get adjacent neighbor cell indices (8-way).
   getNeighbors(idx) {
-    const n = this.n;
-    const row = Math.floor(idx / n);
-    const col = idx % n;
-    const neighbors = [];
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
-        if (dr === 0 && dc === 0) continue;
-        const nr = row + dr, nc = col + dc;
-        if (nr >= 0 && nr < n && nc >= 0 && nc < n) {
-          neighbors.push(nr * n + nc);
-        }
-      }
-    }
-    return neighbors;
+    return getNeighbors8(idx, this.n);
   }
 
   // Generate combinations of size k.
@@ -210,10 +189,7 @@ export class PuzzleSolver {
 
   // Whether two cell indices are adjacent, including diagonally.
   _cellsAdjacent(a, b) {
-    const n = this.n;
-    const ra = Math.floor(a / n), ca = a % n;
-    const rb = Math.floor(b / n), cb = b % n;
-    return Math.abs(ra - rb) <= 1 && Math.abs(ca - cb) <= 1;
+    return cellsAdjacent(a, b, this.n);
   }
 
   // Enumerate every valid way to place a unit's remaining stars: combinations of the
@@ -304,7 +280,7 @@ export class PuzzleSolver {
       if (key !== this.currentHintType) {
         this.currentHintType  = key;
         this.currentHintIndex = 0;
-        this.currentHints     = hints.slice().sort(() => Math.random() - 0.5);
+        this.currentHints     = this._shuffle(hints.slice());
       }
 
       const hint = this.currentHints[this.currentHintIndex % this.currentHints.length];
@@ -351,6 +327,28 @@ export class PuzzleSolver {
   }
 
   // --- Simulation ---
+
+  // Clones the live board state into a speculative sandbox with a star
+  // placed at `testIdx`, and void cells forced to DOT (mirroring vState).
+  // Used by every lookahead-style rule that asks "what if a star went here?"
+  _buildSpeculativeState(testIdx) {
+    const state = [...this.game.state];
+    this.voidIndices.forEach(idx => { state[idx] = CELL.DOT; });
+    state[testIdx] = CELL.STAR;
+    return state;
+  }
+
+  // Fisher-Yates shuffle (in place). Array.prototype.sort with a random
+  // comparator is a well-known non-uniform "shuffle" -- this is the correct
+  // version, used to randomize which equally-valid hint the player sees
+  // first for a given rule.
+  _shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
 
   // Note: generalized to respect this.starsPerGroup (quota) rather than assuming
   // quota === 1, so this same function backs both the 1★ and 2★+ lookahead rules.
@@ -596,15 +594,7 @@ export class PuzzleSolver {
 
   _computeInternalRotation180() {
     const total = this.n * this.n;
-    const mirrorFn = i => total - 1 - i;
-    for (const r of this.game.regions) {
-      for (let i = 0; i < total; i++) {
-        for (let j = i + 1; j < total; j++) {
-          if ((r[i] === r[j]) !== (r[mirrorFn(i)] === r[mirrorFn(j)])) return false;
-        }
-      }
-    }
-    return true;
+    return this._computeInternalDiagonalSymmetry(i => total - 1 - i);
   }
 
   _computeCrossboardRotation180() {

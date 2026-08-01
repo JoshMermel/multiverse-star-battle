@@ -362,31 +362,41 @@ export function applyMultiStarRules(PuzzleSolver) {
   // elimination is restricted to a single board at a time, so a contradiction is
   // only accepted if it's visible from that board's viewpoint alone (or is
   // board-agnostic row/col/adjacency geometry).
-  p.hintLookaheadDotsSingleBoard = function () {
+  // Shared implementation for hintLookaheadDotsSingleBoard/hintLookaheadDots:
+  // speculatively place one star, add only the dots it directly implies, and
+  // check for a broken unit. singleBoard=true checks each board in turn,
+  // restricting region completion (and the resulting hint) to that one
+  // board's viewpoint; singleBoard=false checks region completion across
+  // every board the test cell belongs to at once, catching contradictions
+  // that only surface by combining information from multiple boards.
+  p._hintLookaheadDotsImpl = function (singleBoard) {
     const candidates = [];
 
     const emptyIndices = this.game.state
       .flatMap((val, idx) => this.vState(idx) === CELL.NONE ? [idx] : []);
 
+    const boardScopes = singleBoard
+      ? Array.from({ length: this.game.regions.length }, (_, i) => i)
+      : [null];
+
     for (const testIdx of emptyIndices) {
-      for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
-        const boardReg = this._getRegionsContaining(testIdx)
-          .find(r => r.boardIdx === bIdx);
-        if (!boardReg) continue;
+      for (const bIdx of boardScopes) {
+        if (singleBoard) {
+          const boardReg = this._getRegionsContaining(testIdx).find(r => r.boardIdx === bIdx);
+          if (!boardReg) continue;
+          // Skip if this board's region has already reached quota (it's solved).
+          const existingRegStars = boardReg.indices.filter(i => this.vState(i) === CELL.STAR).length;
+          if (existingRegStars >= this.starsPerGroup) continue;
+        }
 
-        // Skip if this board's region has already reached quota (it's solved).
-        const existingRegStars = boardReg.indices.filter(i => this.vState(i) === CELL.STAR).length;
-        if (existingRegStars >= this.starsPerGroup) continue;
-
-        const sandboxState = [...this.game.state];
-        this.voidIndices.forEach(idx => { sandboxState[idx] = CELL.DOT; });
-        sandboxState[testIdx] = CELL.STAR;
-
+        const sandboxState = this._buildSpeculativeState(testIdx);
         this._applyStarPlacementDots(sandboxState, testIdx, bIdx);
 
-        const brokenUnits = this._findAllBrokenUnits(sandboxState, bIdx);
+        const brokenUnits = singleBoard
+          ? this._findAllBrokenUnits(sandboxState, bIdx)
+          : this._findAllBrokenUnits(sandboxState);
         for (const broken of brokenUnits) {
-          candidates.push({ testIdx, broken, boardIdx: bIdx });
+          candidates.push(singleBoard ? { testIdx, broken, boardIdx: bIdx } : { testIdx, broken });
         }
       }
     }
@@ -394,11 +404,15 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.testIdx - b.testIdx);
     return candidates.map(({ testIdx, broken, boardIdx }) => ({
-      boardIdx,
+      boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
       description: `The blue cells can no longer reach their required star count if the circled cell holds a star.`,
       highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
       marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
     }));
+  };
+
+  p.hintLookaheadDotsSingleBoard = function () {
+    return this._hintLookaheadDotsImpl(true);
   };
 
   // Rule (2★+): same speculative single-star placement as hintLookaheadDotsSingleBoard,
@@ -406,32 +420,7 @@ export function applyMultiStarRules(PuzzleSolver) {
   // contradictions that only surface when combining region information from multiple
   // boards are also caught.
   p.hintLookaheadDots = function () {
-    const candidates = [];
-
-    const emptyIndices = this.game.state
-      .flatMap((val, idx) => this.vState(idx) === CELL.NONE ? [idx] : []);
-
-    for (const testIdx of emptyIndices) {
-      const sandboxState = [...this.game.state];
-      this.voidIndices.forEach(idx => { sandboxState[idx] = CELL.DOT; });
-      sandboxState[testIdx] = CELL.STAR;
-
-      this._applyStarPlacementDots(sandboxState, testIdx, null);
-
-      const brokenUnits = this._findAllBrokenUnits(sandboxState);
-      for (const broken of brokenUnits) {
-        candidates.push({ testIdx, broken });
-      }
-    }
-
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => a.testIdx - b.testIdx);
-    return candidates.map(({ testIdx, broken }) => ({
-      boardIdx: broken.type === 'region' ? broken.boardIdx : undefined,
-      description: `The blue cells can no longer reach their required star count if the circled cell holds a star.`,
-      highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
-    }));
+    return this._hintLookaheadDotsImpl(false);
   };
 
   // --- At-least-1 / at-most-1 (2★+) ------------------------------------------

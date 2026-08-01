@@ -294,7 +294,6 @@ export function applyRenderer(GameClass) {
     toast.classList.remove('toast-hidden');
     this.toastBirthTime = Date.now();
 
-    toast.classList.remove('toast-hidden');
     toast.onclick = () => {
       if (Date.now() - this.toastBirthTime < 500) return;
       toast.classList.add('toast-hidden');

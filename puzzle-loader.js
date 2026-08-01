@@ -53,7 +53,9 @@ export function applyPuzzleLoader(GameClass) {
 
   // --- Parsing ---
 
-  // Parse CSV puzzle data into an array of puzzle objects.
+  // Parse CSV puzzle data into an array of puzzle objects. Requires a header
+  // row (first non-comment line starting with "name") -- headerless CSVs
+  // aren't supported.
   p.parseCsv = function (text) {
     const lines = text.split('\n');
     const puzzles = [];
@@ -67,21 +69,7 @@ export function applyPuzzleLoader(GameClass) {
         headers = cols.map(c => c.trim());
         continue;
       }
-      if (headers.length === 0) {
-        const [name, N, board_1, board_2, solution, score, tier, is_solved] = cols;
-        if (!name || !N || !board_1 || !board_2 || !solution) continue;
-        puzzles.push({
-          id: id++,
-          name,
-          N: parseInt(N, 10),
-          boards: [board_1, board_2],
-          board1: board_1,
-          board2: board_2,
-          solution,
-          tier: tier || ''
-        });
-        continue;
-      }
+      if (headers.length === 0) continue;
 
       const rowObj = {};
       headers.forEach((h, idx) => {

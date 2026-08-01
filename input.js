@@ -88,63 +88,46 @@ export function applyInput(GameClass) {
     const { open } = this.setupModal('settings-modal');
     document.getElementById('settings-btn').onclick = open;
 
-    const darkToggle = document.getElementById('setting-dark-mode');
-    const tabToggle = document.getElementById('setting-tab-mode');
-    const axisLabelsToggle = document.getElementById('setting-axis-labels');
-    const autoFillDotsToggle = document.getElementById('setting-auto-fill-dots');
-    const showTimerToggle = document.getElementById('setting-show-timer');
-
-    // Restore saved preferences.
-    const savedDark = localStorage.getItem('setting-dark-mode') === 'true';
-    const savedTab = localStorage.getItem('setting-tab-mode') === 'true';
-    const savedAxisLabels = localStorage.getItem('setting-axis-labels') === 'true';
-    const savedAutoFillDots = localStorage.getItem('setting-auto-fill-dots') === 'true';
-    const savedShowTimer = localStorage.getItem('setting-show-timer') === 'true';
-
-    darkToggle.checked = savedDark;
-    tabToggle.checked = savedTab;
-    axisLabelsToggle.checked = savedAxisLabels;
-    autoFillDotsToggle.checked = savedAutoFillDots;
-    showTimerToggle.checked = savedShowTimer;
-    this._applyDarkMode(savedDark);
-    this._applyShowTimer(savedShowTimer);
-    // Note: Tab mode and axis labels both depend on board containers that
-    // don't exist yet at settings-setup time, so they're applied during
-    // puzzle load instead (see loadPuzzle / renderBoard).
-
-    darkToggle.addEventListener('change', () => {
-      localStorage.setItem('setting-dark-mode', darkToggle.checked);
-      this._applyDarkMode(darkToggle.checked);
-    });
-
-    tabToggle.addEventListener('change', () => {
-      localStorage.setItem('setting-tab-mode', tabToggle.checked);
-      this._applyTabMode(tabToggle.checked);
-    });
-
-    axisLabelsToggle.addEventListener('change', () => {
-      localStorage.setItem('setting-axis-labels', axisLabelsToggle.checked);
-      // Re-render boards to apply/remove labels.
-      if (this.currentPuzzle && this.regions) {
-        this.regions.forEach((regionString, idx) => {
-          const boardEl = document.getElementById(`board${idx + 1}`);
-          if (boardEl) {
-            boardEl.innerHTML = '';
-            this.renderBoard(`board${idx + 1}`, regionString);
+    // Each toggle: localStorage key (== its DOM id), whether to apply it
+    // immediately at setup, and what "apply" means for it. Tab mode and
+    // axis labels both depend on board containers that don't exist yet at
+    // settings-setup time, so they skip applyOnInit and are applied during
+    // puzzle load instead (see loadPuzzle / renderBoard). auto-fill-dots
+    // has no apply step at all -- its value is just read from localStorage
+    // on demand elsewhere.
+    const settingsToggles = [
+      { key: 'setting-dark-mode', applyOnInit: true, onChange: (self, v) => self._applyDarkMode(v) },
+      { key: 'setting-tab-mode', applyOnInit: false, onChange: (self, v) => self._applyTabMode(v) },
+      {
+        key: 'setting-axis-labels', applyOnInit: false, onChange: (self) => {
+          // Re-render boards to apply/remove labels.
+          if (self.currentPuzzle && self.regions) {
+            self.regions.forEach((regionString, idx) => {
+              const boardEl = document.getElementById(`board${idx + 1}`);
+              if (boardEl) {
+                boardEl.innerHTML = '';
+                self.renderBoard(`board${idx + 1}`, regionString);
+              }
+            });
+            self.updateVisuals();
           }
-        });
-        this.updateVisuals();
-      }
-    });
+        }
+      },
+      { key: 'setting-auto-fill-dots', applyOnInit: false, onChange: null },
+      { key: 'setting-show-timer', applyOnInit: true, onChange: (self, v) => self._applyShowTimer(v) },
+    ];
 
-    autoFillDotsToggle.addEventListener('change', () => {
-      localStorage.setItem('setting-auto-fill-dots', autoFillDotsToggle.checked);
-    });
+    for (const { key, applyOnInit, onChange } of settingsToggles) {
+      const toggle = document.getElementById(key);
+      const saved = localStorage.getItem(key) === 'true';
+      toggle.checked = saved;
+      if (applyOnInit && onChange) onChange(this, saved);
 
-    showTimerToggle.addEventListener('change', () => {
-      localStorage.setItem('setting-show-timer', showTimerToggle.checked);
-      this._applyShowTimer(showTimerToggle.checked);
-    });
+      toggle.addEventListener('change', () => {
+        localStorage.setItem(key, toggle.checked);
+        if (onChange) onChange(this, toggle.checked);
+      });
+    }
 
     // --- Clear Saves ---
     const clearSavesBtn = document.getElementById('clear-saves-btn');
@@ -465,7 +448,6 @@ export function applyInput(GameClass) {
   // Set up the book picker modal with grouped categories.
   p.setupBookPicker = function () {
     const catSelect = document.getElementById('category-select');
-    const modal = document.getElementById('book-picker-modal');
     const body = document.getElementById('bp-modal-body');
     const openBtn = document.getElementById('book-picker-btn');
     const currentNameEl = document.getElementById('bpb-current-name');
@@ -493,14 +475,8 @@ export function applyInput(GameClass) {
       return groups;
     };
 
-    const openModal = () => { modal.classList.remove('modal-hidden'); renderGroups(); };
-    const closeModal = () => modal.classList.add('modal-hidden');
-
-    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !modal.classList.contains('modal-hidden')) closeModal();
-    });
-    modal.querySelectorAll('[data-close]').forEach(btn => btn.onclick = closeModal);
+    const { open: rawOpenModal, close: closeModal } = this.setupModal('book-picker-modal');
+    const openModal = () => { rawOpenModal(); renderGroups(); };
     openBtn.onclick = openModal;
 
     const makeGroupCard = (name, icon, sub, desc, active, starsBadgeText) => {

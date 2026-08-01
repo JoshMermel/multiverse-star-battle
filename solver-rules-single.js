@@ -1,4 +1,5 @@
 import { CELL } from './constants.js';
+import { cellsSee } from './geometry.js';
 
 // 1★-only rule implementations: rules that assume exactly one star per
 // row/column/region, plus the classic deduction techniques (domino,
@@ -235,15 +236,11 @@ export function applySingleStarRules(PuzzleSolver) {
       const candidates = unit.indices.filter(i => this.vState(i) === CELL.NONE);
       if (candidates.length === 0) continue;
 
-      const candCoords = candidates.map(i => ({ r: Math.floor(i / n), c: i % n }));
       const targets = [];
 
       for (let i = 0; i < n * n; i++) {
         if (this.vState(i) !== CELL.NONE || unit.indices.includes(i)) continue;
-        const ir = Math.floor(i / n), ic = i % n;
-        const canSeeAll = candCoords.every(({ r, c }) =>
-          ir === r || ic === c || (Math.abs(ir - r) <= 1 && Math.abs(ic - c) <= 1)
-        );
+        const canSeeAll = candidates.every(c => cellsSee(i, c, n));
         if (canSeeAll) targets.push({ idx: i, color: 'hint-target-yellow' });
       }
 
@@ -441,13 +438,7 @@ export function applySingleStarRules(PuzzleSolver) {
 
             if (shared.length === 0 || disjoint.length === 0) continue;
 
-            const sees = (i, j) => {
-              const ri = Math.floor(i / n), ci = i % n;
-              const rj = Math.floor(j / n), cj = j % n;
-              return ri === rj || ci === cj || (Math.abs(ri - rj) <= 1 && Math.abs(ci - cj) <= 1);
-            };
-
-            const onlyASeesAllOnlyB = onlyA.every(a => onlyB.every(b => sees(a, b)));
+            const onlyASeesAllOnlyB = onlyA.every(a => onlyB.every(b => cellsSee(a, b, n)));
             if (!onlyASeesAllOnlyB) continue;
 
             const targets = shared.filter(i => this.vState(i) === CELL.NONE);
@@ -474,27 +465,36 @@ export function applySingleStarRules(PuzzleSolver) {
     }));
   };
 
-  // Rule: Lookahead level 1 (check single-star placement contradiction within single board constraints).
-  p.hintLookaheadHalfSingleBoard = function () {
+  // Shared implementation for hintLookaheadHalfSingleBoard/hintLookaheadHalf:
+  // speculatively place one star, eliminate the row/column/adjacency dots it
+  // implies (board-agnostic) plus region dots, and check for a broken unit.
+  // singleBoard=true does this once per board, restricting region
+  // elimination (and the resulting hint) to that one board's region;
+  // singleBoard=false does it once per test cell, eliminating from EVERY
+  // board's region at once and checking across all boards together.
+  p._hintLookaheadHalfImpl = function (singleBoard) {
     const n = this.n;
     const candidates = [];
 
     const emptyIndices = this.game.state
       .flatMap((val, idx) => this.vState(idx) === CELL.NONE ? [idx] : []);
 
+    const boardScopes = singleBoard
+      ? Array.from({ length: this.game.regions.length }, (_, i) => i)
+      : [null];
+
     for (const testIdx of emptyIndices) {
       const row = Math.floor(testIdx / n);
       const col = testIdx % n;
 
-      for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
-        const boardReg = this._getRegionsContaining(testIdx)
-          .find(r => r.boardIdx === bIdx);
-        if (!boardReg) continue;
+      for (const bIdx of boardScopes) {
+        let boardReg = null;
+        if (singleBoard) {
+          boardReg = this._getRegionsContaining(testIdx).find(r => r.boardIdx === bIdx);
+          if (!boardReg) continue;
+        }
 
-        // Build simulated sandbox layout populated with the virtual void dots
-        const sandboxState = [...this.game.state];
-        this.voidIndices.forEach(idx => { sandboxState[idx] = CELL.DOT; });
-        sandboxState[testIdx] = CELL.STAR;
+        const sandboxState = this._buildSpeculativeState(testIdx);
 
         // Row and column elimination (board-agnostic).
         for (let j = 0; j < n; j++) {
@@ -509,14 +509,20 @@ export function applySingleStarRules(PuzzleSolver) {
           if (sandboxState[nb] === CELL.NONE) sandboxState[nb] = CELL.DOT;
         }
 
-        // Region elimination for this board only.
-        boardReg.indices.forEach(i => {
-          if (sandboxState[i] === CELL.NONE) sandboxState[i] = CELL.DOT;
-        });
+        // Region elimination: this board only in single-board mode, every
+        // board the cell belongs to otherwise.
+        const regionsToEliminate = singleBoard ? [boardReg] : this._getRegionsContaining(testIdx);
+        for (const reg of regionsToEliminate) {
+          reg.indices.forEach(i => {
+            if (sandboxState[i] === CELL.NONE) sandboxState[i] = CELL.DOT;
+          });
+        }
 
-        const brokenUnits = this._findAllBrokenUnits(sandboxState, bIdx);
+        const brokenUnits = singleBoard
+          ? this._findAllBrokenUnits(sandboxState, bIdx)
+          : this._findAllBrokenUnits(sandboxState);
         for (const broken of brokenUnits) {
-          candidates.push({ testIdx, broken, boardIdx: bIdx });
+          candidates.push(singleBoard ? { testIdx, broken, boardIdx: bIdx } : { testIdx, broken });
         }
       }
     }
@@ -524,61 +530,21 @@ export function applySingleStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.testIdx - b.testIdx);
     return candidates.map(({ testIdx, broken, boardIdx }) => ({
-      boardIdx: boardIdx,
+      boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
       description: `The blue cells must contain a star. This is impossible if the circled cell holds a star.`,
       highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
       marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
     }));
   };
 
+  // Rule: Lookahead level 1 (check single-star placement contradiction within single board constraints).
+  p.hintLookaheadHalfSingleBoard = function () {
+    return this._hintLookaheadHalfImpl(true);
+  };
+
   // Rule: Lookahead level 1 (check single-star placement contradiction across both boards).
   p.hintLookaheadHalf = function () {
-    const n = this.n;
-    const candidates = [];
-
-    const emptyIndices = this.game.state
-      .flatMap((val, idx) => this.vState(idx) === CELL.NONE ? [idx] : []);
-
-    for (const testIdx of emptyIndices) {
-      // Build simulated sandbox layout populated with the virtual void dots
-      const sandboxState = [...this.game.state];
-      this.voidIndices.forEach(idx => { sandboxState[idx] = CELL.DOT; });
-      sandboxState[testIdx] = CELL.STAR;
-
-      const row = Math.floor(testIdx / n);
-      const col = testIdx % n;
-
-      for (let j = 0; j < n; j++) {
-        const rIdx = row * n + j;
-        const cIdx = j * n + col;
-        if (sandboxState[rIdx] === CELL.NONE && rIdx !== testIdx) sandboxState[rIdx] = CELL.DOT;
-        if (sandboxState[cIdx] === CELL.NONE && cIdx !== testIdx) sandboxState[cIdx] = CELL.DOT;
-      }
-
-      for (const nb of this.getNeighbors(testIdx)) {
-        if (sandboxState[nb] === CELL.NONE) sandboxState[nb] = CELL.DOT;
-      }
-
-      for (const reg of this._getRegionsContaining(testIdx)) {
-        reg.indices.forEach(i => {
-          if (sandboxState[i] === CELL.NONE) sandboxState[i] = CELL.DOT;
-        });
-      }
-
-      const brokenUnits = this._findAllBrokenUnits(sandboxState);
-      for (const broken of brokenUnits) {
-        candidates.push({ testIdx, broken });
-      }
-    }
-
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => a.testIdx - b.testIdx);
-    return candidates.map(({ testIdx, broken }) => ({
-      boardIdx: broken.type === 'region' ? broken.boardIdx : undefined,
-      description: `The blue cells must contain a star. This is impossible if the circled cell holds a star.`,
-      highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
-    }));
+    return this._hintLookaheadHalfImpl(false);
   };
 
   p._hintSymmetry = function (mirrorFn, description) {
@@ -592,12 +558,8 @@ export function applySingleStarRules(PuzzleSolver) {
       const mirror = mirrorFn(i);
       if (mirror === i) continue;
 
-      const r  = Math.floor(i / n),      c  = i % n;
-      const mr = Math.floor(mirror / n), mc = mirror % n;
-
       const seesOwnMirror =
-        r === mr || c === mc ||
-        this.getNeighbors(i).includes(mirror) ||
+        cellsSee(i, mirror, n) ||
         cellToRegionMaps.some(map => map[i] && map[i] === map[mirror]);
 
       if (seesOwnMirror) marks.push({ idx: i, color: 'hint-target-yellow' });
