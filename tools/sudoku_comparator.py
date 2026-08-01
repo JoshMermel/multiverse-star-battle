@@ -19,7 +19,7 @@ class SudokuComparator(Comparator):
 
     _SUDOKU_N = 9
 
-    def __init__(self, generator, n, output_rows):
+    def __init__(self, generator, n, output_rows, stars_per_unit=1):
         if n != self._SUDOKU_N:
             raise ValueError(
                 f"SudokuComparator only supports n=9, got n={n}"
@@ -35,7 +35,7 @@ class SudokuComparator(Comparator):
         ]
         self.sudoku_flat = "".join(ALPHABET[v] for v in sudoku_grid)
         # Computed once at construction — the sudoku board is fixed.
-        self.sudoku_solutions = get_all_solutions(sudoku_grid, n)
+        self.sudoku_solutions = get_all_solutions(sudoku_grid, n, stars_per_unit=stars_per_unit)
 
     def _next_pair(self):
         result = self._generate_safe(self.generator)
