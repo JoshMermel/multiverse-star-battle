@@ -4,7 +4,7 @@ from board_utils import ALPHABET, VOID_CHAR, flood_fill, pretty_print
 from generator import Generator, MIN_SOLUTIONS
 
 
-class RandomGenerator(Generator):
+class VoidGenerator(Generator):
     """
     Generates a random contiguous-region board with 8-way symmetric voids.
     Ensures the selected void layout can produce valid puzzles with >= 2 solutions
@@ -159,4 +159,4 @@ class RandomGenerator(Generator):
 
 
 if __name__ == "__main__":
-    RandomGenerator.demo(n=8, n_voids=12)
+    VoidGenerator.demo(n=8, n_voids=12)
