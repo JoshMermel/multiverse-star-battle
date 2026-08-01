@@ -66,7 +66,7 @@ from sudoku_comparator import SudokuComparator
 from triple_comparator import TripleComparator
 
 # Scoring utils
-from scorer import StarBattlePuzzle, CompositeScorer, TIER_ORDER, _TIER_RANK
+from scorer import StarBattlePuzzle, CompositeScorer, TIER_ORDER, _TIER_RANK, score_puzzles_parallel
 from puzzle_deduper import PuzzleDeduper
 
 
@@ -170,10 +170,14 @@ def run_scoring(args):
         print("Error: {0} not found.".format(input_file))
         return
 
-    scorer = CompositeScorer(verbose=args.verbose)
     deduper = None if getattr(args, 'skip_dedup', False) else PuzzleDeduper()
     all_results = []
-    total, solved_count = 0, 0
+    # (row_index into all_results, n, boards, solution, stars_per_group) for
+    # every row that survives dedup -- deduper.is_duplicate/register must
+    # stay a strictly sequential pass (it depends on accumulated state
+    # across rows), so this loop is never parallelized; only the actual
+    # scorer.solve() calls below are.
+    to_score = []
     skipped_count = 0
 
     with open(input_file, mode='r') as f:
@@ -193,17 +197,48 @@ def run_scoring(args):
                     skipped_count += 1
                     continue
                 deduper.register(boards, n)
-            total += 1
+            row_idx = len(all_results)
+            all_results.append(row)
+            to_score.append((row_idx, n, boards, row['solution'], 1))
+
+    total = len(to_score)
+    solved_count = 0
+
+    if args.verbose or total <= 1:
+        # Sequential: verbose per-deduction logging would interleave
+        # unreadably across worker processes, and a single puzzle isn't
+        # worth process-pool startup overhead.
+        scorer = CompositeScorer(verbose=args.verbose)
+        for row_idx, n, boards, solution, stars_per_group in to_score:
+            row = all_results[row_idx]
             puzzle = StarBattlePuzzle(
-                n, boards, row['solution'], row['name']
-            )
+                n, boards, solution, row['name'], stars_per_group=stars_per_group)
             solved, score, tier = scorer.solve(puzzle)
             if solved:
                 solved_count += 1
             row['score'] = score
             row['tier'] = tier
             row['is_solved'] = solved
-            all_results.append(row)
+    else:
+        # Scoring is embarrassingly parallel (each puzzle solves
+        # independently), so hand the batch to a process pool. Keyed by
+        # row_idx rather than row['name'] since puzzle names aren't
+        # guaranteed unique within a batch.
+        specs = [
+            (str(row_idx), n, boards, solution, stars_per_group)
+            for row_idx, n, boards, solution, stars_per_group in to_score
+        ]
+        results = score_puzzles_parallel(specs)
+        for row_idx, n, boards, solution, stars_per_group in to_score:
+            row = all_results[row_idx]
+            solved, score, tier, error = results[str(row_idx)]
+            if error:
+                raise ValueError(f"Logic error scoring {row['name']}: {error}")
+            if solved:
+                solved_count += 1
+            row['score'] = score
+            row['tier'] = tier
+            row['is_solved'] = solved
 
     def sort_key(x):
         tier_idx = _TIER_RANK.get(x['tier'], len(TIER_ORDER))

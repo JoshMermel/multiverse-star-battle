@@ -7,7 +7,9 @@ Simulates human solving by applying logic rules in order of difficulty,
 tracking both the total score and the highest-tier rule needed.
 
 Public API (unchanged from the former single-file tools/scorer.py):
-StarBattlePuzzle, CompositeScorer, TIER_ORDER, _TIER_RANK.
+StarBattlePuzzle, CompositeScorer, TIER_ORDER, _TIER_RANK. Also exports
+score_puzzles_parallel (see parallel.py) for scoring many puzzles across a
+process pool.
 
 Internally the implementation is split across:
   puzzle.py            -- StarBattlePuzzle (puzzle state + symmetry detection)
@@ -16,10 +18,15 @@ Internally the implementation is split across:
   rules_single_star.py  -- rules that assume exactly 1 star per unit
   rules_multi_star.py   -- rules generalized to stars_per_group >= 2
   composite_scorer.py   -- CompositeScorer, assembled from the pieces above
+  parallel.py            -- score_puzzles_parallel, a process-pool batch scorer
 """
 
 from .puzzle import StarBattlePuzzle
 from .engine import TIER_ORDER, _TIER_RANK
 from .composite_scorer import CompositeScorer
+from .parallel import score_puzzles_parallel
 
-__all__ = ["StarBattlePuzzle", "CompositeScorer", "TIER_ORDER", "_TIER_RANK"]
+__all__ = [
+    "StarBattlePuzzle", "CompositeScorer", "TIER_ORDER", "_TIER_RANK",
+    "score_puzzles_parallel",
+]
