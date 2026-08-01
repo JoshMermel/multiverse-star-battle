@@ -10,18 +10,23 @@ Generates Star Battle boards with one of six structural symmetry types:
   rot_180         - 180-degree rotational symmetry
   octo            - 8-fold symmetry (N=8, no translation; pulls from an allowlist)
 
-And one of six translation types that tile a smaller sub-board across the full grid:
+And one of eight translation types that tile a smaller sub-board across the full grid:
   none       - no tiling, generate the full NxN board directly (default)
   vsplit     - tile a (N/2 rows) x (N cols) sub-board top-to-bottom   [N even]
   hsplit     - tile a (N rows) x (N/2 cols) sub-board left-to-right   [N even]
   quadrants  - tile a (N/2 x N/2) sub-board into all four quadrants   [N div 4]
   vfence     - tile a (N/4 rows) x (N cols) sub-board, 4 rows tall    [N div 4]
   hfence     - tile a (N rows) x (N/4 cols) sub-board, 4 cols wide    [N div 4]
+  vsplit3    - tile a (N/3 rows) x (N cols) sub-board top-to-bottom,  [N div 3]
+               3 copies (e.g. three 3x9 bands for N=9)
+  hsplit3    - tile a (N rows) x (N/3 cols) sub-board left-to-right,  [N div 3]
+               3 copies (e.g. three 9x3 bands for N=9)
 
 Symmetry types that require square geometry (diagonal, double_diagonal, rot_90, octo) are
 incompatible with any translation_type other than "none".  rot_180 with a non-none
-translation type requires N divisible by 4 (so the rectangular sub-board still has a
-well-defined centre-of-rotation).
+translation type requires the rectangular sub-board to have matching row/col parity
+(both even, as with N divisible by 4; or both odd, as with vsplit3/hsplit3 on N=9) so
+there's a well-defined centre-of-rotation.
 
 Allowlist-based generation
 --------------------------
@@ -100,14 +105,15 @@ _QUAD_SYMMETRIES = frozenset({'double_mirror', 'double_diagonal', 'rot_90'})
 # Symmetry types that require square geometry (their orbits/axes assume rows==cols).
 # These are incompatible with translation types whose sub-board is rectangular.
 # quadrants produces an N/2 x N/2 sub-board (square), so it's fine.
-# vsplit/hsplit/vfence/hfence produce rectangular sub-boards, so they're not.
+# vsplit/hsplit/vfence/hfence/vsplit3/hsplit3 produce rectangular sub-boards, so they're not.
 _SQUARE_ONLY_SYMMETRIES = frozenset({'diagonal', 'double_diagonal', 'rot_90', 'octo'})
-_RECT_TRANSLATION_TYPES = frozenset({'vsplit', 'hsplit', 'vfence', 'hfence'})
+_RECT_TRANSLATION_TYPES = frozenset({'vsplit', 'hsplit', 'vfence', 'hfence', 'vsplit3', 'hsplit3'})
 
 _VALID_SYMMETRIES = ['none', 'mirror', 'diagonal', 'double_mirror',
                      'double_diagonal', 'rot_90', 'rot_180', 'octo']
 
-_VALID_TRANSLATIONS = ['none', 'vsplit', 'hsplit', 'quadrants', 'vfence', 'hfence']
+_VALID_TRANSLATIONS = ['none', 'vsplit', 'hsplit', 'quadrants', 'vfence', 'hfence',
+                       'vsplit3', 'hsplit3']
 
 # ── Allowlist storage ─────────────────────────────────────────────────────────
 # Populated at runtime via set_allowlist() before generation.
@@ -334,6 +340,10 @@ def _sub_board_shape(n: int, translation_type: str):
         return n // 4, n, n // 4
     elif translation_type == 'hfence':
         return n, n // 4, n // 4
+    elif translation_type == 'vsplit3':
+        return n // 3, n, n // 3
+    elif translation_type == 'hsplit3':
+        return n, n // 3, n // 3
     else:
         raise ValueError(f"Unknown translation_type: {translation_type!r}")
 
@@ -455,8 +465,6 @@ class _RectContext:
             return count
 
         elif self.sym_type == 'rot_180':
-            if (R + C) % 2 != 0:
-                return None
             is_odd = (R % 2 != 0)
             max_possible = min(R // 2, C // 2) + (1 if is_odd else 0)
             max_possible = min(max_possible, K)
@@ -833,6 +841,12 @@ def _tile_offsets(n: int, translation_type: str):
     elif translation_type == 'hfence':
         q = n // 4
         return [(0, i * q) for i in range(4)]
+    elif translation_type == 'vsplit3':
+        t = n // 3
+        return [(i * t, 0) for i in range(3)]
+    elif translation_type == 'hsplit3':
+        t = n // 3
+        return [(0, i * t) for i in range(3)]
     else:
         raise ValueError(f"Unexpected translation_type in _tile_offsets: {translation_type!r}")
 
@@ -901,6 +915,7 @@ class SymmetricGenerator(Generator):
         # Divisibility requirements by translation type.
         requires_even = {'vsplit', 'hsplit'}
         requires_div4 = {'quadrants', 'vfence', 'hfence'}
+        requires_div3 = {'vsplit3', 'hsplit3'}
 
         if trans_type in requires_even and n % 2 != 0:
             raise ValueError(
@@ -909,6 +924,11 @@ class SymmetricGenerator(Generator):
         if trans_type in requires_div4 and n % 4 != 0:
             raise ValueError(
                 f"translation_type={trans_type!r} requires N to be divisible by 4 "
+                f"(got N={n})."
+            )
+        if trans_type in requires_div3 and n % 3 != 0:
+            raise ValueError(
+                f"translation_type={trans_type!r} requires N to be divisible by 3 "
                 f"(got N={n})."
             )
 
@@ -921,16 +941,20 @@ class SymmetricGenerator(Generator):
                 f"(which produces a rectangular sub-board)."
             )
 
-        # rot_180 with tiling: sub-board must have even dimensions in both axes
-        # so there's a well-defined centre of rotation.  This holds when N % 4 == 0.
+        # rot_180 with tiling: sub-board rows/cols must share parity so there's a
+        # well-defined centre of rotation.  Both even (e.g. N div 4 for
+        # vsplit/hsplit, or N div 4 for quadrants/vfence/hfence) gives a pure
+        # pairing with no fixed cell.  Both odd (e.g. 3x9 sub-board from
+        # vsplit3/hsplit3 on N=9) gives a single true fixed cell at the centre.
+        # Mixed parity (one odd, one even) has no well-defined centre and is
+        # rejected.
         if trans_type != 'none' and sym_type == 'rot_180':
             sub_rows, sub_cols, _ = _sub_board_shape(n, trans_type)
-            if sub_rows % 2 != 0 or sub_cols % 2 != 0:
+            if sub_rows % 2 != sub_cols % 2:
                 raise ValueError(
                     f"symmetry_type='rot_180' with translation_type={trans_type!r} "
-                    f"requires the sub-board to have even dimensions "
-                    f"(got {sub_rows}x{sub_cols} for N={n}). "
-                    f"Use N divisible by 4."
+                    f"requires the sub-board's rows and cols to share parity "
+                    f"(got {sub_rows}x{sub_cols} for N={n})."
                 )
 
         # octo is only supported for N=8, translation='none'.
@@ -1050,3 +1074,13 @@ if __name__ == "__main__":
     for sym in ['rot_180', 'none']:
         print(f"\n--- sym={sym}, trans=hfence (N=8) ---")
         SymmetricGenerator.demo(8, symmetry_type=sym, translation_type='hfence')
+
+    print("\n\n=== vsplit3: 3x9 sub-board tiled top-to-bottom (3 copies) ===")
+    for sym in ['mirror', 'rot_180', 'none']:
+        print(f"\n--- sym={sym}, trans=vsplit3 (N=9) ---")
+        SymmetricGenerator.demo(9, symmetry_type=sym, translation_type='vsplit3')
+
+    print("\n\n=== hsplit3: 9x3 sub-board tiled left-to-right (3 copies) ===")
+    for sym in ['mirror', 'rot_180', 'none']:
+        print(f"\n--- sym={sym}, trans=hsplit3 (N=9) ---")
+        SymmetricGenerator.demo(9, symmetry_type=sym, translation_type='hsplit3')
