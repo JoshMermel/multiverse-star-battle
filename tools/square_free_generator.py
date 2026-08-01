@@ -30,7 +30,6 @@ class SquareFreeGenerator(Generator):
         n = self.n
         grid = [None] * (n * n)
 
-        # 1. Initialise N seeds — one per region.
         # tips[reg_id]: list of live branch-tip indices for that region.
         # We treat this as a stack (LIFO) — new tips are appended and we
         # search from the end, giving priority to the most recent growth.
@@ -41,7 +40,6 @@ class SquareFreeGenerator(Generator):
 
         active_regions = list(range(n))
 
-        # 2. Competitive branching growth.
         while active_regions:
             # Choose a region at random each iteration for unbiased growth.
             reg_id = random.choice(active_regions)
@@ -93,7 +91,6 @@ class SquareFreeGenerator(Generator):
             if not expanded:
                 active_regions.remove(reg_id)
 
-        # 3. Validate fill and solve.
         if None in grid:
             # Some cells were never claimed; discard this attempt.
             return None

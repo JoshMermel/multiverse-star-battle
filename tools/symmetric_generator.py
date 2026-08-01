@@ -969,9 +969,8 @@ class SymmetricGenerator(Generator):
                     f"(got translation_type={trans_type!r})."
                 )
 
-    # ── Backward-compat wrappers (delegate to _RectContext) ───────────────────
-    # These are kept so any external code that called get_orbit() or
-    # symmetric_flood_fill() on a SymmetricGenerator instance still works.
+    # ── Wrappers (delegate to _RectContext) ────────────────────────────────────
+    # get_orbit() is used directly by test_generators.py.
 
     def _get_idx(self, r, c):
         return self._full_ctx().idx(r, c)

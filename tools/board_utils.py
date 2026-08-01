@@ -159,8 +159,7 @@ def get_board_variants(flat_board, solutions, n):
 
 def flood_fill(grid, n, excluded_region=None, reject_singletons=False):
     unfilled_count = sum(1 for cell in grid if cell is None)
-    
-    # 1. Identify the initial frontier: unfilled cells adjacent to seeds
+
     frontier = set()
     for i in range(n * n):
         if grid[i] is not None and grid[i] != excluded_region:
@@ -168,26 +167,21 @@ def flood_fill(grid, n, excluded_region=None, reject_singletons=False):
                 if grid[nb] is None:
                     frontier.add(nb)
 
-    # 2. Expand until no unfilled cells remain or frontier is exhausted
     while frontier:
-        # Pick a random cell from the frontier to fill
         idx = random.choice(list(frontier))
         frontier.remove(idx)
 
-        # Find valid neighbors to inherit a region ID from
         neighbors = [
             grid[nb] for nb in get_neighbors_4(idx, n)
             if grid[nb] is not None and grid[nb] != excluded_region
         ]
-        
+
         if neighbors:
             grid[idx] = random.choice(neighbors)
-            # Add this cell's unfilled neighbors to the frontier
             for nb in get_neighbors_4(idx, n):
                 if grid[nb] is None:
                     frontier.add(nb)
 
-    # 3. Final Validation
     if any(v is None for v in grid):
         return None
 

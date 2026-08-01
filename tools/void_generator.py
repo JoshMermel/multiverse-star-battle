@@ -65,12 +65,13 @@ class VoidGenerator(Generator):
         n = self.n
         trial_attempts = 1000 
 
-        # Define the set of known bad cells to block
-        # If a candidate layout contains ALL of these elements, reject it immediately
+        # Void layouts (on 9x9) known to starve region generation down to too
+        # few valid boards, causing _attempt_fill's solver to churn without
+        # finding a workable layout. Skip any candidate that contains one of
+        # these as a subset rather than pay for a doomed trial run.
         bad_sets = [{65, 2, 69, 6, 74, 11, 78, 15, 18, 19, 54, 55, 25, 26, 61, 62},
                     {64, 2, 6, 70, 74, 10, 78, 16, 18, 54, 26, 62}]
         center_fence = {31, 39, 41, 49}
- 
 
         while True:
             current_voids = set()
@@ -83,16 +84,15 @@ class VoidGenerator(Generator):
                 current_voids.update(orbit)
 
             # --- FILTER GATE 1: Check Known Bad Structural Configurations ---
-            # if a bad subset is completely contained within current_voids, skip it
             if any(bad_set.issubset(current_voids) for bad_set in bad_sets):
                 continue
 
             if center_fence.issubset(current_voids) and 40 not in current_voids:
                 continue
 
-            # Assign to self temporarily so _attempt_fill utilizes this candidate mask
+            # _attempt_fill reads self.void_cells, so it must be set before calling it.
             self.void_cells = current_voids
-            
+
             # --- FILTER GATE 2: Solution and Continuity Verification ---
             passed_trial = False
             for _ in range(trial_attempts):

@@ -352,7 +352,6 @@ class MultiStarRules:
                 continue
 
             for b_idx in range(p.n_boards):
-                # Reuse your internal trapped/covered logic across the window
                 changes = self._hint_multi_regions_trapped_or_covered(p, window_units, b_idx, axis)
                 if changes > 0:
                     return changes
@@ -374,7 +373,6 @@ class MultiStarRules:
             for combo in combinations(starless_units, 2):
                 unit_combo = [units[u] for u in combo]
                 for b_idx in range(p.n_boards):
-                    # Leverages internal multi-trapped logic dynamically
                     changes = self._hint_multi_regions_trapped_or_covered(p, unit_combo, b_idx, axis)
                     if changes > 0:
                         return changes
@@ -458,79 +456,45 @@ class MultiStarRules:
     # -- At-least-1 / at-most-1 (2★+) ------------------------------------------
     #
     # A group of cells can be known to jointly hold "at least 1" star, or
-    # jointly hold "at most 1" star. Those facts feed two forcing checks:
+    # jointly hold "at most 1" star. Two forcing checks consume those facts:
     #
-    # (a) N+1 candidates, N needed (_apply_at_most_one_forcing): a unit
-    #     needing exactly 2 more stars with exactly 3 remaining candidates
-    #     {x, y, z} -- if some pair among them is a subset of a known
-    #     at-most-1 group, that pair supplies at most 1 of the 2 needed
-    #     stars, so the third candidate must supply the other and is
-    #     forced to a star.
-    # (b) Q disjoint groups fill the quota (_apply_disjoint_quota_fill): a
-    #     unit needing exactly Q more stars -- if Q mutually disjoint
-    #     at-least-1 groups are found among its candidates, they
-    #     collectively guarantee exactly Q stars, so every other candidate
-    #     is forced to a dot.
+    # (a) N+1 candidates, N needed (_apply_at_most_one_forcing): if a unit
+    #     needs 2 more stars from exactly 3 candidates {x, y, z}, and some
+    #     pair among them is a known at-most-1 group, that pair supplies at
+    #     most 1 of the 2 needed stars, so the third candidate is forced.
+    # (b) Q disjoint groups fill the quota (_apply_disjoint_quota_fill): if a
+    #     unit needs Q more stars and Q mutually disjoint at-least-1 groups
+    #     are found among its candidates, they account for the quota
+    #     exactly, so every other candidate is forced to a dot.
     #
-    # Three independent sources feed those checks, split deliberately by
-    # how explainable each one is to a human -- NOT pooled together, so a
-    # player who reaches a given hint is only ever shown a group that
-    # traces back to ONE kind of reasoning (see rule_clump_* vs
-    # rule_witness_* below for how that maps to tiers):
+    # Three sources feed those checks, kept separate (not pooled) so a hint
+    # only ever traces back to ONE kind of reasoning -- see rule_clump_* vs
+    # rule_witness_* below for how each maps to a tier.
     #
-    # Source 1 (region/line-split, aka "Rule of Clumps" / "Rule of
-    # Container Consumption", from krazydad -- an experienced Star Battle
-    # puzzle designer -- and matching his published tutorials): a region's
-    # remaining candidates in a single row or column ("in_line"), plus a
-    # small leftover "remainder" outside it. If the remainder can be
-    # PROVEN (by adjacency alone -- always sound, regardless of which
-    # units the cells belong to) to hold at most m stars, and the region
-    # still needs k stars overall, then in_line alone must supply at least
-    # (k - m) of them -- an at-least-N fact about in_line. Combined with
-    # the line's own remaining need, that also bounds how many stars the
-    # REST of the line (outside the region) can hold: 0 means the rest of
-    # the line is immediately all dots (applied directly, not through
-    # either forcing check above); exactly 1 registers the rest of the
-    # line as an at-most-1 group. in_line itself is only registered as a
-    # reusable at-least-1 group when (k - m) == 1 -- matching what
-    # _apply_disjoint_quota_fill assumes (a bound of 2+ would need the
-    # N-group forcing generalization noted below, not implemented yet;
-    # for a 2★ region k never exceeds 2, so this only excludes 3★+).
+    # Source 1 (region/line-split, "Rule of Clumps", from krazydad): a
+    # region's remaining candidates in one row/column ("in_line"), plus a
+    # small "remainder" outside it. If adjacency alone proves the remainder
+    # holds at most m stars, and the region needs k overall, in_line must
+    # supply at least (k - m) of them. m == 0 makes the rest of the line all
+    # dots directly; (k - m) == 1 registers in_line as an at-least-1 group
+    # and the rest of the line as an at-most-1 group.
     #
-    # Source 2 (line-pair box covering): for a pair of ADJACENT rows (or
-    # columns), try to cover every empty cell in that 2-line band with the
-    # fewest possible disjoint 2x2 boxes (any 2x2 footprint is always an
-    # at-most-1 group -- any two cells in it are mutually adjacent). If
-    # the minimum box count exactly matches the band's remaining star need
-    # (2 * stars_per_unit, minus stars already placed), every box must
-    # supply EXACTLY one star -- so each box is simultaneously an
-    # at-least-1 AND an at-most-1 group. Board-agnostic (rows/columns are
-    # shared across every board) and doesn't involve region membership at
-    # all, unlike source 1.
+    # Source 2 (line-pair box covering): for a pair of adjacent rows (or
+    # columns), cover every empty cell in that 2-line band with the fewest
+    # disjoint 2x2 boxes (any 2x2 is always an at-most-1 group). If the box
+    # count matches the band's remaining star need exactly, each box must
+    # supply exactly one star -- both at-least-1 and at-most-1 at once.
+    # Board-agnostic; no region membership involved.
     #
-    # Source 1 and 2 are both "one geometric argument, visually checkable"
-    # techniques -- feed the Hard-tier rule_clump_* rules below.
+    # Sources 1 and 2 are single geometric hops a player can check by eye --
+    # feed the Hard-tier rule_clump_* rules below.
     #
-    # Source 3 (witness projection): some pair {i, j} can be at-least-1
-    # (from some unit's own valid completions -- no valid way to complete
-    # that unit leaves BOTH i and j empty; this itself requires exhaustive
-    # enumeration of a unit's completions, not just inspection). Pick any
-    # cell a forced to a dot if i were starred, and any cell b != a forced
-    # to a dot if j were starred: a and b can't both be stars, or i and j
-    # would both be forced empty, contradicting at-least-1. So {a, b} is
-    # at-most-1. This is a genuine two-hop chain (exhaustive completion
-    # check, then a hypothetical-placement projection) that isn't
-    # something a player can verify by inspection the way sources 1 and 2
-    # are -- feeds the Expert-tier rule_witness_* rules below.
-    #
-    # krazydad's generalization note on source 3: an at-least-1 group of
-    # size n projects (via one witness per member) to at-most-(n-1) over
-    # the witness tuple, which would let the forcing check fire for units
-    # needing 3+ stars too. Only the n=2 case is implemented here (already
-    # a complete technique for 2★, where no unit ever needs more than 2
-    # stars); the n=3+ generalization is a natural follow-up for 3★+, not
-    # implemented yet. Kept private to this rule family for now rather
-    # than exposed as shared helpers, since nothing else consumes them yet.
+    # Source 3 (witness projection): a pair {i, j} is at-least-1 when no
+    # valid completion of some unit leaves both empty. Pick a cell forced to
+    # a dot if i were starred, and a different cell forced to a dot if j
+    # were starred -- those two cells can't both be stars without forcing
+    # both i and j empty, so they're at-most-1. A genuine two-hop chain, not
+    # visually checkable -- feeds the Expert-tier rule_witness_* rules below.
 
     def _find_at_least_one_pairs(self, p):
         """
@@ -622,9 +586,8 @@ class MultiStarRules:
         return best
 
     # Cap on the region's "leftover" cell count source 1 will analyze via
-    # _max_stars_fittable's brute force -- keeps it a "tiny clump" check,
-    # not a general (expensive, and mostly-useless-anyway-since-a-big-loose
-    # remainder rarely proves a tight bound) sub-region solver.
+    # _max_stars_fittable's brute force -- keeps it a cheap "tiny clump"
+    # check rather than a full sub-region solver.
     _LINE_SPLIT_REMAINDER_CAP = 4
 
     def _region_line_split_facts(self, p):

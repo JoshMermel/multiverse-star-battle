@@ -86,8 +86,8 @@ def _build_letter_pair(args, n, output_rows):
     gen_b = LetterGenerator(n, args.char2[0].upper(), stars_per_unit=args.stars)
     return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows, randomize_orientation_for_output=False, match_variants=False)
 
-# boilerplate so I don't need to write this every time when testing new
-# generators or comparators.
+# Scratch/dev boilerplate for testing new generators or comparators by hand,
+# edited in place per experiment rather than kept as a stable mode.
 def _build_tmp(args, n, output_rows):
     gen_a = RandomGenerator(n)
     return TripleComparator(gen_a, n, output_rows)

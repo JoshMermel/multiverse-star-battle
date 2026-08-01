@@ -16,7 +16,8 @@ export class PuzzleSolver {
     this.n = game.n;
     this.starsPerGroup = game.starsPerGroup || 1;
 
-    // --- NEW: Track void cell indices virtually ---
+    // Void cells are tracked here rather than in game.state, so hint logic
+    // can treat them as always-dot without mutating the real board state.
     this.voidIndices = new Set();
     if (this.game.regions) {
       this.game.regions.forEach((regionString) => {
@@ -62,8 +63,8 @@ export class PuzzleSolver {
     this.currentHintIndex = 0;
   }
 
-  // --- NEW: Virtual State Interceptor ---
-  // Pretends void cells are DOTS without mutating this.game.state (keeping GUI clean)
+  // Reads a cell's state, reporting void cells as DOT regardless of what's
+  // actually stored there (see voidIndices above).
   vState(idx, stateArray = this.game.state) {
     if (this.voidIndices.has(idx)) return CELL.DOT;
     return stateArray[idx];
@@ -93,7 +94,7 @@ export class PuzzleSolver {
 
     // Regions (board-specific indices)
     this.game.regions.forEach((regionString, boardIdx) => {
-      // FIX: Filter out '*' so it doesn't create phantom regions
+      // '*' marks void cells, which belong to no region.
       const regionIds = [...new Set(regionString.split(''))].filter(id => id !== '*');
       regionIds.forEach(id => {
         const indices = [];

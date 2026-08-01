@@ -14,7 +14,8 @@ export function applyCommonSolverRules(PuzzleSolver) {
     const highlights = [];
 
     for (let i = 0; i < n * n; i++) {
-      // FIX: Ensure stars placed manually on void cells register as an error
+      // A star on a void cell is always wrong, even if this.game.state
+      // hasn't been reconciled with voidIndices for this cell.
       const isWrong = (this.game.state[i] === CELL.STAR && (this.game.solution[i] !== 'x' || this.voidIndices.has(i)))
         || (this.game.state[i] === CELL.DOT  && this.game.solution[i] === 'x' && !this.voidIndices.has(i));
       if (isWrong) highlights.push({ idx: i, color: 'hint-error-red' });
@@ -34,7 +35,8 @@ export function applyCommonSolverRules(PuzzleSolver) {
 
   // Rule: Check if the puzzle is already solved.
   p.hintAlreadySolved = function () {
-    // FIX: Use vState to safely match end solution conditions
+    // vState (not raw state) so void cells, which always read as DOT,
+    // compare correctly against the solution.
     const isSolved = this.game.state.every((v, i) =>
       (this.game.solution[i] === 'x') ? this.vState(i) === CELL.STAR : this.vState(i) !== CELL.STAR
     );

@@ -12,21 +12,18 @@ export function applyRules(GameClass) {
 
     const toFill = new Set();
 
-    // 1. Check Row
     const rowIndices = Array.from({ length: n }, (_, k) => row * n + k);
     const rowStars = rowIndices.filter(i => this.state[i] === CELL.STAR).length;
     if (rowStars >= starsPerGroup) {
       rowIndices.forEach(i => toFill.add(i));
     }
 
-    // 2. Check Column
     const colIndices = Array.from({ length: n }, (_, k) => k * n + col);
     const colStars = colIndices.filter(i => this.state[i] === CELL.STAR).length;
     if (colStars >= starsPerGroup) {
       colIndices.forEach(i => toFill.add(i));
     }
 
-    // 3. Check Regions
     this.regions.forEach(regionString => {
       const regionId = regionString[idx];
       if (regionId === '*') return;
@@ -40,7 +37,8 @@ export function applyRules(GameClass) {
       }
     });
 
-    // 4. Always add adjacent cells (stars cannot touch orthogonally or diagonally).
+    // Stars cannot touch orthogonally or diagonally, so adjacent cells are
+    // always dotted regardless of row/column/region quotas.
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
         if (dr === 0 && dc === 0) continue;

@@ -3,10 +3,9 @@ import { CELL } from './constants.js';
 // 2★+ rule implementations: everything written against an arbitrary
 // this.starsPerGroup rather than assuming exactly 1 star per
 // row/column/region. Used identically for 2★, 3★, and 4★+ puzzles via
-// _getMultiStarRuleList() -- those three used to be byte-identical
-// duplicated dispatch blocks in getHint(). See solver-rules-single.js for
-// the 1★-only rules they generalize, and solver-rules-common.js for the
-// rules shared verbatim by both families.
+// _getMultiStarRuleList(). See solver-rules-single.js for the 1★-only
+// rules they generalize, and solver-rules-common.js for the rules shared
+// verbatim by both families.
 export function applyMultiStarRules(PuzzleSolver) {
   const p = PuzzleSolver.prototype;
 
@@ -437,64 +436,26 @@ export function applyMultiStarRules(PuzzleSolver) {
 
   // --- At-least-1 / at-most-1 (2★+) ------------------------------------------
   //
-  // JS port of the Python engine's tiered at-least-1/at-most-1 rule family
-  // (see tools/scorer/rules_multi_star.py for the fuller derivation
-  // comments). A group of cells can be known to jointly hold "at least 1"
-  // star, or jointly hold "at most 1" star. Those facts feed two forcing
-  // checks:
+  // JS port of the Python engine's tiered at-least-1/at-most-1 rule family;
+  // see tools/scorer/rules_multi_star.py for the full derivation of sources
+  // 1-3 below. A group of cells can be known to jointly hold "at least 1"
+  // star, or jointly hold "at most 1" star. Two forcing checks consume
+  // those facts:
   //
-  // (a) N+1 candidates, N needed (_applyAtMostOneForcing): a unit needing
-  //     exactly 2 more stars with exactly 3 remaining candidates
-  //     {x, y, z} -- if some pair among them is a subset of a known
-  //     at-most-1 group, that pair supplies at most 1 of the 2 needed
-  //     stars, so the third candidate must supply the other and is forced
-  //     to a star.
-  // (b) Q disjoint groups fill the quota (_applyDisjointQuotaFill): a unit
-  //     needing exactly Q more stars -- if Q mutually disjoint at-least-1
-  //     groups are found among its candidates, they collectively
-  //     guarantee exactly Q stars, so every other candidate is forced to
-  //     a dot.
+  // (a) N+1 candidates, N needed (_applyAtMostOneForcing): if a unit needs
+  //     2 more stars from exactly 3 candidates {x, y, z}, and some pair
+  //     among them is a known at-most-1 group, that pair supplies at most
+  //     1 of the 2 needed stars, so the third candidate is forced.
+  // (b) Q disjoint groups fill the quota (_applyDisjointQuotaFill): if a
+  //     unit needs Q more stars and Q mutually disjoint at-least-1 groups
+  //     are found among its candidates, they account for the quota
+  //     exactly, so every other candidate is forced to a dot.
   //
-  // Three independent sources feed those checks, split deliberately by
-  // how explainable each one is to a human -- NOT pooled together, so a
-  // player who reaches a given hint is only ever shown a group that
-  // traces back to ONE kind of reasoning:
-  //
-  // Source 1 (region/line-split, aka "Rule of Clumps" / "Rule of
-  // Container Consumption", from krazydad -- an experienced Star Battle
-  // puzzle designer -- and matching his published tutorials): a region's
-  // remaining candidates in a single row or column ("inLine"), plus a
-  // small leftover "remainder" outside it. If the remainder can be
-  // PROVEN (by adjacency alone) to hold at most m stars, and the region
-  // still needs k stars overall, inLine alone must supply at least
-  // (k - m) of them -- an at-least-N fact about inLine, only kept as a
-  // reusable at-least-1 group when that bound is exactly 1. Combined with
-  // the line's own remaining need, this also bounds how many stars the
-  // REST of the line (outside the region) can hold: 0 means the rest of
-  // the line is immediately all dots (its own standalone hint); exactly 1
-  // registers the rest of the line as an at-most-1 group.
-  //
-  // Source 2 (line-pair box covering): for a pair of ADJACENT rows (or
-  // columns), try to cover every empty cell in that 2-line band with the
-  // fewest possible disjoint 2x2 boxes (any 2x2 footprint is always an
-  // at-most-1 group -- any two cells in it are mutually adjacent). If the
-  // minimum box count exactly matches the band's remaining star need,
-  // every box must supply EXACTLY one star -- so each box is
-  // simultaneously an at-least-1 AND an at-most-1 group. Board-agnostic,
-  // and doesn't involve region membership at all, unlike source 1.
-  //
-  // Sources 1 and 2 are both "one geometric argument, visually checkable"
-  // techniques -- feed the Hard-tier hintClump* rules below.
-  //
-  // Source 3 (witness projection): a pair {i, j} can be at-least-1 (no
-  // valid way to complete some unit leaves BOTH i and j empty -- this
-  // itself requires exhaustive enumeration of a unit's completions, not
-  // just inspection). Pick any cell a forced to a dot if i were starred,
-  // and any cell b != a forced to a dot if j were starred: a and b can't
-  // both be stars, or i and j would both be forced empty, contradicting
-  // at-least-1. So {a, b} is at-most-1. A genuine two-hop chain that
-  // isn't something a player can verify by inspection the way sources 1
-  // and 2 are -- feeds the Expert-tier hintWitness* rules below.
+  // Three sources feed those checks, kept separate (not pooled) so a hint
+  // only ever traces back to ONE kind of reasoning: sources 1 and 2 are
+  // single geometric hops a player can check by eye, feeding the Hard-tier
+  // hintClump* rules; source 3 is a two-hop chain, feeding the Expert-tier
+  // hintWitness* rules.
   //
   // Hint UI shows only the final forcing step (the at-most-1/at-least-1
   // group and the forced cell), not the derivation chain behind it --
@@ -598,9 +559,8 @@ export function applyMultiStarRules(PuzzleSolver) {
   };
 
   // Cap on the region's "leftover" cell count source 1 will analyze via
-  // _maxStarsFittable's brute force -- keeps it a "tiny clump" check, not
-  // a general (expensive, and mostly-useless-anyway-since-a-big-loose
-  // remainder rarely proves a tight bound) sub-region solver.
+  // _maxStarsFittable's brute force -- keeps it a cheap "tiny clump" check
+  // rather than a full sub-region solver.
   p._LINE_SPLIT_REMAINDER_CAP = 4;
 
   // Source 1 (see class-level comment above). Returns { directDotHints,
@@ -877,8 +837,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
   // --- Rule list for starsPerGroup >= 2 ---
   //
-  // Used identically for 2★, 3★, and 4★+ puzzles -- those were three
-  // byte-identical duplicated arrays in the pre-refactor getHint().
+  // Used identically for 2★, 3★, and 4★+ puzzles.
   p._getMultiStarRuleList = function () {
     return [
       // Error validation

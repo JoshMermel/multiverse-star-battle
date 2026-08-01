@@ -5,15 +5,11 @@ Assembles CompositeScorer from the core engine (ScorerCore) plus the three
 rule-family mixins (CommonRules, SingleStarRules, MultiStarRules), and
 builds the per-star-count rule tables.
 
-rules_2_star / rules_3_star / rules_general_multi used to be three
-separately hand-written ~35-entry arrays that were supposed to be kept in
-sync by hand. In practice they'd drifted: rules_3_star silently dropped its
-entire Expert/Grandmaster tier (commented out), and rules_general_multi
-mislabeled rule_region_subset_sync_3/_4 as "Hard" instead of "Expert". Here
-there is exactly one canonical multi-star rule table (MULTI_STAR_RULES);
+There is exactly one canonical multi-star rule table (MULTI_STAR_RULES):
 rules_2_star and rules_general_multi use it in full, and rules_3_star is
-derived from it via an explicit, documented tier cutoff instead of
-commented-out rows.
+derived from it via an explicit, documented tier cutoff (see
+TIER_CUTOFF_BY_STAR_COUNT) so the 3★ capability gap stays a single visible
+line instead of silently drifting out of sync with the other two.
 """
 
 from .engine import ScorerCore, _TIER_RANK
@@ -22,9 +18,8 @@ from .rules_single_star import SingleStarRules
 from .rules_multi_star import MultiStarRules
 
 
-# 3★ puzzles don't get the Expert/Grandmaster tier of multi-star rules --
-# a real, pre-existing capability gap versus 2★ and 4★+ puzzles (kept as-is;
-# not something this restructuring changes).
+# 3★ puzzles don't get the Expert/Grandmaster tier of multi-star rules -- a
+# real capability gap versus 2★ and 4★+ puzzles, kept as-is deliberately.
 TIER_CUTOFF_BY_STAR_COUNT = {3: "Hard"}
 
 
@@ -105,9 +100,8 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
         # keep getting the classic 1★ rule list.
         self.rules = self.rules_1star
 
-        # The single canonical multi-star (2★+) rule table. rule_region_subset_sync_3/_4
-        # are "Expert" here (previously they were only correctly labeled "Expert" in
-        # rules_2_star -- rules_general_multi had mislabeled them "Hard").
+        # The single canonical multi-star (2★+) rule table, shared by 2★, 3★
+        # (filtered below), and general multi-star scoring.
         multi_star_rules = [
             # -- Beginner -----------------------------------------------------
             (self.rule_only_empty_multi,                          1,  "Beginner"),
@@ -155,8 +149,7 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
         self.rules_general_multi = multi_star_rules
 
         # 3★ gets the same table with everything above the documented cutoff
-        # tier dropped -- reproduces the prior rules_3_star's Expert/Grandmaster
-        # gap exactly, but as one visible line instead of five commented-out rows.
+        # tier dropped (see TIER_CUTOFF_BY_STAR_COUNT above for why).
         cutoff_tier = TIER_CUTOFF_BY_STAR_COUNT[3]
         self.rules_3_star = [
             r for r in multi_star_rules if _TIER_RANK[r[2]] <= _TIER_RANK[cutoff_tier]
