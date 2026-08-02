@@ -1,6 +1,6 @@
 import random
 from board_utils import VOID_CHAR, flood_fill, pretty_print
-from generator import Generator
+from generator import Generator, GenerationError
 
 
 class VoidGenerator(Generator):
@@ -55,14 +55,23 @@ class VoidGenerator(Generator):
 
         return orbits
 
+    # Cap on how many candidate void masks to try before giving up. Each
+    # candidate itself gets up to `trial_attempts` fill attempts below, so
+    # this bounds otherwise-unbounded total work for an n_voids value that
+    # never yields a workable mask, rather than hanging forever.
+    MAX_MASK_ATTEMPTS = 500
+
     def _generate_and_verify_void_mask(self):
         """
-        Generates 8-way symmetric void profiles until one is proven to 
+        Generates 8-way symmetric void profiles until one is proven to
         successfully produce a puzzle with MIN_SOLUTIONS (>= 2) ambiguity
         and doesn't match layouts registered on the structure blocklist.
+
+        Raises GenerationError if no workable mask is found within
+        MAX_MASK_ATTEMPTS candidates.
         """
         n = self.n
-        trial_attempts = 1000 
+        trial_attempts = 1000
 
         # Void layouts (on 9x9) known to starve region generation down to too
         # few valid boards, causing _attempt_fill's solver to churn without
@@ -72,7 +81,7 @@ class VoidGenerator(Generator):
                     {64, 2, 6, 70, 74, 10, 78, 16, 18, 54, 26, 62}]
         center_fence = {31, 39, 41, 49}
 
-        while True:
+        for _ in range(self.MAX_MASK_ATTEMPTS):
             current_voids = set()
             available_orbits = list(self.orbits)
             random.shuffle(available_orbits)
@@ -102,6 +111,12 @@ class VoidGenerator(Generator):
 
             if passed_trial:
                 return current_voids
+
+        raise GenerationError(
+            f"VoidGenerator failed to find a workable void mask for "
+            f"n_voids={self.n_voids} (n={n}) after {self.MAX_MASK_ATTEMPTS} "
+            f"candidate masks, each tried up to {trial_attempts} times."
+        )
 
     def _attempt_fill(self):
         """Single puzzle generation pass using the assigned void mask."""

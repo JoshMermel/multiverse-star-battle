@@ -88,7 +88,10 @@ def _build_letter_pair(args, n, output_rows):
     return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows, randomize_orientation_for_output=False, match_variants=False)
 
 # Scratch/dev boilerplate for testing new generators or comparators by hand,
-# edited in place per experiment rather than kept as a stable mode.
+# edited in place per experiment rather than kept as a stable mode. The
+# early `return` below is intentional -- this is a scratchpad, not a real
+# mode, and the unreachable line after it is kept on purpose as the next
+# thing to swap in, not dead code to clean up.
 def _build_tmp(args, n, output_rows):
     gen_a = RandomGenerator(n)
     return TripleComparator(gen_a, n, output_rows)
