@@ -25,6 +25,7 @@ from board_solver import get_solutions_capped, get_solutions_capped_multi
 from board_utils import ALPHABET
 from comparator import Comparator
 from solution_first_core import (
+    MAX_REPAIR_STEPS,
     random_star_placement,
     stars_to_solution_string,
     seed_and_grow,
@@ -34,8 +35,6 @@ from solution_first_core import (
 
 class SolutionFirstPairComparator(Comparator):
     """Solution-first constructor for individually-ambiguous, jointly-unique board groups."""
-
-    MAX_REPAIR_STEPS = 400
 
     def __init__(self, n, output_rows, board_count=2, stars_per_unit=1,
                  size_variation=0.0, randomize_orientation_for_output=True):
@@ -85,7 +84,7 @@ class SolutionFirstPairComparator(Comparator):
             for reg_id, cells in enumerate(all_star_groups[0])
         }
 
-        for _ in range(self.MAX_REPAIR_STEPS):
+        for _ in range(MAX_REPAIR_STEPS):
             joint_solutions = get_solutions_capped_multi(
                 grids, n, cap=2, stars_per_unit=stars_per_unit
             )

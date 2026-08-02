@@ -23,12 +23,6 @@ ALPHABET = string.ascii_uppercase + string.ascii_lowercase
 # never hold a star.  Must not appear in ALPHABET.
 VOID_CHAR = "*"
 
-# The 8 (forward, inverse) index-map pairs for all rotations/reflections,
-# keyed by board size n.  Precomputed on first use and cached.
-# Intentionally mutable module-level state: n is always small and the
-# process is single-threaded, so this is safe.
-_INDEX_MAP_CACHE: dict = {}
-
 TRANSFORM_NAMES = [
     "identity", "rot90", "rot180", "rot270",
     "flip_h", "flip_v", "flip_diag", "flip_antidiag",
@@ -105,28 +99,6 @@ def get_neighbors_8(idx, n):
         if 0 <= nr < n and 0 <= nc < n:
             result.append(nr * n + nc)
     return result
-
-
-def _get_index_maps(n):
-    """
-    Returns the 8 precomputed (forward, inverse) index-map pairs for an n×n
-    board, building and caching them on first call for this n.
-    """
-    if n not in _INDEX_MAP_CACHE:
-        pairs = []
-        for transform in _TRANSFORMATIONS:
-            fwd = {}
-            inv = {}
-            for r in range(n):
-                for c in range(n):
-                    old_idx = r * n + c
-                    new_r, new_c = transform(r, c, n)
-                    new_idx = new_r * n + new_c
-                    fwd[old_idx] = new_idx
-                    inv[new_idx] = old_idx
-            pairs.append((fwd, inv))
-        _INDEX_MAP_CACHE[n] = pairs
-    return _INDEX_MAP_CACHE[n]
 
 
 def get_board_variants(flat_board, solutions, n):

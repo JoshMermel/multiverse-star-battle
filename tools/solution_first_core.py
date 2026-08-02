@@ -25,6 +25,11 @@ from ortools.sat.python import cp_model
 
 from board_utils import get_neighbors_4, get_neighbors_8, voronoi_flood_fill
 
+# Repair-loop attempt budget shared by SolutionFirstGenerator and
+# SolutionFirstPairComparator -- each iteration is one diff-guided local
+# repair (relocate one disagreeing cell, re-solve, check again).
+MAX_REPAIR_STEPS = 400
+
 
 def random_star_placement(n, stars_per_unit=1):
     """

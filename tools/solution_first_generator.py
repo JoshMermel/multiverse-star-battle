@@ -21,6 +21,7 @@ import random
 from board_solver import get_solutions_capped
 from generator import Generator, GenerationError
 from solution_first_core import (
+    MAX_REPAIR_STEPS,
     random_star_placement,
     stars_to_solution_string,
     seed_and_grow,
@@ -30,8 +31,6 @@ from solution_first_core import (
 
 class SolutionFirstGenerator(Generator):
     """Solution-first generator for unique-solution single-board puzzles."""
-
-    MAX_REPAIR_STEPS = 400
 
     def __init__(self, n, stars_per_unit=1, size_variation=0.0):
         super().__init__(n)
@@ -55,7 +54,7 @@ class SolutionFirstGenerator(Generator):
         intended_solution = stars_to_solution_string(star_cells_set, n)
         region_stars = {reg_id: frozenset(cells) for reg_id, cells in enumerate(star_groups)}
 
-        for _ in range(self.MAX_REPAIR_STEPS):
+        for _ in range(MAX_REPAIR_STEPS):
             solutions = get_solutions_capped(grid, n, cap=2, stars_per_unit=stars_per_unit)
 
             if len(solutions) <= 1:

@@ -21,9 +21,10 @@ def _render_letter(char, n, row_offset=None, col_offset=None):
     if n < 7:
         raise ValueError(f"Board size {n} is too small for the 7x5 font")
 
-    pixels = FONT_7x5.get(char.upper(), [])
-    if not pixels:
+    key = char.upper()
+    if key not in FONT_7x5:
         raise ValueError(f"Character '{char}' has no pixels in FONT_7x5")
+    pixels = FONT_7x5[key]
 
     if row_offset is None:
         row_offset = random.randint(0, n - 7)
@@ -82,8 +83,10 @@ class LetterGenerator(Generator):
     def __init__(self, n, char, stars_per_unit=1):
         super().__init__(n, stars_per_unit=stars_per_unit)
         self.char = char.upper()
-        # Validate that the character exists in the font.
-        if not FONT_7x5.get(self.char):
+        # Validate that the character exists in the font. A falsy check
+        # here would also reject FONT_7x5's intentional blank glyph (' ':
+        # []), which is present but legitimately empty -- not missing.
+        if self.char not in FONT_7x5:
             raise ValueError(f"Character '{self.char}' has no pixels for n={n}")
 
     @classmethod

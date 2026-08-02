@@ -142,6 +142,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
 
             # -- Grandmaster ----------------------------------------------------
             (self.rule_lookahead_1_stage_multi,                   220, "Grandmaster"),
+            # 2-stage/3-stage multi-star lookahead are temporarily disabled
+            # for performance while under active testing -- deliberate, not
+            # a leftover. Leave commented out rather than deleting until
+            # that work concludes.
 #            (self.rule_lookahead_2_stages_multi,                  350, "Grandmaster"),
 #            (self.rule_lookahead_3_stages_multi,                  650, "Grandmaster"),
         ]
