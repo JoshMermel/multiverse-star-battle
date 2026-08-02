@@ -282,13 +282,24 @@ export function applyRenderer(GameClass) {
   // --- Hints ---
 
   // Highlight cells and display hint description.
+  //
+  // Each highlight/mark may carry its own `boards` array (which board(s)
+  // that specific cell is actually about -- e.g. a cross-board rule's
+  // source region lives on one board, but its row/column consequence is
+  // board-agnostic and applies to all of them). Falls back to the hint's
+  // own boardIdx, then to every board, so single-board rules (which never
+  // set `boards`) render exactly as before.
   p.applyHintUI = function (hint) {
-    for (const { idx, color } of [...hint.highlights, ...hint.marks]) {
+    const involvedBoards = new Set();
+
+    for (const { idx, color, boards } of [...hint.highlights, ...hint.marks]) {
+      const targetBoards = boards ?? (hint.boardIdx !== undefined ? [hint.boardIdx] : null);
       const cellsForIdx = this._getCellsByIndex(idx);
       // cellsForIdx is ordered by board index (0, 1, 2, ...), matching the
       // order boards were rendered in -- a board-specific hint can index
       // directly into it instead of re-querying the DOM per selector.
-      const cells = (hint.boardIdx !== undefined) ? [cellsForIdx[hint.boardIdx]] : cellsForIdx;
+      const cells = targetBoards ? targetBoards.map(b => cellsForIdx[b]) : cellsForIdx;
+      if (targetBoards) targetBoards.forEach(b => involvedBoards.add(b));
       for (const cell of cells) {
         // Only apply the color class if the cell exists and isn't a void square
         if (cell && !cell.classList.contains('cell--void')) {
@@ -297,12 +308,32 @@ export function applyRenderer(GameClass) {
       }
     }
 
-    // Switch active board tab if hint is board-specific.
-    if (document.body.classList.contains('tab-mode') && hint.boardIdx !== undefined) {
-      this._showBoard(hint.boardIdx + 1);
+    if (document.body.classList.contains('tab-mode')) {
+      if (hint.boardIdx !== undefined) {
+        // Single-board hint: just switch straight to it.
+        this._showBoard(hint.boardIdx + 1);
+      } else {
+        // Multi-board hint: don't yank the player off their current board
+        // (there's only one board visible at a time in tab mode, and a
+        // cross-board hint may span boards other than the active one).
+        // Flag the swap button instead so it's obvious another board is
+        // also part of this deduction.
+        this._flagSwapButtonForHint(involvedBoards);
+      }
     }
 
     this.showToast(hint.description, "hint", 30000);
+  };
+
+  // Highlights the swap button when the active hint involves a board other
+  // than the one currently showing, so the player knows to check it. Cleared
+  // whenever the board is actually switched (see _showBoard).
+  p._flagSwapButtonForHint = function (involvedBoards) {
+    const swapBtn = document.getElementById('board-swap-btn');
+    if (!swapBtn) return;
+    const currentBoard = (this._activeTabBoard ?? 1) - 1;
+    const hasOtherBoard = [...involvedBoards].some(b => b !== currentBoard);
+    swapBtn.classList.toggle('board-tab--hint-flag', hasOtherBoard);
   };
 
   // Clear active hint highlights.
@@ -311,6 +342,8 @@ export function applyRenderer(GameClass) {
     this._allCells.forEach(cell => {
       cell.classList.remove(HINT_COLOR.SOURCE, HINT_COLOR.TARGET, HINT_COLOR.TARGET_STAR, HINT_COLOR.ERROR);
     });
+    const swapBtn = document.getElementById('board-swap-btn');
+    if (swapBtn) swapBtn.classList.remove('board-tab--hint-flag');
   };
 
   // --- Toast Notifications ---
@@ -388,6 +421,7 @@ export function applyRenderer(GameClass) {
       const total = this.regions ? this.regions.length : 2;
       const targetBoard = (boardNum % total) + 1;
       swapBtn.textContent = `Swap to Board ${targetBoard}`;
+      swapBtn.classList.remove('board-tab--hint-flag');
     }
   };
 

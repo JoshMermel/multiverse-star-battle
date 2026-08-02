@@ -184,7 +184,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
     return candidates.map(({ setA, setB, targets }) =>
-      this.formatSubsetHint(setA.regions, setB.regions, targets));
+      this.formatSubsetHint(setA.regions, setB.regions, targets, setA.boardIdx, setB.boardIdx));
   };
 
   p.hintFromSolution = function () {

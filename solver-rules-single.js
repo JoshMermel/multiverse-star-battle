@@ -445,7 +445,7 @@ export function applySingleStarRules(PuzzleSolver) {
             const targets = shared.filter(i => this.vState(i) === CELL.NONE);
             if (targets.length === 0) continue;
 
-            candidates.push({ shared, onlyA, onlyB });
+            candidates.push({ shared, onlyA, onlyB, boardA, boardB });
           }
         }
       }
@@ -453,15 +453,17 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.shared[0] ?? 0) - (b.shared[0] ?? 0));
-    return candidates.map(({ shared, onlyA, onlyB }) => ({
+    return candidates.map(({ shared, onlyA, onlyB, boardA, boardB }) => ({
       boardIdx: undefined,
-      description: `These two regions overlap. Any star placed in a non-shared cell would see all the non-shared cells of the other region, making that region unsolvable. Both stars must land in the shared cells.`,
+      description: `These two regions (${this._describeBoards([boardA, boardB])}) overlap. Any star placed in a non-shared cell would see all the non-shared cells of the other region, making that region unsolvable. Both stars must land in the shared cells.`,
+      // A shared cell is a candidate for BOTH regions at once, so it's
+      // relevant on both boards, not just one.
       highlights: shared
         .filter(i => this.vState(i) === CELL.NONE)
-        .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
+        .map(i => ({ idx: i, color: HINT_COLOR.SOURCE, boards: [boardA, boardB] })),
       marks: [
-        ...onlyA.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET })),
-        ...onlyB.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET })),
+        ...onlyA.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardA] })),
+        ...onlyB.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardB] })),
       ]
     }));
   };

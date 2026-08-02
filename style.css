@@ -1080,6 +1080,19 @@ body.tab-mode .board-tabs { display: flex; }
   color: var(--primary-blue);
 }
 
+/* Shown on the swap button when the active hint also involves the board
+   that isn't currently visible, so a cross-board deduction doesn't go
+   unnoticed just because it isn't painted on the board you're looking at. */
+.board-tab--hint-flag {
+  box-shadow: 0 0 0 3px var(--highlight-hint-blue-bg);
+  animation: hint-flag-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes hint-flag-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--highlight-hint-blue-bg); }
+  50%      { box-shadow: 0 0 0 5px var(--highlight-hint-blue-bg); }
+}
+
 /* In tab mode, boards stack exactly on top of each other.
    Both boards stay in normal flow (position: relative) so the wrapper
    height never collapses. The inactive board is made invisible with

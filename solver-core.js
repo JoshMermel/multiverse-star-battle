@@ -329,22 +329,34 @@ export class PuzzleSolver {
 
   // --- Hint Formatters ---
 
-  formatSubsetHint(sourceRegs, targetRegs, targets) {
+  // Turns a list/set of 0-indexed board indices into a display phrase, e.g.
+  // "Board 1", "Board 1 and Board 2", or "Board 1, Board 2 and Board 3".
+  // Used so cross-board hint text names its boards explicitly instead of
+  // leaving the player to guess which ones are involved.
+  _describeBoards(boardIdxs) {
+    const names = [...new Set(boardIdxs)].sort((a, b) => a - b).map(b => `Board ${b + 1}`);
+    if (names.length <= 1) return names[0] ?? '';
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  }
+
+  formatSubsetHint(sourceRegs, targetRegs, targets, sourceBoardIdx, targetBoardIdx) {
     const targetSet = new Set(targets);
     const sourceHighlights = sourceRegs.flatMap(r =>
       r.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-    ).map(idx => ({ idx, color: HINT_COLOR.SOURCE }));
+    ).map(idx => ({ idx, color: HINT_COLOR.SOURCE, boards: [sourceBoardIdx] }));
 
+    const crossBoard = sourceBoardIdx !== targetBoardIdx;
     const sourcePhrase = sourceRegs.length === 1 ? "One region" : `A group of ${sourceRegs.length} regions`;
     const targetPhrase = targetRegs.length === 1 ? "another region" : `a group of ${targetRegs.length} other regions`;
-    const description = `${sourcePhrase} needs exactly as many stars as ${targetPhrase}, and all of its candidate cells `
+    const boardNote = crossBoard ? ` (${this._describeBoards([sourceBoardIdx])} vs. ${this._describeBoards([targetBoardIdx])})` : '';
+    const description = `${sourcePhrase} needs exactly as many stars as ${targetPhrase}${boardNote}, and all of its candidate cells `
       + `fall inside theirs too -- so the rest of ${targetRegs.length === 1 ? "that region" : "those regions"} must be dots.`;
 
     return {
-      boardIdx: undefined,
+      boardIdx: crossBoard ? undefined : sourceBoardIdx,
       description,
       highlights: sourceHighlights,
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: [targetBoardIdx] }))
     };
   }
 
@@ -352,13 +364,17 @@ export class PuzzleSolver {
     const targetSet = new Set(targets);
 
     const sourceHighlights = combo.flatMap(r =>
-      r.availableIdxs.filter(idx => !targetSet.has(idx))
-    ).map(idx => ({ idx, color: HINT_COLOR.SOURCE }));
+      r.availableIdxs.filter(idx => !targetSet.has(idx)).map(idx => ({ idx, color: HINT_COLOR.SOURCE, boards: [r.original.boardIdx] }))
+    );
 
+    const boardsInvolved = this._describeBoards(combo.map(r => r.original.boardIdx));
     return {
       boardIdx: undefined,
-      description: `Cross-board: These ${combo.length} regions must place their stars in the same ${combo.length} ${axis.toLowerCase()}s.`,
+      description: `Cross-board (${boardsInvolved}): These ${combo.length} regions must place their stars in the same ${combo.length} ${axis.toLowerCase()}s.`,
       highlights: sourceHighlights,
+      // Target cells are a row/column consequence -- board-agnostic by
+      // construction (rows/columns are shared across every board), so no
+      // `boards` override here; they broadcast to every board as before.
       marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
     };
   }
