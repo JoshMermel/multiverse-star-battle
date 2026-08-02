@@ -93,6 +93,19 @@ class StarBattleGame {
     this._persistTimerProgress();
     this._stopTimer();
 
+    await this._initPuzzleState(puzzleData, categoryId);
+    this._renderBoards();
+    this._updateStarsBadges();
+    this._syncPuzzleLoadBookkeeping(categoryId, puzzleData);
+
+    this.solver = new PuzzleSolver(this);
+    this._initTimerForPuzzle();
+  }
+
+  // Populate all the plain game-state fields a fresh puzzle needs
+  // (identity, geometry, solution, blank board/history). Doesn't touch the
+  // DOM -- see _renderBoards for that.
+  async _initPuzzleState(puzzleData, categoryId) {
     this.currentPuzzleUniqueId = await this.computePuzzleId(puzzleData);
     this.currentCategoryId = categoryId;
     this.currentPuzzle = puzzleData;
@@ -111,7 +124,12 @@ class StarBattleGame {
     this.state = new Array(this.n * this.n).fill(CELL.NONE);
     this.history = [JSON.stringify(this.state)];
     this.historyIdx = 0;
+  }
 
+  // Tear down the old board DOM and build fresh containers/grids for
+  // this.regions, then apply the visuals/settings that depend on them
+  // existing. Assumes _initPuzzleState has already run this load.
+  _renderBoards() {
     // Dynamically clear existing board containers from boards-wrapper.
     document.querySelectorAll('#boards-wrapper .board-container').forEach(el => el.remove());
     this._resetCellCache();
@@ -149,7 +167,11 @@ class StarBattleGame {
     this._applyTabMode(localStorage.getItem('setting-tab-mode') === 'true');
 
     this.updateVisuals();
+  }
 
+  // Update the small star-count badges (book picker button, help modal)
+  // to match this puzzle's starsPerGroup.
+  _updateStarsBadges() {
     const starsBadge = document.getElementById('bpb-current-stars');
     if (starsBadge) {
       starsBadge.textContent = `${'★'.repeat(this.starsPerGroup)}`;
@@ -158,7 +180,11 @@ class StarBattleGame {
     if (helpStars) {
       helpStars.textContent = this.starsPerGroup === 1 ? '1 star' : `${this.starsPerGroup} stars`;
     }
+  }
 
+  // Everything else a puzzle load needs to keep in sync: load-toast,
+  // saved progress, undo/redo button state, and URL/position bookkeeping.
+  _syncPuzzleLoadBookkeeping(categoryId, puzzleData) {
     this.showToastOnLoad(categoryId, puzzleData.id);
     this.loadProgress({ suppressWinToast: true });
     this.updateControls();
@@ -166,15 +192,15 @@ class StarBattleGame {
     if (!this.isDailyCategory(categoryId)) {
       this._rememberPuzzlePosition(categoryId, puzzleData.id);
     }
+  }
 
-    this.solver = new PuzzleSolver(this);
-
-    // Initialize the timer for this puzzle. It does NOT start running yet —
-    // it stays paused until the player's first move (see _startTimerIfNeeded),
-    // so simply browsing to a puzzle never burns solve time. If there's a
-    // saved in-progress elapsed time for an unsolved puzzle, resume from
-    // there instead of zero; if the puzzle is already solved, show its
-    // recorded best time instead of zeroing it out.
+  // Initialize the timer for this puzzle. It does NOT start running yet —
+  // it stays paused until the player's first move (see _startTimerIfNeeded),
+  // so simply browsing to a puzzle never burns solve time. If there's a
+  // saved in-progress elapsed time for an unsolved puzzle, resume from
+  // there instead of zero; if the puzzle is already solved, show its
+  // recorded best time instead of zeroing it out.
+  _initTimerForPuzzle() {
     this._stopTimer();
     this._timerStarted = false;
     this._timerLocked = false;
