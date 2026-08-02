@@ -65,9 +65,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
     return candidates.map(({ unit, empty, stars }) => {
-      const unitType = unit.label.includes("Row") ? "row"
-        : unit.label.includes("Column") ? "column"
-        : "region";
+      const unitType = this._unitKind(unit);
       const description = starsPerGroup === 1
         ? `Only one spot is left for a star in this ${unitType}.`
         : `Exactly ${empty.length} spots are left for the remaining stars in this ${unitType}.`;
@@ -86,9 +84,9 @@ export function applyCommonSolverRules(PuzzleSolver) {
   p.hintExcludeSolvedUnit = function () {
     const starsPerGroup = this.starsPerGroup || 1;
     const typeDescs = {
-      "Row": starsPerGroup === 1 ? "This row already has its star." : `This row already has its ${starsPerGroup} stars.`,
-      "Column": starsPerGroup === 1 ? "This column already has its star." : `This column already has its ${starsPerGroup} stars.`,
-      "Region": starsPerGroup === 1 ? "This region already has its star." : `This region already has its ${starsPerGroup} stars.`,
+      row: starsPerGroup === 1 ? "This row already has its star." : `This row already has its ${starsPerGroup} stars.`,
+      column: starsPerGroup === 1 ? "This column already has its star." : `This column already has its ${starsPerGroup} stars.`,
+      region: starsPerGroup === 1 ? "This region already has its star." : `This region already has its ${starsPerGroup} stars.`,
     };
     const candidates = [];
     for (const unit of this.units) {
@@ -99,9 +97,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.indices[0] - b.indices[0]);
     return candidates.map(unit => {
-      const key = unit.label.includes("Row") ? "Row"
-        : unit.label.includes("Column") ? "Column"
-        : "Region";
+      const key = this._unitKind(unit);
       const stars = unit.indices.filter(idx => this.vState(idx) === CELL.STAR);
       const empty = unit.indices.filter(idx => this.vState(idx) === CELL.NONE);
       return {
@@ -188,7 +184,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
     return candidates.map(({ setA, setB, targets }) =>
-      this.formatSubsetHint(setA.regions, setB.regions, targets, setA.boardIdx));
+      this.formatSubsetHint(setA.regions, setB.regions, targets));
   };
 
   p.hintFromSolution = function () {

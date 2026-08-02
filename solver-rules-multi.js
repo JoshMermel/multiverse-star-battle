@@ -54,9 +54,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     const caveat = strong ? " (accounting for other rows/columns/regions' star limits)" : "";
     return candidates.map(({ unit, targets }) => {
-      const unitType = unit.label.includes("Row") ? "row"
-        : unit.label.includes("Column") ? "column"
-        : "region";
+      const unitType = this._unitKind(unit);
       return {
         description: `Wherever this ${unitType}'s remaining star(s) end up${caveat}, one will always touch the marked cell(s), so they must be dots.`,
         highlights: unit.indices
@@ -66,15 +64,6 @@ export function applyMultiStarRules(PuzzleSolver) {
         boardIdx: unit.boardIdx
       };
     });
-  };
-
-  // Row/Column/Region, based on a unit's label. Rows and columns never target each
-  // other or themselves in hintUnitCompletionSatisfiesOtherUnit -- only cross-type
-  // pairings (row<->region, column<->region, row<->column) are checked.
-  p._unitKind = function (unit) {
-    if (unit.label.startsWith("Row")) return "row";
-    if (unit.label.startsWith("Column")) return "column";
-    return "region";
   };
 
   // Rule (2★/3★): For a row/column/region with missing stars, enumerate every valid
@@ -142,6 +131,12 @@ export function applyMultiStarRules(PuzzleSolver) {
 
   p.hintDisjointUnitRegionSyncMulti = function (N) {
     const candidates = [];
+    // needingRegs/cellToRegionMap only depend on bIdx, not on axis or combo,
+    // so compute them once per board here rather than on every combo below.
+    const perBoard = Array.from({ length: this.game.regions.length }, (_, bIdx) => ({
+      needingRegs: this.getRegionsNeedingStars(bIdx),
+      cellToRegionMap: this.buildCellToRegionMap(bIdx),
+    }));
     // Finds combinations of N rows or columns that are not necessarily adjacent
     for (const axis of ["Row", "Column"]) {
       const axisIndices = this.axisIndices[axis];
@@ -151,9 +146,10 @@ export function applyMultiStarRules(PuzzleSolver) {
       for (const combo of this.getCombinations(starlessUnitIndices, N)) {
         const unitCombo = combo.map(u => axisIndices[u]);
         for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
-          const trapped = this._hintMultiRegionsTrappedInUnits(unitCombo, bIdx, axis);
+          const { needingRegs, cellToRegionMap } = perBoard[bIdx];
+          const trapped = this._hintMultiRegionsTrappedInUnits(unitCombo, bIdx, axis, needingRegs);
           if (trapped) candidates.push(trapped);
-          const covered = this._hintMultiUnitsCoveredByRegions(unitCombo, bIdx, axis);
+          const covered = this._hintMultiUnitsCoveredByRegions(unitCombo, bIdx, axis, needingRegs, cellToRegionMap);
           if (covered) candidates.push(covered);
         }
       }
@@ -197,9 +193,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     const caveat = strong ? ", also accounting for other rows/columns/regions' star limits," : "";
     const hints = [];
     for (const { unit, forcedStars, forcedDots } of candidates) {
-      const unitType = unit.label.includes("Row") ? "row"
-        : unit.label.includes("Column") ? "column"
-        : "region";
+      const unitType = this._unitKind(unit);
       const starsWord = `${this.starsPerGroup} non-touching star${this.starsPerGroup === 1 ? '' : 's'}`;
 
       if (forcedStars.length > 0) {
@@ -235,7 +229,10 @@ export function applyMultiStarRules(PuzzleSolver) {
   // Case (a): if the regions touching N adjacent rows/cols need, in total, exactly as
   // many stars as those rows/cols still need, then all of those regions' remaining
   // stars must land inside the window — so the rest of those regions must be dots.
-  p._hintMultiUnitsCoveredByRegions = function (unitCombo, bIdx, axis) {
+  // `needingRegs`/`cellToRegionMap` are precomputed once per board by the
+  // caller (they only depend on bIdx, not on unitCombo) rather than
+  // recomputed on every window this is checked against.
+  p._hintMultiUnitsCoveredByRegions = function (unitCombo, bIdx, axis, needingRegs, cellToRegionMap) {
     const windowIndices = unitCombo.flat();
     const windowSet = new Set(windowIndices);
 
@@ -245,9 +242,6 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     const availInUnits = windowIndices.filter(i => this.vState(i) === CELL.NONE);
     if (availInUnits.length === 0) return null;
-
-    const needingRegs = this.getRegionsNeedingStars(bIdx);
-    const cellToRegionMap = this.buildCellToRegionMap(bIdx);
 
     const touchingLabels = new Set(availInUnits.map(idx => cellToRegionMap[idx]).filter(Boolean));
     const touchingRegs = needingRegs.filter(({ region }) => touchingLabels.has(region.label));
@@ -280,7 +274,9 @@ export function applyMultiStarRules(PuzzleSolver) {
   // exactly as many stars as those rows/cols still need, then those rows/cols' entire
   // remaining quota must come from those regions — so the rest of the window (outside
   // those regions) must be dots.
-  p._hintMultiRegionsTrappedInUnits = function (windowIndices, bIdx, axis) {
+  // `needingRegs` is precomputed once per board by the caller (see
+  // _hintMultiUnitsCoveredByRegions above).
+  p._hintMultiRegionsTrappedInUnits = function (windowIndices, bIdx, axis, needingRegs) {
     const windowSet = new Set(windowIndices.flat());
     const allIndices = windowIndices.flat();
 
@@ -288,7 +284,6 @@ export function applyMultiStarRules(PuzzleSolver) {
     const requiredCount = windowIndices.length * this.starsPerGroup - starsInWindow;
     if (requiredCount <= 0) return null;
 
-    const needingRegs = this.getRegionsNeedingStars(bIdx);
     const pinnedRegs = needingRegs.filter(({ region }) => {
       const regAvail = region.indices.filter(i => this.vState(i) === CELL.NONE);
       return regAvail.length > 0 && regAvail.every(idx => windowSet.has(idx));
@@ -329,11 +324,13 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     const candidates = [];
     for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+      const needingRegs = this.getRegionsNeedingStars(bIdx);
+      const cellToRegionMap = this.buildCellToRegionMap(bIdx);
       for (const windowIndices of windows) {
-        const trapped = this._hintMultiRegionsTrappedInUnits(windowIndices, bIdx, axis);
+        const trapped = this._hintMultiRegionsTrappedInUnits(windowIndices, bIdx, axis, needingRegs);
         if (trapped) candidates.push(trapped);
 
-        const covered = this._hintMultiUnitsCoveredByRegions(windowIndices, bIdx, axis);
+        const covered = this._hintMultiUnitsCoveredByRegions(windowIndices, bIdx, axis, needingRegs, cellToRegionMap);
         if (covered) candidates.push(covered);
       }
     }
@@ -457,6 +454,10 @@ export function applyMultiStarRules(PuzzleSolver) {
 
   // Source 3's at-least-1 half.
   p._findAtLeastOnePairs = function () {
+    return this._cachedOnState('atLeastOnePairs', () => this._findAtLeastOnePairsImpl());
+  };
+
+  p._findAtLeastOnePairsImpl = function () {
     const pairs = new Map(); // key -> [i, j]
     for (const unit of this.units) {
       const combos = this._enumerateUnitCompletions(unit, true);
@@ -552,6 +553,25 @@ export function applyMultiStarRules(PuzzleSolver) {
   // rather than a full sub-region solver.
   p._LINE_SPLIT_REMAINDER_CAP = 4;
 
+  // Small memoization helper for the Hard/Expert "clump"/"witness" analysis
+  // passes below: several sibling rules (hintClump*, hintWitness*) each
+  // independently trigger the same expensive board-wide scan when they run
+  // within the same getHint() call, since only the FIRST rule to produce
+  // hints ever gets returned and this.game.state never changes mid-call
+  // (it's only ever mutated by player actions between hint requests).
+  // Keyed on a snapshot of this.game.state rather than tracked mutation
+  // sites, so a cache hit is only ever returned for a state identical to
+  // the one it was computed from.
+  p._cachedOnState = function (cacheKey, computeFn) {
+    const stateString = this.game.state.join(',');
+    if (!this._stateCache) this._stateCache = {};
+    const bucket = this._stateCache[cacheKey];
+    if (bucket && bucket.stateString === stateString) return bucket.value;
+    const value = computeFn();
+    this._stateCache[cacheKey] = { stateString, value };
+    return value;
+  };
+
   // Source 1 (see class-level comment above). Returns { directDotHints,
   // atMostGroups, atLeastGroups }: directDotHints is every "rest of the
   // line is entirely dots" hint found; atMostGroups is every "rest of
@@ -559,6 +579,10 @@ export function applyMultiStarRules(PuzzleSolver) {
   // every "inLine" cell set proven to hold at least 1 star (only when
   // that bound is exactly 1).
   p._regionLineSplitFacts = function () {
+    return this._cachedOnState('regionLineSplitFacts', () => this._regionLineSplitFactsImpl());
+  };
+
+  p._regionLineSplitFactsImpl = function () {
     const directDotHints = [];
     const atMostGroups = new Map();
     const atLeastGroups = new Map();
@@ -566,7 +590,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     const n = this.n;
 
     for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
-      const regionsOnBoard = this.units.filter(u => u.label.includes("Region") && u.boardIdx === bIdx);
+      const regionsOnBoard = this.units.filter(u => this._unitKind(u) === "region" && u.boardIdx === bIdx);
       for (const region of regionsOnBoard) {
         const avail = region.indices.filter(i => this.vState(i) === CELL.NONE);
         if (avail.length < 2) continue;
@@ -627,6 +651,10 @@ export function applyMultiStarRules(PuzzleSolver) {
   // are shared across every board, so this never loops over per-board
   // regions, unlike source 1.
   p._findLinePairBoxCoverGroups = function () {
+    return this._cachedOnState('linePairBoxCoverGroups', () => this._findLinePairBoxCoverGroupsImpl());
+  };
+
+  p._findLinePairBoxCoverGroupsImpl = function () {
     const groups = new Map();
     const n = this.n;
 

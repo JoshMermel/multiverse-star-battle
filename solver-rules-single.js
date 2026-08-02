@@ -88,8 +88,10 @@ export function applySingleStarRules(PuzzleSolver) {
     }));
   };
 
-  // Check "N units covered by N regions" deduction.
-  p._hintUnitsCoveredByRegions = function (unitCombo, bIdx, axis) {
+  // Check "N units covered by N regions" deduction. unsolvedRegs/cellToRegionMap
+  // are precomputed once per board by the caller (they only depend on bIdx, not
+  // on unitCombo) rather than recomputed on every window checked.
+  p._hintUnitsCoveredByRegions = function (unitCombo, bIdx, axis, unsolvedRegs, cellToRegionMap) {
     const windowIndices = unitCombo.flat();
     const windowSet = new Set(windowIndices);
 
@@ -99,9 +101,6 @@ export function applySingleStarRules(PuzzleSolver) {
 
     const availInUnits = windowIndices.filter(i => this.vState(i) === CELL.NONE);
     if (availInUnits.length === 0) return null;
-
-    const unsolvedRegs = this.getUnsolvedRegions(bIdx);
-    const cellToRegionMap = this.buildCellToRegionMap(bIdx);
 
     const coveringRegLabels = new Set(availInUnits.map(idx => cellToRegionMap[idx]).filter(Boolean));
     const coveringUnsolved = Array.from(coveringRegLabels)
@@ -130,8 +129,10 @@ export function applySingleStarRules(PuzzleSolver) {
     };
   };
 
-  // Check "N regions trapped in N units" deduction.
-  p._hintRegionsTrappedInUnits = function (windowIndices, bIdx, axis) {
+  // Check "N regions trapped in N units" deduction. unsolvedRegs is
+  // precomputed once per board by the caller (see
+  // _hintUnitsCoveredByRegions above).
+  p._hintRegionsTrappedInUnits = function (windowIndices, bIdx, axis, unsolvedRegs) {
     const windowSet = new Set(windowIndices.flat());
     const allIndices = windowIndices.flat();
 
@@ -139,7 +140,6 @@ export function applySingleStarRules(PuzzleSolver) {
     const requiredCount = windowIndices.length - starsInWindow;
     if (requiredCount <= 0) return null;
 
-    const unsolvedRegs = this.getUnsolvedRegions(bIdx);
     const pinnedRegs = unsolvedRegs.filter(reg => {
       const regAvail = reg.indices.filter(i => this.vState(i) === CELL.NONE);
       return regAvail.length > 0 && regAvail.every(idx => windowSet.has(idx));
@@ -185,12 +185,14 @@ export function applySingleStarRules(PuzzleSolver) {
 
     const candidates = [];
     for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+      const unsolvedRegs = this.getUnsolvedRegions(bIdx);
+      const cellToRegionMap = this.buildCellToRegionMap(bIdx);
       for (const windowIndices of windows) {
 
-        const standard = this._hintRegionsTrappedInUnits(windowIndices, bIdx, axis);
+        const standard = this._hintRegionsTrappedInUnits(windowIndices, bIdx, axis, unsolvedRegs);
         if (standard) candidates.push(standard);
 
-        const inverse = this._hintUnitsCoveredByRegions(windowIndices, bIdx, axis);
+        const inverse = this._hintUnitsCoveredByRegions(windowIndices, bIdx, axis, unsolvedRegs, cellToRegionMap);
         if (inverse) candidates.push(inverse);
       }
     }
@@ -259,7 +261,7 @@ export function applySingleStarRules(PuzzleSolver) {
   // Rule: Check rows/columns where all empty cells are visible to an external cell.
   p.hintUnitSeesTooMuch = function () {
     const rowColUnits = this.units.filter(u =>
-      !u.label.includes("Region") &&
+      this._unitKind(u) !== "region" &&
       !u.indices.some(i => this.vState(i) === CELL.STAR)
     );
     return this._hintSeesTooMuchForUnits(rowColUnits);
@@ -373,7 +375,6 @@ export function applySingleStarRules(PuzzleSolver) {
       this.getUnsolvedRegions(bIdx)
       .filter(reg => reg.indices.some(i => this.vState(i) === CELL.NONE))
       .map(reg => ({
-        label: `B${bIdx + 1}-${reg.label.split(' ').pop()}`,
         allIdxs: new Set(reg.indices),
         availableIdxs: reg.indices.filter(i => this.vState(i) === CELL.NONE),
         original: reg
@@ -763,9 +764,9 @@ export function applySingleStarRules(PuzzleSolver) {
       { key: 'disjointUnitRegionSync3',  fn: () => this.hintDisjointUnitRegionSync(3) },
       { key: 'rowColLineSync3',          fn: () => this.hintRowColLineSync(3) },
       { key: 'crossBoardPinned2Row',     fn: () => this.hintCrossBoardRegionPinned(2, "Row") },
-      { key: 'crossBoardPinned2Col',     fn: () => this.hintCrossBoardRegionPinned(2, "Col") },
+      { key: 'crossBoardPinned2Col',     fn: () => this.hintCrossBoardRegionPinned(2, "Column") },
       { key: 'crossBoardPinned3Row',     fn: () => this.hintCrossBoardRegionPinned(3, "Row") },
-      { key: 'crossBoardPinned3Col',     fn: () => this.hintCrossBoardRegionPinned(3, "Col") },
+      { key: 'crossBoardPinned3Col',     fn: () => this.hintCrossBoardRegionPinned(3, "Column") },
       { key: 'partialOverlap',           fn: () => this.hintPartialOverlap() },
       { key: 'lookaheadHalfSingleBoard', fn: () => this.hintLookaheadHalfSingleBoard() },
       { key: 'lookaheadHalf',            fn: () => this.hintLookaheadHalf() },

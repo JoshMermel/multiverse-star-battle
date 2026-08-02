@@ -62,6 +62,11 @@ export class PuzzleSolver {
     this.lastStateString  = null;
     this.currentHintType  = null;
     this.currentHintIndex = 0;
+    // Index into the current rule list of the rule that matched last time
+    // for the current board state -- lets getHint() resume scanning there
+    // instead of re-running every earlier (already-known-empty) rule on
+    // every click. See getHint() for why this is safe.
+    this.lastMatchedRuleIndex = 0;
   }
 
   // Reads a cell's state, reporting void cells as DOT regardless of what's
@@ -114,7 +119,7 @@ export class PuzzleSolver {
   // Get unsolved regions on the specified board.
   getUnsolvedRegions(boardIdx) {
     return this.units.filter(u =>
-      u.label.includes("Region") &&
+      this._unitKind(u) === "region" &&
       u.boardIdx === boardIdx &&
       !u.indices.some(i => this.vState(i) === CELL.STAR)
     );
@@ -126,7 +131,7 @@ export class PuzzleSolver {
   // handles regions that already have some, but not all, of their stars placed.
   getRegionsNeedingStars(boardIdx) {
     return this.units
-      .filter(u => u.label.includes("Region") && u.boardIdx === boardIdx)
+      .filter(u => this._unitKind(u) === "region" && u.boardIdx === boardIdx)
       .map(region => ({
         region,
         remaining: this.starsPerGroup - region.indices.filter(i => this.vState(i) === CELL.STAR).length
@@ -145,7 +150,7 @@ export class PuzzleSolver {
   buildCellToRegionMap(boardIdx) {
     const map = {};
     this.units
-      .filter(u => u.label.includes("Region") && u.boardIdx === boardIdx)
+      .filter(u => this._unitKind(u) === "region" && u.boardIdx === boardIdx)
       .forEach(reg => reg.indices.forEach(idx => { map[idx] = reg.label; }));
     return map;
   }
@@ -182,14 +187,25 @@ export class PuzzleSolver {
     return true;
   }
 
-  // Find all regions containing the cell.
+  // Find all regions containing the cell. Uses the precomputed
+  // _unitsByCell index (cell -> every unit containing it) rather than
+  // scanning every unit's full indices list.
   _getRegionsContaining(idx) {
-    return this.units.filter(u => u.label.includes("Region") && u.indices.includes(idx));
+    return this._unitsByCell[idx].filter(u => this._unitKind(u) === "region");
   }
 
   // Whether two cell indices are adjacent, including diagonally.
   _cellsAdjacent(a, b) {
     return cellsAdjacent(a, b, this.n);
+  }
+
+  // Row/Column/Region, based on a unit's label. Lives here (not in one of
+  // the rule mixins) since it's used by core methods (_findAllBrokenUnits,
+  // _getRegionsContaining, etc.) as well as both rule families.
+  _unitKind(unit) {
+    if (unit.label.startsWith("Row")) return "row";
+    if (unit.label.startsWith("Col")) return "column";
+    return "region";
   }
 
   // Enumerate every valid way to place a unit's remaining stars: combinations of the
@@ -271,9 +287,19 @@ export class PuzzleSolver {
       this.lastStateString  = stateString;
       this.currentHintType  = null;
       this.currentHintIndex = 0;
+      this.lastMatchedRuleIndex = 0;
     }
 
-    for (const { key, fn } of rules) {
+    // Resume scanning from the rule that matched last time for this exact
+    // board state, instead of re-running every earlier rule from scratch
+    // on every click. Safe because nothing mutates this.game.state during
+    // hint evaluation (lookahead rules only ever mutate sandboxed copies),
+    // so every rule before lastMatchedRuleIndex is guaranteed to still
+    // return no hints against this same, unchanged state.
+    const startAt = this.lastMatchedRuleIndex;
+
+    for (let i = startAt; i < rules.length; i++) {
+      const { key, fn } = rules[i];
       const hints = fn();
       if (!hints || hints.length === 0) continue;
 
@@ -282,17 +308,19 @@ export class PuzzleSolver {
         this.currentHintIndex = 0;
         this.currentHints     = this._shuffle(hints.slice());
       }
+      this.lastMatchedRuleIndex = i;
 
       const hint = this.currentHints[this.currentHintIndex % this.currentHints.length];
       this.currentHintIndex++;
       return hint;
     }
+    this.lastMatchedRuleIndex = 0;
     return null;
   }
 
   // --- Hint Formatters ---
 
-  formatSubsetHint(sourceRegs, targetRegs, targets, bIdx) {
+  formatSubsetHint(sourceRegs, targetRegs, targets) {
     const targetSet = new Set(targets);
     const sourceHighlights = sourceRegs.flatMap(r =>
       r.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
@@ -450,12 +478,11 @@ export class PuzzleSolver {
       : this.units.filter(u => u.boardIdx === undefined || u.boardIdx === visibleBoardIdx);
 
     const broken = [];
-    const unitType = unit => unit.label.includes('Region') ? 'region' : (unit.label.startsWith('Row') ? 'row' : 'col');
 
     for (const unit of units) {
       const combos = this._enumerateUnitCompletions(unit, true, quota, state, visibleBoardIdx);
       if (combos !== null && combos.length === 0) {
-        broken.push({ type: unitType(unit), label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx });
+        broken.push({ type: this._unitKind(unit), label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx });
       }
     }
 
@@ -464,7 +491,7 @@ export class PuzzleSolver {
     for (const unit of units) {
       const starCount = unit.indices.filter(i => state[i] === CELL.STAR).length;
       if (starCount > quota) {
-        broken.push({ type: unitType(unit), label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx });
+        broken.push({ type: this._unitKind(unit), label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx });
       }
     }
 
