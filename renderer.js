@@ -3,6 +3,36 @@
 export function applyRenderer(GameClass) {
   const p = GameClass.prototype;
 
+  // --- Cell index cache ---
+  //
+  // Every cell across every board, indexed by cell index (one entry per
+  // board sharing that index) and as a flat list, so hot paths (drag
+  // highlighting, hover sync, hint highlighting, visual refresh) can look
+  // cells up directly instead of re-querying the DOM on every call. Reset
+  // once per puzzle load (loadPuzzle clears both before rendering any
+  // board) and populated incrementally as each board's grid is built.
+
+  // Clears the cache; call once before (re)building any boards for a puzzle.
+  p._resetCellCache = function () {
+    this._cellsByIndex = new Map();
+    this._allCells = [];
+  };
+
+  // Registers one cell element under its index. Called once per cell as
+  // _buildGrid creates it.
+  p._registerCell = function (idx, cell) {
+    if (!this._cellsByIndex) this._cellsByIndex = new Map();
+    if (!this._allCells) this._allCells = [];
+    if (!this._cellsByIndex.has(idx)) this._cellsByIndex.set(idx, []);
+    this._cellsByIndex.get(idx).push(cell);
+    this._allCells.push(cell);
+  };
+
+  // Every cell (across every board) sharing the given index, in board order.
+  p._getCellsByIndex = function (idx) {
+    return this._cellsByIndex?.get(idx) ?? [];
+  };
+
   // --- Board Construction ---
 
   // Render cell grid and SVG region borders for a board.
@@ -79,6 +109,7 @@ export function applyRenderer(GameClass) {
     for (let i = 0; i < this.n * this.n; i++) {
       const cell = document.createElement('div');
       cell.dataset.index = i;
+      this._registerCell(i, cell);
       if (voidCells.has(i)) {
         cell.className = 'cell cell--void';
         grid.appendChild(cell);
@@ -192,14 +223,14 @@ export function applyRenderer(GameClass) {
 
   // Update visuals for all cells.
   p.updateVisuals = function () {
-    document.querySelectorAll('.cell').forEach(cell => {
+    this._allCells.forEach(cell => {
       this.updateCellVisual(cell, this.state[cell.dataset.index]);
     });
   };
 
   // Sync cell hover state across boards.
   p._setHoverSync = function (idx, on) {
-    document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+    this._getCellsByIndex(idx).forEach(cell => {
       cell.classList.toggle('cell-hover-sync', on);
     });
   };
@@ -207,7 +238,7 @@ export function applyRenderer(GameClass) {
   // --- Error Highlights ---
 
   p._applyErrorHighlights = function (errorIndices) {
-    document.querySelectorAll('.cell').forEach(cell => {
+    this._allCells.forEach(cell => {
       const idx = parseInt(cell.dataset.index);
       cell.classList.toggle('error-cell', errorIndices.has(idx));
     });
@@ -252,13 +283,13 @@ export function applyRenderer(GameClass) {
 
   // Highlight cells and display hint description.
   p.applyHintUI = function (hint) {
-    const selectors = (hint.boardIdx !== undefined)
-      ? [`#board${hint.boardIdx + 1}`]
-      : this.regions.map((_, i) => `#board${i + 1}`);
-
     for (const { idx, color } of [...hint.highlights, ...hint.marks]) {
-      for (const sel of selectors) {
-        const cell = document.querySelector(`${sel} [data-index="${idx}"]`);
+      const cellsForIdx = this._getCellsByIndex(idx);
+      // cellsForIdx is ordered by board index (0, 1, 2, ...), matching the
+      // order boards were rendered in -- a board-specific hint can index
+      // directly into it instead of re-querying the DOM per selector.
+      const cells = (hint.boardIdx !== undefined) ? [cellsForIdx[hint.boardIdx]] : cellsForIdx;
+      for (const cell of cells) {
         // Only apply the color class if the cell exists and isn't a void square
         if (cell && !cell.classList.contains('cell--void')) {
           cell.classList.add(color);
@@ -276,7 +307,7 @@ export function applyRenderer(GameClass) {
 
   // Clear active hint highlights.
   p.clearHintUI = function () {
-    document.querySelectorAll('.cell').forEach(cell => {
+    this._allCells.forEach(cell => {
       cell.classList.remove('hint-source-blue', 'hint-target-yellow', 'hint-target-green', 'hint-error-red');
     });
   };

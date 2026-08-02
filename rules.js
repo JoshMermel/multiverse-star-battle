@@ -47,7 +47,7 @@ export function applyRules(GameClass) {
       if (this.voidCells?.has(i)) continue;
       if (this.state[i] === CELL.NONE) {
         this.state[i] = CELL.DOT;
-        document.querySelectorAll(`.cell[data-index="${i}"]`).forEach(cell => {
+        this._getCellsByIndex(i).forEach(cell => {
           this.updateCellVisual(cell, CELL.DOT);
         });
       }

@@ -114,6 +114,7 @@ class StarBattleGame {
 
     // Dynamically clear existing board containers from boards-wrapper.
     document.querySelectorAll('#boards-wrapper .board-container').forEach(el => el.remove());
+    this._resetCellCache();
     document.documentElement.style.setProperty('--grid-n', this.n);
     // boards-per-row: ceil(sqrt(N)) gives a roughly square grid layout
     // (e.g. 4 boards → 2×2, 6 boards → 3×2, 9 boards → 3×3).
@@ -218,20 +219,20 @@ class StarBattleGame {
     this.isDragging = true;
 
     if (isRightClick) {
-      document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+      this._getCellsByIndex(idx).forEach(cell => {
         cell.classList.add('cell-drag-highlight');
       });
       this.applyState(idx, this.state[idx] === CELL.STAR ? CELL.NONE : CELL.STAR);
       this.saveHistory();
       this.isDragging = false;
       setTimeout(() => {
-        document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+        this._getCellsByIndex(idx).forEach(cell => {
           cell.classList.remove('cell-drag-highlight');
         });
       }, 80);
     } else {
       this.draggedIndices = [idx];
-      document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+      this._getCellsByIndex(idx).forEach(cell => {
         cell.classList.add('cell-drag-highlight');
       });
     }
@@ -242,7 +243,7 @@ class StarBattleGame {
     if (this.voidCells?.has(idx)) return;
     if (!this.isDragging || this.draggedIndices.includes(idx)) return;
     this.draggedIndices.push(idx);
-    document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+    this._getCellsByIndex(idx).forEach(cell => {
       cell.classList.add('cell-drag-highlight');
     });
   }
@@ -285,7 +286,7 @@ class StarBattleGame {
     if (this.state[idx] === type) return;
     this._startTimerIfNeeded();
     this.state[idx] = type;
-    document.querySelectorAll(`.cell[data-index="${idx}"]`).forEach(cell => {
+    this._getCellsByIndex(idx).forEach(cell => {
       this.updateCellVisual(cell, type);
     });
     // Delay dot placement validation to prevent flashing during double-clicks.
