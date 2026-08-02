@@ -363,6 +363,7 @@ class _RectContext:
     n_regions: int
     sym_type: str  # one of _VALID_SYMMETRIES; 'none' means no intra-sub-board symmetry
     join_earlier_prob: float = 0.2
+    stars_per_unit: int = 1
 
     # ── Index helpers ─────────────────────────────────────────────────────────
 
@@ -446,7 +447,18 @@ class _RectContext:
 
         elif self.sym_type == 'diagonal':
             # Square boards only; axis is the main diagonal.
-            return random.choice([i for i in range(1, K + 1) if i % 2 == K % 2])
+            valid = [i for i in range(1, K + 1) if i % 2 == K % 2]
+            if self.stars_per_unit == 2:
+                # A forced-count experiment at N=9 (1.875M trials, 375k per
+                # count) found ambiguous stars_per_unit=2 boards ONLY at
+                # straddle counts 3 and 5 -- 0.149% and 0.078% yield
+                # respectively -- while counts 1, 7, and 9 produced ZERO
+                # successes across 375k trials each. Restrict to the odd
+                # counts in [3, (K+1)//2] for 2-star generation.
+                restricted = [i for i in valid if 3 <= i <= (K + 1) // 2]
+                if restricted:
+                    valid = restricted
+            return random.choice(valid)
 
         elif self.sym_type == 'double_diagonal':
             valid = [i for i in range(3, K + 1) if (K - i) % 4 == 0]
@@ -1046,7 +1058,9 @@ class SymmetricGenerator(Generator):
 
     def _full_ctx(self) -> _RectContext:
         """A _RectContext covering the entire NxN board."""
-        return _RectContext(self.n, self.n, self.n, self.sym_type, join_earlier_prob=self.join_earlier_prob)
+        return _RectContext(self.n, self.n, self.n, self.sym_type,
+                             join_earlier_prob=self.join_earlier_prob,
+                             stars_per_unit=self.stars_per_unit)
 
     # ── Core generation ───────────────────────────────────────────────────────
 
@@ -1096,7 +1110,9 @@ class SymmetricGenerator(Generator):
     def _try_generate_tiled(self):
         """Generate a sub-board, tile it, and return the full board result."""
         sub_rows, sub_cols, n_regions = _sub_board_shape(self.n, self.trans_type)
-        ctx = _RectContext(sub_rows, sub_cols, n_regions, self.sym_type, join_earlier_prob=self.join_earlier_prob)
+        ctx = _RectContext(sub_rows, sub_cols, n_regions, self.sym_type,
+                           join_earlier_prob=self.join_earlier_prob,
+                           stars_per_unit=self.stars_per_unit)
 
         sub_grid = ctx.try_fill(label_offset=0)
         if sub_grid is None:
