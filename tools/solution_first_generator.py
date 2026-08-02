@@ -19,7 +19,6 @@ See solution_first_core.py for the shared construction/repair primitives.
 import random
 
 from board_solver import get_solutions_capped
-from board_utils import ALPHABET
 from generator import Generator, GenerationError
 from solution_first_core import (
     random_star_placement,
@@ -66,8 +65,13 @@ class SolutionFirstGenerator(Generator):
                 # If it's somehow violated, discard and retry rather than crash.
                 if solutions != {intended_solution}:
                     return None
-                board_str = "".join(ALPHABET[v] for v in grid)
-                return board_str, solutions
+                # min_solutions=1 overrides _make_result's default "must be
+                # ambiguous" gate: this generator's whole point is a UNIQUE
+                # solution, and `solutions` is already known (from the
+                # capped repair-loop solve above) -- passing it through
+                # avoids redoing a full uncapped get_all_solutions just to
+                # reformat the grid.
+                return self._make_result(grid, solutions=solutions, min_solutions=1)
 
             other = next(s for s in solutions if s != intended_solution)
             if not self._attempt_repair_swap(grid, n, star_cells_set, region_stars, other):

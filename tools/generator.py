@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import random
 from board_solver import get_all_solutions
-from board_utils import ALPHABET, pretty_print
+from board_utils import ALPHABET, VOID_CHAR, pretty_print
 
 # Boards with fewer than this many solutions are rejected.
 # Ambiguity across multiple boards is the goal for multiverse puzzles.
@@ -71,15 +71,24 @@ class Generator(ABC):
         """
         return random.sample(range(n * n), n)
 
-    def _make_result(self, grid, solutions=None, stars_per_unit=None):
+    def _make_result(self, grid, solutions=None, stars_per_unit=None, min_solutions=None):
         """
         Packages a completed grid into the _try_generate return value.
 
         If solutions is not provided it is computed here, using
         self.stars_per_unit (set at construction, default 1) unless a
         caller overrides it explicitly.  Returns (flat_board_string,
-        solutions) if the board meets the minimum ambiguity requirement,
-        or None otherwise.
+        solutions) if the board meets the minimum solution-count
+        requirement, or None otherwise.
+
+        min_solutions defaults to MIN_SOLUTIONS (>= 2, i.e. "must be
+        ambiguous" -- the goal for multiverse puzzles). Pass
+        min_solutions=1 for a generator that deliberately produces a
+        UNIQUE-solution board instead (e.g. SolutionFirstGenerator).
+
+        grid entries may be either an int region id or VOID_CHAR; void
+        cells are passed through unchanged rather than looked up in
+        ALPHABET.
 
         Use this as the final return statement in every _try_generate
         implementation.
@@ -89,8 +98,13 @@ class Generator(ABC):
         if solutions is None:
             n = int(len(grid) ** 0.5)
             solutions = get_all_solutions(grid, n, stars_per_unit=stars_per_unit)
-        if len(solutions) >= MIN_SOLUTIONS:
-            return "".join(ALPHABET[v] for v in grid), solutions
+        if min_solutions is None:
+            min_solutions = MIN_SOLUTIONS
+        if len(solutions) >= min_solutions:
+            board_str = "".join(
+                VOID_CHAR if v == VOID_CHAR else ALPHABET[v] for v in grid
+            )
+            return board_str, solutions
         return None
 
     @classmethod

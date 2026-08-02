@@ -1,7 +1,6 @@
 import random
-from board_solver import get_all_solutions
-from board_utils import ALPHABET, VOID_CHAR, flood_fill, pretty_print
-from generator import Generator, MIN_SOLUTIONS
+from board_utils import VOID_CHAR, flood_fill, pretty_print
+from generator import Generator
 
 
 class VoidGenerator(Generator):
@@ -124,26 +123,11 @@ class VoidGenerator(Generator):
         if grid is None:
             return None
 
-        return self._make_result_with_voids(grid)
+        return self._make_result(grid)
 
     def _try_generate(self):
         """Concrete hook for base class Generator.generate processing loop."""
         return self._attempt_fill()
-
-    def _make_result_with_voids(self, grid):
-        """
-        Variant of Generator._make_result that handles VOID_CHAR entries.
-        Enforces that boards with < MIN_SOLUTIONS are rejected.
-        """
-        n = self.n
-        solutions = get_all_solutions(grid, n)
-        if len(solutions) < MIN_SOLUTIONS:
-            return None
-        board_str = "".join(
-            VOID_CHAR if v == VOID_CHAR else ALPHABET[v]
-            for v in grid
-        )
-        return board_str, solutions
 
     @classmethod
     def demo(cls, n=8, n_voids=0, max_attempts=1000):
