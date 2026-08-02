@@ -40,14 +40,11 @@ class AsymmetricPoolComparator(Comparator):
 
         # Linear scan — acceptable for small pools; consider indexing by
         # solution if pool size becomes a performance concern.
-        for i, (pool_flat, pool_sols) in enumerate(self.pool):
-            for variant_board, variant_sols in candidates:
-                common = variant_sols & pool_sols
-                if len(common) == 1:
-                    # pop(i) is safe here because we return immediately after.
-                    self.pool.pop(i)
-                    self._emit(self._next_puzzle_name(), [variant_board, pool_flat], next(iter(common)))
-                    return
+        match = self._match_against_pool(self.pool, candidates)
+        if match is not None:
+            variant_board, pool_flat, common_sol = match
+            self._emit(self._next_puzzle_name(), [variant_board, pool_flat], common_sol)
+            return
 
         result_b = self._generate_safe(self.generator_b)
         if result_b is None:

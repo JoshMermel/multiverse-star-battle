@@ -57,13 +57,10 @@ class SymmetricPoolComparator(Comparator):
         else:
             candidates = [(flat, solutions)]
 
-        for i, (pool_flat, pool_sols) in enumerate(self.pool):
-            for variant_board, variant_sols in candidates:
-                common = variant_sols & pool_sols
-                if len(common) == 1:
-                    # pop(i) is safe here because we return immediately after.
-                    self.pool.pop(i)
-                    self._emit(self._next_puzzle_name(), [variant_board, pool_flat], next(iter(common)))
-                    return
+        match = self._match_against_pool(self.pool, candidates)
+        if match is not None:
+            variant_board, pool_flat, common_sol = match
+            self._emit(self._next_puzzle_name(), [variant_board, pool_flat], common_sol)
+            return
 
         self.pool.append((flat, solutions))
