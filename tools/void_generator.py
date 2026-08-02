@@ -1,6 +1,6 @@
 import random
 from board_utils import VOID_CHAR, flood_fill, pretty_print
-from generator import Generator, GenerationError
+from generator import Generator
 
 
 class VoidGenerator(Generator):
@@ -9,6 +9,30 @@ class VoidGenerator(Generator):
     Ensures the selected void layout can produce valid puzzles with >= 2 solutions
     and avoids layout profiles explicitly flagged on the blocklist.
     """
+
+    # Void layouts (on 9x9) known to starve region generation down to too
+    # few valid boards, causing _attempt_fill's solver to churn without
+    # finding a workable layout. Skip any candidate that contains one of
+    # these as a subset rather than pay for a doomed trial run.
+    _BAD_SETS = [{65, 2, 69, 6, 74, 11, 78, 15, 18, 19, 54, 55, 25, 26, 61, 62},
+                 {64, 2, 6, 70, 74, 10, 78, 16, 18, 54, 26, 62}]
+    _CENTER_FENCE = {31, 39, 41, 49}
+
+    # Purely structural filtering (no solving), so even a generous bound
+    # here is cheap -- exists only to prevent a genuinely-impossible
+    # n/n_voids combination from looping forever.
+    _MASK_PICK_ATTEMPTS = 10000
+
+    # After this many consecutive failed _try_generate() calls with the
+    # current void mask, assume the mask itself (not just bad luck with
+    # seeding) is the problem and swap in a fresh candidate. This is what
+    # makes mask selection just another kind of retry inside the caller's
+    # own generate(max_attempts=...) budget, instead of a separate, hidden,
+    # CP-SAT-heavy search that used to run inside __init__ to completion
+    # before generate() even started -- for large n_voids that search could
+    # take minutes and still fail outright (see the class docstring's
+    # sibling commit message for measurements).
+    MASK_RETRY_THRESHOLD = 40
 
     def __init__(self, n, n_voids=0):
         super().__init__(n)
@@ -24,8 +48,17 @@ class VoidGenerator(Generator):
         # Compute all unique 8-way symmetry orbits for the grid
         self.orbits = self._compute_symmetry_orbits()
 
-        # Find a valid 8-way symmetric void mask that passes trial generation
-        self.void_cells = self._generate_and_verify_void_mask()
+        # Pick a first candidate void mask. This is purely structural (no
+        # solving), so it's cheap; whether it actually produces an
+        # ambiguous board is discovered lazily by _try_generate() below,
+        # which swaps in a new candidate if this one isn't panning out.
+        self.void_cells = self._pick_void_mask()
+        if self.void_cells is None:
+            raise ValueError(
+                f"Could not find any structurally-valid void mask for "
+                f"n_voids={n_voids} (n={n}) within {self._MASK_PICK_ATTEMPTS} tries."
+            )
+        self._failures_with_current_mask = 0
 
     def _compute_symmetry_orbits(self):
         """Groups all grid coordinate indices into their unique 8-way symmetry orbits."""
@@ -55,33 +88,15 @@ class VoidGenerator(Generator):
 
         return orbits
 
-    # Cap on how many candidate void masks to try before giving up. Each
-    # candidate itself gets up to `trial_attempts` fill attempts below, so
-    # this bounds otherwise-unbounded total work for an n_voids value that
-    # never yields a workable mask, rather than hanging forever.
-    MAX_MASK_ATTEMPTS = 500
-
-    def _generate_and_verify_void_mask(self):
+    def _pick_void_mask(self):
         """
-        Generates 8-way symmetric void profiles until one is proven to
-        successfully produce a puzzle with MIN_SOLUTIONS (>= 2) ambiguity
-        and doesn't match layouts registered on the structure blocklist.
-
-        Raises GenerationError if no workable mask is found within
-        MAX_MASK_ATTEMPTS candidates.
+        Picks a random 8-way symmetric void mask of size >= n_voids,
+        skipping any candidate that matches a known-bad structural profile.
+        Purely structural -- no solving involved. Returns None if no
+        acceptable candidate is found within _MASK_PICK_ATTEMPTS (an
+        extremely degenerate n/n_voids combination).
         """
-        n = self.n
-        trial_attempts = 1000
-
-        # Void layouts (on 9x9) known to starve region generation down to too
-        # few valid boards, causing _attempt_fill's solver to churn without
-        # finding a workable layout. Skip any candidate that contains one of
-        # these as a subset rather than pay for a doomed trial run.
-        bad_sets = [{65, 2, 69, 6, 74, 11, 78, 15, 18, 19, 54, 55, 25, 26, 61, 62},
-                    {64, 2, 6, 70, 74, 10, 78, 16, 18, 54, 26, 62}]
-        center_fence = {31, 39, 41, 49}
-
-        for _ in range(self.MAX_MASK_ATTEMPTS):
+        for _ in range(self._MASK_PICK_ATTEMPTS):
             current_voids = set()
             available_orbits = list(self.orbits)
             random.shuffle(available_orbits)
@@ -91,32 +106,15 @@ class VoidGenerator(Generator):
                     break
                 current_voids.update(orbit)
 
-            # --- FILTER GATE 1: Check Known Bad Structural Configurations ---
-            if any(bad_set.issubset(current_voids) for bad_set in bad_sets):
+            # --- Skip known bad structural configurations ---
+            if any(bad_set.issubset(current_voids) for bad_set in self._BAD_SETS):
+                continue
+            if self._CENTER_FENCE.issubset(current_voids) and 40 not in current_voids:
                 continue
 
-            if center_fence.issubset(current_voids) and 40 not in current_voids:
-                continue
+            return current_voids
 
-            # _attempt_fill reads self.void_cells, so it must be set before calling it.
-            self.void_cells = current_voids
-
-            # --- FILTER GATE 2: Solution and Continuity Verification ---
-            passed_trial = False
-            for _ in range(trial_attempts):
-                result = self._attempt_fill()
-                if result is not None:
-                    passed_trial = True
-                    break
-
-            if passed_trial:
-                return current_voids
-
-        raise GenerationError(
-            f"VoidGenerator failed to find a workable void mask for "
-            f"n_voids={self.n_voids} (n={n}) after {self.MAX_MASK_ATTEMPTS} "
-            f"candidate masks, each tried up to {trial_attempts} times."
-        )
+        return None
 
     def _attempt_fill(self):
         """Single puzzle generation pass using the assigned void mask."""
@@ -141,8 +139,28 @@ class VoidGenerator(Generator):
         return self._make_result(grid)
 
     def _try_generate(self):
-        """Concrete hook for base class Generator.generate processing loop."""
-        return self._attempt_fill()
+        """
+        Concrete hook for base class Generator.generate processing loop.
+
+        Retries the current void mask's seeding first; if it's been
+        unproductive for MASK_RETRY_THRESHOLD consecutive attempts, swaps
+        in a fresh mask candidate before the next call -- so a genuinely
+        unworkable mask doesn't sit there burning the rest of the caller's
+        whole max_attempts budget the way it used to inside __init__.
+        """
+        result = self._attempt_fill()
+        if result is not None:
+            self._failures_with_current_mask = 0
+            return result
+
+        self._failures_with_current_mask += 1
+        if self._failures_with_current_mask >= self.MASK_RETRY_THRESHOLD:
+            new_mask = self._pick_void_mask()
+            if new_mask is not None:
+                self.void_cells = new_mask
+            self._failures_with_current_mask = 0
+
+        return None
 
     @classmethod
     def demo(cls, n=8, n_voids=0, max_attempts=1000):
