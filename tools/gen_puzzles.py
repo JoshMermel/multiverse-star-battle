@@ -211,12 +211,40 @@ def run_generation(args):
     fieldnames = ['name', 'N'] + board_cols + ['solution']
     print(",".join(fieldnames), flush=True)
 
-    comparator.run(args.count)
+    # output_rows is appended to incrementally by comparator._emit() as each
+    # pair is found, so it already holds every pair generated so far even if
+    # this raises partway through -- Ctrl-C during a long batch shouldn't
+    # throw away an hour of generation just because it didn't hit --count.
+    #
+    # Known limitation: this only catches SIGINT that lands while Python
+    # bytecode is running. Most wall-clock time here is actually spent
+    # inside OR-Tools' native CP-SAT solver (board_solver.py's
+    # solver.solve() calls), and a SIGINT delivered while execution is
+    # inside that C++ call kills the process immediately, bypassing this
+    # try/except entirely -- confirmed experimentally; a bare Python
+    # time.sleep() catches the same signal fine, so it's specific to how
+    # the CP-SAT extension interacts with signal delivery, not something
+    # fixable from here. So this makes Ctrl-C safe some of the time
+    # (whenever it happens to land between attempts), not all of the time.
+    interrupted = False
+    try:
+        comparator.run(args.count)
+    except KeyboardInterrupt:
+        interrupted = True
+        print(
+            "\n# Interrupted -- writing {0} pair(s) found so far...".format(len(output_rows)),
+            flush=True,
+        )
 
     with open(args.output, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(output_rows)
+
+    if interrupted:
+        print("\n# Stopped early. {0}/{1} pairs -> {2}".format(
+            comparator.pairs_found, args.count, args.output), flush=True)
+        return
 
     if args.score_after:
         # Reuse the generate namespace but override the scoring-specific fields.
