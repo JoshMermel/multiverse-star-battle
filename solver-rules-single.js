@@ -14,7 +14,7 @@ export function applySingleStarRules(PuzzleSolver) {
   // Rule: Check for unsolved regions containing exactly one cell.
   p.hintSingleCellRegion = function () {
     const candidates = [];
-    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+    for (const bIdx of this.boardIndices) {
       for (const region of this.getUnsolvedRegions(bIdx)) {
         if (region.indices.length === 1 && this.vState(region.indices[0]) === CELL.NONE) {
           candidates.push(region);
@@ -36,7 +36,7 @@ export function applySingleStarRules(PuzzleSolver) {
     const n = this.n;
     const candidates = [];
 
-    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+    for (const bIdx of this.boardIndices) {
       for (const region of this.getUnsolvedRegions(bIdx)) {
         const empty = region.indices.filter(i => this.vState(i) === CELL.NONE);
         if (empty.length !== 2) continue;
@@ -184,7 +184,7 @@ export function applySingleStarRules(PuzzleSolver) {
           .map(combo => combo.map(u => axisIndices[u]));
 
     const candidates = [];
-    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+    for (const bIdx of this.boardIndices) {
       const unsolvedRegs = this.getUnsolvedRegions(bIdx);
       const cellToRegionMap = this.buildCellToRegionMap(bIdx);
       for (const windowIndices of windows) {
@@ -269,7 +269,7 @@ export function applySingleStarRules(PuzzleSolver) {
 
   // Rule: Check regions where all empty cells are visible to an external cell.
   p.hintSeesTooMuch = function (nTarget = null) {
-    const regionUnits = Array.from({ length: this.game.regions.length }, (_, bIdx) => bIdx)
+    const regionUnits = this.boardIndices
       .flatMap(bIdx => this.getUnsolvedRegions(bIdx))
       .filter(u => nTarget === null || u.indices.filter(i => this.vState(i) === CELL.NONE).length === nTarget);
     return this._hintSeesTooMuchForUnits(regionUnits);
@@ -371,7 +371,7 @@ export function applySingleStarRules(PuzzleSolver) {
     const n = this.n;
 
     // Build unsolved region descriptors from both boards
-    const unsolvedRegions = Array.from({ length: this.game.regions.length }, (_, bIdx) => bIdx).flatMap(bIdx =>
+    const unsolvedRegions = this.boardIndices.flatMap(bIdx =>
       this.getUnsolvedRegions(bIdx)
       .filter(reg => reg.indices.some(i => this.vState(i) === CELL.NONE))
       .map(reg => ({
@@ -481,7 +481,7 @@ export function applySingleStarRules(PuzzleSolver) {
       .flatMap((val, idx) => this.vState(idx) === CELL.NONE ? [idx] : []);
 
     const boardScopes = singleBoard
-      ? Array.from({ length: this.game.regions.length }, (_, i) => i)
+      ? this.boardIndices
       : [null];
 
     for (const testIdx of emptyIndices) {

@@ -17,6 +17,15 @@ export class PuzzleSolver {
     this.n = game.n;
     this.starsPerGroup = game.starsPerGroup || 1;
 
+    // [0, 1, ..., numBoards - 1] -- shared by every rule that needs to
+    // iterate all boards, instead of each writing its own `for (let bIdx
+    // = 0; bIdx < this.game.regions.length; bIdx++)` or
+    // `Array.from({length: this.game.regions.length}, (_, i) => i)`.
+    // Never mutated after construction, so safe to share by reference.
+    this.boardIndices = this.game.regions
+      ? Array.from({ length: this.game.regions.length }, (_, i) => i)
+      : [];
+
     // Void cells are tracked here rather than in game.state, so hint logic
     // can treat them as always-dot without mutating the real board state.
     this.voidIndices = new Set();

@@ -133,7 +133,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     const candidates = [];
     // needingRegs/cellToRegionMap only depend on bIdx, not on axis or combo,
     // so compute them once per board here rather than on every combo below.
-    const perBoard = Array.from({ length: this.game.regions.length }, (_, bIdx) => ({
+    const perBoard = this.boardIndices.map(bIdx => ({
       needingRegs: this.getRegionsNeedingStars(bIdx),
       cellToRegionMap: this.buildCellToRegionMap(bIdx),
     }));
@@ -145,7 +145,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       for (const combo of this.getCombinations(starlessUnitIndices, N)) {
         const unitCombo = combo.map(u => axisIndices[u]);
-        for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+        for (const bIdx of this.boardIndices) {
           const { needingRegs, cellToRegionMap } = perBoard[bIdx];
           const trapped = this._hintMultiRegionsTrappedInUnits(unitCombo, bIdx, axis, needingRegs);
           if (trapped) candidates.push(trapped);
@@ -323,7 +323,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       Array.from({ length: N }, (_, i) => axisIndices[startU + i]));
 
     const candidates = [];
-    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+    for (const bIdx of this.boardIndices) {
       const needingRegs = this.getRegionsNeedingStars(bIdx);
       const cellToRegionMap = this.buildCellToRegionMap(bIdx);
       for (const windowIndices of windows) {
@@ -373,7 +373,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       .flatMap((val, idx) => this.vState(idx) === CELL.NONE ? [idx] : []);
 
     const boardScopes = singleBoard
-      ? Array.from({ length: this.game.regions.length }, (_, i) => i)
+      ? this.boardIndices
       : [null];
 
     for (const testIdx of emptyIndices) {
@@ -589,7 +589,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     const cap = this._LINE_SPLIT_REMAINDER_CAP;
     const n = this.n;
 
-    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+    for (const bIdx of this.boardIndices) {
       const regionsOnBoard = this.units.filter(u => this._unitKind(u) === "region" && u.boardIdx === bIdx);
       for (const region of regionsOnBoard) {
         const avail = region.indices.filter(i => this.vState(i) === CELL.NONE);

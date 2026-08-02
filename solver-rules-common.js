@@ -138,7 +138,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
   p._buildRegionNeedComboSets = function (K) {
     const comboSets = [];
 
-    for (let bIdx = 0; bIdx < this.game.regions.length; bIdx++) {
+    for (const bIdx of this.boardIndices) {
       const needing = this.getRegionsNeedingStars(bIdx);
 
       // A combo's size can never exceed K, since every member needs >= 1 star.
