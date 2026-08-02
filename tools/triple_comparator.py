@@ -1,6 +1,6 @@
 from itertools import combinations
 
-from board_utils import get_board_variants
+from board_utils import get_board_variants, select_diagonal_variants
 from comparator import Comparator
 
 
@@ -83,14 +83,7 @@ class TripleComparator(Comparator):
         # generated (identity transform only).
         if self.match_variants:
             all_variants = get_board_variants(flat, solutions, self.n)
-            if self.diagonal_alignment == 'aligned':
-                # Preserve the main diagonal: identity (0), rot180 (2), flip_diag (6), flip_antidiag (7)
-                candidates = [all_variants[0], all_variants[2], all_variants[6], all_variants[7]]
-            elif self.diagonal_alignment == 'misaligned':
-                # Map main diagonal to anti-diagonal: rot90 (1), rot270 (3), flip_h (4), flip_v (5)
-                candidates = [all_variants[1], all_variants[3], all_variants[4], all_variants[5]]
-            else:
-                candidates = all_variants
+            candidates = select_diagonal_variants(all_variants, self.diagonal_alignment)
         else:
             candidates = [(flat, solutions)]
 

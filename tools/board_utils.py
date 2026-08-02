@@ -126,8 +126,33 @@ def get_board_variants(flat_board, solutions, n):
             v_sols.add("".join(v_sol_chars))
             
         variants.append((v_board_str, v_sols))
-        
+
     return variants
+
+
+# Indices into get_board_variants()'s 8-entry result (same order as
+# TRANSFORM_NAMES) that preserve vs. swap the main/anti-diagonal axis.
+# 'aligned': identity, rot180, flip_diag, flip_antidiag -- transforms that
+# map the main diagonal back onto itself.
+# 'misaligned': rot90, rot270, flip_h, flip_v -- transforms that map the
+# main diagonal onto the anti-diagonal instead.
+_DIAGONAL_ALIGNED_INDICES = [0, 2, 6, 7]
+_DIAGONAL_MISALIGNED_INDICES = [1, 3, 4, 5]
+
+
+def select_diagonal_variants(all_variants, diagonal_alignment):
+    """
+    Filters get_board_variants()'s 8 (board, solutions) variants down to
+    the 4 matching `diagonal_alignment` ('aligned' or 'misaligned'), or
+    returns all 8 unfiltered for any other value (e.g. 'any').
+    """
+    if diagonal_alignment == 'aligned':
+        indices = _DIAGONAL_ALIGNED_INDICES
+    elif diagonal_alignment == 'misaligned':
+        indices = _DIAGONAL_MISALIGNED_INDICES
+    else:
+        return all_variants
+    return [all_variants[i] for i in indices]
 
 
 def flood_fill(grid, n, excluded_region=None, reject_singletons=False):
