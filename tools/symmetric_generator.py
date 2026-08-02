@@ -69,7 +69,7 @@ during straddle seeding before flood fill begins:
 """
 
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 from generator import Generator
 
@@ -364,6 +364,14 @@ class _RectContext:
     sym_type: str  # one of _VALID_SYMMETRIES; 'none' means no intra-sub-board symmetry
     join_earlier_prob: float = 0.2
     stars_per_unit: int = 1
+    # Per-instance memo for get_orbit -- a pure function of (flat, sym_type,
+    # rows, cols) that flood_fill calls very frequently (often several times
+    # for the same cell before it's finally resolved, since a still-unfilled
+    # cell can be re-added to flood_fill's frontier by more than one
+    # already-filled neighbor). Computed lazily per flat index rather than
+    # eagerly for the whole board, since not every _RectContext instance
+    # necessarily runs flood_fill to completion.
+    _orbit_cache: dict = field(default_factory=dict, init=False, repr=False, compare=False)
 
     # ── Index helpers ─────────────────────────────────────────────────────────
 
@@ -386,8 +394,16 @@ class _RectContext:
         """
         All flat indices that are symmetric images of flat under sym_type.
         Out-of-bounds images are filtered out.  When sym_type is 'none' every
-        cell is its own orbit.
+        cell is its own orbit. Memoized per flat index -- see _orbit_cache.
         """
+        cached = self._orbit_cache.get(flat)
+        if cached is not None:
+            return cached
+        orbit = self._compute_orbit(flat)
+        self._orbit_cache[flat] = orbit
+        return orbit
+
+    def _compute_orbit(self, flat: int):
         r, c = self.rc(flat)
         R, C = self.rows, self.cols
 
