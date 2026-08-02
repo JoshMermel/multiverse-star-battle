@@ -35,10 +35,14 @@ from voronoi_generator import VoronoiGenerator
 TWO_STAR_N = 9
 # 2-star ambiguity is rarer than 1-star, so these generators need a much
 # larger attempt budget than their 1-star tests to reliably find one --
-# SymmetricGenerator's 'diagonal' symmetry is the worst case (~90-97%
-# success within this budget; the other symmetry types and generators are
-# comfortably reliable well before this).
-TWO_STAR_MAX_ATTEMPTS = 6000
+# SymmetricGenerator's 'diagonal' symmetry is the worst case (~91% single
+# -call success within this budget; the other symmetry types and
+# generators are comfortably reliable well before this). Restricting
+# decide_straddle_count() to its empirically productive counts (see
+# symmetric_generator.py's 'diagonal' branch) roughly tripled the
+# per-attempt yield, so this budget dropped from 6000 -- combined with the
+# fixture's 3x retry wrapper, compound failure probability is ~0.1%.
+TWO_STAR_MAX_ATTEMPTS = 2000
 
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
