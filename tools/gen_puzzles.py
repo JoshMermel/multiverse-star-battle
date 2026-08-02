@@ -59,7 +59,10 @@ from voting_district_generator import VotingDistrictGenerator
 
 # Comparators for pairing puzzles
 from asymmetric_pool_comparator import AsymmetricPoolComparator
+from mono_comparator import MonoComparator
 from self_comparator import SelfComparator
+from solution_first_generator import SolutionFirstGenerator
+from solution_first_pair_comparator import SolutionFirstPairComparator
 from symmetric_pool_comparator import SymmetricPoolComparator
 from sudoku_comparator import SudokuComparator
 from triple_comparator import TripleComparator
@@ -87,6 +90,17 @@ def _build_letter_pair(args, n, output_rows):
     gen_b = LetterGenerator(n, args.char2[0].upper(), stars_per_unit=args.stars)
     return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows, randomize_orientation_for_output=False, match_variants=False)
 
+
+def _build_mono(args, n, output_rows):
+    gen = SolutionFirstGenerator(n, stars_per_unit=args.stars, size_variation=args.size_variation)
+    return MonoComparator(gen, n, output_rows)
+
+
+def _build_solution_first_pair(args, n, output_rows):
+    return SolutionFirstPairComparator(
+        n, output_rows, board_count=args.board_count, stars_per_unit=args.stars,
+        size_variation=args.size_variation)
+
 # Scratch/dev boilerplate for testing new generators or comparators by hand,
 # edited in place per experiment rather than kept as a stable mode. The
 # early `return` below is intentional -- this is a scratchpad, not a real
@@ -111,6 +125,8 @@ MODES = {
     'voting_district_pair': lambda a, n, r: SymmetricPoolComparator(VotingDistrictGenerator(n, stars_per_unit=a.stars), n, r),
     'tmp':                  lambda a, n, r: _build_tmp(a, n, r),
     'sudoku_pair':          lambda a, n, r: _build_sudoku_pair(n, r, stars_per_unit=a.stars),
+    'mono':                 lambda a, n, r: _build_mono(a, n, r),
+    'solution_first_pair':  lambda a, n, r: _build_solution_first_pair(a, n, r),
 }
 
 # Modes whose underlying generator/comparator actually varies its region
@@ -120,7 +136,8 @@ MODES = {
 # edited by hand per experiment, not a stable mode to wire a flag through.
 STARS_CAPABLE_MODES = {
     'random_pair', 'symmetric_pair', 'self_entangled', 'super_symmetric',
-    'letter_pair', 'voting_district_pair', 'sudoku_pair',
+    'letter_pair', 'voting_district_pair', 'sudoku_pair', 'mono',
+    'solution_first_pair',
 }
 
 # Smallest board size that can plausibly fit a given star count. Non-touching
@@ -360,11 +377,15 @@ Modes:
   letter_pair            Two letter-shaped boards (requires --char1 and --char2)
   voting_district_pair   Two boards where every region contains exactly N cells
   sudoku_pair            Fixed sudoku 3x3-box board paired with random boards (n=9 only)
+  mono                   Single-board puzzles with a unique solution (SolutionFirstGenerator)
+  solution_first_pair    board_count boards, each individually ambiguous, jointly unique
 
 --stars (default 1) sets how many stars each row/column/region must
 contain. Every mode above supports it except tmp (scratch/dev boilerplate,
 edited by hand per experiment). Scoring never needs this flag -- it's
 inferred from each puzzle's own solution.
+
+--size-variation and --board-count only affect mono/solution_first_pair.
 
 Examples:
   python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100
@@ -374,6 +395,8 @@ Examples:
   python3 gen_puzzles.py generate --mode voting_district_pair --n 8 --count 100
   python3 gen_puzzles.py generate --mode sudoku_pair --n 9 --count 100
   python3 gen_puzzles.py generate --mode symmetric_pair --n 9 --count 100 --stars 2
+  python3 gen_puzzles.py generate --mode mono --n 8 --count 100
+  python3 gen_puzzles.py generate --mode solution_first_pair --n 8 --count 50 --board-count 3
         """,
     )
     gen_p.add_argument("--mode", choices=list(MODES.keys()), required=True,
@@ -391,6 +414,12 @@ Examples:
                        help="Character for board 1 (letter_pair mode only)")
     gen_p.add_argument("--char2", type=str, default=None,
                        help="Character for board 2 (letter_pair mode only)")
+    gen_p.add_argument("--size-variation", type=float, default=0.0,
+                       dest="size_variation",
+                       help="Region size variation, mono/solution_first_pair only (default: 0.0)")
+    gen_p.add_argument("--board-count", type=int, default=2,
+                       dest="board_count",
+                       help="Number of boards, solution_first_pair only (default: 2)")
     gen_p.add_argument("--score-after", action="store_true",
                        dest="score_after",
                        help="Score the generated puzzles immediately after generation")
