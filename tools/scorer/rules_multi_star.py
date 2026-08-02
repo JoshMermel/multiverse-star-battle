@@ -148,8 +148,35 @@ class MultiStarRules:
     def rule_unit_placement_forced_strong_dots(self, p):
         return self.rule_unit_placement_forced_cond(p, strong=True, cond="dots")
 
+    def _get_placement_forced_combos(self, p, strong):
+        """
+        Enumerates every unit's remaining-star completions once per (grid
+        state, strong) and shares the result across all six
+        rule_unit_placement_forced_* variants -- weak_all/any/dots share
+        one pass, strong_all/any/dots share a separate pass -- instead of
+        each of the six independently re-running the same combinatorial
+        enumeration over every unit. Keyed on a full grid snapshot rather
+        than tracked mutation sites so it can never go stale, at the cost
+        of a cheap tuple(p.grid) per top-level rule call.
+        """
+        cache = getattr(p, '_placement_forced_cache', None)
+        if cache is None:
+            cache = p._placement_forced_cache = {}
+        key = (strong, tuple(p.grid))
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+        result = {}
+        for unit in p.units:
+            combos = self._enumerate_unit_completions(p, unit, strong)
+            if combos:
+                result[id(unit)] = combos
+        cache[key] = result
+        return result
+
     def rule_unit_placement_forced_cond(self, p, strong, cond):
         """Generalized placement-enumeration engine that filters on specific sub-conditions."""
+        combos_by_unit = self._get_placement_forced_combos(p, strong)
         changes = 0
         for unit in p.units:
             stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
@@ -157,7 +184,7 @@ class MultiStarRules:
             if needed <= 0:
                 continue
 
-            combos = self._enumerate_unit_completions(p, unit, strong)
+            combos = combos_by_unit.get(id(unit))
             if not combos:
                 continue
 
@@ -496,7 +523,33 @@ class MultiStarRules:
     # both i and j empty, so they're at-most-1. A genuine two-hop chain, not
     # visually checkable -- feeds the Expert-tier rule_witness_* rules below.
 
+    def _cached_on_grid(self, p, cache_attr, compute_fn):
+        """
+        Small memoization helper for the Hard/Expert "clump"/"witness"
+        analysis passes below: several sibling rules (rule_clump_*,
+        rule_witness_*) each independently trigger the same expensive
+        grid-wide scan when they run in the same round with no state
+        change between them (only one rule can succeed -- and mutate the
+        grid -- per round; see ScorerCore.solve). Keyed on a full grid
+        snapshot rather than tracked mutation call sites, so a cache hit
+        is only ever returned for a grid state identical to the one it
+        was computed from -- correct regardless of how many places
+        happen to write to p.grid.
+        """
+        cache = getattr(p, cache_attr, None)
+        if cache is None:
+            cache = {}
+            setattr(p, cache_attr, cache)
+        key = tuple(p.grid)
+        if key not in cache:
+            cache[key] = compute_fn()
+        return cache[key]
+
     def _find_at_least_one_pairs(self, p):
+        return self._cached_on_grid(
+            p, '_at_least_one_pairs_cache', lambda: self._find_at_least_one_pairs_impl(p))
+
+    def _find_at_least_one_pairs_impl(self, p):
         """
         Source 3's at-least-1 half. Every pair of candidate cells (i, j),
         across every row/column/region on every board, such that no valid
@@ -591,6 +644,10 @@ class MultiStarRules:
     _LINE_SPLIT_REMAINDER_CAP = 4
 
     def _region_line_split_facts(self, p):
+        return self._cached_on_grid(
+            p, '_region_line_split_cache', lambda: self._region_line_split_facts_impl(p))
+
+    def _region_line_split_facts_impl(self, p):
         """
         Source 1 (see class-level comment above). Returns (changes,
         at_most_one_groups, at_least_one_groups): changes > 0 if a "rest of
@@ -659,6 +716,10 @@ class MultiStarRules:
         return 0, at_most_groups, at_least_groups
 
     def _find_line_pair_box_cover_groups(self, p):
+        return self._cached_on_grid(
+            p, '_box_cover_cache', lambda: self._find_line_pair_box_cover_groups_impl(p))
+
+    def _find_line_pair_box_cover_groups_impl(self, p):
         """
         Source 2 (see class-level comment above): for each pair of
         ADJACENT rows (and separately, adjacent columns), try to cover
