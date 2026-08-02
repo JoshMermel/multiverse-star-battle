@@ -1,5 +1,16 @@
 // Mixin for fetching, parsing, and caching puzzle data.
 
+// Fetches a URL and returns its text, throwing a descriptive error if the
+// response isn't ok (e.g. a 404) instead of silently letting an error
+// page's body get parsed as if it were puzzle CSV data.
+async function fetchCsvText(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+  }
+  return response.text();
+}
+
 export function applyPuzzleLoader(GameClass) {
   const p = GameClass.prototype;
 
@@ -139,8 +150,7 @@ export function applyPuzzleLoader(GameClass) {
     const countLabel = document.getElementById('puzzle-count-label');
 
     if (!this.puzzleCache.has(catId)) {
-      const response = await fetch(`data/${catId}.csv`);
-      this.puzzleCache.set(catId, this.parseCsv(await response.text()));
+      this.puzzleCache.set(catId, this.parseCsv(await fetchCsvText(`data/${catId}.csv`)));
     }
     this.loadedPuzzles = this.puzzleCache.get(catId);
     const total = this.loadedPuzzles.length;
@@ -163,10 +173,10 @@ export function applyPuzzleLoader(GameClass) {
       const isSunday = this.isSunday();
 
       const fetches = [
-        fetch('data/daily_beginner.csv').then(r => r.text()),
-        fetch('data/daily_medium.csv').then(r => r.text()),
-        fetch('data/daily_hard.csv').then(r => r.text()),
-        ...(isSunday ? [fetch('data/daily_expert.csv').then(r => r.text())] : []),
+        fetchCsvText('data/daily_beginner.csv'),
+        fetchCsvText('data/daily_medium.csv'),
+        fetchCsvText('data/daily_hard.csv'),
+        ...(isSunday ? [fetchCsvText('data/daily_expert.csv')] : []),
       ];
       const texts = await Promise.all(fetches);
 

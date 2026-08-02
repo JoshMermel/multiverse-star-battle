@@ -286,6 +286,9 @@ export function applyInput(GameClass) {
       this.setLoading(true);
       try {
         await this.loadCategory(catId, val);
+      } catch (err) {
+        this.showToast("Could not load puzzle", "error");
+        console.error(err);
       } finally {
         this.setLoading(false);
       }
