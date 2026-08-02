@@ -16,13 +16,6 @@ Python code for generating and scoring puzzles.
  - board_utils.py contains helpers that are useful across the project and which
    don't fit anywhere else.
 
-Stuff I intend to do short/medium term:
- - Concurrency.
- - Maybe handle Ctrl-C during long runs and output whatever puzzles have been
-   generated so far.
- - Maybe integrate my janky swastika-filtering logic into SymmetricGenerator.
- - Write a doc to explain each heuristic in scorer.py and give examples.
-
 Stuff I might or might not do longer term:
  - Maybe account for the following during scoring:
    - how early does the first hard rule appear?
