@@ -191,9 +191,19 @@ def run_generation(args):
             "{0} stars per row/column/region).".format(args.stars, min_n, args.n)
         )
 
+    # Every generator/comparator in this codebase draws from the shared
+    # global `random` module (no per-instance RNG), so seeding it once here
+    # makes an entire run fully reproducible -- rerun with the same --seed
+    # to get byte-identical output, e.g. to investigate a specific reported
+    # bad board. Always printed (not just when explicitly passed) so any
+    # run can be reproduced after the fact, not just ones where reproducing
+    # was anticipated in advance.
+    seed = args.seed if args.seed is not None else random.SystemRandom().randrange(2**32)
+    random.seed(seed)
+
     output_rows = []
-    print("# Mode: {0} | n={1} | count={2} | stars={3}".format(
-        args.mode, args.n, args.count, args.stars), flush=True)
+    print("# Mode: {0} | n={1} | count={2} | stars={3} | seed={4}".format(
+        args.mode, args.n, args.count, args.stars, seed), flush=True)
 
     comparator = MODES[args.mode](args, args.n, output_rows)
 
@@ -397,6 +407,7 @@ Examples:
   python3 gen_puzzles.py generate --mode symmetric_pair --n 9 --count 100 --stars 2
   python3 gen_puzzles.py generate --mode mono --n 8 --count 100
   python3 gen_puzzles.py generate --mode solution_first_pair --n 8 --count 50 --board-count 3
+  python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100 --seed 12345
         """,
     )
     gen_p.add_argument("--mode", choices=list(MODES.keys()), required=True,
@@ -420,6 +431,11 @@ Examples:
     gen_p.add_argument("--board-count", type=int, default=2,
                        dest="board_count",
                        help="Number of boards, solution_first_pair only (default: 2)")
+    gen_p.add_argument("--seed", type=int, default=None,
+                       help="Random seed for reproducible generation. The seed used is "
+                            "always printed at the start of the run -- rerun with "
+                            "--seed <value> to reproduce a run's output exactly, e.g. to "
+                            "investigate a specific reported bad board.")
     gen_p.add_argument("--score-after", action="store_true",
                        dest="score_after",
                        help="Score the generated puzzles immediately after generation")
