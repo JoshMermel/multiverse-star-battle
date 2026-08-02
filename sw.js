@@ -147,6 +147,22 @@ self.addEventListener('fetch', (event) => {
   // without ever needing a manual cache-name bump.
   if (req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('index.html')) {
     event.waitUntil(updateShellCacheAtomically());
+
+    // This is a single-page app: every URL, whatever its query string
+    // (?book=..., ?puzzle=...), serves the exact same index.html, with
+    // routing handled entirely client-side by script.js reading
+    // location.search. So navigation always resolves against the ONE
+    // cached document, ignoring the query string entirely -- caching each
+    // visited URL as its own separate entry would both (a) grow the shell
+    // cache unboundedly as new query-string combinations get visited, and
+    // (b) mean a deep link with a never-before-seen query string (e.g. a
+    // puzzle shared by a friend, opened for the first time with no
+    // connection) fails outright with a bare network error instead of
+    // loading the identical cached shell, which would run it just fine.
+    event.respondWith(
+      caches.match('./index.html').then((cached) => cached || fetch(req))
+    );
+    return;
   }
 
   event.respondWith(
