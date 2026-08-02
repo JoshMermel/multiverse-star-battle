@@ -158,6 +158,16 @@ class ScorerCore:
         """Whether two cell indices are adjacent, including diagonally."""
         return b in p._neighbor_map[a]
 
+    def _cells_see_each_other(self, p, a, b):
+        """
+        Whether a star in cell `a` would rule out cell `b` as a candidate
+        (symmetric): same row, same column, or 8-adjacent -- a broader
+        relation than mere adjacency (_cells_adjacent above).
+        """
+        ra, ca = p.get_rc(a)
+        rb, cb = p.get_rc(b)
+        return ra == rb or ca == cb or (abs(ra - rb) <= 1 and abs(ca - cb) <= 1)
+
     def _enumerate_unit_completions(self, p, unit, strong=True, quota=None, visible_board_idx=None):
         """
         Enumerate every valid way to place a unit's remaining stars:

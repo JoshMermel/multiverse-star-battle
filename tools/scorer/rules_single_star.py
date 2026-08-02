@@ -88,16 +88,12 @@ class SingleStarRules:
             if not ((abs(r1-r2) == 1 and c1 == c2) or (abs(c1-c2) == 1 and r1 == r2)):
                 continue
 
-            def can_see(r, c, tr, tc):
-                return r == tr or c == tc or (abs(r-tr) <= 1 and abs(c-tc) <= 1)
-
             exclusion = {i1, i2}
             local_changes = 0
             for i in range(p.n * p.n):
                 if p.grid[i] is not None or i in exclusion:
                     continue
-                ir, ic = p.get_rc(i)
-                if can_see(ir, ic, r1, c1) and can_see(ir, ic, r2, c2):
+                if self._cells_see_each_other(p, i, i1) and self._cells_see_each_other(p, i, i2):
                     local_changes += p.validate_and_set(
                         i, ".", f"{label} domino shadow", self.verbose)
             if local_changes > 0:
@@ -120,14 +116,11 @@ class SingleStarRules:
             if not candidates:
                 continue
             idxs_set = set(idxs)
-            cand_coords = [p.get_rc(i) for i in candidates]
             local_changes = 0
             for i in range(p.n * p.n):
                 if p.grid[i] is not None or i in idxs_set:
                     continue
-                ir, ic = p.get_rc(i)
-                if all(ir == tr or ic == tc or (abs(ir-tr) <= 1 and abs(ic-tc) <= 1)
-                       for tr, tc in cand_coords):
+                if all(self._cells_see_each_other(p, i, c) for c in candidates):
                     local_changes += p.validate_and_set(
                         i, ".", f"{label} unit_sees_too_much", self.verbose)
             if local_changes > 0:
@@ -158,13 +151,10 @@ class SingleStarRules:
                 if n_min is not None and len(candidates) < n_min:
                     continue
                 r_indices_set = p.region_sets[b_idx][r_char]
-                cand_coords = [p.get_rc(c) for c in candidates]
                 for i in range(p.n * p.n):
                     if p.grid[i] is not None or i in r_indices_set:
                         continue
-                    ir, ic = p.get_rc(i)
-                    if all(ir == tr or ic == tc or (abs(ir-tr) <= 1 and abs(ic-tc) <= 1)
-                           for tr, tc in cand_coords):
+                    if all(self._cells_see_each_other(p, i, c) for c in candidates):
                         changes += p.validate_and_set(
                             i, ".",
                             f"sees_too_much_{label_suffix} (B{b_idx+1} Reg {r_char})",
@@ -512,11 +502,6 @@ class SingleStarRules:
         The old check (all non-shared cells in one row/col) is a strict subset
         of this condition and is no longer needed separately.
         """
-        def sees(i, j):
-            ri, ci = p.get_rc(i)
-            rj, cj = p.get_rc(j)
-            return ri == rj or ci == cj or (abs(ri - rj) <= 1 and abs(ci - cj) <= 1)
-
         for b1, b2 in combinations(range(p.n_boards), 2):
             unsolved_b1 = [c for c, idxs in p.regions[b1].items()
                            if not any(p.grid[i] == "x" for i in idxs)]
@@ -536,7 +521,7 @@ class SingleStarRules:
                     if not (r1_avail & r2_avail) or not (only_a or only_b):
                         continue
                     # Every cell in onlyA must see every cell in onlyB.
-                    if not all(sees(a, b) for a in only_a for b in only_b):
+                    if not all(self._cells_see_each_other(p, a, b) for a in only_a for b in only_b):
                         continue
                     disjoint = only_a | only_b
                     changes = sum(
