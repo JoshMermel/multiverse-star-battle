@@ -1,5 +1,5 @@
 import random
-from board_utils import flood_fill, get_neighbors_4, pretty_print
+from board_utils import connected_components, flood_fill, pretty_print
 from font_data import FONT_7x5
 from generator import Generator
 
@@ -41,29 +41,13 @@ def _render_letter(char, n, row_offset=None, col_offset=None):
 
 def _free_components(partial, n):
     """
-    Returns a list of free-cell connected components (each a list of indices),
-    found by DFS over cells where partial[i] is None using 4-connectivity.
-    Letters like 'B' or 'O' enclose interior pockets that are completely
-    surrounded by letter pixels and unreachable from the outside — each such
-    pocket is its own component.
+    Returns a list of free-cell connected components (each a list of
+    indices). Letters like 'B' or 'O' enclose interior pockets that are
+    completely surrounded by letter pixels and unreachable from the
+    outside — each such pocket is its own component.
     """
-    visited = set()
-    components = []
-    for start in range(n * n):
-        if partial[start] is not None or start in visited:
-            continue
-        component = []
-        stack = [start]
-        visited.add(start)
-        while stack:
-            idx = stack.pop()
-            component.append(idx)
-            for nb in get_neighbors_4(idx, n):
-                if nb not in visited and partial[nb] is None:
-                    visited.add(nb)
-                    stack.append(nb)
-        components.append(component)
-    return components
+    free_cells = (i for i, v in enumerate(partial) if v is None)
+    return connected_components(free_cells, n)
 
 
 class LetterGenerator(Generator):

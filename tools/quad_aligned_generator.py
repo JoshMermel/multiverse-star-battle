@@ -1,5 +1,5 @@
 import random
-from board_utils import get_neighbors_4, get_transformation_maps
+from board_utils import get_neighbors_4, get_transformation_maps, is_contiguous
 from generator import Generator
 
 class QuadAlignedGenerator(Generator):
@@ -50,26 +50,11 @@ class QuadAlignedGenerator(Generator):
                 
                 # Check if the remaining cells (Region 1) are contiguous
                 unassigned = [i for i in range(16) if tile[i] is None]
-                if unassigned:
-                    # BFS to check connectivity of the remainder
-                    start_node = unassigned[0]
-                    visited = {start_node}
-                    queue = [start_node]
-                    while queue:
-                        curr = queue.pop(0)
-                        for nb in get_neighbors_4(curr, 4):
-                            if tile[nb] is None and nb not in visited:
-                                visited.add(nb)
-                                queue.append(nb)
-                    
-                    # If the entire remainder is connected, it's a valid imbalanced tile
-                    if len(visited) == len(unassigned):
-                        for i in unassigned:
-                            tile[i] = 1
-                    else:
-                        continue # Contiguity failed, retry
+                if unassigned and is_contiguous(unassigned, 4):
+                    for i in unassigned:
+                        tile[i] = 1
                 else:
-                    continue
+                    continue # Contiguity failed (or nothing left), retry
 
             else:
                 # --- Balanced Competitive Growth ---

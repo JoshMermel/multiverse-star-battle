@@ -23,7 +23,7 @@ from collections import deque, defaultdict
 
 from ortools.sat.python import cp_model
 
-from board_utils import get_neighbors_4, get_neighbors_8, voronoi_flood_fill
+from board_utils import get_neighbors_4, get_neighbors_8, is_contiguous, voronoi_flood_fill
 
 # Repair-loop attempt budget shared by SolutionFirstGenerator and
 # SolutionFirstPairComparator -- each iteration is one diff-guided local
@@ -167,23 +167,6 @@ def _find_adjacent_groups(grid, n, n_tmp, stars_per_unit):
     return None
 
 
-def _is_contiguous(cells, n):
-    """True if all cells in `cells` form a single 4-connected region."""
-    cells_set = set(cells)
-    if len(cells_set) <= 1:
-        return True
-    start = next(iter(cells_set))
-    seen = {start}
-    queue = deque([start])
-    while queue:
-        cur = queue.popleft()
-        for nb in get_neighbors_4(cur, n):
-            if nb in cells_set and nb not in seen:
-                seen.add(nb)
-                queue.append(nb)
-    return seen == cells_set
-
-
 def _check_move(grid, n, cells_to_move, r_src, r_dst):
     """
     Returns True if moving `cells_to_move` from r_src to r_dst would leave
@@ -197,7 +180,7 @@ def _check_move(grid, n, cells_to_move, r_src, r_dst):
     move_set = set(cells_to_move)
     new_src = [i for i in range(n * n) if grid[i] == r_src and i not in move_set]
     new_dst = [i for i in range(n * n) if grid[i] == r_dst] + list(move_set)
-    return _is_contiguous(new_src, n) and _is_contiguous(new_dst, n)
+    return is_contiguous(new_src, n) and is_contiguous(new_dst, n)
 
 
 def orphaned_fragment(grid, region_id, anchor_cells, removed_cell, n):

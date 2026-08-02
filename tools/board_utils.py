@@ -101,6 +101,42 @@ def get_neighbors_8(idx, n):
     return result
 
 
+def connected_components(cells, n, get_neighbors=get_neighbors_4):
+    """
+    Groups `cells` (an iterable of flat cell indices) into connected
+    components under `get_neighbors`'s adjacency (4-connected by default;
+    pass get_neighbors_8 for 8-connected). Returns a list of components,
+    each a list of indices, in arbitrary order.
+    """
+    remaining = set(cells)
+    visited = set()
+    components = []
+    for start in remaining:
+        if start in visited:
+            continue
+        component = []
+        stack = [start]
+        visited.add(start)
+        while stack:
+            idx = stack.pop()
+            component.append(idx)
+            for nb in get_neighbors(idx, n):
+                if nb in remaining and nb not in visited:
+                    visited.add(nb)
+                    stack.append(nb)
+        components.append(component)
+    return components
+
+
+def is_contiguous(cells, n, get_neighbors=get_neighbors_4):
+    """
+    True if `cells` (an iterable of flat cell indices) forms a single
+    connected component under `get_neighbors`'s adjacency (including the
+    trivial cases of 0 or 1 cells).
+    """
+    return len(connected_components(cells, n, get_neighbors)) <= 1
+
+
 def get_board_variants(flat_board, solutions, n):
     """
     Returns a list of 8 (variant_board_string, variant_solution_set) tuples.

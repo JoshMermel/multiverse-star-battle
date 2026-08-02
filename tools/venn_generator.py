@@ -1,4 +1,5 @@
 import random
+from board_utils import connected_components
 from generator import Generator
 
 
@@ -102,33 +103,25 @@ class VennGenerator(Generator):
 
     def _get_components(self, grid):
         """
-        Flood-fill the 2-D grid to count and sequentially relabel all
-        contiguous same-value regions.  Returns (new_grid, count).
-
-        Uses an explicit stack (DFS order) — the traversal order does not
-        affect correctness for flood-fill.
+        Sequentially relabels the 2-D grid so each contiguous same-value
+        region gets its own integer label. Returns (new_grid, count).
         """
         n = self.n
-        visited = set()
-        new_grid = [[-1] * n for _ in range(n)]
+        flat = [grid[r][c] for r in range(n) for c in range(n)]
+
+        by_value = {}
+        for i, v in enumerate(flat):
+            by_value.setdefault(v, []).append(i)
+
+        new_flat = [-1] * (n * n)
         count = 0
-        for r in range(n):
-            for c in range(n):
-                if (r, c) not in visited:
-                    orig = grid[r][c]
-                    stack = [(r, c)]
-                    visited.add((r, c))
-                    while stack:
-                        cr, cc = stack.pop()
-                        new_grid[cr][cc] = count
-                        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                            nr, nc = cr + dr, cc + dc
-                            if (0 <= nr < n and 0 <= nc < n
-                                    and (nr, nc) not in visited
-                                    and grid[nr][nc] == orig):
-                                visited.add((nr, nc))
-                                stack.append((nr, nc))
-                    count += 1
+        for cells in by_value.values():
+            for component in connected_components(cells, n):
+                for idx in component:
+                    new_flat[idx] = count
+                count += 1
+
+        new_grid = [[new_flat[r * n + c] for c in range(n)] for r in range(n)]
         return new_grid, count
 
 
