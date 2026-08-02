@@ -61,7 +61,10 @@ def _build_star_model_multi(grids, n, stars_per_unit=2):
         if i in void_set:
             continue
         for nb in get_neighbors_8(i, n):
-            if nb not in void_set:
+            # nb > i: "x[i] implies not x[nb]" and "x[nb] implies not x[i]"
+            # are the same constraint, so only add each adjacent pair once
+            # (matches random_star_placement's model in this same module).
+            if nb > i and nb not in void_set:
                 model.add_implication(x[i], x[nb].negated())
 
     # One independent "exactly stars_per_unit stars per region" constraint
