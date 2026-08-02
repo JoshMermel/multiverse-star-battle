@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import random
 from board_solver import get_all_solutions
 from board_utils import ALPHABET, VOID_CHAR, pretty_print
+from filter import board_contains_swastika
 
 # Boards with fewer than this many solutions are rejected.
 # Ambiguity across multiple boards is the goal for multiverse puzzles.
@@ -90,20 +91,29 @@ class Generator(ABC):
         cells are passed through unchanged rather than looked up in
         ALPHABET.
 
+        Rejects boards whose region boundaries form a swastika/pinwheel
+        glyph (see filter.py's board_contains_swastika) before doing
+        anything else -- it's a cheap structural check with no solving
+        involved, so it's worth failing fast on before the (usually far
+        more expensive) ambiguity solve below.
+
         Use this as the final return statement in every _try_generate
         implementation.
         """
+        n = int(len(grid) ** 0.5)
+        board_str = "".join(
+            VOID_CHAR if v == VOID_CHAR else ALPHABET[v] for v in grid
+        )
+        if board_contains_swastika(board_str, n):
+            return None
+
         if stars_per_unit is None:
             stars_per_unit = self.stars_per_unit
         if solutions is None:
-            n = int(len(grid) ** 0.5)
             solutions = get_all_solutions(grid, n, stars_per_unit=stars_per_unit)
         if min_solutions is None:
             min_solutions = MIN_SOLUTIONS
         if len(solutions) >= min_solutions:
-            board_str = "".join(
-                VOID_CHAR if v == VOID_CHAR else ALPHABET[v] for v in grid
-            )
             return board_str, solutions
         return None
 

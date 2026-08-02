@@ -24,6 +24,7 @@ from itertools import combinations
 from board_solver import get_solutions_capped, get_solutions_capped_multi
 from board_utils import ALPHABET
 from comparator import Comparator
+from filter import board_contains_swastika
 from solution_first_core import (
     MAX_REPAIR_STEPS,
     random_star_placement,
@@ -96,6 +97,12 @@ class SolutionFirstPairComparator(Comparator):
                 if not self._all_proper_subsets_ambiguous(grids, n, stars_per_unit):
                     return None
                 board_strs = ["".join(ALPHABET[v] for v in grid) for grid in grids]
+                # Cheap structural check, no solving involved -- reject and
+                # let the outer retry loop try a fresh group rather than
+                # ship a board whose region boundaries form a
+                # swastika/pinwheel glyph (see filter.py).
+                if any(board_contains_swastika(b, n) for b in board_strs):
+                    return None
                 return board_strs, intended_solution
 
             other = next(s for s in joint_solutions if s != intended_solution)

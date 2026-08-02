@@ -14,6 +14,7 @@ import pytest
 from collections import deque
 
 from board_utils import ALPHABET, get_neighbors_4
+from filter import board_contains_swastika
 from font_data import FONT_7x5
 from generator import MIN_SOLUTIONS, GenerationError
 from random_generator import RandomGenerator
@@ -157,6 +158,27 @@ def assert_board_symmetric(flat_board, n, gen):
                         f"Structural symmetry broken. Region {region_id} maps "
                         f"to multiple regions at orbit index {orbit_idx}."
                     )
+
+
+# ── Generator._make_result swastika rejection ──────────────────────────────
+
+def test_make_result_rejects_swastika_boundary_pattern():
+    """
+    Generator._make_result should reject (return None) a board whose region
+    boundaries form a swastika/pinwheel glyph (see filter.py), before ever
+    solving it. A board where every cell is its own distinct region is a
+    trivial, deterministic way to construct one: its boundary-edge set is
+    every possible internal edge, a superset of any 4x4 window pattern --
+    including the swastika one -- so it's always flagged, without needing
+    to hand-trace real swastika geometry (confirmed independently via
+    filter.board_contains_swastika directly, not just through this hook).
+    """
+    n = 6
+    grid = list(range(n * n))
+    assert board_contains_swastika("".join(ALPHABET[v] for v in grid), n)
+
+    gen = RandomGenerator(n, stars_per_unit=1)
+    assert gen._make_result(grid) is None
 
 
 # ── RandomGenerator ───────────────────────────────────────────────────────────
