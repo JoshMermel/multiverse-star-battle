@@ -11,3 +11,16 @@ export const HINT_COLOR = Object.freeze({
   TARGET_STAR: 'hint-target-green',
   ERROR: 'hint-error-red',
 });
+
+// A hint sometimes highlights several disjoint "source" groups at once
+// (e.g. "each of these N groups must contain a star"), all playing the same
+// SOURCE role -- cycled through per group so they're visually distinguishable
+// instead of blurring into one indistinct blob of blue. Index 0 intentionally
+// matches HINT_COLOR.SOURCE, so a single-group hint still renders exactly as
+// before.
+export const HINT_SOURCE_VARIANTS = Object.freeze([
+  'hint-source-blue',
+  'hint-source-purple',
+  'hint-source-cyan',
+  'hint-source-pink',
+]);

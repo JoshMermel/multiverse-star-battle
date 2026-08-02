@@ -44,6 +44,14 @@
   --highlight-hint-yellow:    rgba(255, 255, 0,   0.65);
   --highlight-error-star:     #d00;
 
+  /* Extra SOURCE shades for hints that highlight several disjoint groups
+     at once -- see HINT_SOURCE_VARIANTS in constants.js. Chosen to stay
+     clear of every other highlight hue already in use here (yellow/green/
+     red/orange/teal). */
+  --highlight-hint-purple-bg: rgba(155, 89,  234, 0.25);
+  --highlight-hint-cyan-bg:   rgba(6,   182, 212, 0.28);
+  --highlight-hint-pink-bg:   rgba(236, 72,  153, 0.22);
+
   /* Cross-board hover sync — desktop only */
   --highlight-hover-sync-bg:  rgba(0, 180, 160, 0.13);
 }
@@ -83,6 +91,13 @@
   --highlight-hint-green-bg:  rgba(80,  220, 80,  0.30);
   --highlight-hint-yellow:    rgba(255, 255, 80,  0.50);
   --highlight-error-star:     #ff6b6b;
+
+  /* Extra SOURCE shades — see the light-theme block above for why these
+     hues were picked. Boosted opacity to match the rest of this block's
+     higher-contrast-on-dark-backgrounds treatment. */
+  --highlight-hint-purple-bg: rgba(180, 130, 255, 0.35);
+  --highlight-hint-cyan-bg:   rgba(45,  210, 230, 0.35);
+  --highlight-hint-pink-bg:   rgba(255, 110, 180, 0.32);
 
   /* Cross-board hover sync — desktop only */
   --highlight-hover-sync-bg:  rgba(0, 210, 190, 0.18);
@@ -304,6 +319,11 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* Hint highlights — same cascade fix as above */
 .hint-source-blue  { background-color: var(--highlight-hint-blue-bg); }
+/* Extra SOURCE shades, cycled per group when a hint highlights several
+   disjoint groups at once -- see HINT_SOURCE_VARIANTS in constants.js. */
+.hint-source-purple { background-color: var(--highlight-hint-purple-bg); }
+.hint-source-cyan   { background-color: var(--highlight-hint-cyan-bg); }
+.hint-source-pink   { background-color: var(--highlight-hint-pink-bg); }
 .hint-error-red    {
   background-color: var(--highlight-hint-red-bg);
   outline: 2px solid var(--highlight-hint-red-out);

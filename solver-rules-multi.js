@@ -1,4 +1,4 @@
-import { CELL, HINT_COLOR } from './constants.js';
+import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS } from './constants.js';
 
 // 2★+ rule implementations: everything written against an arbitrary
 // this.starsPerGroup rather than assuming exactly 1 star per
@@ -799,9 +799,15 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates.map(({ unit, combo, targets }) => ({
       boardIdx: unit.boardIdx,
       description: combo.length === 1
-        ? `At least one of the two blue-highlighted cells must be a star, and that's this unit's last remaining star -- so every other empty cell here must be a dot.`
-        : `Each of these ${combo.length} blue-highlighted pairs must contain a star, and that already accounts for every star this unit still needs -- so every other empty cell here must be a dot.`,
-      highlights: combo.flat().map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        ? `At least one of the highlighted cells must be a star, and that's this unit's last remaining star -- so every other empty cell here must be a dot.`
+        : `Each of these ${combo.length} differently-colored groups must contain a star, and that already accounts for every star this unit still needs -- so every other empty cell here must be a dot.`,
+      // Each group gets its own color (cycled from HINT_SOURCE_VARIANTS) so
+      // several disjoint groups shown at once are visually distinguishable
+      // instead of blurring into one indistinct blob -- a single group
+      // (the combo.length === 1 case) still just uses plain SOURCE blue.
+      highlights: combo.flatMap((group, i) =>
+        group.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[i % HINT_SOURCE_VARIANTS.length] }))
+      ),
       marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
     }));
   };

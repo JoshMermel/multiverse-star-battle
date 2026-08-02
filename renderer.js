@@ -338,9 +338,12 @@ export function applyRenderer(GameClass) {
 
   // Clear active hint highlights.
   p.clearHintUI = function () {
-    const { HINT_COLOR } = this._constants;
+    const { HINT_COLOR, HINT_SOURCE_VARIANTS } = this._constants;
     this._allCells.forEach(cell => {
-      cell.classList.remove(HINT_COLOR.SOURCE, HINT_COLOR.TARGET, HINT_COLOR.TARGET_STAR, HINT_COLOR.ERROR);
+      cell.classList.remove(
+        HINT_COLOR.SOURCE, HINT_COLOR.TARGET, HINT_COLOR.TARGET_STAR, HINT_COLOR.ERROR,
+        ...HINT_SOURCE_VARIANTS
+      );
     });
     const swapBtn = document.getElementById('board-swap-btn');
     if (swapBtn) swapBtn.classList.remove('board-tab--hint-flag');
