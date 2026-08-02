@@ -11,6 +11,7 @@ Shared board geometry utilities for Multiverse Star Battle:
 """
 
 import random
+import re
 import string
 from collections import Counter, deque
 from functools import lru_cache
@@ -305,3 +306,13 @@ def voronoi_flood_fill(grid, n, size_variation=0.0):
                 cell_claimants[nb].add(chosen)
 
     return grid if all(v is not None for v in grid) else None
+
+
+def board_columns(fieldnames):
+    """
+    Returns the board_N column names present in `fieldnames` (a row dict's
+    keys or a CSV fieldnames list), sorted numerically by N.
+    """
+    cols = [f for f in fieldnames if re.fullmatch(r'board_\d+', f)]
+    cols.sort(key=lambda f: int(f.split('_')[1]))
+    return cols

@@ -41,9 +41,10 @@ gen_puzzles.py    CLI
 import argparse
 import csv
 import os
-import re
 import statistics
 import random
+
+from board_utils import board_columns
 
 # Board generators
 from letter_generator import LetterGenerator
@@ -129,16 +130,6 @@ STARS_CAPABLE_MODES = {
 MIN_N_FOR_STARS = {
     2: 9,
 }
-
-
-def _board_columns(fieldnames):
-    """
-    Returns the board_N column names present in `fieldnames` (a row dict's
-    keys or a CSV fieldnames list), sorted numerically by N.
-    """
-    cols = [f for f in fieldnames if re.fullmatch(r'board_\d+', f)]
-    cols.sort(key=lambda f: int(f.split('_')[1]))
-    return cols
 
 
 def _scored_output_path(input_path, explicit_output=None):
@@ -232,7 +223,7 @@ def run_scoring(args):
     with open(input_file, mode='r') as f:
         reader = csv.DictReader(f)
         original_fieldnames = reader.fieldnames or []
-        board_cols = _board_columns(original_fieldnames)
+        board_cols = board_columns(original_fieldnames)
         if not board_cols:
             print("Error: no board_N columns found in {0}.".format(input_file))
             return
