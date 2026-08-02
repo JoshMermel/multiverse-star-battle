@@ -1,4 +1,4 @@
-import { CELL } from './constants.js';
+import { CELL, HINT_COLOR } from './constants.js';
 
 // Rules referenced, by the exact same underlying function, in both the
 // single-star and multi-star rule lists: error/already-solved checks,
@@ -18,7 +18,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
       // hasn't been reconciled with voidIndices for this cell.
       const isWrong = (this.game.state[i] === CELL.STAR && (this.game.solution[i] !== 'x' || this.voidIndices.has(i)))
         || (this.game.state[i] === CELL.DOT  && this.game.solution[i] === 'x' && !this.voidIndices.has(i));
-      if (isWrong) highlights.push({ idx: i, color: 'hint-error-red' });
+      if (isWrong) highlights.push({ idx: i, color: HINT_COLOR.ERROR });
     }
 
     if (highlights.length > 0) {
@@ -73,8 +73,8 @@ export function applyCommonSolverRules(PuzzleSolver) {
         description,
         highlights: unit.indices
           .filter(i => !empty.includes(i) && !stars.includes(i))
-          .map(idx => ({ idx, color: 'hint-source-blue' })),
-         marks: empty.map(idx => ({ idx, color: 'hint-target-green' })),
+          .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+         marks: empty.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
          boardIdx: unit.boardIdx
       };
     });
@@ -102,8 +102,8 @@ export function applyCommonSolverRules(PuzzleSolver) {
       const empty = unit.indices.filter(idx => this.vState(idx) === CELL.NONE);
       return {
         description: typeDescs[key],
-        highlights: stars.map(idx => ({ idx, color: 'hint-source-blue' })),
-        marks: empty.map(idx => ({ idx, color: 'hint-target-yellow' })),
+        highlights: stars.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        marks: empty.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         boardIdx: unit.boardIdx ?? undefined
       };
     });
@@ -116,14 +116,14 @@ export function applyCommonSolverRules(PuzzleSolver) {
       if (this.vState(i) !== CELL.STAR) continue;
       const marks = this.getNeighbors(i)
         .filter(nb => this.vState(nb) === CELL.NONE)
-        .map(nb => ({ idx: nb, color: 'hint-target-yellow' }));
+        .map(nb => ({ idx: nb, color: HINT_COLOR.TARGET }));
       if (marks.length > 0) candidates.push({ i, marks });
     }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.i - b.i);
     return candidates.map(({ i, marks }) => ({
       description: "Stars cannot touch each other.",
-      highlights: [{ idx: i, color: 'hint-source-blue' }],
+      highlights: [{ idx: i, color: HINT_COLOR.SOURCE }],
       marks,
       boardIdx: undefined
     }));
@@ -200,7 +200,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
     return candidates.map(idx => ({
       description: "No logical hint was found. Here's a nudge from the solution.",
       highlights: [],
-      marks: [{ idx, color: 'hint-target-yellow' }],
+      marks: [{ idx, color: HINT_COLOR.TARGET }],
       boardIdx: undefined
     }));
   };
@@ -233,7 +233,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
       boardIdx: undefined,
       description: `Placing a star here would make the puzzle unsolvable. Seeing why requires some lookahead.`,
       highlights: [],
-      marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
+      marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }]
     }));
   };
 }

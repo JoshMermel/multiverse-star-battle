@@ -1,4 +1,4 @@
-import { CELL } from './constants.js';
+import { CELL, HINT_COLOR } from './constants.js';
 import { getNeighbors8, cellsAdjacent, rowIndices, colIndices } from './geometry.js';
 
 // Core solving engine: precomputation, generic unit/board helpers, the
@@ -324,7 +324,7 @@ export class PuzzleSolver {
     const targetSet = new Set(targets);
     const sourceHighlights = sourceRegs.flatMap(r =>
       r.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-    ).map(idx => ({ idx, color: 'hint-source-blue' }));
+    ).map(idx => ({ idx, color: HINT_COLOR.SOURCE }));
 
     const sourcePhrase = sourceRegs.length === 1 ? "One region" : `A group of ${sourceRegs.length} regions`;
     const targetPhrase = targetRegs.length === 1 ? "another region" : `a group of ${targetRegs.length} other regions`;
@@ -335,7 +335,7 @@ export class PuzzleSolver {
       boardIdx: undefined,
       description,
       highlights: sourceHighlights,
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
     };
   }
 
@@ -344,13 +344,13 @@ export class PuzzleSolver {
 
     const sourceHighlights = combo.flatMap(r =>
       r.availableIdxs.filter(idx => !targetSet.has(idx))
-    ).map(idx => ({ idx, color: 'hint-source-blue' }));
+    ).map(idx => ({ idx, color: HINT_COLOR.SOURCE }));
 
     return {
       boardIdx: undefined,
       description: `Cross-board: These ${combo.length} regions must place their stars in the same ${combo.length} ${axis.toLowerCase()}s.`,
       highlights: sourceHighlights,
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
     };
   }
 

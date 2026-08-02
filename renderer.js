@@ -307,8 +307,9 @@ export function applyRenderer(GameClass) {
 
   // Clear active hint highlights.
   p.clearHintUI = function () {
+    const { HINT_COLOR } = this._constants;
     this._allCells.forEach(cell => {
-      cell.classList.remove('hint-source-blue', 'hint-target-yellow', 'hint-target-green', 'hint-error-red');
+      cell.classList.remove(HINT_COLOR.SOURCE, HINT_COLOR.TARGET, HINT_COLOR.TARGET_STAR, HINT_COLOR.ERROR);
     });
   };
 

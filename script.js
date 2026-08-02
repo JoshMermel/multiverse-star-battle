@@ -1,5 +1,5 @@
 import { PuzzleSolver } from './solver.js';
-import { CELL } from './constants.js';
+import { CELL, HINT_COLOR } from './constants.js';
 import { storageManager } from './storage.js';
 import { applyRenderer } from './renderer.js';
 import { applyInput } from './input.js';
@@ -19,7 +19,7 @@ class StarBattleGame {
   constructor() {
     // Expose singletons to renderer and input modules to avoid circular imports.
     this._deps = { storageManager };
-    this._constants = { CELL };
+    this._constants = { CELL, HINT_COLOR };
 
     this.puzzleCache = new Map();
     this.categories = [];

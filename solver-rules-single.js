@@ -1,4 +1,4 @@
-import { CELL } from './constants.js';
+import { CELL, HINT_COLOR } from './constants.js';
 import { cellsSee } from './geometry.js';
 
 // 1★-only rule implementations: rules that assume exactly one star per
@@ -25,7 +25,7 @@ export function applySingleStarRules(PuzzleSolver) {
     candidates.sort((a, b) => a.indices[0] - b.indices[0]);
     return candidates.map(region => ({
       description: `Every region must contain a star.`,
-      highlights: [{ idx: region.indices[0], color: 'hint-target-green' }],
+      highlights: [{ idx: region.indices[0], color: HINT_COLOR.TARGET_STAR }],
       marks: [],
       boardIdx: region.boardIdx
     }));
@@ -80,10 +80,10 @@ export function applySingleStarRules(PuzzleSolver) {
     return candidates.map(({ idxA, idxB, targets, boardIdx }) => ({
       description: "A star must be in the blue domino.",
       highlights: [
-        { idx: idxA, color: 'hint-source-blue' },
-        { idx: idxB, color: 'hint-source-blue' }
+        { idx: idxA, color: HINT_COLOR.SOURCE },
+        { idx: idxB, color: HINT_COLOR.SOURCE }
       ],
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
       boardIdx
     }));
   };
@@ -124,8 +124,8 @@ export function applySingleStarRules(PuzzleSolver) {
       description: `All empty cells in ${unitsPhrase} are covered by the blue regions.`,
       highlights: coveringUnsolved.flatMap(r =>
         r.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-      ).map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
+      ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
     };
   };
 
@@ -163,8 +163,8 @@ export function applySingleStarRules(PuzzleSolver) {
       description: `The star for ${unitsPhrase} must fall in one of the blue regions.`,
       highlights: pinnedRegs.flatMap(r =>
         r.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-      ).map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
+      ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
     };
   };
 
@@ -243,7 +243,7 @@ export function applySingleStarRules(PuzzleSolver) {
       for (let i = 0; i < n * n; i++) {
         if (this.vState(i) !== CELL.NONE || unit.indices.includes(i)) continue;
         const canSeeAll = candidates.every(c => cellsSee(i, c, n));
-        if (canSeeAll) targets.push({ idx: i, color: 'hint-target-yellow' });
+        if (canSeeAll) targets.push({ idx: i, color: HINT_COLOR.TARGET });
       }
 
       if (targets.length > 0) hintCandidates.push({ unit, candidates, targets });
@@ -253,7 +253,7 @@ export function applySingleStarRules(PuzzleSolver) {
     return hintCandidates.map(({ unit, candidates, targets }) => ({
       boardIdx: unit.boardIdx,
       description: `The blue cells must contain a star.`,
-      highlights: candidates.map(i => ({ idx: i, color: 'hint-source-blue' })),
+      highlights: candidates.map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
       marks: targets,
     }));
   };
@@ -332,8 +332,8 @@ export function applySingleStarRules(PuzzleSolver) {
     return {
       boardIdx: undefined,
       description: `All empty cells in ${unitsPhrase} fall within ${requiredCount} ${otherPhrase}, so the rest of ${requiredCount === 1 ? 'that' : 'those'} ${otherPhrase} must be dots.`,
-      highlights: availInUnits.filter(i => !targetSet.has(i)).map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
+      highlights: availInUnits.filter(i => !targetSet.has(i)).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
     };
   };
 
@@ -458,10 +458,10 @@ export function applySingleStarRules(PuzzleSolver) {
       description: `These two regions overlap. Any star placed in a non-shared cell would see all the non-shared cells of the other region, making that region unsolvable. Both stars must land in the shared cells.`,
       highlights: shared
         .filter(i => this.vState(i) === CELL.NONE)
-        .map(i => ({ idx: i, color: 'hint-source-blue' })),
+        .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
       marks: [
-        ...onlyA.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
-        ...onlyB.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: 'hint-target-yellow' })),
+        ...onlyA.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET })),
+        ...onlyB.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET })),
       ]
     }));
   };
@@ -533,8 +533,8 @@ export function applySingleStarRules(PuzzleSolver) {
     return candidates.map(({ testIdx, broken, boardIdx }) => ({
       boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
       description: `The blue cells must contain a star. This is impossible if the circled cell holds a star.`,
-      highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
+      highlights: broken.indices.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }]
     }));
   };
 
@@ -563,7 +563,7 @@ export function applySingleStarRules(PuzzleSolver) {
         cellsSee(i, mirror, n) ||
         cellToRegionMaps.some(map => map[i] && map[i] === map[mirror]);
 
-      if (seesOwnMirror) marks.push({ idx: i, color: 'hint-target-yellow' });
+      if (seesOwnMirror) marks.push({ idx: i, color: HINT_COLOR.TARGET });
     }
 
     if (marks.length === 0) return null;
@@ -660,11 +660,11 @@ export function applySingleStarRules(PuzzleSolver) {
       if (diagEmpties.length === 1) {
         const needStar = (diagStars % 2) !== (n % 2);
         const idx   = diagEmpties[0];
-        const color = needStar ? 'hint-target-green' : 'hint-target-yellow';
+        const color = needStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET;
         results.push({
           description: `${reason}, so by parity the diagonal must have an ${parity} number of stars — this cell must be a ${needStar ? 'star' : 'dot'}.`,
           highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
-            .map(i => ({ idx: i, color: 'hint-source-blue' })),
+            .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
           marks: [{ idx, color }],
           boardIdx: undefined
         });
@@ -682,8 +682,8 @@ export function applySingleStarRules(PuzzleSolver) {
         results.push({
           description: `${reason}, so by parity the diagonal must have an ${parity} number of stars — the remaining diagonal cells must all be dots.`,
           highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
-            .map(i => ({ idx: i, color: 'hint-source-blue' })),
-          marks: diagEmpties.map(i => ({ idx: i, color: 'hint-target-yellow' })),
+            .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
+          marks: diagEmpties.map(i => ({ idx: i, color: HINT_COLOR.TARGET })),
           boardIdx: undefined
         });
       }
@@ -710,9 +710,9 @@ export function applySingleStarRules(PuzzleSolver) {
 
       const mirrorState = this.vState(mirror);
       if (mirrorState === CELL.STAR) {
-        starMarks.push({ idx: i, color: 'hint-target-green' });
+        starMarks.push({ idx: i, color: HINT_COLOR.TARGET_STAR });
       } else if (mirrorState === CELL.DOT) {
-        dotMarks.push({ idx: i, color: 'hint-target-yellow' });
+        dotMarks.push({ idx: i, color: HINT_COLOR.TARGET });
       }
     }
 
@@ -723,7 +723,7 @@ export function applySingleStarRules(PuzzleSolver) {
     return {
       description: `${description} You can copy ${filling} across by symmetry.`,
       highlights: marks.map(({ idx }) => ({
-        idx: mirrorFn(idx), color: 'hint-source-blue'
+        idx: mirrorFn(idx), color: HINT_COLOR.SOURCE
       })),
       marks,
       boardIdx: undefined

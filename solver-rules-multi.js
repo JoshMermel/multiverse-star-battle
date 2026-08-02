@@ -1,4 +1,4 @@
-import { CELL } from './constants.js';
+import { CELL, HINT_COLOR } from './constants.js';
 
 // 2★+ rule implementations: everything written against an arbitrary
 // this.starsPerGroup rather than assuming exactly 1 star per
@@ -59,8 +59,8 @@ export function applyMultiStarRules(PuzzleSolver) {
         description: `Wherever this ${unitType}'s remaining star(s) end up${caveat}, one will always touch the marked cell(s), so they must be dots.`,
         highlights: unit.indices
           .filter(i => this.vState(i) === CELL.NONE)
-          .map(idx => ({ idx, color: 'hint-source-blue' })),
-        marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
+          .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         boardIdx: unit.boardIdx
       };
     });
@@ -123,8 +123,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       description: `Every valid way to place this ${this._unitKind(unit)}'s remaining star(s) completely fills up this ${this._unitKind(other)} too, so the rest of that ${this._unitKind(other)} must be dots.`,
       highlights: unit.indices
         .filter(i => this.vState(i) === CELL.NONE)
-        .map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
+        .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
       boardIdx: unit.boardIdx ?? other.boardIdx
     }));
   };
@@ -201,8 +201,8 @@ export function applyMultiStarRules(PuzzleSolver) {
           description: `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it must be a star.`,
           highlights: unit.indices
             .filter(i => this.vState(i) === CELL.NONE && !forcedStars.includes(i))
-            .map(idx => ({ idx, color: 'hint-source-blue' })),
-          marks: forcedStars.map(idx => ({ idx, color: 'hint-target-green' })),
+            .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
           boardIdx: unit.boardIdx
         });
       }
@@ -211,8 +211,8 @@ export function applyMultiStarRules(PuzzleSolver) {
           description: `No valid way to place this ${unitType}'s ${starsWord}${caveat} uses the marked cell, so it must be a dot.`,
           highlights: unit.indices
             .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
-            .map(idx => ({ idx, color: 'hint-source-blue' })),
-          marks: forcedDots.map(idx => ({ idx, color: 'hint-target-yellow' })),
+            .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
           boardIdx: unit.boardIdx
         });
       }
@@ -265,8 +265,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       description: `The blue region(s) still need exactly ${starsPhrase} in total — exactly what's left for ${unitsPhrase} — so all of it must land inside, and the rest of those regions must be dots.`,
       highlights: touchingRegs.flatMap(({ region }) =>
         region.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-      ).map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
+      ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
     };
   };
 
@@ -309,8 +309,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       description: `${unitsPhrase[0].toUpperCase()}${unitsPhrase.slice(1)} still need exactly ${starsPhrase} in total, which is exactly what's left in the blue region(s) — so the rest of ${unitsPhrase} must be dots.`,
       highlights: pinnedRegs.flatMap(({ region }) =>
         region.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-      ).map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' }))
+      ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
     };
   };
 
@@ -403,8 +403,8 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates.map(({ testIdx, broken, boardIdx }) => ({
       boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
       description: `The blue cells can no longer reach their required star count if the circled cell holds a star.`,
-      highlights: broken.indices.map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: [{ idx: testIdx, color: 'hint-target-yellow' }]
+      highlights: broken.indices.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }]
     }));
   };
 
@@ -631,9 +631,9 @@ export function applyMultiStarRules(PuzzleSolver) {
               directDotHints.push({
                 boardIdx: bIdx,
                 description: `This region still needs ${k} star${k === 1 ? '' : 's'}, but the small cluster outside this ${axisWord} (blue) can hold at most ${m}, so its portion in this ${axisWord} (blue) must supply the rest -- leaving no room for stars anywhere else in this ${axisWord}.`,
-                highlights: inLine.map(idx => ({ idx, color: 'hint-source-blue' }))
-                  .concat(remainder.map(idx => ({ idx, color: 'hint-source-blue' }))),
-                marks: restOfLine.map(idx => ({ idx, color: 'hint-target-yellow' })),
+                highlights: inLine.map(idx => ({ idx, color: HINT_COLOR.SOURCE }))
+                  .concat(remainder.map(idx => ({ idx, color: HINT_COLOR.SOURCE }))),
+                marks: restOfLine.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
               });
             } else if (bound === 1) {
               const gkey = this._groupKey(restOfLine);
@@ -729,8 +729,8 @@ export function applyMultiStarRules(PuzzleSolver) {
             hints.push({
               boardIdx: unit.boardIdx,
               description: `At most one of the two blue-highlighted candidates can be a star (based on other constraints elsewhere on the board), so the remaining candidate must be a star.`,
-              highlights: [a, b].map(idx => ({ idx, color: 'hint-source-blue' })),
-              marks: [{ idx: rem, color: 'hint-target-green' }],
+              highlights: [a, b].map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+              marks: [{ idx: rem, color: HINT_COLOR.TARGET_STAR }],
             });
           }
         }
@@ -801,8 +801,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       description: combo.length === 1
         ? `At least one of the two blue-highlighted cells must be a star, and that's this unit's last remaining star -- so every other empty cell here must be a dot.`
         : `Each of these ${combo.length} blue-highlighted pairs must contain a star, and that already accounts for every star this unit still needs -- so every other empty cell here must be a dot.`,
-      highlights: combo.flat().map(idx => ({ idx, color: 'hint-source-blue' })),
-      marks: targets.map(idx => ({ idx, color: 'hint-target-yellow' })),
+      highlights: combo.flat().map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
     }));
   };
 
