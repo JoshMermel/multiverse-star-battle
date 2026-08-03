@@ -152,6 +152,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_region_sync_multi_2_disjoint,         100, "Expert"),
             (self.rule_witness_at_most_one_forcing_strong,        101, "Expert"),
             (self.rule_witness_disjoint_quota_fill_strong,        102, "Expert"),
+            # Cross-board N-regions-pin-N-rows/cols: generalizes the 1★-only
+            # rule_2/3_region_pinned_crossboard_rows/cols to any
+            # stars_per_unit. Always genuinely cross-board (see
+            # _rule_crossboard_n_region_pinned_multi's docstring).
+            (self.rule_crossboard_n_region_pinned_multi_2_rows,   103, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_2_cols,   104, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_3_rows,   105, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_3_cols,   106, "Expert"),
             (self.rule_region_subset_sync_3,                      120, "Expert"),
             (self.rule_region_subset_sync_4,                      150, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),

@@ -476,6 +476,107 @@ class MultiStarRules:
                         return changes
         return 0
 
+    # -- Cross-board N-regions-pin-N-rows/cols (2★+) ---------------------------
+    #
+    # Generalizes rule_2/3_region_pinned_crossboard_rows/cols (1★-only,
+    # rules_single_star.py) to any stars_per_unit. The 1★ version matches
+    # exactly N regions (each implicitly needing exactly 1 star, since 1★
+    # regions always need 1) whose available cells all fall in the same N
+    # adjacent rows/cols -- which for 1★ automatically fills that window's
+    # entire quota (N rows x 1 star/row = N). Once a region can need more
+    # than one star, "N regions confined to N rows" no longer implies "these
+    # regions supply the window's entire quota" (a window of N rows needs
+    # N * stars_per_unit stars, not N) -- see _apply_pin_rule_multi's
+    # required_count for the same distinction. So this pools every trapped
+    # region (any board) in the window and compares their summed remaining
+    # need to the window's actual required_count, not to n. Genuinely
+    # cross-board only: an all-same-board trapped set would already have
+    # been caught earlier (Medium/Hard) by rule_unit_region_sync_multi_2/_3
+    # (_apply_pin_rule_multi's own per-board Case (b)), so this requires the
+    # trapped set to span at least 2 distinct boards.
+
+    def rule_crossboard_n_region_pinned_multi_2_rows(self, p):
+        return self._rule_crossboard_n_region_pinned_multi(p, n=2, axis="row")
+
+    def rule_crossboard_n_region_pinned_multi_2_cols(self, p):
+        return self._rule_crossboard_n_region_pinned_multi(p, n=2, axis="col")
+
+    def rule_crossboard_n_region_pinned_multi_3_rows(self, p):
+        return self._rule_crossboard_n_region_pinned_multi(p, n=3, axis="row")
+
+    def rule_crossboard_n_region_pinned_multi_3_cols(self, p):
+        return self._rule_crossboard_n_region_pinned_multi(p, n=3, axis="col")
+
+    def _rule_crossboard_n_region_pinned_multi(self, p, n, axis):
+        """
+        MATCH: within a window of n adjacent rows/cols, every region (pooled
+        across ALL boards) whose open cells are entirely confined to that
+        window ("trapped") jointly needs exactly as many stars as the
+        window itself still needs (n * stars_per_unit, minus stars already
+        placed in the window) -- and that trapped set spans at least 2
+        different boards. (A trapped set confined to one board is already
+        covered by rule_unit_region_sync_multi_2/_3's "trapped" case, via
+        _apply_pin_rule_multi -- this rule only fires on the genuinely
+        cross-board case.)
+        ACTION: every other open cell in the window is a dot.
+
+        Mirrors _apply_pin_rule_multi's Case (b), generalized to pool
+        regions from every board instead of one board at a time. Requires
+        the trapped regions' open cells to be pairwise disjoint: since
+        boards share one physical grid, a region on board A and a region on
+        board B can include the same cell, and summing "remaining" across
+        overlapping regions would overcount how many distinct stars are
+        actually still needed.
+        """
+        units = p.row_indices if axis == "row" else p.col_indices
+        for start_u in range(p.n - n + 1):
+            u_range = range(start_u, start_u + n)
+            window_idxs = set().union(*(units[u] for u in u_range))
+
+            stars_in_window = sum(1 for i in window_idxs if p.grid[i] == "x")
+            required_count = n * p.stars_per_unit - stars_in_window
+            if required_count <= 0:
+                continue
+
+            needing = [
+                entry
+                for b_idx in range(p.n_boards)
+                for entry in p.get_regions_needing_stars(b_idx)
+            ]
+            trapped = [
+                entry for entry in needing
+                if (avail := [i for i in entry["unit"]["indices"] if p.grid[i] is None])
+                and all(i in window_idxs for i in avail)
+            ]
+            if not trapped:
+                continue
+
+            boards_touched = {e["unit"]["board_idx"] for e in trapped}
+            if len(boards_touched) < 2:
+                continue  # same-board only: already covered elsewhere
+
+            idx_sets = [set(e["unit"]["indices"]) for e in trapped]
+            if not self._are_disjoint(idx_sets):
+                continue
+
+            total_trapped_needed = sum(e["remaining"] for e in trapped)
+            if total_trapped_needed != required_count:
+                continue
+
+            reg_union = set().union(*idx_sets)
+            labels = ", ".join(e["unit"]["label"] for e in trapped)
+            changes = sum(
+                p.validate_and_set(
+                    idx, ".",
+                    f"Cross-Board {axis.capitalize()} Pin Multi ({labels})",
+                    self.verbose)
+                for idx in window_idxs
+                if idx not in reg_union and p.grid[idx] is None
+            )
+            if changes > 0:
+                return changes
+        return 0
+
     def _rule_unit_region_sync_multi(self, p, n):
         """
         Generalized N-adjacent-rows/cols <-> region sync, for units and

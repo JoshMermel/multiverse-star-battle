@@ -189,6 +189,77 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates;
   };
 
+  // Generalizes hintCrossBoardRegionPinned (1★-only, solver-rules-single.js)
+  // to any starsPerGroup. The 1★ version matches exactly N regions (each
+  // implicitly needing exactly 1 star, since 1★ regions always need 1)
+  // whose available cells all fall in the same N adjacent rows/cols --
+  // which for 1★ automatically fills that window's entire quota (N rows x
+  // 1 star/row = N). Once a region can need more than one star, "N regions
+  // confined to N rows" no longer implies "these regions supply the
+  // window's entire quota" (a window of N rows needs N * starsPerGroup
+  // stars, not N) -- see _hintMultiRegionsTrappedInUnits's requiredCount
+  // for the same distinction. So this pools every trapped region (any
+  // board) in the window and compares their summed remaining need to the
+  // window's actual requiredCount, not to N. Genuinely cross-board only:
+  // an all-same-board trapped set would already have been caught earlier
+  // (Medium/Hard) by hintUnitRegionSyncMulti(2/3)'s "trapped" case
+  // (_hintMultiRegionsTrappedInUnits's own per-board version), so this
+  // requires the trapped set to span at least 2 distinct boards. Requires
+  // the trapped regions' open cells to be pairwise disjoint: since boards
+  // share one physical grid, a region on board A and a region on board B
+  // can include the same cell, and summing "remaining" across overlapping
+  // regions would overcount how many distinct stars are actually still
+  // needed. Reuses formatCrossBoardHint for consistent hint rendering
+  // (including its per-region board coloring).
+  p.hintCrossBoardRegionPinnedMulti = function (N, axis = "Row") {
+    const n = this.n;
+    const axisIndices = this.axisIndices[axis];
+    const needing = this.boardIndices.flatMap(bIdx => this.getRegionsNeedingStars(bIdx));
+
+    const candidates = [];
+    for (let startU = 0; startU <= n - N; startU++) {
+      const windowIndices = Array.from({ length: N }, (_, i) => axisIndices[startU + i]);
+      const windowSet = new Set(windowIndices.flat());
+      const allIndices = windowIndices.flat();
+
+      const starsInWindow = allIndices.filter(i => this.vState(i) === CELL.STAR).length;
+      const requiredCount = N * this.starsPerGroup - starsInWindow;
+      if (requiredCount <= 0) continue;
+
+      const trapped = needing.filter(({ region }) => {
+        const regAvail = region.indices.filter(i => this.vState(i) === CELL.NONE);
+        return regAvail.length > 0 && regAvail.every(idx => windowSet.has(idx));
+      });
+      if (trapped.length === 0) continue;
+
+      const boardsTouched = new Set(trapped.map(e => e.region.boardIdx));
+      if (boardsTouched.size < 2) continue; // same-board only: already covered elsewhere
+
+      const idxSets = trapped.map(e => new Set(e.region.indices));
+      if (!this._areDisjoint(idxSets)) continue;
+
+      const totalTrappedNeeded = trapped.reduce((sum, e) => sum + e.remaining, 0);
+      if (totalTrappedNeeded !== requiredCount) continue;
+
+      const regUnion = new Set(trapped.flatMap(e => Array.from(e.region.indices)));
+      const targets = allIndices.filter(idx => this.vState(idx) === CELL.NONE && !regUnion.has(idx));
+      if (targets.length === 0) continue;
+
+      const uList = Array.from({ length: N }, (_, i) => startU + i);
+
+      // Match formatCrossBoardHint's expected combo entry shape.
+      const comboForFormat = trapped.map(e => ({
+        availableIdxs: e.region.indices.filter(i => this.vState(i) === CELL.NONE),
+        original: e.region
+      }));
+      candidates.push({ combo: comboForFormat, targets, uList });
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
+    return candidates.map(({ combo, targets, uList }) => this.formatCrossBoardHint(combo, targets, axis, uList));
+  };
+
   p.hintUnitPlacementForced = function (level = 'strong', filterCondition = null) {
     const candidates = [];
     for (const unit of this.units) {
@@ -971,6 +1042,13 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
       { key: 'witnessAtMostOneForcingStrong',  fn: () => this.hintWitnessAtMostOneForcing('strong') },
       { key: 'witnessDisjointQuotaFillStrong', fn: () => this.hintWitnessDisjointQuotaFill('strong') },
+      // Cross-board N-regions-pin-N-rows/cols: generalizes the 1★-only
+      // hintCrossBoardRegionPinned to any starsPerGroup. Always genuinely
+      // cross-board (see hintCrossBoardRegionPinnedMulti's comment).
+      { key: 'crossBoardPinnedMulti2Row',      fn: () => this.hintCrossBoardRegionPinnedMulti(2, "Row") },
+      { key: 'crossBoardPinnedMulti2Col',      fn: () => this.hintCrossBoardRegionPinnedMulti(2, "Column") },
+      { key: 'crossBoardPinnedMulti3Row',      fn: () => this.hintCrossBoardRegionPinnedMulti(3, "Row") },
+      { key: 'crossBoardPinnedMulti3Col',      fn: () => this.hintCrossBoardRegionPinnedMulti(3, "Column") },
       { key: 'regionSubsetSync3',              fn: () => this.hintRegionSubsetSync(3) },
       { key: 'regionSubsetSync4',              fn: () => this.hintRegionSubsetSync(4) },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
