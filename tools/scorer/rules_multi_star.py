@@ -688,6 +688,24 @@ class MultiStarRules:
     # Sources 1 and 2 are single geometric hops a player can check by eye --
     # feed the Hard-tier rule_clump_* rules below.
     #
+    # WORKLIST (3★+, not yet implemented): Source 1 only ever registers
+    # q == 1 / bound == 1 facts -- it computes (k - m) (the region's
+    # in-line lower bound) and, today, does nothing unless that's exactly
+    # 1, and separately assumes the remainder's upper bound m is a plain
+    # "at most 1" fact. For 3★+ puzzles k and m can be >= 2, so a
+    # (k - m) >= 2 in-line lower bound or an m >= 2 remainder upper bound
+    # is real, useful information that's currently dropped on the floor.
+    # Consuming it needs the "at least K" / "at most K" (K > 1)
+    # generalizations of _apply_disjoint_quota_fill / _apply_at_most_one_forcing
+    # below -- i.e. "K disjoint at-least-K' groups fill more of the quota
+    # than 1-star groups can" and "N candidates with a known at-most-K
+    # subgroup forces the rest" -- plus a matching generalization of
+    # _find_disjoint_group_combo, which today assumes every group in a
+    # combo contributes exactly 1 star. Flagged as a bigger lift than the
+    # other items in this pass (new group semantics threaded through three
+    # call sites, not just a level split), so deliberately deferred rather
+    # than folded in here.
+    #
     # Source 3 (witness projection): a pair {i, j} is at-least-1 when no
     # valid completion of some unit leaves both empty. Pick a cell forced to
     # a dot if i were starred, and a different cell forced to a dot if j
