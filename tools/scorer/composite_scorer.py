@@ -130,6 +130,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_clump_direct_dots,                         86, "Hard"),
             (self.rule_clump_at_most_one_forcing,                 87, "Hard"),
             (self.rule_clump_disjoint_quota_fill,                 88, "Hard"),
+            # Witness (source 3, two-hop chain) reasoning restricted to one
+            # board's regions at a time -- meaningfully harder than the
+            # single-geometric-hop clump rules above, but still doesn't
+            # require combining both boards, so it stays at Hard rather
+            # than Expert. See rule_witness_*_strong below for the
+            # cross-board version.
+            (self.rule_witness_at_most_one_forcing_intermediate,  89, "Hard"),
+            (self.rule_witness_disjoint_quota_fill_intermediate,  90, "Hard"),
 
             # -- Expert -------------------------------------------------------
             # The full (cross-board) strong variants: a deduction here may
@@ -142,8 +150,8 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_external_dot_from_placements_strong,       98, "Expert"),
             (self.rule_unit_completion_satisfies_other_unit_strong, 99, "Expert"),
             (self.rule_unit_region_sync_multi_2_disjoint,         100, "Expert"),
-            (self.rule_witness_at_most_one_forcing,               101, "Expert"),
-            (self.rule_witness_disjoint_quota_fill,               102, "Expert"),
+            (self.rule_witness_at_most_one_forcing_strong,        101, "Expert"),
+            (self.rule_witness_disjoint_quota_fill_strong,        102, "Expert"),
             (self.rule_region_subset_sync_3,                      120, "Expert"),
             (self.rule_region_subset_sync_4,                      150, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),

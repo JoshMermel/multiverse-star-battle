@@ -487,21 +487,30 @@ export function applyMultiStarRules(PuzzleSolver) {
     return [...indices].sort((a, b) => a - b).join(',');
   };
 
-  // Source 3's at-least-1 half.
-  p._findAtLeastOnePairs = function () {
-    return this._cachedOnState('atLeastOnePairs', () => this._findAtLeastOnePairsImpl());
+  // Source 3's at-least-1 half. level is 'intermediate' or 'strong' (no
+  // 'weak' -- same reasoning as hintUnitCompletionSatisfiesOtherUnit: a
+  // capacity-free version wouldn't reliably prove anything). See
+  // _unitCompletionsByLevel: 'intermediate' only ever needs one board's
+  // regions to reach its conclusion; 'strong' may need both.
+  // (_cellsForcedToDotIfStarred, the at-most-1 half below, is
+  // deliberately NOT level-gated: it's a simple one-step consequence
+  // check that's equally valid whichever board(s) it happens to touch,
+  // not a capacity-combining argument.)
+  p._findAtLeastOnePairs = function (level) {
+    return this._cachedOnState(`atLeastOnePairs_${level}`, () => this._findAtLeastOnePairsImpl(level));
   };
 
-  p._findAtLeastOnePairsImpl = function () {
+  p._findAtLeastOnePairsImpl = function (level) {
     const pairs = new Map(); // key -> [i, j]
     for (const unit of this.units) {
-      const combos = this._enumerateUnitCompletions(unit, true);
-      if (!combos || combos.length === 0) continue;
+      const completionSets = this._unitCompletionsByLevel(unit, level)
+        .filter(combos => combos !== null && combos.length > 0);
+      if (completionSets.length === 0) continue;
       const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
       for (let idx1 = 0; idx1 < avail.length; idx1++) {
         for (let idx2 = idx1 + 1; idx2 < avail.length; idx2++) {
           const i = avail[idx1], j = avail[idx2];
-          if (combos.every(combo => combo.includes(i) || combo.includes(j))) {
+          if (completionSets.some(combos => combos.every(combo => combo.includes(i) || combo.includes(j)))) {
             const key = this._groupKey([i, j]);
             if (!pairs.has(key)) pairs.set(key, [i, j]);
           }
@@ -881,11 +890,17 @@ export function applyMultiStarRules(PuzzleSolver) {
     return this._applyDisjointQuotaFill(atLeastOneGroups);
   };
 
-  // -- Expert tier: witness-sourced (source 3, two-hop chain) ----------------
+  // -- Hard/Expert tier: witness-sourced (source 3, two-hop chain) -----------
+  //
+  // 'intermediate' (Hard): the at-least-1 pairs only ever needed one
+  // board's regions to prove -- meaningfully harder than the
+  // single-geometric-hop clump rules, but still doesn't require combining
+  // both boards. 'strong' (Expert): may need both boards' regions
+  // combined. Same split as hintUnitPlacementForced etc.
 
   // _applyAtMostOneForcing fed only by source 3.
-  p.hintWitnessAtMostOneForcing = function () {
-    const atLeastPairs = this._findAtLeastOnePairs();
+  p.hintWitnessAtMostOneForcing = function (level = 'strong') {
+    const atLeastPairs = this._findAtLeastOnePairs(level);
     if (atLeastPairs.size === 0) return null;
     const witnessGroups = this._deriveAtMostOneGroupsFromWitnessPairs(atLeastPairs);
     if (witnessGroups.size === 0) return null;
@@ -894,8 +909,8 @@ export function applyMultiStarRules(PuzzleSolver) {
   };
 
   // _applyDisjointQuotaFill fed only by source 3.
-  p.hintWitnessDisjointQuotaFill = function () {
-    const atLeastPairs = this._findAtLeastOnePairs();
+  p.hintWitnessDisjointQuotaFill = function (level = 'strong') {
+    const atLeastPairs = this._findAtLeastOnePairs(level);
     if (atLeastPairs.size === 0) return null;
     return this._applyDisjointQuotaFill(atLeastPairs);
   };
@@ -941,6 +956,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'clumpDirectDots',                fn: () => this.hintClumpDirectDots() },
       { key: 'clumpAtMostOneForcing',          fn: () => this.hintClumpAtMostOneForcing() },
       { key: 'clumpDisjointQuotaFill',         fn: () => this.hintClumpDisjointQuotaFill() },
+      { key: 'witnessAtMostOneForcingIntermediate', fn: () => this.hintWitnessAtMostOneForcing('intermediate') },
+      { key: 'witnessDisjointQuotaFillIntermediate', fn: () => this.hintWitnessDisjointQuotaFill('intermediate') },
       // Expert
       // The full (cross-board) strong variants: a deduction here may
       // require combining BOTH boards' region layouts, unlike the
@@ -952,8 +969,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'externalDotFromPlacementsStrong', fn: () => this.hintExternalDotFromPlacements('strong') },
       { key: 'unitCompletionSatisfiesOtherUnitStrong', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('strong') },
       { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
-      { key: 'witnessAtMostOneForcing',        fn: () => this.hintWitnessAtMostOneForcing() },
-      { key: 'witnessDisjointQuotaFill',       fn: () => this.hintWitnessDisjointQuotaFill() },
+      { key: 'witnessAtMostOneForcingStrong',  fn: () => this.hintWitnessAtMostOneForcing('strong') },
+      { key: 'witnessDisjointQuotaFillStrong', fn: () => this.hintWitnessDisjointQuotaFill('strong') },
       { key: 'regionSubsetSync3',              fn: () => this.hintRegionSubsetSync(3) },
       { key: 'regionSubsetSync4',              fn: () => this.hintRegionSubsetSync(4) },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },

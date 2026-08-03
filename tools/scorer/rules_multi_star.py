@@ -616,27 +616,42 @@ class MultiStarRules:
             cache[key] = compute_fn()
         return cache[key]
 
-    def _find_at_least_one_pairs(self, p):
+    def _find_at_least_one_pairs(self, p, level):
         return self._cached_on_grid(
-            p, '_at_least_one_pairs_cache', lambda: self._find_at_least_one_pairs_impl(p))
+            p, f'_at_least_one_pairs_cache_{level}', lambda: self._find_at_least_one_pairs_impl(p, level))
 
-    def _find_at_least_one_pairs_impl(self, p):
+    def _find_at_least_one_pairs_impl(self, p, level):
         """
         Source 3's at-least-1 half. Every pair of candidate cells (i, j),
         across every row/column/region on every board, such that no valid
         way to complete that unit's remaining stars leaves both i and j
         empty -- i.e. at least one of the pair must hold a star.
+
+        level is 'intermediate' or 'strong' (no 'weak' -- same reasoning
+        as _rule_unit_completion_satisfies_other_unit: a capacity-free
+        version wouldn't reliably prove anything). See
+        ScorerCore._unit_completions_by_level: 'intermediate' only ever
+        needs one board's regions to reach its conclusion; 'strong' may
+        need both. (_cells_forced_to_dot_if_starred, the at-most-1 half
+        below, is deliberately NOT level-gated: it's a simple one-step
+        consequence check that's equally valid whichever board(s) it
+        happens to touch, not a capacity-combining argument.)
         """
         pairs = set()
         for unit in p.units:
-            combos = self._enumerate_unit_completions(p, unit, strong=True)
-            if not combos:
+            completion_sets = [
+                combos for combos in self._unit_completions_by_level(p, unit, level) if combos
+            ]
+            if not completion_sets:
                 continue
             avail = [i for i in unit["indices"] if p.grid[i] is None]
             for idx1 in range(len(avail)):
                 for idx2 in range(idx1 + 1, len(avail)):
                     i, j = avail[idx1], avail[idx2]
-                    if all(i in combo or j in combo for combo in combos):
+                    if any(
+                        all(i in combo or j in combo for combo in combos)
+                        for combos in completion_sets
+                    ):
                         pairs.add((i, j) if i < j else (j, i))
         return pairs
 
@@ -976,11 +991,21 @@ class MultiStarRules:
             return 0
         return self._apply_disjoint_quota_fill(p, at_least_one_groups)
 
-    # -- Expert tier: witness-sourced (source 3, two-hop chain) ---------------
+    # -- Hard/Expert tier: witness-sourced (source 3, two-hop chain) ----------
+    #
+    # 'intermediate' (Hard): the at-least-1 pairs only ever needed one
+    # board's regions to prove. 'strong' (Expert): may need both boards'
+    # regions combined. Same split as rule_unit_placement_forced_* etc.
 
-    def rule_witness_at_most_one_forcing(self, p):
+    def rule_witness_at_most_one_forcing_intermediate(self, p):
+        return self._rule_witness_at_most_one_forcing(p, level='intermediate')
+
+    def rule_witness_at_most_one_forcing_strong(self, p):
+        return self._rule_witness_at_most_one_forcing(p, level='strong')
+
+    def _rule_witness_at_most_one_forcing(self, p, level):
         """_apply_at_most_one_forcing fed only by source 3."""
-        at_least_pairs = self._find_at_least_one_pairs(p)
+        at_least_pairs = self._find_at_least_one_pairs(p, level)
         if not at_least_pairs:
             return 0
         witness_groups = self._derive_at_most_one_groups_from_witness_pairs(p, at_least_pairs)
@@ -988,9 +1013,15 @@ class MultiStarRules:
             return 0
         return self._apply_at_most_one_forcing(p, witness_groups)
 
-    def rule_witness_disjoint_quota_fill(self, p):
+    def rule_witness_disjoint_quota_fill_intermediate(self, p):
+        return self._rule_witness_disjoint_quota_fill(p, level='intermediate')
+
+    def rule_witness_disjoint_quota_fill_strong(self, p):
+        return self._rule_witness_disjoint_quota_fill(p, level='strong')
+
+    def _rule_witness_disjoint_quota_fill(self, p, level):
         """_apply_disjoint_quota_fill fed only by source 3."""
-        at_least_pairs = self._find_at_least_one_pairs(p)
+        at_least_pairs = self._find_at_least_one_pairs(p, level)
         if not at_least_pairs:
             return 0
         return self._apply_disjoint_quota_fill(p, at_least_pairs)
