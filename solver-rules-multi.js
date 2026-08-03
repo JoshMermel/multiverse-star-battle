@@ -77,60 +77,80 @@ export function applyMultiStarRules(PuzzleSolver) {
   };
 
   // Rule (2★/3★): For a row/column/region with missing stars, enumerate every valid
-  // way to place its remaining stars (strong -- i.e. also respecting other units'
-  // limits). If EVERY one of those completions exactly fills up some OTHER row/column/
-  // region (of a different type), then that other unit's entire remaining quota is
-  // guaranteed to come from this unit no matter which completion turns out to be true
-  // -- so any of its other empty cells (outside this unit) must be dots. Checked in
-  // both directions: a region's placements can force a row or column, and a row's or
-  // column's placements can force a region (or the other axis).
-  p.hintUnitCompletionSatisfiesOtherUnit = function () {
-    const candidates = [];
+  // way to place its remaining stars. If EVERY one of those completions exactly fills
+  // up some OTHER row/column/region (of a different type), then that other unit's
+  // entire remaining quota is guaranteed to come from this unit no matter which
+  // completion turns out to be true -- so any of its other empty cells (outside this
+  // unit) must be dots. Checked in both directions: a region's placements can force a
+  // row or column, and a row's or column's placements can force a region (or the
+  // other axis).
+  //
+  // level is 'intermediate' or 'strong' (no 'weak' -- a capacity-free version of this
+  // rule wouldn't reliably prove anything, since the whole deduction hinges on quota
+  // bookkeeping). See _unitCompletionsByLevel: 'intermediate' only ever needs one
+  // board's regions to reach its conclusion; 'strong' may need both.
+  p.hintUnitCompletionSatisfiesOtherUnit = function (level = 'strong') {
+    const candidateMap = new Map(); // "unitLabel|otherLabel" -> candidate, deduped across scopes
+
     for (const unit of this.units) {
-      const combos = this._enumerateUnitCompletions(unit, true);
-      if (!combos || combos.length === 0) continue;
+      const completionSets = this._unitCompletionsByLevel(unit, level)
+        .filter(combos => combos !== null && combos.length > 0);
+      if (completionSets.length === 0) continue;
 
       const sourceKind = this._unitKind(unit);
       const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+      const scopes = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
 
-      // Other units (of a different type) that share at least one candidate cell
-      // with this one -- only these could possibly be "always satisfied".
-      const seenLabels = new Set();
-      const others = [];
-      for (const idx of avail) {
-        for (const otherUnit of this._unitsByCell[idx]) {
-          if (otherUnit.label === unit.label) continue;
-          if (this._unitKind(otherUnit) === sourceKind) continue;
-          if (seenLabels.has(otherUnit.label)) continue;
-          seenLabels.add(otherUnit.label);
-          others.push(otherUnit);
+      completionSets.forEach((combos, i) => {
+        // For 'intermediate', an "other" unit is only a fair candidate if
+        // it's visible from THIS SAME scope's single-board viewpoint --
+        // a region on a different board isn't something this particular
+        // completion set's reasoning ever looked at.
+        const scopeBoardIdx = level === 'intermediate' ? scopes[i] : null;
+
+        const seenLabels = new Set();
+        const others = [];
+        for (const idx of avail) {
+          for (const otherUnit of this._unitsByCell[idx]) {
+            if (otherUnit.label === unit.label) continue;
+            if (this._unitKind(otherUnit) === sourceKind) continue;
+            if (scopeBoardIdx !== null && otherUnit.boardIdx !== undefined && otherUnit.boardIdx !== scopeBoardIdx) continue;
+            if (seenLabels.has(otherUnit.label)) continue;
+            seenLabels.add(otherUnit.label);
+            others.push(otherUnit);
+          }
         }
-      }
 
-      for (const other of others) {
-        const otherStars = other.indices.filter(i => this.vState(i) === CELL.STAR).length;
-        const otherNeeded = this.starsPerGroup - otherStars;
-        if (otherNeeded <= 0) continue;
+        for (const other of others) {
+          const key = `${unit.label}|${other.label}`;
+          if (candidateMap.has(key)) continue;
 
-        const otherSet = new Set(other.indices);
-        const allSatisfy = combos.every(combo =>
-          combo.filter(c => otherSet.has(c)).length === otherNeeded
-        );
-        if (!allSatisfy) continue;
+          const otherStars = other.indices.filter(i => this.vState(i) === CELL.STAR).length;
+          const otherNeeded = this.starsPerGroup - otherStars;
+          if (otherNeeded <= 0) continue;
 
-        const unitSet = new Set(unit.indices);
-        const targets = other.indices.filter(idx => !unitSet.has(idx) && this.vState(idx) === CELL.NONE);
-        if (targets.length > 0) {
-          candidates.push({ unit, other, targets });
+          const otherSet = new Set(other.indices);
+          const allSatisfy = combos.every(combo =>
+            combo.filter(c => otherSet.has(c)).length === otherNeeded
+          );
+          if (!allSatisfy) continue;
+
+          const unitSet = new Set(unit.indices);
+          const targets = other.indices.filter(idx => !unitSet.has(idx) && this.vState(idx) === CELL.NONE);
+          if (targets.length > 0) {
+            candidateMap.set(key, { unit, other, targets });
+          }
         }
-      }
+      });
     }
 
+    const candidates = [...candidateMap.values()];
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
 
+    const caveat = level === 'intermediate' ? ' (using only this board\'s regions)' : ' (potentially combining both boards\' regions)';
     return candidates.map(({ unit, other, targets }) => ({
-      description: `Every valid way to place this ${this._unitKind(unit)}'s remaining star(s) completely fills up this ${this._unitKind(other)} too, so the rest of that ${this._unitKind(other)} must be dots.`,
+      description: `Every valid way to place this ${this._unitKind(unit)}'s remaining star(s)${caveat} completely fills up this ${this._unitKind(other)} too, so the rest of that ${this._unitKind(other)} must be dots.`,
       highlights: unit.indices
         .filter(i => this.vState(i) === CELL.NONE)
         .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
@@ -910,7 +930,7 @@ export function applyMultiStarRules(PuzzleSolver) {
           return candidates.length > 0 ? candidates : null;
         }
       },
-      { key: 'unitCompletionSatisfiesOtherUnit', fn: () => this.hintUnitCompletionSatisfiesOtherUnit() },
+      { key: 'unitCompletionSatisfiesOtherUnitIntermediate', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('intermediate') },
       { key: 'clumpDirectDots',                fn: () => this.hintClumpDirectDots() },
       { key: 'clumpAtMostOneForcing',          fn: () => this.hintClumpAtMostOneForcing() },
       { key: 'clumpDisjointQuotaFill',         fn: () => this.hintClumpDisjointQuotaFill() },
@@ -923,6 +943,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced('strong', 'any_star') },
       { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced('strong', 'dots') },
       { key: 'externalDotFromPlacementsStrong', fn: () => this.hintExternalDotFromPlacements('strong') },
+      { key: 'unitCompletionSatisfiesOtherUnitStrong', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('strong') },
       { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
       { key: 'witnessAtMostOneForcing',        fn: () => this.hintWitnessAtMostOneForcing() },
       { key: 'witnessDisjointQuotaFill',       fn: () => this.hintWitnessDisjointQuotaFill() },

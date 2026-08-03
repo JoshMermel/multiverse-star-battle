@@ -258,71 +258,102 @@ class MultiStarRules:
             return "column"
         return "region"
 
-    def rule_unit_completion_satisfies_other_unit(self, p):
+    def rule_unit_completion_satisfies_other_unit_intermediate(self, p):
+        return self._rule_unit_completion_satisfies_other_unit(p, level='intermediate')
+
+    def rule_unit_completion_satisfies_other_unit_strong(self, p):
+        return self._rule_unit_completion_satisfies_other_unit(p, level='strong')
+
+    def _rule_unit_completion_satisfies_other_unit(self, p, level):
         """
         For a row/column/region with missing stars, enumerate every valid
-        way to place its remaining stars (strong -- i.e. also respecting
-        other units' limits). If EVERY one of those completions exactly
-        fills up some OTHER row/column/region (of a different type), then
-        that other unit's entire remaining quota is guaranteed to come from
-        this unit no matter which completion turns out to be true -- so any
-        of its other empty cells (outside this unit) must be dots. Checked
-        in both directions: a region's placements can force a row or
-        column, and a row's or column's placements can force a region (or
-        the other axis). Python port of hintUnitCompletionSatisfiesOtherUnit
-        in solver.js.
+        way to place its remaining stars. If EVERY one of those completions
+        exactly fills up some OTHER row/column/region (of a different
+        type), then that other unit's entire remaining quota is guaranteed
+        to come from this unit no matter which completion turns out to be
+        true -- so any of its other empty cells (outside this unit) must be
+        dots. Checked in both directions: a region's placements can force a
+        row or column, and a row's or column's placements can force a
+        region (or the other axis). Python port of
+        hintUnitCompletionSatisfiesOtherUnit in solver.js.
+
+        level is 'intermediate' or 'strong' (no 'weak' -- a capacity-free
+        version of this rule wouldn't reliably prove anything, since the
+        whole deduction hinges on quota bookkeeping). See
+        ScorerCore._unit_completions_by_level: 'intermediate' only ever
+        needs one board's regions to reach its conclusion; 'strong' may
+        need both.
         """
+        seen_pairs = set()  # (unit label, other label), deduped across scopes
+
         for unit in p.units:
-            combos = self._enumerate_unit_completions(p, unit, strong=True)
-            if not combos:
+            completion_sets = [
+                combos for combos in self._unit_completions_by_level(p, unit, level) if combos
+            ]
+            if not completion_sets:
                 continue
 
             source_kind = self._unit_kind(unit)
             avail = [i for i in unit["indices"] if p.grid[i] is None]
+            scopes = [unit["board_idx"]] if unit["board_idx"] is not None else list(range(p.n_boards))
 
-            # Other units (of a different type) that share at least one candidate
-            # cell with this one -- only these could possibly be "always satisfied".
-            seen_labels = set()
-            others = []
-            for idx in avail:
-                for other_unit in p.units_by_cell[idx]:
-                    if other_unit["label"] == unit["label"]:
+            for scope_i, combos in enumerate(completion_sets):
+                # For 'intermediate', an "other" unit is only a fair
+                # candidate if it's visible from THIS SAME scope's
+                # single-board viewpoint -- a region on a different board
+                # isn't something this particular completion set's
+                # reasoning ever looked at.
+                scope_board_idx = scopes[scope_i] if level == 'intermediate' else None
+
+                seen_labels = set()
+                others = []
+                for idx in avail:
+                    for other_unit in p.units_by_cell[idx]:
+                        if other_unit["label"] == unit["label"]:
+                            continue
+                        if self._unit_kind(other_unit) == source_kind:
+                            continue
+                        if (scope_board_idx is not None and other_unit["board_idx"] is not None
+                                and other_unit["board_idx"] != scope_board_idx):
+                            continue
+                        if other_unit["label"] in seen_labels:
+                            continue
+                        seen_labels.add(other_unit["label"])
+                        others.append(other_unit)
+
+                for other in others:
+                    pair_key = (unit["label"], other["label"])
+                    if pair_key in seen_pairs:
                         continue
-                    if self._unit_kind(other_unit) == source_kind:
+
+                    other_stars = sum(1 for i in other["indices"] if p.grid[i] == "x")
+                    other_needed = p.stars_per_unit - other_stars
+                    if other_needed <= 0:
                         continue
-                    if other_unit["label"] in seen_labels:
+
+                    other_set = set(other["indices"])
+                    all_satisfy = all(
+                        sum(1 for c in combo if c in other_set) == other_needed
+                        for combo in combos
+                    )
+                    if not all_satisfy:
                         continue
-                    seen_labels.add(other_unit["label"])
-                    others.append(other_unit)
 
-            for other in others:
-                other_stars = sum(1 for i in other["indices"] if p.grid[i] == "x")
-                other_needed = p.stars_per_unit - other_stars
-                if other_needed <= 0:
-                    continue
+                    unit_set = set(unit["indices"])
+                    targets = [
+                        idx for idx in other["indices"]
+                        if idx not in unit_set and p.grid[idx] is None
+                    ]
+                    if not targets:
+                        continue
 
-                other_set = set(other["indices"])
-                all_satisfy = all(
-                    sum(1 for c in combo if c in other_set) == other_needed
-                    for combo in combos
-                )
-                if not all_satisfy:
-                    continue
-
-                unit_set = set(unit["indices"])
-                targets = [
-                    idx for idx in other["indices"]
-                    if idx not in unit_set and p.grid[idx] is None
-                ]
-                if not targets:
-                    continue
-
-                label = (f"UnitCompletionSatisfies({unit['label']} -> {other['label']})")
-                changes = sum(
-                    p.validate_and_set(idx, ".", label, self.verbose) for idx in targets
-                )
-                if changes > 0:
-                    return changes
+                    seen_pairs.add(pair_key)
+                    label = (f"UnitCompletionSatisfies{level.capitalize()}({unit['label']} -> {other['label']})")
+                    changes = sum(
+                        p.validate_and_set(idx, ".", label, self.verbose) for idx in targets
+                    )
+                    if changes > 0:
+                        return changes
         return 0
 
     def _hint_multi_regions_trapped_or_covered(self, p, unit_combo, b_idx, axis):
