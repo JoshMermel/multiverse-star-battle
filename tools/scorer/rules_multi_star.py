@@ -853,15 +853,20 @@ class MultiStarRules:
 
     def _apply_at_most_one_forcing(self, p, at_most_one_groups):
         """
-        For a unit needing exactly 2 more stars with exactly 3 remaining
+        For a unit needing N more stars from exactly N+1 remaining
         candidates, if some pair among them is a subset of any known
-        at-most-1 group, that pair supplies at most 1 of the 2 needed
-        stars, so the third candidate is forced to a star.
+        at-most-1 group, that pair supplies at most 1 of the N needed
+        stars -- so the other N-1 candidates must jointly supply at least
+        N-1, and since there are exactly that many of them, ALL of them
+        are forced to stars (pigeonhole). N=2 is the classic case (a
+        single "third candidate" forced); this generalizes to any N>=2,
+        which matters for 3-star+ puzzles where a unit can need 3 or more
+        stars from 4 or more candidates.
         """
         for unit in p.units:
             stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
             needed = p.stars_per_unit - stars
-            if needed != 2:
+            if needed < 2:
                 continue
             avail = [i for i in unit["indices"] if p.grid[i] is None]
             if len(avail) != needed + 1:
@@ -869,12 +874,13 @@ class MultiStarRules:
             for a, b in combinations(avail, 2):
                 pair = frozenset((a, b))
                 if any(pair <= group for group in at_most_one_groups):
-                    rem = [i for i in avail if i not in pair][0]
-                    if p.grid[rem] is None:
-                        changes = p.validate_and_set(
-                            rem, "x", "AtLeastOneForcing", self.verbose)
-                        if changes > 0:
-                            return changes
+                    rest = [i for i in avail if i not in pair]
+                    changes = sum(
+                        p.validate_and_set(idx, "x", "AtLeastOneForcing", self.verbose)
+                        for idx in rest if p.grid[idx] is None
+                    )
+                    if changes > 0:
+                        return changes
         return 0
 
     def _find_disjoint_group_combo(self, groups, k):

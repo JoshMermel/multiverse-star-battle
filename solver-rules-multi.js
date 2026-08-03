@@ -742,17 +742,22 @@ export function applyMultiStarRules(PuzzleSolver) {
     return groups;
   };
 
-  // For a unit needing exactly 2 more stars with exactly 3 remaining
-  // candidates, if some pair among them is a subset of any known
-  // at-most-1 group, that pair supplies at most 1 of the 2 needed stars,
-  // so the third candidate is forced to a star.
+  // For a unit needing N more stars from exactly N+1 remaining candidates,
+  // if some pair among them is a subset of any known at-most-1 group,
+  // that pair supplies at most 1 of the N needed stars -- so the other
+  // N-1 candidates must jointly supply at least N-1, and since there are
+  // exactly that many of them, ALL of them are forced to stars
+  // (pigeonhole). N=2 is the classic case (a single "third candidate"
+  // forced); this generalizes to any N>=2, which matters for 3-star+
+  // puzzles where a unit can need 3 or more stars from 4 or more
+  // candidates.
   p._applyAtMostOneForcing = function (atMostOneGroups) {
     const hints = [];
     const groupArrays = [...atMostOneGroups.values()];
     for (const unit of this.units) {
       const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
       const needed = this.starsPerGroup - stars;
-      if (needed !== 2) continue;
+      if (needed < 2) continue;
       const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
       if (avail.length !== needed + 1) continue;
 
@@ -760,12 +765,14 @@ export function applyMultiStarRules(PuzzleSolver) {
         for (let y = x + 1; y < avail.length; y++) {
           const a = avail[x], b = avail[y];
           if (groupArrays.some(g => g.includes(a) && g.includes(b))) {
-            const rem = avail.find(i => i !== a && i !== b);
+            const rest = avail.filter(i => i !== a && i !== b);
             hints.push({
               boardIdx: unit.boardIdx,
-              description: `At most one of the two blue-highlighted candidates can be a star (based on other constraints elsewhere on the board), so the remaining candidate must be a star.`,
+              description: rest.length === 1
+                ? `At most one of the two blue-highlighted candidates can be a star (based on other constraints elsewhere on the board), so the remaining candidate must be a star.`
+                : `At most one of the two blue-highlighted candidates can be a star (based on other constraints elsewhere on the board), and that's not enough to cover this unit's remaining need on its own -- so every other candidate must be a star.`,
               highlights: [a, b].map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-              marks: [{ idx: rem, color: HINT_COLOR.TARGET_STAR }],
+              marks: rest.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
             });
           }
         }
