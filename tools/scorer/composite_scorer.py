@@ -109,19 +109,19 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_exclude_adjacency,                         1,  "Beginner"),
             (self.rule_exclude_solved_unit,                       1,  "Beginner"),
             (self.rule_unit_placement_forced_weak_all,           5,  "Beginner"),
-            (self.rule_unit_region_sync_multi_1,                  10, "Beginner"),
+            (self.rule_unit_placement_forced_weak_any,           10, "Beginner"),
+            (self.rule_unit_placement_forced_weak_dots,          10, "Beginner"),
+            (self.rule_external_dot_from_placements_weak,         12, "Beginner"),
 
             # -- Medium -------------------------------------------------------
-            (self.rule_unit_placement_forced_weak_any,           12, "Medium"),
-            (self.rule_unit_placement_forced_weak_dots,          12, "Medium"),
-            (self.rule_external_dot_from_placements_weak,         15, "Medium"),
-            (self.rule_unit_placement_forced_strong_all,         20, "Medium"),
+            (self.rule_unit_region_sync_multi_1,                  15, "Medium"),
+            (self.rule_unit_placement_forced_intermediate_all,    20, "Medium"),
             (self.rule_unit_region_sync_multi_2,                  25, "Medium"),
 
             # -- Hard ---------------------------------------------------------
-            (self.rule_unit_placement_forced_strong_any,          35, "Hard"),
-            (self.rule_unit_placement_forced_strong_dots,         35, "Hard"),
-            (self.rule_external_dot_from_placements_strong,       40, "Hard"),
+            (self.rule_unit_placement_forced_intermediate_any,    35, "Hard"),
+            (self.rule_unit_placement_forced_intermediate_dots,   35, "Hard"),
+            (self.rule_external_dot_from_placements_intermediate, 40, "Hard"),
             (self.rule_unit_region_sync_multi_3,                  45, "Hard"),
             (self.rule_region_subset_sync_1,                      60, "Hard"),
             (self.rule_region_subset_sync_2,                      65, "Hard"),
@@ -132,6 +132,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_clump_disjoint_quota_fill,                 88, "Hard"),
 
             # -- Expert -------------------------------------------------------
+            # The full (cross-board) strong variants: a deduction here may
+            # require combining BOTH boards' region layouts, unlike the
+            # Medium/Hard intermediate variants above, which only ever need
+            # one board's information at a time.
+            (self.rule_unit_placement_forced_strong_all,          95, "Expert"),
+            (self.rule_unit_placement_forced_strong_any,          96, "Expert"),
+            (self.rule_unit_placement_forced_strong_dots,         97, "Expert"),
+            (self.rule_external_dot_from_placements_strong,       98, "Expert"),
             (self.rule_unit_region_sync_multi_2_disjoint,         100, "Expert"),
             (self.rule_witness_at_most_one_forcing,               101, "Expert"),
             (self.rule_witness_disjoint_quota_fill,               102, "Expert"),

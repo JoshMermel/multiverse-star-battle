@@ -283,6 +283,34 @@ export class PuzzleSolver {
     });
   }
 
+  // Returns an array of "completion sets" for `unit` at the given
+  // difficulty level -- each entry is _enumerateUnitCompletions' own return
+  // value (null: unit already at quota; []: that scope alone already finds
+  // the unit unsolvable; otherwise the valid combos), used by rules that
+  // come in weak/intermediate/strong variants (hintUnitPlacementForced,
+  // hintExternalDotFromPlacements):
+  //
+  //  - 'weak': adjacency only, ignoring every other unit's capacity.
+  //  - 'strong': full capacity check across every board's units at once --
+  //    a deduction found here may require combining both boards' region
+  //    layouts.
+  //  - 'intermediate': the capacity check restricted to ONE board's units
+  //    at a time. A region only has one board to check (its own). A
+  //    row/column has none, so it's checked once per board in turn, since
+  //    its own capacity conflicts could come from either board's regions.
+  //    A caller unions results across entries: if a deduction holds under
+  //    ANY single board's view alone, that's the easier "intermediate"
+  //    reasoning -- no need to combine both boards' information.
+  //
+  // Weak and strong always return a single-entry array (uniform shape with
+  // intermediate), so callers can treat all three levels identically.
+  _unitCompletionsByLevel(unit, level, quota = this.starsPerGroup) {
+    if (level === 'weak') return [this._enumerateUnitCompletions(unit, false, quota)];
+    if (level === 'strong') return [this._enumerateUnitCompletions(unit, true, quota)];
+    const scopes = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
+    return scopes.map(bIdx => this._enumerateUnitCompletions(unit, true, quota, null, bIdx));
+  }
+
   // --- Hint Dispatch ---
 
   getHint() {

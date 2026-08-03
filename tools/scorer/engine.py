@@ -249,3 +249,40 @@ class ScorerCore:
 
             valid.append(combo)
         return valid
+
+    def _unit_completions_by_level(self, p, unit, level, quota=None):
+        """
+        Python port of solver-core.js's _unitCompletionsByLevel. Returns a
+        list of "completion sets" for `unit` at the given difficulty level
+        -- each entry is _enumerate_unit_completions' own return value
+        (None: unit already at quota; []: that scope alone already finds
+        the unit unsolvable; otherwise the valid combos). Used by rules
+        that come in weak/intermediate/strong variants
+        (rule_unit_placement_forced_cond, _rule_external_dot_from_placements):
+
+         - 'weak': adjacency only, ignoring every other unit's capacity.
+         - 'strong': full capacity check across every board's units at
+           once -- a deduction found here may require combining both
+           boards' region layouts.
+         - 'intermediate': the capacity check restricted to ONE board's
+           units at a time. A region only has one board to check (its
+           own). A row/column has none, so it's checked once per board in
+           turn, since its own capacity conflicts could come from either
+           board's regions. A caller unions results across entries: if a
+           deduction holds under ANY single board's view alone, that's the
+           easier "intermediate" reasoning -- no need to combine both
+           boards' information.
+
+        Weak and strong always return a single-entry list (uniform shape
+        with intermediate), so callers can treat all three levels
+        identically.
+        """
+        if level == 'weak':
+            return [self._enumerate_unit_completions(p, unit, strong=False, quota=quota)]
+        if level == 'strong':
+            return [self._enumerate_unit_completions(p, unit, strong=True, quota=quota)]
+        scopes = [unit["board_idx"]] if unit["board_idx"] is not None else range(p.n_boards)
+        return [
+            self._enumerate_unit_completions(p, unit, strong=True, quota=quota, visible_board_idx=b_idx)
+            for b_idx in scopes
+        ]

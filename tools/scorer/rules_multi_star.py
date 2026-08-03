@@ -77,7 +77,7 @@ class MultiStarRules:
                 return local_changes
         return changes
 
-    def _rule_external_dot_from_placements(self, p, strong):
+    def _rule_external_dot_from_placements(self, p, level):
         """
         For each unsatisfied row/column/region, enumerate every valid way to
         place its remaining star(s). If some cell outside the unit is
@@ -85,41 +85,55 @@ class MultiStarRules:
         placements, then whichever placement turns out to be true, that cell
         would end up touching a star -- so it must be a dot. Python port of
         hintExternalDotFromPlacements in solver.js.
+
+        level is 'weak'/'intermediate'/'strong' -- see
+        ScorerCore._unit_completions_by_level for what each means. For
+        'intermediate', a target is used if it's forced by ANY single
+        scope's (e.g. one board's) combos alone.
         """
         for unit in p.units:
-            combos = self._enumerate_unit_completions(p, unit, strong)
-            if not combos:
+            completion_sets = [
+                combos for combos in self._unit_completions_by_level(p, unit, level) if combos
+            ]
+            if not completion_sets:
                 continue
 
             unit_set = set(unit["indices"])
-            intersection = None
-            for combo in combos:
-                seen = set()
-                for cell in combo:
-                    for nb in p._neighbor_map[cell]:
-                        if nb not in unit_set and p.grid[nb] is None:
-                            seen.add(nb)
-                intersection = seen if intersection is None else (intersection & seen)
-                if not intersection:
-                    break
+            target_union = set()
+            for combos in completion_sets:
+                intersection = None
+                for combo in combos:
+                    seen = set()
+                    for cell in combo:
+                        for nb in p._neighbor_map[cell]:
+                            if nb not in unit_set and p.grid[nb] is None:
+                                seen.add(nb)
+                    intersection = seen if intersection is None else (intersection & seen)
+                    if not intersection:
+                        break
+                if intersection:
+                    target_union |= intersection
 
-            if not intersection:
+            if not target_union:
                 continue
 
-            label = f"ExternalDot{'Strong' if strong else 'Weak'}({unit['label']})"
+            label = f"ExternalDot{level.capitalize()}({unit['label']})"
             changes = sum(
                 p.validate_and_set(idx, ".", label, self.verbose)
-                for idx in intersection if p.grid[idx] is None
+                for idx in target_union if p.grid[idx] is None
             )
             if changes > 0:
                 return changes
         return 0
 
     def rule_external_dot_from_placements_weak(self, p):
-        return self._rule_external_dot_from_placements(p, strong=False)
+        return self._rule_external_dot_from_placements(p, level='weak')
+
+    def rule_external_dot_from_placements_intermediate(self, p):
+        return self._rule_external_dot_from_placements(p, level='intermediate')
 
     def rule_external_dot_from_placements_strong(self, p):
-        return self._rule_external_dot_from_placements(p, strong=True)
+        return self._rule_external_dot_from_placements(p, level='strong')
 
     def rule_unit_region_sync_multi_1(self, p):
         return self._rule_unit_region_sync_multi(p, 1)
@@ -131,52 +145,72 @@ class MultiStarRules:
         return self._rule_unit_region_sync_multi(p, 3)
 
     def rule_unit_placement_forced_weak_all(self, p):
-        return self.rule_unit_placement_forced_cond(p, strong=False, cond="all_stars")
+        return self.rule_unit_placement_forced_cond(p, level='weak', cond="all_stars")
 
     def rule_unit_placement_forced_weak_any(self, p):
-        return self.rule_unit_placement_forced_cond(p, strong=False, cond="any_star")
+        return self.rule_unit_placement_forced_cond(p, level='weak', cond="any_star")
 
     def rule_unit_placement_forced_weak_dots(self, p):
-        return self.rule_unit_placement_forced_cond(p, strong=False, cond="dots")
+        return self.rule_unit_placement_forced_cond(p, level='weak', cond="dots")
+
+    def rule_unit_placement_forced_intermediate_all(self, p):
+        return self.rule_unit_placement_forced_cond(p, level='intermediate', cond="all_stars")
+
+    def rule_unit_placement_forced_intermediate_any(self, p):
+        return self.rule_unit_placement_forced_cond(p, level='intermediate', cond="any_star")
+
+    def rule_unit_placement_forced_intermediate_dots(self, p):
+        return self.rule_unit_placement_forced_cond(p, level='intermediate', cond="dots")
 
     def rule_unit_placement_forced_strong_all(self, p):
-        return self.rule_unit_placement_forced_cond(p, strong=True, cond="all_stars")
+        return self.rule_unit_placement_forced_cond(p, level='strong', cond="all_stars")
 
     def rule_unit_placement_forced_strong_any(self, p):
-        return self.rule_unit_placement_forced_cond(p, strong=True, cond="any_star")
+        return self.rule_unit_placement_forced_cond(p, level='strong', cond="any_star")
 
     def rule_unit_placement_forced_strong_dots(self, p):
-        return self.rule_unit_placement_forced_cond(p, strong=True, cond="dots")
+        return self.rule_unit_placement_forced_cond(p, level='strong', cond="dots")
 
-    def _get_placement_forced_combos(self, p, strong):
+    def _get_placement_forced_combos(self, p, level):
         """
         Enumerates every unit's remaining-star completions once per (grid
-        state, strong) and shares the result across all six
+        state, level) and shares the result across all nine
         rule_unit_placement_forced_* variants -- weak_all/any/dots share
-        one pass, strong_all/any/dots share a separate pass -- instead of
-        each of the six independently re-running the same combinatorial
-        enumeration over every unit. Keyed on a full grid snapshot rather
-        than tracked mutation sites so it can never go stale, at the cost
-        of a cheap tuple(p.grid) per top-level rule call.
+        one pass, intermediate_all/any/dots share a separate pass, and
+        strong_all/any/dots share a third -- instead of each of the nine
+        independently re-running the same combinatorial enumeration over
+        every unit. Keyed on a full grid snapshot rather than tracked
+        mutation sites so it can never go stale, at the cost of a cheap
+        tuple(p.grid) per top-level rule call.
+
+        Each cached value is a dict of unit id -> list of "completion
+        sets" (see ScorerCore._unit_completions_by_level): a single-entry
+        list for weak/strong, one entry per board for intermediate.
         """
         cache = getattr(p, '_placement_forced_cache', None)
         if cache is None:
             cache = p._placement_forced_cache = {}
-        key = (strong, tuple(p.grid))
+        key = (level, tuple(p.grid))
         cached = cache.get(key)
         if cached is not None:
             return cached
         result = {}
         for unit in p.units:
-            combos = self._enumerate_unit_completions(p, unit, strong)
-            if combos:
-                result[id(unit)] = combos
+            completion_sets = [
+                combos for combos in self._unit_completions_by_level(p, unit, level) if combos
+            ]
+            if completion_sets:
+                result[id(unit)] = completion_sets
         cache[key] = result
         return result
 
-    def rule_unit_placement_forced_cond(self, p, strong, cond):
-        """Generalized placement-enumeration engine that filters on specific sub-conditions."""
-        combos_by_unit = self._get_placement_forced_combos(p, strong)
+    def rule_unit_placement_forced_cond(self, p, level, cond):
+        """
+        Generalized placement-enumeration engine that filters on specific
+        sub-conditions. level is 'weak'/'intermediate'/'strong' -- see
+        ScorerCore._unit_completions_by_level.
+        """
+        combo_sets_by_unit = self._get_placement_forced_combos(p, level)
         changes = 0
         for unit in p.units:
             stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
@@ -184,13 +218,19 @@ class MultiStarRules:
             if needed <= 0:
                 continue
 
-            combos = combos_by_unit.get(id(unit))
-            if not combos:
+            completion_sets = combo_sets_by_unit.get(id(unit))
+            if not completion_sets:
                 continue
 
+            # Union across scopes: forced if ANY single scope's combos
+            # alone already prove it -- see _unit_completions_by_level.
             avail = [i for i in unit["indices"] if p.grid[i] is None]
-            forced_stars = [c for c in avail if all(c in combo for combo in combos)]
-            forced_dots = [c for c in avail if not any(c in combo for combo in combos)]
+            forced_stars = [
+                c for c in avail if any(all(c in combo for combo in combos) for combos in completion_sets)
+            ]
+            forced_dots = [
+                c for c in avail if any(not any(c in combo for combo in combos) for combos in completion_sets)
+            ]
 
             if cond == "all_stars":
                 if len(forced_stars) != needed: forced_stars = []

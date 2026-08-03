@@ -25,34 +25,44 @@ export function applyMultiStarRules(PuzzleSolver) {
   // place its remaining star(s). If some cell outside the unit is adjacent (including
   // diagonally) to a star in EVERY one of those placements, then whichever placement
   // turns out to be true, that cell would end up touching a star — so it must be a dot.
-  p.hintExternalDotFromPlacements = function (strong = true) {
+  p.hintExternalDotFromPlacements = function (level = 'strong') {
     const candidates = [];
     for (const unit of this.units) {
-      const combos = this._enumerateUnitCompletions(unit, strong);
-      if (!combos || combos.length === 0) continue;
+      const completionSets = this._unitCompletionsByLevel(unit, level)
+        .filter(combos => combos !== null && combos.length > 0);
+      if (completionSets.length === 0) continue;
 
       const unitSet = new Set(unit.indices);
-      let intersection = null;
+      // Union across scopes: a target forced from ANY single scope's combos
+      // alone (e.g. one board's view, for 'intermediate') counts -- see
+      // _unitCompletionsByLevel.
+      const targetUnion = new Set();
 
-      for (const combo of combos) {
-        const seen = new Set();
-        for (const cell of combo) {
-          for (const nb of this.getNeighbors(cell)) {
-            if (!unitSet.has(nb) && this.vState(nb) === CELL.NONE) seen.add(nb);
+      for (const combos of completionSets) {
+        let intersection = null;
+        for (const combo of combos) {
+          const seen = new Set();
+          for (const cell of combo) {
+            for (const nb of this.getNeighbors(cell)) {
+              if (!unitSet.has(nb) && this.vState(nb) === CELL.NONE) seen.add(nb);
+            }
           }
+          intersection = intersection === null ? seen : new Set([...intersection].filter(x => seen.has(x)));
+          if (intersection.size === 0) break;
         }
-        intersection = intersection === null ? seen : new Set([...intersection].filter(x => seen.has(x)));
-        if (intersection.size === 0) break;
+        if (intersection) for (const t of intersection) targetUnion.add(t);
       }
 
-      if (intersection && intersection.size > 0) {
-        candidates.push({ unit, targets: Array.from(intersection) });
+      if (targetUnion.size > 0) {
+        candidates.push({ unit, targets: Array.from(targetUnion) });
       }
     }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
 
-    const caveat = strong ? " (accounting for other rows/columns/regions' star limits)" : "";
+    const caveat = level === 'weak' ? ""
+      : level === 'intermediate' ? " (accounting for other rows/columns/regions' star limits on this board)"
+      : " (accounting for other rows/columns/regions' star limits across every board)";
     return candidates.map(({ unit, targets }) => {
       const unitType = this._unitKind(unit);
       return {
@@ -159,19 +169,22 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates;
   };
 
-  p.hintUnitPlacementForced = function (strong = true, filterCondition = null) {
+  p.hintUnitPlacementForced = function (level = 'strong', filterCondition = null) {
     const candidates = [];
     for (const unit of this.units) {
       const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
       const needed = this.starsPerGroup - stars.length;
       if (needed <= 0) continue;
 
-      const combos = this._enumerateUnitCompletions(unit, strong);
-      if (!combos || combos.length === 0) continue;
+      const completionSets = this._unitCompletionsByLevel(unit, level)
+        .filter(combos => combos !== null && combos.length > 0);
+      if (completionSets.length === 0) continue;
 
+      // Union across scopes: forced if ANY single scope's combos alone
+      // already prove it -- see _unitCompletionsByLevel.
       const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
-      let forcedStars = avail.filter(cell => combos.every(combo => combo.includes(cell)));
-      let forcedDots  = avail.filter(cell => !combos.some(combo => combo.includes(cell)));
+      let forcedStars = avail.filter(cell => completionSets.some(combos => combos.every(combo => combo.includes(cell))));
+      let forcedDots  = avail.filter(cell => completionSets.some(combos => !combos.some(combo => combo.includes(cell))));
 
       if (filterCondition === 'all_stars') {
         if (forcedStars.length !== needed) forcedStars = [];
@@ -190,7 +203,9 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
 
-    const caveat = strong ? ", also accounting for other rows/columns/regions' star limits," : "";
+    const caveat = level === 'weak' ? ""
+      : level === 'intermediate' ? ", also accounting for other rows/columns/regions' star limits on this board,"
+      : ", also accounting for other rows/columns/regions' star limits across every board,";
     const hints = [];
     for (const { unit, forcedStars, forcedDots } of candidates) {
       const unitType = this._unitKind(unit);
@@ -870,18 +885,18 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'onlyEmpty',                      fn: () => this.hintOnlyEmpty() },
       { key: 'excludeAdjacency',               fn: () => this.hintExcludeAdjacency() },
       { key: 'excludeSolvedUnit',              fn: () => this.hintExcludeSolvedUnit() },
-      { key: 'unitPlacementForcedWeakAll',     fn: () => this.hintUnitPlacementForced(false, 'all_stars') },
-      { key: 'unitPlacementForcedWeakAny',     fn: () => this.hintUnitPlacementForced(false, 'any_star') },
-      { key: 'unitPlacementForcedWeakDots',    fn: () => this.hintUnitPlacementForced(false, 'dots') },
-      { key: 'externalDotFromPlacementsWeak',  fn: () => this.hintExternalDotFromPlacements(false) },
+      { key: 'unitPlacementForcedWeakAll',     fn: () => this.hintUnitPlacementForced('weak', 'all_stars') },
+      { key: 'unitPlacementForcedWeakAny',     fn: () => this.hintUnitPlacementForced('weak', 'any_star') },
+      { key: 'unitPlacementForcedWeakDots',    fn: () => this.hintUnitPlacementForced('weak', 'dots') },
+      { key: 'externalDotFromPlacementsWeak',  fn: () => this.hintExternalDotFromPlacements('weak') },
       // Medium
       { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },
-      { key: 'unitPlacementForcedStrongAll',   fn: () => this.hintUnitPlacementForced(true, 'all_stars') },
+      { key: 'unitPlacementForcedIntermediateAll', fn: () => this.hintUnitPlacementForced('intermediate', 'all_stars') },
       { key: 'unitRegionSyncMulti2',           fn: () => this.hintUnitRegionSyncMulti(2) },
       // Hard
-      { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced(true, 'any_star') },
-      { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced(true, 'dots') },
-      { key: 'externalDotFromPlacementsStrong',fn: () => this.hintExternalDotFromPlacements(true) },
+      { key: 'unitPlacementForcedIntermediateAny',  fn: () => this.hintUnitPlacementForced('intermediate', 'any_star') },
+      { key: 'unitPlacementForcedIntermediateDots', fn: () => this.hintUnitPlacementForced('intermediate', 'dots') },
+      { key: 'externalDotFromPlacementsIntermediate', fn: () => this.hintExternalDotFromPlacements('intermediate') },
       { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
       { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
       { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
@@ -900,6 +915,14 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'clumpAtMostOneForcing',          fn: () => this.hintClumpAtMostOneForcing() },
       { key: 'clumpDisjointQuotaFill',         fn: () => this.hintClumpDisjointQuotaFill() },
       // Expert
+      // The full (cross-board) strong variants: a deduction here may
+      // require combining BOTH boards' region layouts, unlike the
+      // Medium/Hard intermediate variants above, which only ever need one
+      // board's information at a time.
+      { key: 'unitPlacementForcedStrongAll',   fn: () => this.hintUnitPlacementForced('strong', 'all_stars') },
+      { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced('strong', 'any_star') },
+      { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced('strong', 'dots') },
+      { key: 'externalDotFromPlacementsStrong', fn: () => this.hintExternalDotFromPlacements('strong') },
       { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
       { key: 'witnessAtMostOneForcing',        fn: () => this.hintWitnessAtMostOneForcing() },
       { key: 'witnessDisjointQuotaFill',       fn: () => this.hintWitnessDisjointQuotaFill() },
