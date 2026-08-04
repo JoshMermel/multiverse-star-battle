@@ -260,6 +260,127 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates.map(({ combo, targets, uList }) => this.formatCrossBoardHint(combo, targets, axis, uList));
   };
 
+  // Generalizes hintSymmetryDeduction (1★-only, solver-rules-single.js) to
+  // any starsPerGroup. For 1★, i and its symmetric counterpart sharing any
+  // unit (row/column/region) is ALWAYS a contradiction if both were stars
+  // (every unit's quota is 1). For k★, sharing a unit is only a
+  // contradiction if that specific unit's remaining need is <= 1 -- if
+  // it's still >= 2, both i and its counterpart can perfectly well be
+  // stars in the same unit. _cellsIncompatible below captures exactly
+  // that (plus the always-true adjacency case); both the "can't be a
+  // star" checks and the parity check's "mutual visibility" argument are
+  // rebuilt on top of it. (The fill half, hintSymmetryFill, has no such
+  // issue -- copying a known star/dot to its mirror doesn't depend on
+  // quota -- so it's reused unchanged; see _getMultiStarRuleList.)
+  p._cellsIncompatible = function (a, b) {
+    if (this._cellsAdjacent(a, b)) return true;
+    const unitsB = new Set(this._unitsByCell[b]);
+    for (const unit of this._unitsByCell[a]) {
+      if (!unitsB.has(unit)) continue;
+      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
+      if (this.starsPerGroup - stars <= 1) return true;
+    }
+    return false;
+  };
+
+  p.hintSymmetryDeductionMulti = function () {
+    const n = this.n;
+    const results = [];
+
+    const trySeesOwnMirror = (mirrorFn, description) => {
+      const marks = [];
+      for (let i = 0; i < n * n; i++) {
+        if (this.vState(i) !== CELL.NONE) continue;
+        const mirror = mirrorFn(i);
+        if (mirror === i) continue;
+        if (this._cellsIncompatible(i, mirror)) marks.push({ idx: i, color: HINT_COLOR.TARGET });
+      }
+      if (marks.length > 0) results.push({ description, highlights: [], marks, boardIdx: undefined });
+    };
+
+    if (this.internalRotation180 || this.crossboardRotation180) {
+      const description = this.internalRotation180 && this.crossboardRotation180
+        ? `Each board has 180° rotational symmetry, and every board is also paired with another board that's its 180° rotation. Any cell that "sees" its own rotation (in a shared row/column, or a shared region with no room for both) cannot be a star.`
+        : this.internalRotation180
+        ? `Each board independently has 180° rotational symmetry. Any cell that "sees" its own rotation (in a shared row/column, or a shared region with no room for both) cannot be a star.`
+        : `Every board is paired with another board that's its 180° rotation. Any cell that "sees" its counterpart (in a shared row/column, or a shared region with no room for both) cannot be a star.`;
+      trySeesOwnMirror(i => (n * n - 1) - i, description);
+    }
+
+    if (this.isMainDiagonalSymmetric) {
+      const description = this.mainDiagCrossBoard && this.mainDiagInternal
+        ? `Every board is paired with another board that's its reflection across the main diagonal (↘), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`
+        : this.mainDiagInternal
+        ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`
+        : `Every board is paired with another board that's its reflection across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`;
+      trySeesOwnMirror(i => (i % n) * n + Math.floor(i / n), description);
+    }
+
+    if (this.isAntiDiagonalSymmetric) {
+      const description = this.antiDiagCrossBoard && this.antiDiagInternal
+        ? `Every board is paired with another board that's its reflection across the anti-diagonal (↙), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`
+        : this.antiDiagInternal
+        ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`
+        : `Every board is paired with another board that's its reflection across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`;
+      trySeesOwnMirror(i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)), description);
+    }
+
+    // Diagonal parity, generalized: for 1★ the total star count is fixed
+    // at n (one per row), so the diagonal's own star count must share n's
+    // parity. For k★ the fixed total is n * starsPerGroup. And "all
+    // empties mutually see each other" no longer means "at most 1 could
+    // be a star" for k★ -- it only does when every pair is pairwise
+    // incompatible (_cellsIncompatible), which is what's checked below
+    // instead of plain adjacency-or-shared-region.
+    const totalStars = n * this.starsPerGroup;
+    const tryDiagParity = (diagIndices, dirLabel, crossBoard, internal) => {
+      const parity = totalStars % 2 === 0 ? 'even' : 'odd';
+      const reason = crossBoard && internal
+        ? `Every board is paired with another board that's its ${dirLabel} reflection, and each also has that symmetry internally`
+        : internal
+        ? `Each board independently has ${dirLabel} diagonal symmetry`
+        : `Every board is paired with another board that's its ${dirLabel} reflection`;
+
+      const diagStars = diagIndices.filter(i => this.vState(i) === CELL.STAR).length;
+      const diagEmpties = diagIndices.filter(i => this.vState(i) === CELL.NONE);
+
+      if (diagEmpties.length === 1) {
+        const needStar = (diagStars % 2) !== (totalStars % 2);
+        const idx = diagEmpties[0];
+        const color = needStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET;
+        results.push({
+          description: `${reason}, so by parity the diagonal must have an ${parity} number of stars — this cell must be a ${needStar ? 'star' : 'dot'}.`,
+          highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
+            .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
+          marks: [{ idx, color }],
+          boardIdx: undefined
+        });
+      } else if (diagEmpties.length >= 2) {
+        if ((diagStars % 2) !== (totalStars % 2)) return;
+        const allIncompatible = diagEmpties.every((a, ai) => diagEmpties.every((b, bi) =>
+          ai === bi || this._cellsIncompatible(a, b)
+        ));
+        if (!allIncompatible) return;
+        results.push({
+          description: `${reason}, so by parity the diagonal must have an ${parity} number of stars — the remaining diagonal cells must all be dots.`,
+          highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
+            .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
+          marks: diagEmpties.map(i => ({ idx: i, color: HINT_COLOR.TARGET })),
+          boardIdx: undefined
+        });
+      }
+    };
+
+    if (this.isMainDiagonalSymmetric) {
+      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + k), '↘', this.mainDiagCrossBoard, this.mainDiagInternal);
+    }
+    if (this.isAntiDiagonalSymmetric) {
+      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + (n - 1 - k)), '↙', this.antiDiagCrossBoard, this.antiDiagInternal);
+    }
+
+    return results.length > 0 ? results : null;
+  };
+
   p.hintUnitPlacementForced = function (level = 'strong', filterCondition = null) {
     const candidates = [];
     for (const unit of this.units) {
@@ -1006,6 +1127,10 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },
       { key: 'unitPlacementForcedIntermediateAll', fn: () => this.hintUnitPlacementForced('intermediate', 'all_stars') },
       { key: 'unitRegionSyncMulti2',           fn: () => this.hintUnitRegionSyncMulti(2) },
+      // Reused directly from applySingleStarRules -- copying a known
+      // star/dot to its symmetric counterpart doesn't depend on
+      // starsPerGroup, so no multi-star variant is needed.
+      { key: 'symmetryFillMulti',              fn: () => this.hintSymmetryFill() },
       // Hard
       { key: 'unitPlacementForcedIntermediateAny',  fn: () => this.hintUnitPlacementForced('intermediate', 'any_star') },
       { key: 'unitPlacementForcedIntermediateDots', fn: () => this.hintUnitPlacementForced('intermediate', 'dots') },
@@ -1029,6 +1154,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'clumpDisjointQuotaFill',         fn: () => this.hintClumpDisjointQuotaFill() },
       { key: 'witnessAtMostOneForcingIntermediate', fn: () => this.hintWitnessAtMostOneForcing('intermediate') },
       { key: 'witnessDisjointQuotaFillIntermediate', fn: () => this.hintWitnessDisjointQuotaFill('intermediate') },
+      // Symmetry - requires insight but not hard to apply
+      { key: 'symmetryDeductionMulti',         fn: () => this.hintSymmetryDeductionMulti() },
       // Expert
       // The full (cross-board) strong variants: a deduction here may
       // require combining BOTH boards' region layouts, unlike the

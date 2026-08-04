@@ -11,6 +11,8 @@ families.
 
 from itertools import combinations
 
+from board_utils import VOID_CHAR
+
 
 class MultiStarRules:
     def rule_only_empty_multi(self, p, silent=False):
@@ -1280,4 +1282,155 @@ class MultiStarRules:
                     self.verbose)
                 if changes > 0:
                     return changes
+        return 0
+
+    # -- Symmetry rules (2★+) ---------------------------------------------------
+    #
+    # Generalizes SingleStarRules' symmetry-fill / diagonal-symmetry /
+    # rotation-180 / diagonal-parity rules (rules_single_star.py) to any
+    # stars_per_unit. Symmetry detection itself (p.diagonal_symmetries,
+    # p.has_main_diagonal_symmetry, p.has_anti_diagonal_symmetry,
+    # p.has_internal_rotation_180, p.has_crossboard_rotation_180) is purely
+    # about REGION geometry (puzzle.py), so it's already quota-agnostic and
+    # reused unchanged.
+    #
+    # The fill rules (rule_main_diagonal_fill / rule_anti_diagonal_fill /
+    # rule_rotation_180_fill, both defined in SingleStarRules) are reused
+    # UNCHANGED in multi_star_rules (composite_scorer.py) rather than
+    # duplicated here: copying a known star/dot to its symmetric
+    # counterpart is a property of the transform, not of quota, so they
+    # already work correctly for any stars_per_unit.
+    #
+    # The "seeing your own mirror image forces a dot" rules need real
+    # generalization, though: for 1★, i and mirror(i) sharing any unit
+    # (row/col/region) is ALWAYS a contradiction if both were stars (every
+    # unit's quota is 1). For k★, sharing a unit is only a contradiction if
+    # that specific unit's remaining need is <= 1 -- if it's still >= 2,
+    # both i and mirror(i) can perfectly well be stars in the same unit.
+    # _cells_incompatible below captures exactly that (plus the
+    # always-true adjacency case), and both the diagonal-symmetry/
+    # rotation-180 "can't be a star" rules and diagonal-parity's "mutual
+    # visibility" argument are rebuilt on top of it.
+
+    def _cells_incompatible(self, p, a, b):
+        """
+        Whether cells a and b can never both be stars simultaneously:
+        either they're adjacent (always illegal, independent of quota), or
+        they share a row/column/region (any board) whose remaining need is
+        <= 1 (that unit has room for at most 1 more star, so it can't
+        absorb both). A pairwise check -- doesn't account for what OTHER
+        cells might also want to be stars -- used to test whether a small
+        cell set's "at most 1 of these can be a star" claim still holds
+        once stars_per_unit > 1.
+        """
+        if b in p._neighbor_map[a]:
+            return True
+        ra, ca = p.get_rc(a)
+        rb, cb = p.get_rc(b)
+        if ra == rb:
+            remaining = p.stars_per_unit - sum(1 for idx in p.row_indices[ra] if p.grid[idx] == "x")
+            if remaining <= 1:
+                return True
+        if ca == cb:
+            remaining = p.stars_per_unit - sum(1 for idx in p.col_indices[ca] if p.grid[idx] == "x")
+            if remaining <= 1:
+                return True
+        for b_idx in range(p.n_boards):
+            reg_char = p.cell_to_region[b_idx][a]
+            if reg_char != VOID_CHAR and p.cell_to_region[b_idx][b] == reg_char:
+                reg_indices = p.regions[b_idx][reg_char]
+                remaining = p.stars_per_unit - sum(1 for idx in reg_indices if p.grid[idx] == "x")
+                if remaining <= 1:
+                    return True
+        return False
+
+    def rule_diagonal_symmetry_multi(self, p):
+        if not p.diagonal_symmetries:
+            return 0
+        changes = 0
+        for i in range(p.n * p.n):
+            if p.grid[i] is not None:
+                continue
+            for fn in p.diagonal_symmetries:
+                mirror = fn(i)
+                if mirror == i:
+                    continue
+                if self._cells_incompatible(p, i, mirror):
+                    changes += p.validate_and_set(i, ".", "DiagonalSymmetryMulti", self.verbose)
+                    break
+        return changes
+
+    def rule_rotation_180_multi(self, p):
+        if not (p.has_internal_rotation_180 or p.has_crossboard_rotation_180):
+            return 0
+        total = p.n * p.n
+        changes = 0
+        for i in range(total):
+            if p.grid[i] is not None:
+                continue
+            mirror = total - 1 - i
+            if mirror == i:
+                continue
+            if self._cells_incompatible(p, i, mirror):
+                changes += p.validate_and_set(i, ".", "Rotation180Multi", self.verbose)
+        return changes
+
+    def rule_diagonal_parity_multi(self, p):
+        """
+        MATCH: puzzle has diagonal symmetry AND either: the diagonal has 1
+        empty cell (parity determines its value, using a stars_per_unit-
+        aware total -- n rows * stars_per_unit stars overall, not n); or
+        parity is already satisfied and every pair of empty diagonal cells
+        is pairwise incompatible (_cells_incompatible) -- meaning at most 1
+        could be a star, and adding exactly 1 would break parity, so all
+        must be dots. (Adding 2+ would preserve parity, which is why this
+        only fires when the pairwise-incompatible bound is <= 1 -- for 1★
+        that's every case where any two diagonal empties share a unit, but
+        for k★ some pairs may legitimately coexist, so this fires less
+        often than the 1★ version by design.)
+        ACTION: sets the cell(s) accordingly.
+        """
+        n = p.n
+        total_stars = n * p.stars_per_unit
+        changes = 0
+
+        def try_diag(diag_indices, label):
+            nonlocal changes
+            stars = sum(1 for i in diag_indices if p.grid[i] == "x")
+            empties = [i for i in diag_indices if p.grid[i] is None]
+
+            if len(empties) == 1:
+                need_star = (stars % 2) != (total_stars % 2)
+                val = "x" if need_star else "."
+                changes += p.validate_and_set(
+                    empties[0], val,
+                    f"DiagonalParityMulti({label})", self.verbose)
+
+            elif len(empties) >= 2:
+                if (stars % 2) != (total_stars % 2):
+                    return
+                if not all(
+                    self._cells_incompatible(p, a, b)
+                    for idx_a, a in enumerate(empties)
+                    for b in empties[idx_a + 1:]
+                ):
+                    return
+                for idx in empties:
+                    changes += p.validate_and_set(
+                        idx, ".",
+                        f"DiagonalParityMulti({label}) mutual-incompatibility",
+                        self.verbose)
+
+        if p.has_main_diagonal_symmetry:
+            main_diag = [k * n + k for k in range(n)]
+            try_diag(main_diag, "main")
+            if changes > 0:
+                return changes
+
+        if p.has_anti_diagonal_symmetry:
+            anti_diag = [k * n + (n - 1 - k) for k in range(n)]
+            try_diag(anti_diag, "anti")
+            if changes > 0:
+                return changes
+
         return 0

@@ -117,6 +117,12 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_region_sync_multi_1,                  15, "Medium"),
             (self.rule_unit_placement_forced_intermediate_all,    20, "Medium"),
             (self.rule_unit_region_sync_multi_2,                  25, "Medium"),
+            # Reused directly from SingleStarRules -- copying a known
+            # star/dot to its symmetric counterpart doesn't depend on
+            # stars_per_unit, so no multi-star variant is needed.
+            (self.rule_main_diagonal_fill,                        20, "Medium"),
+            (self.rule_anti_diagonal_fill,                        20, "Medium"),
+            (self.rule_rotation_180_fill,                         20, "Medium"),
 
             # -- Hard ---------------------------------------------------------
             (self.rule_unit_placement_forced_intermediate_any,    35, "Hard"),
@@ -138,6 +144,11 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # cross-board version.
             (self.rule_witness_at_most_one_forcing_intermediate,  89, "Hard"),
             (self.rule_witness_disjoint_quota_fill_intermediate,  90, "Hard"),
+
+            # -- Symmetry - requires insight but not hard to apply -----------
+            (self.rule_rotation_180_multi,                        5, "Symmetry"),
+            (self.rule_diagonal_symmetry_multi,                   5, "Symmetry"),
+            (self.rule_diagonal_parity_multi,                     15, "Symmetry"),
 
             # -- Expert -------------------------------------------------------
             # The full (cross-board) strong variants: a deduction here may
