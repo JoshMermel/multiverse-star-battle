@@ -184,27 +184,38 @@ class StarBattlePuzzle:
         Set src_board == dst_board to test a single board's internal symmetry.
         Set src_board=0, dst_board=1 (or vice versa) to test cross-board symmetry.
 
-        Void cells are skipped: a void is in no region and its mirror is
-        expected to also be void, so including them adds no information and
-        would cause spurious mismatches if the void mask is not itself symmetric.
+        Void cells are treated as just another region label (VOID_CHAR
+        compares equal to itself like any other label, no special-casing
+        needed) -- there's no puzzle with symmetric-but-voided boards today
+        and none planned, so this doesn't need to handle a void mask that's
+        itself asymmetric under mirror_fn. Matches solver-core.js's
+        _regionsAreTransformPartners, which never special-cased voids either.
+
+        Implemented as a single O(n^2) pass building a src-label -> dst-label
+        map, rather than an O(n^4) scan over every cell PAIR: each cell i
+        contributes one mapping, src[i] -> dst[mirror(i)], and a conflict
+        (the same src label already mapped to a different dst label) is
+        exactly the "same_region(src) != same_region(dst)" failure above,
+        for the pair (i, that earlier cell). The reverse failure mode --
+        two different src labels both mapping to the same dst label -- can't
+        happen without also tripping a conflict: mirror_fn is a bijection on
+        the full n*n grid (an involution here), so a well-defined
+        (conflict-free) function built this way is automatically onto every
+        dst label that appears -- and a function between finite sets of
+        equal size is injective iff it's onto (pigeonhole; both boards
+        always partition the same n*n grid into the same number of labels).
         """
-        total = self.n * self.n
         src = self.cell_to_region[src_board]
         dst = self.cell_to_region[dst_board]
-        for i in range(total):
-            if i in self.void_cells:
-                continue
-            mi = mirror_fn(i)
-            if mi in self.void_cells:
-                continue
-            for j in range(i + 1, total):
-                if j in self.void_cells:
-                    continue
-                mj = mirror_fn(j)
-                if mj in self.void_cells:
-                    continue
-                if (src[i] == src[j]) != (dst[mi] == dst[mj]):
-                    return False
+        label_map = {}
+        for i in range(self.n * self.n):
+            src_label = src[i]
+            dst_label = dst[mirror_fn(i)]
+            existing = label_map.get(src_label)
+            if existing is None:
+                label_map[src_label] = dst_label
+            elif existing != dst_label:
+                return False
         return True
 
     def _internal_symmetry(self, mirror_fn):

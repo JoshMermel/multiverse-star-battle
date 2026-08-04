@@ -596,15 +596,32 @@ export class PuzzleSolver {
   // Checks whether board B's region layout is exactly what you'd get by applying
   // `transformFn` to board A's region layout -- the pairwise primitive behind every
   // "these two boards are reflections/rotations of each other" symmetry check.
+  //
+  // Single O(n^2) pass building a labelA -> labelB map, rather than an
+  // O(n^4) scan over every cell PAIR: each cell i contributes one mapping,
+  // regionsA[i] -> regionsB[transformFn(i)] (void cells included -- '*' is
+  // just another label here, no special-casing needed), and a conflict
+  // (the same A-label already mapped to a different B-label) is exactly
+  // the old pairwise check's failure, for the pair (i, that earlier cell).
+  // The reverse failure mode -- two different A-labels both mapping to the
+  // same B-label -- can't happen without also tripping a conflict:
+  // transformFn is a bijection on the full n*n grid (an involution here),
+  // so a well-defined (conflict-free) function built this way is
+  // automatically onto every B-label that appears -- and a function
+  // between finite sets of equal size is injective iff it's onto
+  // (pigeonhole; both boards always have the same number of distinct
+  // labels, since they're both full partitions of the same n*n grid).
   _regionsAreTransformPartners(regionsA, regionsB, transformFn) {
     const total = this.n * this.n;
+    const labelMap = new Map();
     for (let i = 0; i < total; i++) {
-      const ti = transformFn(i);
-      for (let j = i + 1; j < total; j++) {
-        const tj = transformFn(j);
-        const sameOnA = regionsA[i] === regionsA[j];
-        const sameOnBTransformed = regionsB[ti] === regionsB[tj];
-        if (sameOnA !== sameOnBTransformed) return false;
+      const srcLabel = regionsA[i];
+      const dstLabel = regionsB[transformFn(i)];
+      const existing = labelMap.get(srcLabel);
+      if (existing === undefined) {
+        labelMap.set(srcLabel, dstLabel);
+      } else if (existing !== dstLabel) {
+        return false;
       }
     }
     return true;
@@ -658,14 +675,20 @@ export class PuzzleSolver {
     return findMatching();
   }
 
+  // Same O(n^2) label-map approach as _regionsAreTransformPartners, applied
+  // to one board against itself (src and dst are the same region string).
   _computeInternalDiagonalSymmetry(mirrorFn) {
     const total = this.n * this.n;
     for (const r of this.game.regions) {
+      const labelMap = new Map();
       for (let i = 0; i < total; i++) {
-        const mi = mirrorFn(i);
-        for (let j = i + 1; j < total; j++) {
-          const mj = mirrorFn(j);
-          if ((r[i] === r[j]) !== (r[mi] === r[mj])) return false;
+        const srcLabel = r[i];
+        const dstLabel = r[mirrorFn(i)];
+        const existing = labelMap.get(srcLabel);
+        if (existing === undefined) {
+          labelMap.set(srcLabel, dstLabel);
+        } else if (existing !== dstLabel) {
+          return false;
         }
       }
     }
