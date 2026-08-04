@@ -11,6 +11,8 @@ Generation usage:
     python3 gen_puzzles.py generate --mode super_symmetric --n 8 --count 100
     python3 gen_puzzles.py generate --mode letter_pair --char1 T --char2 H --n 8 --count 10
     python3 gen_puzzles.py generate --mode voting_district_pair --n 8 --count 100
+    python3 gen_puzzles.py generate --mode mono --n 8 --count 100
+    python3 gen_puzzles.py generate --mode solution_first_pair --n 8 --count 100 --board-count 3
     python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100 --score-after
 
 Scoring usage:
@@ -32,7 +34,7 @@ Module layout
 board_solver.py   OR-Tools CP-SAT solver (get_all_solutions)
 board_utils.py    Board geometry: ALPHABET, transforms, get_board_variants, flood_fill
 font_data.py      7x5 pixel font for LetterGenerator
-scorer.py         StarBattlePuzzle, CompositeScorer, TIER_ORDER
+scorer/           Package: StarBattlePuzzle, CompositeScorer, TIER_ORDER (see scorer/__init__.py)
 *_generator.py    Various bespoke generators for different board types
 *_comparator.py   Various bespoke comparators for styles of board-pairing
 gen_puzzles.py    CLI

@@ -14,26 +14,34 @@ Battle adds a twist: you play more than one board simultaneously, and marks made
 on one board also take effect on all other boards.
 
 If you look at any board in isolation, it looks like a standard star battle
-with more than one solution. But if you make inferrences on all boards together,
+with more than one solution. But if you make inferences on all boards together,
 you'll arrive at the only unique solution.
 
---
+---
 
 ## Repository Structure
 
 ```
-├── index.html           # Game shell and UI layout
-├── style.css            # All visual styles and responsive layout
-├── script.js            # StarBattleGame: page setup and orchestration
-├── solver.js            # PuzzleSolver: hint engine
-├── renderer.js          # Rendering logic for the DOM
-├── history.js           # Undo/redo management
-├── rules.js             # Game logic, win/error detection
-├── storage.js           # Saving and loading to local/remote storage
-├── constants.js         # Shared constants
+├── index.html              # Game shell and UI layout
+├── style.css               # All visual styles and responsive layout
+├── script.js               # StarBattleGame: page setup and orchestration
+├── puzzle-loader.js        # Puzzle/category fetching and URL param handling
+├── input.js                # Click/drag input handling
+├── renderer.js             # Rendering logic for the DOM
+├── history.js              # Undo/redo management
+├── rules.js                # Game logic, win/error detection
+├── storage.js              # Saving and loading to local/remote storage
+├── constants.js            # Shared constants
+├── geometry.js             # Shared cell/board geometry helpers
+├── sw.js                   # Service worker (offline caching)
+├── solver.js               # Barrel: assembles PuzzleSolver from the pieces below
+├── solver-core.js          # PuzzleSolver: precompute, getHint() dispatch, symmetry detection
+├── solver-rules-common.js  # Hint rules shared by 1★ and 2★+ puzzles
+├── solver-rules-single.js  # 1★-only hint rules
+├── solver-rules-multi.js   # 2★+ hint rules (generalized to any stars-per-unit)
 ├── tools/
 │   ├── gen_puzzles.py   # Main for puzzle generation and scoring
-│   ├── scorer.py        # Scoring logic
+│   ├── scorer/           # Scoring engine (package; see tools/README.md)
 │   ├── *_generator.py   # Generators for candidate boards
 │   ├── *_comparator.py  # Compare candidate boards to produce puzzles
 │   └── board_utils.py   # Shared utils
@@ -86,7 +94,7 @@ puzzle_2,8,BCCCCCCEBBBHHCCEGBBHHCAAGGBDHAAAGGDDDDAAGDDDDDAAGFDDDDAAFFDDDDAA,AACC
 ```
 
 - `N` — board size (N×N grid with N regions per board)
-- `board1` / `board2` — flat strings of length N², one character per cell; cells sharing a character belong to the same region
+- `board_1` / `board_2` — flat strings of length N², one character per cell; cells sharing a character belong to the same region
 - `solution` — flat string of length N²; `x` marks a star, `.` marks empty
 -  everything else - unused metadata.
 
@@ -104,8 +112,9 @@ pip install ortools
 
 ### Generation Modes
 
-All modes produce puzzle pairs with **exactly one shared solution** across both
-boards.
+Most modes produce puzzle pairs with **exactly one shared solution** across
+both boards; `mono` produces standalone single-board puzzles instead, and
+`solution_first_pair` can produce more than 2 boards (via `--board-count`).
 
 | Mode | Description |
 |---|---|
@@ -116,6 +125,8 @@ boards.
 | `letter_pair` | Two boards whose regions form letter shapes (requires `--char1` and `--char2`) |
 | `voting_district_pair` | Two boards where all regions contain the same number of cells |
 | `sudoku_pair` | Two boards one of them looks like a classic sudoku grid |
+| `mono` | A single standalone board (classic, non-multiverse Star Battle) with a unique solution |
+| `solution_first_pair` | N boards (`--board-count`, default 2) built outward from a shared solution rather than matched after the fact |
 
 ### Generation Usage
 
@@ -130,7 +141,7 @@ find all valid star placements.
 
 Each **comparator** takes one or more generators, and uses it/them to produce
 pairs of boards with exactly one solution. Like Generators, these work in
-differnet ways to achieve diferent styles of puzzle.
+different ways to achieve different styles of puzzle.
 
 There is also a solution-first generator + comparator, which work differently.
 These start from a solution and build boards around it; shifting boundaries
@@ -143,7 +154,7 @@ around to make the solution unique.
 The scorer simulates human rule-based solving and measures difficulty by
 tracking which rules were needed and how many times.
 
-For usage, see the header commment in gen_puzzles.py.
+For usage, see the header comment in gen_puzzles.py.
 
 ### Difficulty Tiers
 
@@ -169,16 +180,33 @@ Puzzles that the scorer cannot fully solve are marked `UNSOLVED`.
 ## Hint System (`solver.js`)
 
 `PuzzleSolver` is a js implementation of the scorer which reads the game's live
-state. When the user clicks **Hint**, `getHint()` runs through a prioritised
-rule list — the same logical hierarchy as the Python scorer — and returns the
-first applicable hint.
+state. `solver.js` is a thin barrel file that assembles `PuzzleSolver` from
+`solver-core.js` (precompute, symmetry detection, the `getHint()` dispatcher)
+plus three rule-mixin files (`solver-rules-common.js`,
+`solver-rules-single.js` for 1★-only rules, `solver-rules-multi.js` for
+2★+ rules). When the user clicks **Hint**, `getHint()` runs through a
+prioritised rule list for the puzzle's star count — the same logical
+hierarchy as the Python scorer — and returns the first applicable hint.
 
 Each hint is an object with:
-- `description` — human-readable explanation shown as a toast
-- `highlights` — cells to tint blue (the reasoning source)
-- `marks` — cells to circle yellow (the deducible cells)
-- `boardIdx` — if set, highlights apply only to that board; if `undefined`,
-  highlights apply to both
+- `description` — human-readable explanation shown as a toast (for some
+  rules, this also names which technique found a highlighted group, e.g.
+  "paired rows/cols covered by 2x2 boxes")
+- `highlights` — cells to tint (the reasoning source), each an
+  `{ idx, color, boards? }` object; `color` is usually blue, but a hint that
+  combines several disjoint groups cycles through blue/purple/cyan/pink so
+  each group is visually distinguishable
+- `marks` — cells to circle (the deducible cells), each an
+  `{ idx, color, boards? }` object; `color` is yellow (dot), green (star), or
+  red (error)
+- `boardIdx` — if set, the whole hint applies only to that one board and the
+  UI switches straight to it; if `undefined`, per-cell `boards` (see below)
+  decides instead
+- `boards` (on an individual highlight/mark, not the hint itself) — which
+  board(s) that specific cell applies to; falls back to `boardIdx`, then to
+  every board, so single-board rules (which never set this) still render as
+  before. Needed once a puzzle has more than 2 boards, since a cross-board
+  deduction's source and target cells aren't always on the same two boards.
 
 ## Credits
 
