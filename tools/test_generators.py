@@ -208,8 +208,24 @@ class TestRandomGeneratorTwoStar:
 
     @pytest.fixture
     def board_and_solutions(self):
-        gen = RandomGenerator(TWO_STAR_N, stars_per_unit=2)
-        return gen.generate(max_attempts=TWO_STAR_MAX_ATTEMPTS)
+        # Random (unconstrained) region layouts are a worse case for 2-star
+        # ambiguity than measurement suggested when TWO_STAR_MAX_ATTEMPTS was
+        # tuned against SymmetricGenerator: empirically ~93% single-call
+        # success within budget here, i.e. a ~7% chance any one generate()
+        # call exhausts it -- rare individually, but with 4 test methods each
+        # drawing their own fixture instance per session, that's enough to
+        # make the module noticeably flaky. Same fix as
+        # TestSymmetricGeneratorTwoStar below: retry with a fresh generator
+        # (fresh random seed) up to 3 times, compounding independent
+        # per-call failure chances down to roughly 0.03%.
+        last_error = None
+        for _ in range(3):
+            gen = RandomGenerator(TWO_STAR_N, stars_per_unit=2)
+            try:
+                return gen.generate(max_attempts=TWO_STAR_MAX_ATTEMPTS)
+            except GenerationError as e:
+                last_error = e
+        raise last_error
 
     def test_correct_region_count(self, board_and_solutions):
         board, _ = board_and_solutions
