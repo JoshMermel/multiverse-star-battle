@@ -369,9 +369,19 @@ export class PuzzleSolver {
 
   formatSubsetHint(sourceRegs, targetRegs, targets, sourceBoardIdx, targetBoardIdx) {
     const targetSet = new Set(targets);
+    // Both the source group and target group are physical grid cells that
+    // exist on every board -- the deduction just happens to be justified by
+    // region definitions on sourceBoardIdx and targetBoardIdx specifically.
+    // So each cell is colored on every board actually involved (both
+    // boards, or just one if they're the same), not source-only-on-its-
+    // board and target-only-on-its-board -- that would leave, say, a
+    // 3-board puzzle's board 2 correctly blank but board 1 and board 3
+    // each only showing half the picture.
+    const involvedBoards = [...new Set([sourceBoardIdx, targetBoardIdx])];
+
     const sourceHighlights = sourceRegs.flatMap(r =>
       r.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-    ).map(idx => ({ idx, color: HINT_COLOR.SOURCE, boards: [sourceBoardIdx] }));
+    ).map(idx => ({ idx, color: HINT_COLOR.SOURCE, boards: involvedBoards }));
 
     const crossBoard = sourceBoardIdx !== targetBoardIdx;
     const sourcePhrase = sourceRegs.length === 1 ? "One region" : `A group of ${sourceRegs.length} regions`;
@@ -384,7 +394,7 @@ export class PuzzleSolver {
       boardIdx: crossBoard ? undefined : sourceBoardIdx,
       description,
       highlights: sourceHighlights,
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: [targetBoardIdx] }))
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: involvedBoards }))
     };
   }
 
