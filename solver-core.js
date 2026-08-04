@@ -343,7 +343,7 @@ export class PuzzleSolver {
       if (key !== this.currentHintType) {
         this.currentHintType  = key;
         this.currentHintIndex = 0;
-        this.currentHints     = this._shuffle(hints.slice());
+        this.currentHints     = this._buildHintBatch(hints, rules, i);
       }
       this.lastMatchedRuleIndex = i;
 
@@ -353,6 +353,28 @@ export class PuzzleSolver {
     }
     this.lastMatchedRuleIndex = 0;
     return null;
+  }
+
+  // When the matched rule only has one hint to show, every click would
+  // otherwise just re-show that exact same hint forever. Pad the list with
+  // up to 4 hints (randomly sampled if there are more) from the
+  // next-easiest rule that also finds something -- skipping fromSolution,
+  // the last-resort fallback, since padding with "just look at the answer"
+  // isn't a real hint. The original hint always comes first (easier tier
+  // before harder), with the padding appended after.
+  _buildHintBatch(hints, rules, matchedIndex) {
+    const batch = this._shuffle(hints.slice());
+    if (batch.length > 1) return batch;
+
+    for (let j = matchedIndex + 1; j < rules.length; j++) {
+      const { key, fn } = rules[j];
+      if (key === 'fromSolution') continue;
+      const nextHints = fn();
+      if (!nextHints || nextHints.length === 0) continue;
+      const padding = this._shuffle(nextHints.slice()).slice(0, 4);
+      return [...batch, ...padding];
+    }
+    return batch;
   }
 
   // --- Hint Formatters ---
