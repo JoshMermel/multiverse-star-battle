@@ -670,10 +670,12 @@ export function applyMultiStarRules(PuzzleSolver) {
   // hintClump* rules; source 3 is a two-hop chain, feeding the Expert-tier
   // hintWitness* rules.
   //
-  // Hint UI shows only the final forcing step (the at-most-1/at-least-1
-  // group and the forced cell), not the derivation chain behind it --
-  // matching how e.g. hintUnitPlacementForced doesn't re-derive
-  // _enumerateUnitCompletions for the player either.
+  // Hint UI shows the final forcing step (the at-most-1/at-least-1 group
+  // and the forced cell) plus a short label for how each group was found
+  // (the `source` field each producer below attaches) -- not the full
+  // derivation chain (e.g. hintUnitPlacementForced still doesn't re-derive
+  // _enumerateUnitCompletions for the player), but enough that a match
+  // doesn't just assert "trust these highlighted cells."
 
   p._groupKey = function (indices) {
     return [...indices].sort((a, b) => a - b).join(',');
@@ -693,7 +695,7 @@ export function applyMultiStarRules(PuzzleSolver) {
   };
 
   p._findAtLeastOnePairsImpl = function (level) {
-    const pairs = new Map(); // key -> [i, j]
+    const pairs = new Map(); // key -> { indices: [i, j], source }
     for (const unit of this.units) {
       const completionSets = this._unitCompletionsByLevel(unit, level)
         .filter(combos => combos !== null && combos.length > 0);
@@ -704,7 +706,12 @@ export function applyMultiStarRules(PuzzleSolver) {
           const i = avail[idx1], j = avail[idx2];
           if (completionSets.some(combos => combos.every(combo => combo.includes(i) || combo.includes(j)))) {
             const key = this._groupKey([i, j]);
-            if (!pairs.has(key)) pairs.set(key, [i, j]);
+            if (!pairs.has(key)) {
+              pairs.set(key, {
+                indices: [i, j],
+                source: "no valid way to complete a unit leaves both cells empty",
+              });
+            }
           }
         }
       }
@@ -743,14 +750,19 @@ export function applyMultiStarRules(PuzzleSolver) {
   // Source 3's at-most-1 half.
   p._deriveAtMostOneGroupsFromWitnessPairs = function (atLeastOnePairs) {
     const groups = new Map();
-    for (const [i, j] of atLeastOnePairs.values()) {
+    for (const { indices: [i, j] } of atLeastOnePairs.values()) {
       const forcedByI = this._cellsForcedToDotIfStarred(i);
       const forcedByJ = this._cellsForcedToDotIfStarred(j);
       for (const a of forcedByI) {
         for (const b of forcedByJ) {
           if (a !== b) {
             const gkey = this._groupKey([a, b]);
-            if (!groups.has(gkey)) groups.set(gkey, [a, b]);
+            if (!groups.has(gkey)) {
+              groups.set(gkey, {
+                indices: [a, b],
+                source: "witness pair: starring either cell forces one of these empty",
+              });
+            }
           }
         }
       }
@@ -813,7 +825,10 @@ export function applyMultiStarRules(PuzzleSolver) {
   // line is entirely dots" hint found; atMostGroups is every "rest of
   // line" cell set found to hold at most 1 star instead; atLeastGroups is
   // every "inLine" cell set proven to hold at least 1 star (only when
-  // that bound is exactly 1).
+  // that bound is exactly 1). atMostGroups/atLeastGroups values are
+  // { indices, source }, source being a short player-facing label for how
+  // that group was found -- shown in the hint text so a match doesn't just
+  // say "trust me" (see _applyAtMostOneForcing / _applyDisjointQuotaFill).
   p._regionLineSplitFacts = function () {
     return this._cachedOnState('regionLineSplitFacts', () => this._regionLineSplitFactsImpl());
   };
@@ -852,7 +867,12 @@ export function applyMultiStarRules(PuzzleSolver) {
 
             if (q === 1) {
               const inLineKey = this._groupKey(inLine);
-              if (!atLeastGroups.has(inLineKey)) atLeastGroups.set(inLineKey, inLine);
+              if (!atLeastGroups.has(inLineKey)) {
+                atLeastGroups.set(inLineKey, {
+                  indices: inLine,
+                  source: "the region's leftover need forces a star into this segment",
+                });
+              }
             }
 
             const lineIndices = this.axisIndices[axis][lineIdx];
@@ -873,7 +893,12 @@ export function applyMultiStarRules(PuzzleSolver) {
               });
             } else if (bound === 1) {
               const gkey = this._groupKey(restOfLine);
-              if (!atMostGroups.has(gkey)) atMostGroups.set(gkey, restOfLine);
+              if (!atMostGroups.has(gkey)) {
+                atMostGroups.set(gkey, {
+                  indices: restOfLine,
+                  source: "the rest of the region is capped to at most 1 star here",
+                });
+              }
             }
           }
         }
@@ -934,7 +959,12 @@ export function applyMultiStarRules(PuzzleSolver) {
           });
           if (boxCells.length > 0) {
             const key = this._groupKey(boxCells);
-            if (!groups.has(key)) groups.set(key, boxCells);
+            if (!groups.has(key)) {
+              groups.set(key, {
+                indices: boxCells,
+                source: "paired rows/cols covered by 2x2 boxes",
+              });
+            }
           }
         }
       }
@@ -952,9 +982,14 @@ export function applyMultiStarRules(PuzzleSolver) {
   // forced); this generalizes to any N>=2, which matters for 3-star+
   // puzzles where a unit can need 3 or more stars from 4 or more
   // candidates.
+  // `atMostOneGroups` values are { indices, source } -- source is a short
+  // player-facing label for how that group was proven at-most-1 (see the
+  // three producers above: region/line-split, box covering, witness
+  // projection), surfaced in the hint text below instead of the old vague
+  // "based on other constraints elsewhere on the board".
   p._applyAtMostOneForcing = function (atMostOneGroups) {
     const hints = [];
-    const groupArrays = [...atMostOneGroups.values()];
+    const groupList = [...atMostOneGroups.values()];
     for (const unit of this.units) {
       const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
       const needed = this.starsPerGroup - stars;
@@ -965,13 +1000,14 @@ export function applyMultiStarRules(PuzzleSolver) {
       for (let x = 0; x < avail.length; x++) {
         for (let y = x + 1; y < avail.length; y++) {
           const a = avail[x], b = avail[y];
-          if (groupArrays.some(g => g.includes(a) && g.includes(b))) {
+          const matched = groupList.find(g => g.indices.includes(a) && g.indices.includes(b));
+          if (matched) {
             const rest = avail.filter(i => i !== a && i !== b);
             hints.push({
               boardIdx: unit.boardIdx,
               description: rest.length === 1
-                ? `At most one of the two blue-highlighted candidates can be a star (based on other constraints elsewhere on the board), so the remaining candidate must be a star.`
-                : `At most one of the two blue-highlighted candidates can be a star (based on other constraints elsewhere on the board), and that's not enough to cover this unit's remaining need on its own -- so every other candidate must be a star.`,
+                ? `At most one of the two blue-highlighted candidates can be a star (${matched.source}), so the remaining candidate must be a star.`
+                : `At most one of the two blue-highlighted candidates can be a star (${matched.source}), and that's not enough to cover this unit's remaining need on its own -- so every other candidate must be a star.`,
               highlights: [a, b].map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
               marks: rest.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
             });
@@ -983,17 +1019,17 @@ export function applyMultiStarRules(PuzzleSolver) {
   };
 
   // Backtracking search for k mutually disjoint groups among `groups`
-  // (each an array of cell indices). Returns the combo (an array of k
-  // groups) if found, else null. `groups` and k are both expected to be
-  // small in practice (k is a unit's remaining star quota -- at most
+  // (each { indices, source }). Returns the combo (an array of k groups)
+  // if found, else null. `groups` and k are both expected to be small in
+  // practice (k is a unit's remaining star quota -- at most
   // starsPerGroup), so this is cheap.
   p._findDisjointGroupCombo = function (groups, k) {
     const backtrack = (start, chosen, used) => {
       if (chosen.length === k) return chosen;
       for (let idx = start; idx < groups.length; idx++) {
         const g = groups[idx];
-        if (g.some(c => used.has(c))) continue;
-        const result = backtrack(idx + 1, [...chosen, g], new Set([...used, ...g]));
+        if (g.indices.some(c => used.has(c))) continue;
+        const result = backtrack(idx + 1, [...chosen, g], new Set([...used, ...g.indices]));
         if (result) return result;
       }
       return null;
@@ -1012,6 +1048,12 @@ export function applyMultiStarRules(PuzzleSolver) {
   // just one -- that single group fully accounts for the unit's last
   // star, so the rest of its empties are dots. Both are the same
   // principle at different Q.
+  //
+  // `atLeastOneGroups` values are { indices, source } (see the three
+  // producers above). combo.length >= 2 pairs each group's own color
+  // (cycled from HINT_SOURCE_VARIANTS) with its source in the description,
+  // so a multi-group match doesn't just say "trust these colors" -- the
+  // player can check each group's reasoning individually.
   p._applyDisjointQuotaFill = function (atLeastOneGroups) {
     const allGroups = [...atLeastOneGroups.values()];
     const candidates = [];
@@ -1023,13 +1065,13 @@ export function applyMultiStarRules(PuzzleSolver) {
       if (avail.length <= q) continue; // nothing extra to eliminate even if this succeeds
 
       const availSet = new Set(avail);
-      const relevant = allGroups.filter(g => g.every(c => availSet.has(c)));
+      const relevant = allGroups.filter(g => g.indices.every(c => availSet.has(c)));
       if (relevant.length < q) continue;
 
       const combo = this._findDisjointGroupCombo(relevant, q);
       if (!combo) continue;
 
-      const covered = new Set(combo.flat());
+      const covered = new Set(combo.flatMap(g => g.indices));
       const targets = avail.filter(i => !covered.has(i));
       if (targets.length === 0) continue;
 
@@ -1039,20 +1081,28 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
 
-    return candidates.map(({ unit, combo, targets }) => ({
-      boardIdx: unit.boardIdx,
-      description: combo.length === 1
-        ? `At least one of the highlighted cells must be a star, and that's this unit's last remaining star -- so every other empty cell here must be a dot.`
-        : `Each of these ${combo.length} differently-colored groups must contain a star, and that already accounts for every star this unit still needs -- so every other empty cell here must be a dot.`,
-      // Each group gets its own color (cycled from HINT_SOURCE_VARIANTS) so
-      // several disjoint groups shown at once are visually distinguishable
-      // instead of blurring into one indistinct blob -- a single group
-      // (the combo.length === 1 case) still just uses plain SOURCE blue.
-      highlights: combo.flatMap((group, i) =>
-        group.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[i % HINT_SOURCE_VARIANTS.length] }))
-      ),
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-    }));
+    return candidates.map(({ unit, combo, targets }) => {
+      const description = combo.length === 1
+        ? `At least one of the highlighted cells must be a star (${combo[0].source}), and that's this unit's last remaining star -- so every other empty cell here must be a dot.`
+        : `Each of these ${combo.length} differently-colored groups must contain a star -- `
+          + combo.map((g, i) => {
+            const colorName = HINT_SOURCE_VARIANTS[i % HINT_SOURCE_VARIANTS.length].replace('hint-source-', '');
+            return `${colorName}: ${g.source}`;
+          }).join('; ')
+          + ` -- and that already accounts for every star this unit still needs, so every other empty cell here must be a dot.`;
+      return {
+        boardIdx: unit.boardIdx,
+        description,
+        // Each group gets its own color (cycled from HINT_SOURCE_VARIANTS) so
+        // several disjoint groups shown at once are visually distinguishable
+        // instead of blurring into one indistinct blob -- a single group
+        // (the combo.length === 1 case) still just uses plain SOURCE blue.
+        highlights: combo.flatMap((group, i) =>
+          group.indices.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[i % HINT_SOURCE_VARIANTS.length] }))
+        ),
+        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+      };
+    });
   };
 
   // -- Hard tier: clump-sourced (sources 1 + 2, single geometric hop) --------
