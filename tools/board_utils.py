@@ -175,20 +175,56 @@ def get_board_variants(flat_board, solutions, n):
 _DIAGONAL_ALIGNED_INDICES = [0, 2, 6, 7]
 _DIAGONAL_MISALIGNED_INDICES = [1, 3, 4, 5]
 
+# Same idea, but for the row/column axes rather than the diagonals --
+# relevant whenever a board's own symmetry is itself row/column-based
+# (mirror or a translation split, as opposed to diagonal). 'aligned':
+# identity, rot180, flip_h, flip_v -- transforms that keep "row" mapping
+# to "row" and "column" mapping to "column" (even if flipped/negated).
+# 'misaligned': rot90, rot270, flip_diag, flip_antidiag -- transforms that
+# swap the row and column axes with each other. This is a DIFFERENT
+# partition of the same 8 transforms than the diagonal one above (they
+# agree on identity/rot180, disagree on the other 6) -- e.g. a plain
+# left/right mirror (flip_h) keeps rows-as-rows, so it's row/column
+# "aligned", but it swaps which diagonal is which, so it's diagonal
+# "misaligned".
+_AXIS_ALIGNED_INDICES = [0, 2, 4, 5]
+_AXIS_MISALIGNED_INDICES = [1, 3, 6, 7]
+
+
+def _select_variants_by_indices(all_variants, alignment, aligned_indices, misaligned_indices):
+    if alignment == 'aligned':
+        indices = aligned_indices
+    elif alignment == 'misaligned':
+        indices = misaligned_indices
+    else:
+        return all_variants
+    return [all_variants[i] for i in indices]
+
 
 def select_diagonal_variants(all_variants, diagonal_alignment):
     """
     Filters get_board_variants()'s 8 (board, solutions) variants down to
-    the 4 matching `diagonal_alignment` ('aligned' or 'misaligned'), or
+    the 4 matching `diagonal_alignment` ('aligned' or 'misaligned') with
+    respect to which diagonal (main vs. anti) a transform preserves, or
     returns all 8 unfiltered for any other value (e.g. 'any').
     """
-    if diagonal_alignment == 'aligned':
-        indices = _DIAGONAL_ALIGNED_INDICES
-    elif diagonal_alignment == 'misaligned':
-        indices = _DIAGONAL_MISALIGNED_INDICES
-    else:
-        return all_variants
-    return [all_variants[i] for i in indices]
+    return _select_variants_by_indices(all_variants, diagonal_alignment,
+                                        _DIAGONAL_ALIGNED_INDICES, _DIAGONAL_MISALIGNED_INDICES)
+
+
+def select_axis_variants(all_variants, axis_alignment):
+    """
+    Filters get_board_variants()'s 8 (board, solutions) variants down to
+    the 4 matching `axis_alignment` ('aligned' or 'misaligned') with
+    respect to whether a transform keeps the row axis mapped to the row
+    axis (and column to column), or swaps the two -- the row/column
+    analogue of select_diagonal_variants, for pairing mirror- or
+    translation-symmetric boards where what matters is whether the two
+    boards' mirror/translation axes end up the same or different. Returns
+    all 8 unfiltered for any other value (e.g. 'any').
+    """
+    return _select_variants_by_indices(all_variants, axis_alignment,
+                                        _AXIS_ALIGNED_INDICES, _AXIS_MISALIGNED_INDICES)
 
 
 def flood_fill(grid, n, excluded_region=None, reject_singletons=False):
