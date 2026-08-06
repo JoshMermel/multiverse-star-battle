@@ -45,6 +45,7 @@
     {"id": "8x8_symmetric",         "label": "Symmetric",               "group": "Symmetry",         "desc": "Each board has rotational, mirror, or translation symmetry", "stars": 1},
     {"id": "symmetric_mono",        "label": "Symmetric 1-board",       "group": "Symmetry",         "desc": "One board with rotational, mirror, or translation symmetry", "stars": 1},
     {"id": "8x8_twin",              "label": "Twin",                    "group": "Symmetry",         "desc": "Both boards are the same, one flipped or rotated", "stars": 1},
+    {"id": "9x9_twin",              "label": "Twin",                    "group": "Symmetry",         "desc": "Both boards are the same, one flipped or rotated", "stars": 2},
     {"id": "8x8_symmetric_twin",    "label": "Symmetric Twin",          "group": "Symmetry",         "desc": "Both Symmetric and Twin at once", "stars": 1},
     {"id": "venn",                  "label": "Venn",                    "group": "Rectangles",       "desc": "Boards inspired by venn diagrams", "stars": 1},
     {"id": "not_sudoku",            "label": "Not Sudoku",              "group": "Rectangles",       "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply", "stars": 1},
