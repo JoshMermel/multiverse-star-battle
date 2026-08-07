@@ -12,69 +12,11 @@ export function applyMultiStarRules(PuzzleSolver) {
   // --- 2★/3★-specific rules ---
   // These rely on enumerating every valid way to complete a still-unsatisfied unit's
   // stars (respecting non-adjacency), which is only cheap enough to brute-force through
-  // 3★ (i.e. at most 3 stars still needed per unit). Each comes in a weak and strong
-  // form (see _enumerateUnitCompletions): weak only rules out completions that touch
-  // each other or an existing star; strong also rules out completions that would
-  // overload some other row/column/region. Strong finds everything weak does, plus
-  // more, but its reasoning is a bit more involved, so weak is offered as the easier
-  // hint first.
-
-  // Rule (2★/3★): For a row/column/region that has no stars placed yet, enumerate every
-  // valid way to place its starsPerGroup non-touching stars inside it. A cell present in
-  // every valid placement must be a star; a cell present in none of them must be a dot.
-  // place its remaining star(s). If some cell outside the unit is adjacent (including
-  // diagonally) to a star in EVERY one of those placements, then whichever placement
-  // turns out to be true, that cell would end up touching a star — so it must be a dot.
-  p.hintExternalDotFromPlacements = function (level = 'strong') {
-    const candidates = [];
-    for (const unit of this.units) {
-      const completionSets = this._unitCompletionsByLevel(unit, level)
-        .filter(combos => combos !== null && combos.length > 0);
-      if (completionSets.length === 0) continue;
-
-      const unitSet = new Set(unit.indices);
-      // Union across scopes: a target forced from ANY single scope's combos
-      // alone (e.g. one board's view, for 'intermediate') counts -- see
-      // _unitCompletionsByLevel.
-      const targetUnion = new Set();
-
-      for (const combos of completionSets) {
-        let intersection = null;
-        for (const combo of combos) {
-          const seen = new Set();
-          for (const cell of combo) {
-            for (const nb of this.getNeighbors(cell)) {
-              if (!unitSet.has(nb) && this.vState(nb) === CELL.NONE) seen.add(nb);
-            }
-          }
-          intersection = intersection === null ? seen : new Set([...intersection].filter(x => seen.has(x)));
-          if (intersection.size === 0) break;
-        }
-        if (intersection) for (const t of intersection) targetUnion.add(t);
-      }
-
-      if (targetUnion.size > 0) {
-        candidates.push({ unit, targets: Array.from(targetUnion) });
-      }
-    }
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
-
-    const caveat = level === 'weak' ? ""
-      : level === 'intermediate' ? " (accounting for other rows/columns/regions' star limits on this board)"
-      : " (accounting for other rows/columns/regions' star limits across every board)";
-    return candidates.map(({ unit, targets }) => {
-      const unitType = this._unitKind(unit);
-      return {
-        description: `Wherever this ${unitType}'s remaining star(s) end up${caveat}, one will always touch the marked cell(s), so they must be dots.`,
-        highlights: unit.indices
-          .filter(i => this.vState(i) === CELL.NONE)
-          .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-        boardIdx: unit.boardIdx
-      };
-    });
-  };
+  // 3★ (i.e. at most 3 stars still needed per unit). See _enumerateUnitCompletions and
+  // _unitCompletionsByLevel for the weak/intermediate/strong levels this enumeration is
+  // shared across: weak only rules out completions that touch each other or an existing
+  // star; strong also rules out completions that would overload some other
+  // row/column/region; intermediate is strong restricted to one board's units at a time.
 
   // Rule (2★/3★): For a row/column/region with missing stars, enumerate every valid
   // way to place its remaining stars. If EVERY one of those completions exactly fills
@@ -381,7 +323,34 @@ export function applyMultiStarRules(PuzzleSolver) {
     return results.length > 0 ? results : null;
   };
 
+  // Rule (2★/3★): For a row/column/region with missing stars, enumerate every valid
+  // way to place its starsPerGroup non-touching stars, then asks one unified
+  // question of every candidate cell, inside the unit or just outside it: is placing
+  // a star THERE incompatible with every one of those valid placements?
+  //  - Inside the unit: a cell absent from some placement is incompatible with it,
+  //    since starring it in addition to that placement would overfill the unit's
+  //    quota.
+  //  - Just outside the unit (any cell touching one of its cells): a cell is
+  //    incompatible with a placement if it's adjacent (including diagonally) to one
+  //    of that placement's stars.
+  // If EVERY valid placement is incompatible with starring a given cell, that cell
+  // must be a dot -- whichever placement turns out to be real, a star there
+  // couldn't coexist with it. Symmetrically, a cell INSIDE the unit that's present
+  // in every placement must itself be a star: a dot there would leave no valid way
+  // to fill the unit at all. (Outside cells have no such "forced star" case -- a dot
+  // outside never conflicts with completing the unit.)
+  //
+  // This one test covers what used to be two separate rules -- one for cells inside
+  // the unit, one for cells outside it -- since both ask the same question, just of
+  // different cells. It also renders as a single combined hint: a player doesn't
+  // need to know whether a given marked cell is forced by the overfill argument or
+  // the touching argument, just that a star can't go there.
   p.hintUnitPlacementForced = function (level = 'strong', filterCondition = null) {
+    // 'all_stars'/'any_star' only ever look at forcedStars (see below), so skip the
+    // dot-side enumeration entirely for those -- same cost as before this rule
+    // absorbed the outside-cell case.
+    const wantsDots = filterCondition !== 'all_stars' && filterCondition !== 'any_star';
+
     const candidates = [];
     for (const unit of this.units) {
       const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
@@ -392,18 +361,36 @@ export function applyMultiStarRules(PuzzleSolver) {
         .filter(combos => combos !== null && combos.length > 0);
       if (completionSets.length === 0) continue;
 
+      const unitSet = new Set(unit.indices);
+      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+
       // Union across scopes: forced if ANY single scope's combos alone
       // already prove it -- see _unitCompletionsByLevel.
-      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
       let forcedStars = avail.filter(cell => completionSets.some(combos => combos.every(combo => combo.includes(cell))));
-      let forcedDots  = avail.filter(cell => completionSets.some(combos => !combos.some(combo => combo.includes(cell))));
+      let forcedDots = [];
+
+      if (wantsDots) {
+        // Cells just outside the unit: touching one of its cells, not
+        // already decided, and not themselves part of the unit.
+        const outside = new Set();
+        for (const cell of unit.indices) {
+          for (const nb of this.getNeighbors(cell)) {
+            if (!unitSet.has(nb) && this.vState(nb) === CELL.NONE) outside.add(nb);
+          }
+        }
+
+        const starIncompatible = (cell, combo) =>
+          unitSet.has(cell) ? !combo.includes(cell) : combo.some(s => this._cellsAdjacent(s, cell));
+
+        forcedDots = [...avail, ...outside].filter(cell =>
+          completionSets.some(combos => combos.every(combo => starIncompatible(cell, combo)))
+        );
+      }
 
       if (filterCondition === 'all_stars') {
         if (forcedStars.length !== needed) forcedStars = [];
-        forcedDots = [];
       } else if (filterCondition === 'any_star') {
         if (forcedStars.length === 0 || forcedStars.length === needed) forcedStars = [];
-        forcedDots = [];
       } else if (filterCondition === 'dots') {
         forcedStars = [];
       }
@@ -433,9 +420,13 @@ export function applyMultiStarRules(PuzzleSolver) {
           boardIdx: unit.boardIdx
         });
       }
+      // One combined hint for every forced dot this unit produces, inside or
+      // outside its own cells -- a player doesn't need to know WHICH of the
+      // two mechanisms applies to which marked cell, just that a star can't
+      // go there.
       if (forcedDots.length > 0) {
         hints.push({
-          description: `No valid way to place this ${unitType}'s ${starsWord}${caveat} uses the marked cell, so it must be a dot.`,
+          description: `Every valid way to place this ${unitType}'s ${starsWord}${caveat} is incompatible with a star at the marked cell(s), so they must be dots.`,
           highlights: unit.indices
             .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
             .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
@@ -1171,8 +1162,9 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'excludeSolvedUnit',              fn: () => this.hintExcludeSolvedUnit() },
       { key: 'unitPlacementForcedWeakAll',     fn: () => this.hintUnitPlacementForced('weak', 'all_stars') },
       { key: 'unitPlacementForcedWeakAny',     fn: () => this.hintUnitPlacementForced('weak', 'any_star') },
+      // 'dots' covers both inside-the-unit and outside-the-unit forced dots --
+      // see hintUnitPlacementForced's comment for the unified reasoning.
       { key: 'unitPlacementForcedWeakDots',    fn: () => this.hintUnitPlacementForced('weak', 'dots') },
-      { key: 'externalDotFromPlacementsWeak',  fn: () => this.hintExternalDotFromPlacements('weak') },
       // Medium
       { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },
       { key: 'unitPlacementForcedIntermediateAll', fn: () => this.hintUnitPlacementForced('intermediate', 'all_stars') },
@@ -1184,7 +1176,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Hard
       { key: 'unitPlacementForcedIntermediateAny',  fn: () => this.hintUnitPlacementForced('intermediate', 'any_star') },
       { key: 'unitPlacementForcedIntermediateDots', fn: () => this.hintUnitPlacementForced('intermediate', 'dots') },
-      { key: 'externalDotFromPlacementsIntermediate', fn: () => this.hintExternalDotFromPlacements('intermediate') },
       { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
       { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
       { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
@@ -1214,7 +1205,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'unitPlacementForcedStrongAll',   fn: () => this.hintUnitPlacementForced('strong', 'all_stars') },
       { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced('strong', 'any_star') },
       { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced('strong', 'dots') },
-      { key: 'externalDotFromPlacementsStrong', fn: () => this.hintExternalDotFromPlacements('strong') },
       { key: 'unitCompletionSatisfiesOtherUnitStrong', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('strong') },
       { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
       { key: 'witnessAtMostOneForcingStrong',  fn: () => this.hintWitnessAtMostOneForcing('strong') },

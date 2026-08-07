@@ -258,7 +258,7 @@ class ScorerCore:
         (None: unit already at quota; []: that scope alone already finds
         the unit unsolvable; otherwise the valid combos). Used by rules
         that come in weak/intermediate/strong variants
-        (rule_unit_placement_forced_cond, _rule_external_dot_from_placements):
+        (rule_unit_placement_forced_cond, _rule_unit_completion_satisfies_other_unit):
 
          - 'weak': adjacency only, ignoring every other unit's capacity.
          - 'strong': full capacity check across every board's units at

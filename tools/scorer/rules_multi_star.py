@@ -79,64 +79,6 @@ class MultiStarRules:
                 return local_changes
         return changes
 
-    def _rule_external_dot_from_placements(self, p, level):
-        """
-        For each unsatisfied row/column/region, enumerate every valid way to
-        place its remaining star(s). If some cell outside the unit is
-        adjacent (including diagonally) to a star in EVERY one of those
-        placements, then whichever placement turns out to be true, that cell
-        would end up touching a star -- so it must be a dot. Python port of
-        hintExternalDotFromPlacements in solver.js.
-
-        level is 'weak'/'intermediate'/'strong' -- see
-        ScorerCore._unit_completions_by_level for what each means. For
-        'intermediate', a target is used if it's forced by ANY single
-        scope's (e.g. one board's) combos alone.
-        """
-        for unit in p.units:
-            completion_sets = [
-                combos for combos in self._unit_completions_by_level(p, unit, level) if combos
-            ]
-            if not completion_sets:
-                continue
-
-            unit_set = set(unit["indices"])
-            target_union = set()
-            for combos in completion_sets:
-                intersection = None
-                for combo in combos:
-                    seen = set()
-                    for cell in combo:
-                        for nb in p._neighbor_map[cell]:
-                            if nb not in unit_set and p.grid[nb] is None:
-                                seen.add(nb)
-                    intersection = seen if intersection is None else (intersection & seen)
-                    if not intersection:
-                        break
-                if intersection:
-                    target_union |= intersection
-
-            if not target_union:
-                continue
-
-            label = f"ExternalDot{level.capitalize()}({unit['label']})"
-            changes = sum(
-                p.validate_and_set(idx, ".", label, self.verbose)
-                for idx in target_union if p.grid[idx] is None
-            )
-            if changes > 0:
-                return changes
-        return 0
-
-    def rule_external_dot_from_placements_weak(self, p):
-        return self._rule_external_dot_from_placements(p, level='weak')
-
-    def rule_external_dot_from_placements_intermediate(self, p):
-        return self._rule_external_dot_from_placements(p, level='intermediate')
-
-    def rule_external_dot_from_placements_strong(self, p):
-        return self._rule_external_dot_from_placements(p, level='strong')
-
     def rule_unit_region_sync_multi_1(self, p):
         return self._rule_unit_region_sync_multi(p, 1)
 
@@ -211,8 +153,26 @@ class MultiStarRules:
         Generalized placement-enumeration engine that filters on specific
         sub-conditions. level is 'weak'/'intermediate'/'strong' -- see
         ScorerCore._unit_completions_by_level.
+
+        For cond == 'dots' (and the default/uncond case), forced_dots
+        covers BOTH cells inside the unit and cells just outside it, via
+        one unified test: is placing a star at a candidate cell
+        incompatible with EVERY valid completion? Inside the unit, a cell
+        absent from a completion is incompatible with it (starring it
+        alongside that completion would overfill the unit's quota);
+        outside the unit, a cell is incompatible with a completion if it's
+        adjacent (including diagonally) to one of that completion's stars.
+        This single test replaces what used to be two separate rules --
+        one for inside cells, one for outside cells (the former
+        rule_external_dot_from_placements_*) -- since both ask the same
+        question, just of different cells. Python port of the unified
+        hintUnitPlacementForced in solver-rules-multi.js.
         """
         combo_sets_by_unit = self._get_placement_forced_combos(p, level)
+        # 'all_stars'/'any_star' only ever look at forced_stars, so skip the
+        # dot-side enumeration entirely for those -- same cost as before this
+        # rule absorbed the outside-cell case.
+        wants_dots = cond != "all_stars" and cond != "any_star"
         changes = 0
         for unit in p.units:
             stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
@@ -224,22 +184,39 @@ class MultiStarRules:
             if not completion_sets:
                 continue
 
+            unit_set = set(unit["indices"])
+            avail = [i for i in unit["indices"] if p.grid[i] is None]
+
             # Union across scopes: forced if ANY single scope's combos
             # alone already prove it -- see _unit_completions_by_level.
-            avail = [i for i in unit["indices"] if p.grid[i] is None]
             forced_stars = [
                 c for c in avail if any(all(c in combo for combo in combos) for combos in completion_sets)
             ]
-            forced_dots = [
-                c for c in avail if any(not any(c in combo for combo in combos) for combos in completion_sets)
-            ]
+            forced_dots = []
+
+            if wants_dots:
+                # Cells just outside the unit: touching one of its cells,
+                # not already decided, and not themselves part of the unit.
+                outside = set()
+                for cell in unit["indices"]:
+                    for nb in p._neighbor_map[cell]:
+                        if nb not in unit_set and p.grid[nb] is None:
+                            outside.add(nb)
+
+                def star_incompatible(cell, combo, unit_set=unit_set):
+                    if cell in unit_set:
+                        return cell not in combo
+                    return any(self._cells_adjacent(p, s, cell) for s in combo)
+
+                forced_dots = [
+                    c for c in [*avail, *outside]
+                    if any(all(star_incompatible(c, combo) for combo in combos) for combos in completion_sets)
+                ]
 
             if cond == "all_stars":
                 if len(forced_stars) != needed: forced_stars = []
-                forced_dots = []
             elif cond == "any_star":
                 if len(forced_stars) == 0 or len(forced_stars) == needed: forced_stars = []
-                forced_dots = []
             elif cond == "dots":
                 forced_stars = []
 

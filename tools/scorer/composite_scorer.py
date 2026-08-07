@@ -110,8 +110,9 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_exclude_solved_unit,                       1,  "Beginner"),
             (self.rule_unit_placement_forced_weak_all,           5,  "Beginner"),
             (self.rule_unit_placement_forced_weak_any,           10, "Beginner"),
+            # Covers both inside-the-unit and outside-the-unit forced dots --
+            # see rule_unit_placement_forced_cond's docstring.
             (self.rule_unit_placement_forced_weak_dots,          10, "Beginner"),
-            (self.rule_external_dot_from_placements_weak,         12, "Beginner"),
 
             # -- Medium -------------------------------------------------------
             (self.rule_unit_region_sync_multi_1,                  15, "Medium"),
@@ -127,7 +128,6 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # -- Hard ---------------------------------------------------------
             (self.rule_unit_placement_forced_intermediate_any,    35, "Hard"),
             (self.rule_unit_placement_forced_intermediate_dots,   35, "Hard"),
-            (self.rule_external_dot_from_placements_intermediate, 40, "Hard"),
             (self.rule_unit_region_sync_multi_3,                  45, "Hard"),
             (self.rule_region_subset_sync_1,                      60, "Hard"),
             (self.rule_region_subset_sync_2,                      65, "Hard"),
@@ -158,7 +158,6 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_placement_forced_strong_all,          95, "Expert"),
             (self.rule_unit_placement_forced_strong_any,          96, "Expert"),
             (self.rule_unit_placement_forced_strong_dots,         97, "Expert"),
-            (self.rule_external_dot_from_placements_strong,       98, "Expert"),
             (self.rule_unit_completion_satisfies_other_unit_strong, 99, "Expert"),
             (self.rule_unit_region_sync_multi_2_disjoint,         100, "Expert"),
             (self.rule_witness_at_most_one_forcing_strong,        101, "Expert"),
