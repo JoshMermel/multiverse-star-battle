@@ -5,53 +5,207 @@ export function applyRules(GameClass) {
   const p = GameClass.prototype;
 
   // Fill empty cells in the same row, column, or region with dots when stars are placed.
-  p._autoFillDots = function (idx) {
+  // Also records WHY each dot exists (see the dot-provenance helpers below),
+  // so removing a star can cleanly retract just the dots it alone justified
+  // -- not ones some other still-present star (or the player, by hand)
+  // also justifies.
+  //
+  // Two kinds of reason get recorded, and they behave differently on removal:
+  //  - Adjacency to THIS star specifically: reason is the star's own cell
+  //    index. Tied to one star, so removing that exact star always retracts
+  //    it (see _removeStarAsReason).
+  //  - A row/column/region reaching its star quota: reason is a group token
+  //    (`row:R` / `col:C` / `region:B:ID`), not any particular star's index.
+  //    Whichever star placement happens to push the group over quota is
+  //    incidental -- what matters is whether the group STILL meets quota,
+  //    which can depend on several stars at once (e.g. a 2-star quota met by
+  //    two different stars). So this reason isn't retracted by removing one
+  //    specific star; it's reconciled by rechecking the group's current
+  //    count whenever any of its stars is removed (see _reconcileGroupQuota).
+  // Returns the row/column/region groups CONTAINING idx that currently meet
+  // their star quota, as { indices, reason } entries (reason is the group
+  // token -- see the dot-provenance comment below). Shared by _autoFillDots
+  // (idx is the star just placed; its groups may now be at quota) and
+  // _refillIfNowJustified (idx is a just-vacated cell; its groups may
+  // already have been at quota all along, just masked while idx was itself
+  // a star).
+  p._groupFillReasons = function (idx) {
     const n = this.n;
     const row = Math.floor(idx / n);
     const col = idx % n;
     const starsPerGroup = this.starsPerGroup || 1;
-
-    const toFill = new Set();
+    const groups = [];
 
     const rowIdxs = rowIndices(n, row);
-    const rowStars = rowIdxs.filter(i => this.state[i] === CELL.STAR).length;
-    if (rowStars >= starsPerGroup) {
-      rowIdxs.forEach(i => toFill.add(i));
+    if (rowIdxs.filter(i => this.state[i] === CELL.STAR).length >= starsPerGroup) {
+      groups.push({ indices: rowIdxs, reason: `row:${row}` });
     }
 
     const colIdxs = colIndices(n, col);
-    const colStars = colIdxs.filter(i => this.state[i] === CELL.STAR).length;
-    if (colStars >= starsPerGroup) {
-      colIdxs.forEach(i => toFill.add(i));
+    if (colIdxs.filter(i => this.state[i] === CELL.STAR).length >= starsPerGroup) {
+      groups.push({ indices: colIdxs, reason: `col:${col}` });
     }
 
-    this.regions.forEach(regionString => {
+    this.regions.forEach((regionString, boardIdx) => {
       const regionId = regionString[idx];
       if (regionId === '*') return;
       const regionIndices = [];
       for (let i = 0; i < n * n; i++) {
         if (regionString[i] === regionId) regionIndices.push(i);
       }
-      const regionStars = regionIndices.filter(i => this.state[i] === CELL.STAR).length;
-      if (regionStars >= starsPerGroup) {
-        regionIndices.forEach(i => toFill.add(i));
+      if (regionIndices.filter(i => this.state[i] === CELL.STAR).length >= starsPerGroup) {
+        groups.push({ indices: regionIndices, reason: `region:${boardIdx}:${regionId}` });
       }
     });
 
-    // Stars cannot touch orthogonally or diagonally, so adjacent cells are
-    // always dotted regardless of row/column/region quotas.
-    getNeighbors8(idx, n).forEach(i => toFill.add(i));
+    return groups;
+  };
 
-    // Apply dots to empty cells only (never void cells).
-    for (const i of toFill) {
-      if (this.voidCells?.has(i)) continue;
-      if (this.state[i] === CELL.NONE) {
-        this.state[i] = CELL.DOT;
-        this._getCellsByIndex(i).forEach(cell => {
-          this.updateCellVisual(cell, CELL.DOT);
+  p._autoFillDots = function (idx) {
+    const n = this.n;
+
+    // Each entry: cells to dot, plus the reason token to attach to them.
+    const fillGroups = this._groupFillReasons(idx);
+
+    // Stars cannot touch orthogonally or diagonally, so adjacent cells are
+    // always dotted regardless of row/column/region quotas, attributed
+    // directly to this star.
+    fillGroups.push({ indices: getNeighbors8(idx, n), reason: idx });
+
+    // Apply dots to empty cells (never void or already-starred cells), and
+    // record each group's reason for every cell it covers -- including
+    // cells that were already dots for some OTHER reason (e.g. two groups
+    // whose cells overlap), so a cell only reverts to empty once every
+    // reason justifying it is gone.
+    for (const { indices, reason } of fillGroups) {
+      for (const i of indices) {
+        if (this.voidCells?.has(i)) continue;
+        if (this.state[i] === CELL.STAR) continue;
+        if (this.state[i] === CELL.NONE) {
+          this.state[i] = CELL.DOT;
+          this._getCellsByIndex(i).forEach(cell => {
+            this.updateCellVisual(cell, CELL.DOT);
+          });
+        }
+        this._addDotReason(i, reason);
+      }
+    }
+  };
+
+  // Called when the star at idx is removed, on the now-empty idx itself:
+  // a cell that WAS a star is exempt from being dotted (see the STAR-skip
+  // above), so any reason that already applied to it -- an adjacent star
+  // that's still there, or a row/column/region that already met quota via
+  // OTHER stars -- was never recorded, since it never got the chance to be
+  // a dot in the first place. Now that idx is empty again, re-check and
+  // dot it immediately if any such reason currently applies.
+  p._refillIfNowJustified = function (idx) {
+    if (this.voidCells?.has(idx)) return;
+    if (this.state[idx] !== CELL.NONE) return;
+
+    const reasons = [];
+    getNeighbors8(idx, this.n).forEach(nb => {
+      if (this.state[nb] === CELL.STAR) reasons.push(nb);
+    });
+    this._groupFillReasons(idx).forEach(({ reason }) => reasons.push(reason));
+
+    if (reasons.length === 0) return;
+    this.state[idx] = CELL.DOT;
+    this._getCellsByIndex(idx).forEach(cell => {
+      this.updateCellVisual(cell, CELL.DOT);
+    });
+    reasons.forEach(reason => this._addDotReason(idx, reason));
+  };
+
+  // --- Dot provenance ---
+  //
+  // `dotReasons` (Map<cellIndex, Set<reason>>) records why each currently-
+  // dotted cell is a dot. A reason is one of:
+  //   - 'manual': the player dotted it directly by hand.
+  //   - a star's own cell index (number): that star's 8-neighbor adjacency
+  //     covers this cell. Tied to exactly that star.
+  //   - a group token (`row:R` / `col:C` / `region:B:ID`): that row/column/
+  //     region currently meets its star quota, so the rest of the group is
+  //     dotted. NOT tied to any one star -- a quota can be met by several
+  //     stars together, so this reason is retracted only once the group's
+  //     live star count drops back below quota (see _reconcileGroupQuota),
+  //     not just because one contributing star was removed.
+  // A dot only reverts to empty once every one of its reasons is gone --
+  // removing one star that helped justify a dot doesn't clear it if another
+  // star (or a manual click, or the group still otherwise meeting quota)
+  // still does. Cells that aren't currently dots have no entry.
+
+  p._addDotReason = function (idx, reason) {
+    if (!this.dotReasons) this.dotReasons = new Map();
+    let reasons = this.dotReasons.get(idx);
+    if (!reasons) {
+      reasons = new Set();
+      this.dotReasons.set(idx, reasons);
+    }
+    reasons.add(reason);
+  };
+
+  // Removes one reason from idx's set. If that empties the set AND idx is
+  // still a dot (not since overwritten by a star), reverts idx to empty.
+  p._removeDotReason = function (idx, reason) {
+    const reasons = this.dotReasons?.get(idx);
+    if (!reasons || !reasons.has(reason)) return;
+    reasons.delete(reason);
+    if (reasons.size === 0) {
+      this.dotReasons.delete(idx);
+      if (this.state[idx] === CELL.DOT) {
+        this.state[idx] = CELL.NONE;
+        this._getCellsByIndex(idx).forEach(cell => {
+          this.updateCellVisual(cell, CELL.NONE);
         });
       }
     }
+  };
+
+  // Removes `reason` from every cell in `indices` ONLY IF that group no
+  // longer meets its star quota (checked against current state, i.e. after
+  // the triggering star has already been removed). A group can meet quota
+  // via several stars at once, so losing one doesn't necessarily invalidate
+  // the group-fill reason -- e.g. a 2-star quota met by 3 stars still meets
+  // quota after one of them is removed, and the reason correctly survives.
+  p._reconcileGroupQuota = function (indices, reason) {
+    const starsPerGroup = this.starsPerGroup || 1;
+    const stars = indices.filter(i => this.state[i] === CELL.STAR).length;
+    if (stars < starsPerGroup) {
+      indices.forEach(i => this._removeDotReason(i, reason));
+    }
+  };
+
+  // Called when the star at starIdx is removed: retracts it as an adjacency
+  // reason from every cell that has it, and reconciles the row/column/region
+  // group-quota reasons for every group starIdx belonged to (a group's fill
+  // may have been justified by starIdx together with other stars, so it's
+  // only retracted if the group has now dropped below quota -- see
+  // _reconcileGroupQuota).
+  p._removeStarAsReason = function (starIdx) {
+    const n = this.n;
+    const row = Math.floor(starIdx / n);
+    const col = starIdx % n;
+
+    if (this.dotReasons) {
+      // Snapshot the keys first -- _removeDotReason mutates the map as it goes.
+      for (const idx of [...this.dotReasons.keys()]) {
+        this._removeDotReason(idx, starIdx);
+      }
+    }
+
+    this._reconcileGroupQuota(rowIndices(n, row), `row:${row}`);
+    this._reconcileGroupQuota(colIndices(n, col), `col:${col}`);
+
+    this.regions.forEach((regionString, boardIdx) => {
+      const regionId = regionString[starIdx];
+      if (regionId === '*') return;
+      const regionIndices = [];
+      for (let i = 0; i < n * n; i++) {
+        if (regionString[i] === regionId) regionIndices.push(i);
+      }
+      this._reconcileGroupQuota(regionIndices, `region:${boardIdx}:${regionId}`);
+    });
   };
 
   // Check if all solution stars are placed and no extra stars exist.

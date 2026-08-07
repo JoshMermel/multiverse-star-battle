@@ -1,12 +1,36 @@
 import { storageManager } from './storage.js';
 import { CELL } from './constants.js';
 
+// dotReasons (see rules.js) is a Map<cellIndex, Set<reason>> -- neither
+// Map nor Set survives JSON.stringify on its own, so history snapshots
+// serialize it to a plain {idx: [reasons]} object alongside state, and
+// deserialize it back on undo/redo. An empty/missing dotReasons still
+// round-trips fine (deserializes to an empty Map), so this doesn't need
+// special-casing for puzzle loads that never had one to begin with.
+function serializeDotReasons(dotReasons) {
+  const obj = {};
+  if (dotReasons) {
+    for (const [idx, reasons] of dotReasons) {
+      obj[idx] = [...reasons];
+    }
+  }
+  return obj;
+}
+
+function deserializeDotReasons(obj) {
+  const map = new Map();
+  for (const key of Object.keys(obj || {})) {
+    map.set(Number(key), new Set(obj[key]));
+  }
+  return map;
+}
+
 export function applyHistory(GameClass) {
   const p = GameClass.prototype;
 
   // Save current state to history and truncate any undone future states.
   p.saveHistory = function () {
-    const snap = JSON.stringify(this.state);
+    const snap = JSON.stringify({ state: this.state, dotReasons: serializeDotReasons(this.dotReasons) });
     // Skip if state is unchanged.
     if (snap === this.history[this.historyIdx]) return;
 
@@ -21,7 +45,9 @@ export function applyHistory(GameClass) {
     this.hideToast();
     if (this.historyIdx > 0) {
       this.historyIdx--;
-      this.state = JSON.parse(this.history[this.historyIdx]);
+      const snap = JSON.parse(this.history[this.historyIdx]);
+      this.state = snap.state;
+      this.dotReasons = deserializeDotReasons(snap.dotReasons);
       this.updateVisuals();
       this.validate();
       this.updateControls();
@@ -34,7 +60,9 @@ export function applyHistory(GameClass) {
     this.hideToast();
     if (this.historyIdx < this.history.length - 1) {
       this.historyIdx++;
-      this.state = JSON.parse(this.history[this.historyIdx]);
+      const snap = JSON.parse(this.history[this.historyIdx]);
+      this.state = snap.state;
+      this.dotReasons = deserializeDotReasons(snap.dotReasons);
       this.updateVisuals();
       this.validate();
       this.updateControls();
@@ -50,10 +78,15 @@ export function applyHistory(GameClass) {
   };
 
   // Replace the live board state, and reset history to a single fresh
-  // snapshot of it.
+  // snapshot of it. dotReasons always starts empty here -- a freshly
+  // loaded/reset/reconstructed state has no per-cell provenance to speak
+  // of, so any dots already on the board (e.g. reconstructed from a
+  // solved solution) are just inert until live play re-establishes
+  // reasons for them.
   p._resetHistoryTo = function (state) {
     this.state = state;
-    this.history = [JSON.stringify(state)];
+    this.dotReasons = new Map();
+    this.history = [JSON.stringify({ state, dotReasons: {} })];
     this.historyIdx = 0;
   };
 

@@ -309,20 +309,51 @@ class StarBattleGame {
   // Apply state change to a cell, update visuals, validate, and persist.
   applyState(idx, type, { suppressWinToast = false, debounceMs } = {}) {
     if (this.voidCells?.has(idx)) return;
-    if (this.state[idx] === type) return;
+    const prev = this.state[idx];
+    if (prev === type) return;
     this._startTimerIfNeeded();
     this.state[idx] = type;
     this._getCellsByIndex(idx).forEach(cell => {
       this.updateCellVisual(cell, type);
     });
+
+    // Track/retract dot provenance so removing a star cleanly retracts only
+    // the dots it alone justified -- see rules.js's dot-provenance helpers.
+    if (type === CELL.DOT) {
+      // Only reachable from CELL.NONE today (the click cycle goes
+      // STAR -> NONE -> DOT -> STAR, and drag-painting only fills NONE
+      // cells), so this is always a fresh, player-placed dot.
+      this._addDotReason(idx, 'manual');
+    } else {
+      // Leaving DOT (to STAR) or STAR (to NONE): idx itself isn't a dot
+      // anymore, so its own reason bookkeeping is moot.
+      this.dotReasons?.delete(idx);
+      if (prev === CELL.STAR && type === CELL.NONE) {
+        this._removeStarAsReason(idx);
+      }
+    }
+
     // Delay dot placement validation to prevent flashing during double-clicks.
     const delay = debounceMs ?? (type === CELL.DOT ? 200 : 0);
 
+    const autoFillEnabled = !this._suppressAutoFill &&
+      localStorage.getItem('setting-auto-fill-dots') === 'true';
+
     // Automatically fill dots in the same row, column, and region when placing a star.
-    if (type === CELL.STAR && !this._suppressAutoFill &&
-      localStorage.getItem('setting-auto-fill-dots') === 'true') {
+    if (type === CELL.STAR && autoFillEnabled) {
       this._suppressAutoFill = true;
       this._autoFillDots(idx);
+      this._suppressAutoFill = false;
+    }
+
+    // Removing a star can "reveal" that the vacated cell itself should
+    // immediately be a dot again -- e.g. it's still adjacent to another
+    // star, or its row/column/region already met quota via other stars.
+    // Both were true all along; a star cell is just exempt from being
+    // dotted, so neither ever got recorded while idx was the star itself.
+    if (prev === CELL.STAR && type === CELL.NONE && autoFillEnabled) {
+      this._suppressAutoFill = true;
+      this._refillIfNowJustified(idx);
       this._suppressAutoFill = false;
     }
 
