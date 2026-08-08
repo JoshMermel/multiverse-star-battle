@@ -1,4 +1,4 @@
-from board_utils import get_board_variants, select_diagonal_variants
+from board_utils import get_board_variants, select_diagonal_variants, select_axis_variants
 from comparator import Comparator
 
 
@@ -22,6 +22,15 @@ class SymmetricPoolComparator(Comparator):
         Set to False for boards with fixed void masks: rotating a void board
         produces a different void layout, so only the identity orientation
         should be compared.
+    diagonal_alignment / axis_alignment : str, optional
+        Mutually exclusive; pass at most one. Further restrict
+        match_variants' 8 orientations down to the 4 that keep the incoming
+        board's diagonal, or row/column axis, the same as ('aligned') or
+        different from ('misaligned') the pool entry's -- see
+        board_utils.select_diagonal_variants / select_axis_variants. Both
+        default to 'any' (no filtering). Useful even when matching a
+        generator against itself, e.g. pairing two translation-symmetric
+        boards whose split axes must consistently agree or disagree.
 
     Pool note
     ---------
@@ -33,11 +42,15 @@ class SymmetricPoolComparator(Comparator):
     board; board_2 is the matched pool entry in its original orientation.
     """
 
-    def __init__(self, generator, n, output_rows, match_variants=True, diagonal_alignment='any'):
+    def __init__(self, generator, n, output_rows, match_variants=True,
+                 diagonal_alignment='any', axis_alignment='any'):
         super().__init__(n, output_rows)
+        if diagonal_alignment != 'any' and axis_alignment != 'any':
+            raise ValueError("Pass at most one of diagonal_alignment/axis_alignment, not both.")
         self.generator = generator
         self.match_variants = match_variants
         self.diagonal_alignment = diagonal_alignment
+        self.axis_alignment = axis_alignment
         # Pool of (flat_board, solution_set) awaiting a match.
         self.pool = []
 
@@ -49,11 +62,17 @@ class SymmetricPoolComparator(Comparator):
 
         # Build the list of (board, solution_set) candidates to test against
         # pool entries. With match_variants=True we check all 8
-        # rotations/reflections; with False we only check the board as
-        # generated (identity transform only).
+        # rotations/reflections (optionally narrowed to 4 by
+        # diagonal_alignment/axis_alignment); with False we only check the
+        # board as generated (identity transform only).
         if self.match_variants:
             all_variants = get_board_variants(flat, solutions, self.n)
-            candidates = select_diagonal_variants(all_variants, self.diagonal_alignment)
+            if self.diagonal_alignment != 'any':
+                candidates = select_diagonal_variants(all_variants, self.diagonal_alignment)
+            elif self.axis_alignment != 'any':
+                candidates = select_axis_variants(all_variants, self.axis_alignment)
+            else:
+                candidates = all_variants
         else:
             candidates = [(flat, solutions)]
 
