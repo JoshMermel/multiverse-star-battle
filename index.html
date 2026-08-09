@@ -226,12 +226,39 @@
     // opportunistically caches puzzle data as it's fetched, so the game
     // keeps working across reloads and app restarts with no network —
     // e.g. for playing offline on a flight.
+    //
+    // Dev escape hatch: sw.js's cache-first shell serving (deliberately —
+    // see its own comments) makes local testing painful, since an edited
+    // file can keep serving stale content for a navigation or two even
+    // after the background refresh kicks in. Visit once with ?sw=off to
+    // unregister and stay off — persisted in localStorage, so it survives
+    // further reloads/navigations with no ?sw param at all — until you
+    // visit with ?sw=on again. No code edits or devtools digging needed
+    // either way.
+    const SW_DEV_DISABLED_KEY = 'sb_dev_sw_disabled';
+    const swParam = new URLSearchParams(location.search).get('sw');
+    if (swParam === 'off') localStorage.setItem(SW_DEV_DISABLED_KEY, '1');
+    if (swParam === 'on') localStorage.removeItem(SW_DEV_DISABLED_KEY);
+
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch((err) => {
-          console.warn('Service worker registration failed:', err);
+      if (localStorage.getItem(SW_DEV_DISABLED_KEY)) {
+        // Actively tear down any worker/caches left over from before the
+        // toggle was flipped off — skipping re-registration alone isn't
+        // enough, since an already-active worker from a prior visit keeps
+        // intercepting fetches until it's unregistered.
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          regs.forEach((reg) => reg.unregister());
         });
-      });
+        caches.keys().then((keys) => {
+          keys.filter((k) => k.startsWith('msb-')).forEach((k) => caches.delete(k));
+        });
+      } else {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch((err) => {
+            console.warn('Service worker registration failed:', err);
+          });
+        });
+      }
     }
   </script>
 
