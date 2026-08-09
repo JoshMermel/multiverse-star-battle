@@ -534,6 +534,176 @@ export function applyMultiStarRules(PuzzleSolver) {
     });
   };
 
+  // -- Region/line partition forced star (2★+) -------------------------------------
+  //
+  // A second sibling reasoning off the same per-region guarantees
+  // hintRegionLineQuotaFill computes (_regionLineGuarantees /
+  // _findSubsetSumCombo), but drawing a different conclusion from the same
+  // successful subset-sum match: hintRegionLineQuotaFill uses it to dot
+  // every OTHER cell in the line, since the matched regions' guarantees
+  // already account for the line's whole remaining need. This rule notices
+  // something else that same match implies: since the matched regions' k's
+  // already sum EXACTLY to the line's need, none of them can contribute
+  // MORE than its own guaranteed k -- that would overshoot the line's
+  // actual quota, which is impossible. So each matched region's in-line
+  // count is pinned to EXACTLY k, not just "at least k". That pins its
+  // remainder too (its own total need minus k), on BOTH sides of the split
+  // -- letting each side be reasoned about as its own small local placement
+  // problem: how many ways are there to fit exactly that many non-touching
+  // stars among just those cells? If every local arrangement agrees on
+  // some cell, that cell must be a star. E.g. a "rest" shaped like a
+  // P-pentomino needing 2 non-touching stars might only have a couple of
+  // valid 2-cell arrangements, all of which happen to include one specific
+  // cell.
+  //
+  // Why ignoring the rest of the board (no capacity checks, no reasoning
+  // about which cells the OTHER side's completion touches) is still sound:
+  // the true realized arrangement on a side must itself be one of the
+  // valid LOCAL ones (adjacency is the only thing that can ever disqualify
+  // it), so it's necessarily a MEMBER of the set _forcedCellsInGroup
+  // enumerates -- a cell common to that whole (possibly larger, since it
+  // ignores extra constraints the true arrangement also happens to
+  // satisfy) set is common to the true arrangement too. Same principle as
+  // 'weak' mode in _enumerateUnitCompletions.
+
+  // Every cell in `cells` that appears in EVERY valid way to choose `k`
+  // mutually non-touching cells from `cells` alone (also not touching any
+  // of `existingStars`). Returns [] if there's no valid arrangement, or if
+  // the valid arrangements don't all agree on any cell.
+  p._forcedCellsInGroup = function (cells, k, existingStars) {
+    const candidates = cells.filter(c => !existingStars.some(s => this._cellsAdjacent(s, c)));
+    if (k <= 0 || candidates.length < k) return [];
+
+    let intersection = null;
+    const chosen = [];
+    const tryFrom = (start) => {
+      if (intersection && intersection.size === 0) return; // nothing left to narrow
+      if (chosen.length === k) {
+        if (intersection === null) {
+          intersection = new Set(chosen);
+        } else {
+          for (const c of intersection) {
+            if (!chosen.includes(c)) intersection.delete(c);
+          }
+        }
+        return;
+      }
+      if (candidates.length - start < k - chosen.length) return;
+      for (let i = start; i < candidates.length; i++) {
+        const cell = candidates[i];
+        if (chosen.some(c => this._cellsAdjacent(c, cell))) continue;
+        chosen.push(cell);
+        tryFrom(i + 1);
+        chosen.pop();
+        if (intersection && intersection.size === 0) return;
+      }
+    };
+    tryFrom(0);
+    return intersection ? [...intersection] : [];
+  };
+
+  // Every region/line/side triple, on any board, where a successful
+  // regionLineQuotaFill-style subset-sum match pins the region's split to
+  // an exact count and some specific cell is forced across every local
+  // arrangement of that side's share. Returns an array of
+  // { boardIdx, lineKind, lineIdx, side, groupCells, forcedCells }.
+  p._regionLinePartitionForcedFacts = function (level) {
+    return this._cachedOnState(`regionLinePartitionForcedFacts_${level}`, () => this._regionLinePartitionForcedFactsImpl(level));
+  };
+
+  p._regionLinePartitionForcedFactsImpl = function (level) {
+    const guarantees = this._regionLineGuarantees(level);
+    const result = [];
+
+    for (const [key, entries] of guarantees) {
+      const [kind, idxStr] = key.split(':');
+      const lineIdx = Number(idxStr);
+      const lineIndices = kind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
+      const inLine = kind === 'row'
+        ? (cell => Math.floor(cell / this.n) === lineIdx)
+        : (cell => cell % this.n === lineIdx);
+
+      const stars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
+      const needed = this.starsPerGroup - stars;
+      if (needed <= 0) continue;
+      const avail = lineIndices.filter(i => this.vState(i) === CELL.NONE);
+      if (avail.length === 0) continue;
+
+      // Same board grouping as hintRegionLineQuotaFill -- never cross-board.
+      const byBoard = new Map();
+      for (const entry of entries) {
+        if (!byBoard.has(entry.boardIdx)) byBoard.set(entry.boardIdx, []);
+        byBoard.get(entry.boardIdx).push(entry);
+      }
+
+      for (const [boardIdx, boardEntries] of byBoard) {
+        const combo = this._findSubsetSumCombo(boardEntries, needed);
+        if (!combo) continue;
+
+        // Every region in this matched combo is now pinned to EXACTLY its
+        // own guaranteed k in this line (see the section comment above).
+        for (const { unit, k } of combo) {
+          const regionStars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
+          const regionNeeded = this.starsPerGroup - regionStars;
+          const outsideCount = regionNeeded - k;
+
+          const insideCells = unit.indices.filter(i => this.vState(i) === CELL.NONE && inLine(i));
+          const outsideCells = unit.indices.filter(i => this.vState(i) === CELL.NONE && !inLine(i));
+          const existingStars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
+
+          if (k >= 1) {
+            const forced = this._forcedCellsInGroup(insideCells, k, existingStars);
+            if (forced.length > 0) {
+              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'inside', groupCells: insideCells, forcedCells: forced });
+            }
+          }
+          if (outsideCount >= 1) {
+            const forced = this._forcedCellsInGroup(outsideCells, outsideCount, existingStars);
+            if (forced.length > 0) {
+              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'outside', groupCells: outsideCells, forcedCells: forced });
+            }
+          }
+        }
+      }
+    }
+    return result;
+  };
+
+  p.hintRegionLinePartitionForced = function (level) {
+    const facts = this._regionLinePartitionForcedFacts(level);
+
+    // A cell can end up forced via more than one fact (row and column
+    // reasoning about the same region can coincide) -- dedupe by the exact
+    // forced-cell set so it's shown once.
+    const seen = new Map();
+    for (const fact of facts) {
+      const key = this._groupKey(fact.forcedCells);
+      if (!seen.has(key)) seen.set(key, fact);
+    }
+    const candidates = [...seen.values()];
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.forcedCells[0] - b.forcedCells[0]);
+
+    return candidates.map(({ boardIdx, lineKind, lineIdx, side, groupCells, forcedCells }) => {
+      const lineWord = lineKind === 'row' ? 'row' : 'column';
+      const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
+      const pronoun = forcedCells.length === 1 ? 'it' : 'they';
+      const starPhrase = forcedCells.length === 1 ? 'a star' : 'stars';
+      const sideWord = side === 'inside' ? 'inside' : 'outside';
+      const forcedSet = new Set(forcedCells);
+
+      return {
+        boardIdx,
+        description: `Every way to place the highlighted region's stars ${sideWord} the amber-outlined ${lineWord} includes the marked ${cellWord} -- so ${pronoun} must be ${starPhrase}.`,
+        highlights: groupCells
+          .filter(i => !forcedSet.has(i))
+          .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        marks: forcedCells.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
+        lineHighlight: { boardIdx, axis: lineKind, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
+      };
+    });
+  };
+
   // --- 2★/3★-generalized row/col <-> region sync ---
   // These mirror _hintUnitsCoveredByRegions / _hintRegionsTrappedInUnits (in
   // solver-rules-single.js), but work off each region's remaining star COUNT (via
@@ -1374,7 +1544,11 @@ export function applyMultiStarRules(PuzzleSolver) {
       // instead of summing them across regions. Slotted at the same tier
       // as its regionLineQuotaFill counterpart, not one above, since it
       // doesn't need regionLineQuotaFill's extra cross-region subset-sum
-      // step.
+      // step. The forced-star variant (see the section comment above
+      // hintRegionLinePartitionForced) runs first at each tier, same as
+      // unitPlacementForced's 'all_stars' running before 'any_star'/'dots'
+      // -- confirming a star outright is a bigger win than excluding one.
+      { key: 'regionLinePartitionForcedWeak',      fn: () => this.hintRegionLinePartitionForced('weak') },
       { key: 'regionLinePartitionTrappedWeak',     fn: () => this.hintRegionLinePartitionTrapped('weak') },
       // Hard
       { key: 'unitPlacementForcedIntermediateAny',  fn: () => this.hintUnitPlacementForced('intermediate', 'any_star') },
@@ -1387,6 +1561,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       // (Expert) for K>1.
       { key: 'tileQuotaFillSingle',            fn: () => this.hintTileQuotaFillSingle() },
       { key: 'regionLineQuotaFillIntermediate', fn: () => this.hintRegionLineQuotaFill('intermediate') },
+      { key: 'regionLinePartitionForcedIntermediate', fn: () => this.hintRegionLinePartitionForced('intermediate') },
       { key: 'regionLinePartitionTrappedIntermediate', fn: () => this.hintRegionLinePartitionTrapped('intermediate') },
       { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
       { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
@@ -1416,6 +1591,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Tiles rule 3.
       { key: 'tileDisjointQuotaFill',          fn: () => this.hintTileDisjointQuotaFill() },
       { key: 'regionLineQuotaFillStrong',      fn: () => this.hintRegionLineQuotaFill('strong') },
+      { key: 'regionLinePartitionForcedStrong',    fn: () => this.hintRegionLinePartitionForced('strong') },
       { key: 'regionLinePartitionTrappedStrong',   fn: () => this.hintRegionLinePartitionTrapped('strong') },
       // Restored from pre-experiment.
       { key: 'unitCompletionSatisfiesOtherUnitStrong', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('strong') },
