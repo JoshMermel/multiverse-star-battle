@@ -16,6 +16,10 @@ export function applyRenderer(GameClass) {
   p._resetCellCache = function () {
     this._cellsByIndex = new Map();
     this._allCells = [];
+    // The old board's DOM (including any tile-outline overlays) is about
+    // to be replaced wholesale -- drop stale references rather than
+    // leaving them pointing at detached nodes.
+    this._hintTileOutlineEls = [];
   };
 
   // Registers one cell element under its index. Called once per cell as
@@ -292,6 +296,14 @@ export function applyRenderer(GameClass) {
   p.applyHintUI = function (hint) {
     const involvedBoards = new Set();
 
+    // Tile outlines are separate overlay elements (not cell classes -- see
+    // _applyTileOutlines), so they don't get swept up by the class-based
+    // highlight loop below and need their own accumulation guard: clear
+    // any outlines from a PREVIOUS hint before drawing this one's, since
+    // repeated Hint clicks call applyHintUI without necessarily going
+    // through clearHintUI in between.
+    this._clearTileOutlines();
+
     for (const { idx, color, boards } of [...hint.highlights, ...hint.marks]) {
       const targetBoards = boards ?? (hint.boardIdx !== undefined ? [hint.boardIdx] : null);
       const cellsForIdx = this._getCellsByIndex(idx);
@@ -308,6 +320,8 @@ export function applyRenderer(GameClass) {
       }
     }
 
+    if (hint.tileOutlines) this._applyTileOutlines(hint.tileOutlines);
+
     if (document.body.classList.contains('tab-mode')) {
       if (hint.boardIdx !== undefined) {
         // Single-board hint: just switch straight to it.
@@ -323,6 +337,51 @@ export function applyRenderer(GameClass) {
     }
 
     this.showToast(hint.description, "hint", 30000);
+  };
+
+  // Draws one colored, inset-bordered overlay box per { topLeftIdx, color }
+  // entry, spanning the 2x2 area starting at that cell -- see the "Tiles"
+  // rule family in solver-rules-multi.js. One overlay per board (tiles
+  // are board-agnostic: the same row/column-based box applies to every
+  // board's grid at once).
+  //
+  // Positioned with `position: absolute` (top/left set here, in
+  // cell-size units; width/height and the inset are fixed in CSS) rather
+  // than as a grid item spanning grid-row/grid-column. That looked
+  // simpler at first -- no pixel math, just occupy the same 2x2 grid
+  // area as the cells it outlines -- but a grid item with an EXPLICIT
+  // position claims that area in the auto-placement algorithm BEFORE the
+  // 81 auto-placed cell divs get laid out (CSS Grid places explicit-
+  // position items first, regardless of DOM order), which visibly
+  // corrupted the cells' positions (confirmed empirically: cells after
+  // the outline's claimed area silently shifted over/wrapped). Absolute
+  // positioning is pure decoration, entirely outside grid layout, so it
+  // can't interfere with the cells no matter how many outlines are added.
+  p._applyTileOutlines = function (tileOutlines) {
+    for (const { topLeftIdx, color } of tileOutlines) {
+      const row = Math.floor(topLeftIdx / this.n);
+      const col = topLeftIdx % this.n;
+      for (const cell of this._getCellsByIndex(topLeftIdx)) {
+        const grid = cell?.parentElement;
+        if (!grid) continue;
+        const outline = document.createElement('div');
+        outline.className = `tile-outline tile-outline-${color}`;
+        // Shifted by the same 10%-of-a-cell inset .tile-outline's CSS
+        // shrinks width/height by (2x that), so the box ends up
+        // symmetrically inset on all four sides -- see style.css.
+        outline.style.top = `calc(${row} * var(--cell-size) + var(--cell-size) * 0.1)`;
+        outline.style.left = `calc(${col} * var(--cell-size) + var(--cell-size) * 0.1)`;
+        grid.appendChild(outline);
+        if (!this._hintTileOutlineEls) this._hintTileOutlineEls = [];
+        this._hintTileOutlineEls.push(outline);
+      }
+    }
+  };
+
+  p._clearTileOutlines = function () {
+    if (!this._hintTileOutlineEls) return;
+    for (const el of this._hintTileOutlineEls) el.remove();
+    this._hintTileOutlineEls = [];
   };
 
   // Highlights the swap button when the active hint involves a board other
@@ -345,6 +404,7 @@ export function applyRenderer(GameClass) {
         ...HINT_SOURCE_VARIANTS
       );
     });
+    this._clearTileOutlines();
     const swapBtn = document.getElementById('board-swap-btn');
     if (swapBtn) swapBtn.classList.remove('board-tab--hint-flag');
   };

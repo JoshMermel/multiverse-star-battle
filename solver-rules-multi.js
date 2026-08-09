@@ -1,4 +1,4 @@
-import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS } from './constants.js';
+import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, TILE_OUTLINE_COLORS } from './constants.js';
 
 // 2★+ rule implementations: everything written against an arbitrary
 // this.starsPerGroup rather than assuming exactly 1 star per
@@ -17,190 +17,6 @@ export function applyMultiStarRules(PuzzleSolver) {
   // shared across: weak only rules out completions that touch each other or an existing
   // star; strong also rules out completions that would overload some other
   // row/column/region; intermediate is strong restricted to one board's units at a time.
-
-  // Rule (2★/3★): For a row/column/region with missing stars, enumerate every valid
-  // way to place its remaining stars. If EVERY one of those completions exactly fills
-  // up some OTHER row/column/region (of a different type), then that other unit's
-  // entire remaining quota is guaranteed to come from this unit no matter which
-  // completion turns out to be true -- so any of its other empty cells (outside this
-  // unit) must be dots. Checked in both directions: a region's placements can force a
-  // row or column, and a row's or column's placements can force a region (or the
-  // other axis).
-  //
-  // level is 'intermediate' or 'strong' (no 'weak' -- a capacity-free version of this
-  // rule wouldn't reliably prove anything, since the whole deduction hinges on quota
-  // bookkeeping). See _unitCompletionsByLevel: 'intermediate' only ever needs one
-  // board's regions to reach its conclusion; 'strong' may need both.
-  p.hintUnitCompletionSatisfiesOtherUnit = function (level = 'strong') {
-    const candidateMap = new Map(); // "unitLabel|otherLabel" -> candidate, deduped across scopes
-
-    for (const unit of this.units) {
-      const completionSets = this._unitCompletionsByLevel(unit, level)
-        .filter(combos => combos !== null && combos.length > 0);
-      if (completionSets.length === 0) continue;
-
-      const sourceKind = this._unitKind(unit);
-      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
-      const scopes = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
-
-      completionSets.forEach((combos, i) => {
-        // For 'intermediate', an "other" unit is only a fair candidate if
-        // it's visible from THIS SAME scope's single-board viewpoint --
-        // a region on a different board isn't something this particular
-        // completion set's reasoning ever looked at.
-        const scopeBoardIdx = level === 'intermediate' ? scopes[i] : null;
-
-        const seenLabels = new Set();
-        const others = [];
-        for (const idx of avail) {
-          for (const otherUnit of this._unitsByCell[idx]) {
-            if (otherUnit.label === unit.label) continue;
-            if (this._unitKind(otherUnit) === sourceKind) continue;
-            if (scopeBoardIdx !== null && otherUnit.boardIdx !== undefined && otherUnit.boardIdx !== scopeBoardIdx) continue;
-            if (seenLabels.has(otherUnit.label)) continue;
-            seenLabels.add(otherUnit.label);
-            others.push(otherUnit);
-          }
-        }
-
-        for (const other of others) {
-          const key = `${unit.label}|${other.label}`;
-          if (candidateMap.has(key)) continue;
-
-          const otherStars = other.indices.filter(i => this.vState(i) === CELL.STAR).length;
-          const otherNeeded = this.starsPerGroup - otherStars;
-          if (otherNeeded <= 0) continue;
-
-          const otherSet = new Set(other.indices);
-          const allSatisfy = combos.every(combo =>
-            combo.filter(c => otherSet.has(c)).length === otherNeeded
-          );
-          if (!allSatisfy) continue;
-
-          const unitSet = new Set(unit.indices);
-          const targets = other.indices.filter(idx => !unitSet.has(idx) && this.vState(idx) === CELL.NONE);
-          if (targets.length > 0) {
-            candidateMap.set(key, { unit, other, targets });
-          }
-        }
-      });
-    }
-
-    const candidates = [...candidateMap.values()];
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
-
-    const caveat = level === 'intermediate' ? ' (using only this board\'s regions)' : ' (potentially combining both boards\' regions)';
-    return candidates.map(({ unit, other, targets }) => ({
-      description: `Every valid way to place this ${this._unitKind(unit)}'s remaining star(s)${caveat} completely fills up this ${this._unitKind(other)} too, so the rest of that ${this._unitKind(other)} must be dots.`,
-      highlights: unit.indices
-        .filter(i => this.vState(i) === CELL.NONE)
-        .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-      boardIdx: unit.boardIdx ?? other.boardIdx
-    }));
-  };
-
-  p.hintDisjointUnitRegionSyncMulti = function (N) {
-    const candidates = [];
-    // needingRegs/cellToRegionMap only depend on bIdx, not on axis or combo,
-    // so compute them once per board here rather than on every combo below.
-    const perBoard = this.boardIndices.map(bIdx => ({
-      needingRegs: this.getRegionsNeedingStars(bIdx),
-      cellToRegionMap: this.buildCellToRegionMap(bIdx),
-    }));
-    // Finds combinations of N rows or columns that are not necessarily adjacent
-    for (const axis of ["Row", "Column"]) {
-      const axisIndices = this.axisIndices[axis];
-      const starlessUnitIndices = Array.from({length: this.n}, (_, i) => i)
-        .filter(u => !axisIndices[u].some(i => this.vState(i) === CELL.STAR));
-
-      for (const combo of this.getCombinations(starlessUnitIndices, N)) {
-        const unitCombo = combo.map(u => axisIndices[u]);
-        for (const bIdx of this.boardIndices) {
-          const { needingRegs, cellToRegionMap } = perBoard[bIdx];
-          const trapped = this._hintMultiRegionsTrappedInUnits(unitCombo, bIdx, axis, needingRegs);
-          if (trapped) candidates.push(trapped);
-          const covered = this._hintMultiUnitsCoveredByRegions(unitCombo, bIdx, axis, needingRegs, cellToRegionMap);
-          if (covered) candidates.push(covered);
-        }
-      }
-    }
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => (a.highlights[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? 0));
-    return candidates;
-  };
-
-  // Generalizes hintCrossBoardRegionPinned (1★-only, solver-rules-single.js)
-  // to any starsPerGroup. The 1★ version matches exactly N regions (each
-  // implicitly needing exactly 1 star, since 1★ regions always need 1)
-  // whose available cells all fall in the same N adjacent rows/cols --
-  // which for 1★ automatically fills that window's entire quota (N rows x
-  // 1 star/row = N). Once a region can need more than one star, "N regions
-  // confined to N rows" no longer implies "these regions supply the
-  // window's entire quota" (a window of N rows needs N * starsPerGroup
-  // stars, not N) -- see _hintMultiRegionsTrappedInUnits's requiredCount
-  // for the same distinction. So this pools every trapped region (any
-  // board) in the window and compares their summed remaining need to the
-  // window's actual requiredCount, not to N. Genuinely cross-board only:
-  // an all-same-board trapped set would already have been caught earlier
-  // (Medium/Hard) by hintUnitRegionSyncMulti(2/3)'s "trapped" case
-  // (_hintMultiRegionsTrappedInUnits's own per-board version), so this
-  // requires the trapped set to span at least 2 distinct boards. Requires
-  // the trapped regions' open cells to be pairwise disjoint: since boards
-  // share one physical grid, a region on board A and a region on board B
-  // can include the same cell, and summing "remaining" across overlapping
-  // regions would overcount how many distinct stars are actually still
-  // needed. Reuses formatCrossBoardHint for consistent hint rendering
-  // (including its per-region board coloring).
-  p.hintCrossBoardRegionPinnedMulti = function (N, axis = "Row") {
-    const n = this.n;
-    const axisIndices = this.axisIndices[axis];
-    const needing = this.boardIndices.flatMap(bIdx => this.getRegionsNeedingStars(bIdx));
-
-    const candidates = [];
-    for (let startU = 0; startU <= n - N; startU++) {
-      const windowIndices = Array.from({ length: N }, (_, i) => axisIndices[startU + i]);
-      const windowSet = new Set(windowIndices.flat());
-      const allIndices = windowIndices.flat();
-
-      const starsInWindow = allIndices.filter(i => this.vState(i) === CELL.STAR).length;
-      const requiredCount = N * this.starsPerGroup - starsInWindow;
-      if (requiredCount <= 0) continue;
-
-      const trapped = needing.filter(({ region }) => {
-        const regAvail = region.indices.filter(i => this.vState(i) === CELL.NONE);
-        return regAvail.length > 0 && regAvail.every(idx => windowSet.has(idx));
-      });
-      if (trapped.length === 0) continue;
-
-      const boardsTouched = new Set(trapped.map(e => e.region.boardIdx));
-      if (boardsTouched.size < 2) continue; // same-board only: already covered elsewhere
-
-      const idxSets = trapped.map(e => new Set(e.region.indices));
-      if (!this._areDisjoint(idxSets)) continue;
-
-      const totalTrappedNeeded = trapped.reduce((sum, e) => sum + e.remaining, 0);
-      if (totalTrappedNeeded !== requiredCount) continue;
-
-      const regUnion = new Set(trapped.flatMap(e => Array.from(e.region.indices)));
-      const targets = allIndices.filter(idx => this.vState(idx) === CELL.NONE && !regUnion.has(idx));
-      if (targets.length === 0) continue;
-
-      const uList = Array.from({ length: N }, (_, i) => startU + i);
-
-      // Match formatCrossBoardHint's expected combo entry shape.
-      const comboForFormat = trapped.map(e => ({
-        availableIdxs: e.region.indices.filter(i => this.vState(i) === CELL.NONE),
-        original: e.region
-      }));
-      candidates.push({ combo: comboForFormat, targets, uList });
-    }
-
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
-    return candidates.map(({ combo, targets, uList }) => this.formatCrossBoardHint(combo, targets, axis, uList));
-  };
 
   // Generalizes hintSymmetryDeduction (1★-only, solver-rules-single.js) to
   // any starsPerGroup. For 1★, i and its symmetric counterpart sharing any
@@ -438,6 +254,156 @@ export function applyMultiStarRules(PuzzleSolver) {
     return hints;
   };
 
+  // -- Region/line quota fill (2★+) --------------------------------------------
+  //
+  // A more powerful generalization of the "Rule of Clumps" (region/line-split,
+  // Python's rules_multi_star.py -- not currently ported to JS): instead of the
+  // cheap "remainder capped at m stars" heuristic, this asks
+  // _unitCompletionsByLevel's full placement enumeration directly: across EVERY
+  // valid way to place a region's remaining stars, how many of them are
+  // guaranteed to land in a given row/column, no matter which valid placement
+  // turns out to be real? E.g. a region shaped like [(0,0),(0,1),(0,2),(1,0),
+  // (2,0)] with 1 star left has multiple valid placements, but every one of
+  // them puts a star somewhere in row 0 AND somewhere in column A -- so this
+  // region is worth "at least 1" to each of those lines, even though it isn't
+  // confined to either one (unlike _hintMultiRegionsTrappedInUnits below, which
+  // requires full confinement).
+  //
+  // A row/column's own quota need is met once enough of these per-region
+  // guarantees (found on ONE board's own regions -- this reasoning is
+  // deliberately single-board only, never combining regions across boards) add
+  // up to exactly what's left. Regions are a strict partition of the board, so
+  // distinct regions' guarantees about the same line never double count -- any
+  // subset of them sums safely. Once some subset sums to exactly the line's
+  // remaining need, every other empty cell in that line (i.e. in regions NOT in
+  // that subset) must be a dot: the true solution already has nothing left over
+  // for them. (Cells from a CHOSEN region beyond its own counted guarantee stay
+  // untouched -- we know the count, not which of the region's cells in the line
+  // realizes it.) Python port: rules_multi_star.py's matching section.
+
+  // Every region, on any board, PROVEN (at the given _unitCompletionsByLevel
+  // level) to place at least k >= 1 of its remaining stars in a given
+  // row/column, regardless of which of its own valid completions turns out to
+  // be real. Returns a Map keyed by `row:r` / `col:c` -> [{ boardIdx, k, unit }].
+  p._regionLineGuarantees = function (level) {
+    return this._cachedOnState(`regionLineGuarantees_${level}`, () => this._regionLineGuaranteesImpl(level));
+  };
+
+  p._regionLineGuaranteesImpl = function (level) {
+    const result = new Map();
+    for (const unit of this.units) {
+      if (unit.boardIdx === undefined) continue; // rows/columns aren't a source here, only regions
+
+      const completionSets = this._unitCompletionsByLevel(unit, level)
+        .filter(combos => combos !== null && combos.length > 0);
+      if (completionSets.length === 0) continue;
+      // Regions always resolve to exactly one scope (see _unitCompletionsByLevel:
+      // a region's boardIdx is never undefined, so 'intermediate' also collapses
+      // to a single scope).
+      const combos = completionSets[0];
+
+      const rowsTouched = new Set(), colsTouched = new Set();
+      for (const combo of combos) {
+        for (const cell of combo) {
+          rowsTouched.add(Math.floor(cell / this.n));
+          colsTouched.add(cell % this.n);
+        }
+      }
+
+      for (const r of rowsTouched) {
+        const k = Math.min(...combos.map(combo => combo.filter(cell => Math.floor(cell / this.n) === r).length));
+        if (k >= 1) {
+          const key = `row:${r}`;
+          if (!result.has(key)) result.set(key, []);
+          result.get(key).push({ boardIdx: unit.boardIdx, k, unit });
+        }
+      }
+      for (const c of colsTouched) {
+        const k = Math.min(...combos.map(combo => combo.filter(cell => cell % this.n === c).length));
+        if (k >= 1) {
+          const key = `col:${c}`;
+          if (!result.has(key)) result.set(key, []);
+          result.get(key).push({ boardIdx: unit.boardIdx, k, unit });
+        }
+      }
+    }
+    return result;
+  };
+
+  // Backtracking search for a sublist of `items` (each { k, ... }) whose k's
+  // sum EXACTLY to target. Unlike the Tiles rules' disjoint-combo search
+  // (which needs exactly Q groups of weight 1 each), a region's guarantee can
+  // be worth more than 1, so this is a general subset-sum search -- still
+  // cheap since the candidate list is just the regions touching one line on
+  // one board (at most n of them).
+  p._findSubsetSumCombo = function (items, target) {
+    const backtrack = (i, remaining, chosen) => {
+      if (remaining === 0) return chosen.slice();
+      if (i >= items.length || remaining < 0) return null;
+      if (items[i].k <= remaining) {
+        chosen.push(items[i]);
+        const result = backtrack(i + 1, remaining - items[i].k, chosen);
+        if (result) return result;
+        chosen.pop();
+      }
+      return backtrack(i + 1, remaining, chosen);
+    };
+    return backtrack(0, target, []);
+  };
+
+  p.hintRegionLineQuotaFill = function (level) {
+    const guarantees = this._regionLineGuarantees(level);
+    const candidates = [];
+
+    for (const [key, entries] of guarantees) {
+      const [kind, idxStr] = key.split(':');
+      const lineIdx = Number(idxStr);
+      const lineIndices = kind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
+
+      const stars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
+      const needed = this.starsPerGroup - stars;
+      if (needed <= 0) continue;
+      const avail = lineIndices.filter(i => this.vState(i) === CELL.NONE);
+      if (avail.length === 0) continue;
+
+      // Never cross-board: group candidate regions by board and search each
+      // board's regions independently.
+      const byBoard = new Map();
+      for (const entry of entries) {
+        if (!byBoard.has(entry.boardIdx)) byBoard.set(entry.boardIdx, []);
+        byBoard.get(entry.boardIdx).push(entry);
+      }
+
+      for (const [boardIdx, boardEntries] of byBoard) {
+        const combo = this._findSubsetSumCombo(boardEntries, needed);
+        if (!combo) continue;
+
+        const covered = new Set(combo.flatMap(e => e.unit.indices));
+        const targets = avail.filter(i => !covered.has(i));
+        if (targets.length === 0) continue;
+
+        const targetSet = new Set(targets);
+        const lineWord = kind === 'row' ? 'row' : 'column';
+        const regionWord = combo.length === 1 ? 'region' : 'regions';
+        const possessive = combo.length === 1 ? 'its' : 'their';
+        const resolveWord = combo.length === 1 ? 'it resolves' : 'they resolve';
+
+        candidates.push({
+          boardIdx,
+          description: `Every valid way to fill the outlined ${regionWord} places at least ${needed} of ${possessive} star${needed === 1 ? '' : 's'} in this ${lineWord}, no matter how ${resolveWord} -- exactly what this ${lineWord} still needs, so every other empty cell here must be a dot.`,
+          highlights: combo.flatMap(({ unit }) =>
+            unit.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
+          ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+        });
+      }
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
+    return candidates;
+  };
+
   // --- 2★/3★-generalized row/col <-> region sync ---
   // These mirror _hintUnitsCoveredByRegions / _hintRegionsTrappedInUnits (in
   // solver-rules-single.js), but work off each region's remaining star COUNT (via
@@ -567,16 +533,605 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates;
   };
 
-  // Rule (2★+): speculatively place one star, add only the dots that single star
-  // directly implies (adjacency, plus any row/column/region it happens to complete),
-  // and check whether that already breaks some unit on ONE board's view alone.
+  // -- Restored from pre-experiment (2★+) --------------------------------------
   //
-  // Unlike the 1★ version, placing a single star does NOT usually fill an entire
-  // row/column/region when starsPerGroup > 1 -- only units that already held
-  // (starsPerGroup - 1) stars get completed by this one placement. Region
-  // elimination is restricted to a single board at a time, so a contradiction is
-  // only accepted if it's visible from that board's viewpoint alone (or is
-  // board-agnostic row/col/adjacency geometry).
+  // Three rule families that were cut during the multi-star-rules-experiment
+  // stripping pass and later restored by explicit request. (The Clump and
+  // Witness at-least-1/at-most-1 families from that same pass stay cut --
+  // superseded by the Tiles/region-line-quota-fill rules above, or judged too
+  // hard to explain to a player, per that decision.)
+
+  // Rule (2★/3★): For a row/column/region with missing stars, enumerate every valid
+  // way to place its remaining stars. If EVERY one of those completions exactly fills
+  // up some OTHER row/column/region (of a different type), then that other unit's
+  // entire remaining quota is guaranteed to come from this unit no matter which
+  // completion turns out to be true -- so any of its other empty cells (outside this
+  // unit) must be dots. Checked in both directions: a region's placements can force a
+  // row or column, and a row's or column's placements can force a region (or the
+  // other axis).
+  //
+  // level is 'intermediate' or 'strong' (no 'weak' -- a capacity-free version of this
+  // rule wouldn't reliably prove anything, since the whole deduction hinges on quota
+  // bookkeeping). See _unitCompletionsByLevel: 'intermediate' only ever needs one
+  // board's regions to reach its conclusion; 'strong' may need both.
+  p.hintUnitCompletionSatisfiesOtherUnit = function (level = 'strong') {
+    const candidateMap = new Map(); // "unitLabel|otherLabel" -> candidate, deduped across scopes
+
+    for (const unit of this.units) {
+      const completionSets = this._unitCompletionsByLevel(unit, level)
+        .filter(combos => combos !== null && combos.length > 0);
+      if (completionSets.length === 0) continue;
+
+      const sourceKind = this._unitKind(unit);
+      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+      const scopes = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
+
+      completionSets.forEach((combos, i) => {
+        // For 'intermediate', an "other" unit is only a fair candidate if
+        // it's visible from THIS SAME scope's single-board viewpoint --
+        // a region on a different board isn't something this particular
+        // completion set's reasoning ever looked at.
+        const scopeBoardIdx = level === 'intermediate' ? scopes[i] : null;
+
+        const seenLabels = new Set();
+        const others = [];
+        for (const idx of avail) {
+          for (const otherUnit of this._unitsByCell[idx]) {
+            if (otherUnit.label === unit.label) continue;
+            if (this._unitKind(otherUnit) === sourceKind) continue;
+            if (scopeBoardIdx !== null && otherUnit.boardIdx !== undefined && otherUnit.boardIdx !== scopeBoardIdx) continue;
+            if (seenLabels.has(otherUnit.label)) continue;
+            seenLabels.add(otherUnit.label);
+            others.push(otherUnit);
+          }
+        }
+
+        for (const other of others) {
+          const key = `${unit.label}|${other.label}`;
+          if (candidateMap.has(key)) continue;
+
+          const otherStars = other.indices.filter(i => this.vState(i) === CELL.STAR).length;
+          const otherNeeded = this.starsPerGroup - otherStars;
+          if (otherNeeded <= 0) continue;
+
+          const otherSet = new Set(other.indices);
+          const allSatisfy = combos.every(combo =>
+            combo.filter(c => otherSet.has(c)).length === otherNeeded
+          );
+          if (!allSatisfy) continue;
+
+          const unitSet = new Set(unit.indices);
+          const targets = other.indices.filter(idx => !unitSet.has(idx) && this.vState(idx) === CELL.NONE);
+          if (targets.length > 0) {
+            candidateMap.set(key, { unit, other, targets });
+          }
+        }
+      });
+    }
+
+    const candidates = [...candidateMap.values()];
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
+
+    const caveat = level === 'intermediate' ? ' (using only this board\'s regions)' : ' (potentially combining both boards\' regions)';
+    return candidates.map(({ unit, other, targets }) => ({
+      description: `Every valid way to place this ${this._unitKind(unit)}'s remaining star(s)${caveat} completely fills up this ${this._unitKind(other)} too, so the rest of that ${this._unitKind(other)} must be dots.`,
+      highlights: unit.indices
+        .filter(i => this.vState(i) === CELL.NONE)
+        .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+      boardIdx: unit.boardIdx ?? other.boardIdx
+    }));
+  };
+
+  // The disjoint (non-adjacent) generalization of hintUnitRegionSyncMulti(2):
+  // any 2 starless rows or 2 starless columns, not just adjacent ones, checked
+  // against the regions trapped in or covering them via the same
+  // _hintMultiRegionsTrappedInUnits/_hintMultiUnitsCoveredByRegions helpers
+  // the adjacent-window version uses.
+  p.hintDisjointUnitRegionSyncMulti = function (N) {
+    const candidates = [];
+    // needingRegs/cellToRegionMap only depend on bIdx, not on axis or combo,
+    // so compute them once per board here rather than on every combo below.
+    const perBoard = this.boardIndices.map(bIdx => ({
+      needingRegs: this.getRegionsNeedingStars(bIdx),
+      cellToRegionMap: this.buildCellToRegionMap(bIdx),
+    }));
+    // Finds combinations of N rows or columns that are not necessarily adjacent
+    for (const axis of ["Row", "Column"]) {
+      const axisIndices = this.axisIndices[axis];
+      const starlessUnitIndices = Array.from({length: this.n}, (_, i) => i)
+        .filter(u => !axisIndices[u].some(i => this.vState(i) === CELL.STAR));
+
+      for (const combo of this.getCombinations(starlessUnitIndices, N)) {
+        const unitCombo = combo.map(u => axisIndices[u]);
+        for (const bIdx of this.boardIndices) {
+          const { needingRegs, cellToRegionMap } = perBoard[bIdx];
+          const trapped = this._hintMultiRegionsTrappedInUnits(unitCombo, bIdx, axis, needingRegs);
+          if (trapped) candidates.push(trapped);
+          const covered = this._hintMultiUnitsCoveredByRegions(unitCombo, bIdx, axis, needingRegs, cellToRegionMap);
+          if (covered) candidates.push(covered);
+        }
+      }
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.highlights[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? 0));
+    return candidates;
+  };
+
+  // Generalizes hintCrossBoardRegionPinned (1★-only, solver-rules-single.js)
+  // to any starsPerGroup. The 1★ version matches exactly N regions (each
+  // implicitly needing exactly 1 star, since 1★ regions always need 1)
+  // whose available cells all fall in the same N adjacent rows/cols --
+  // which for 1★ automatically fills that window's entire quota (N rows x
+  // 1 star/row = N). Once a region can need more than one star, "N regions
+  // confined to N rows" no longer implies "these regions supply the
+  // window's entire quota" (a window of N rows needs N * starsPerGroup
+  // stars, not N) -- see _hintMultiRegionsTrappedInUnits's requiredCount
+  // for the same distinction. So this pools every trapped region (any
+  // board) in the window and compares their summed remaining need to the
+  // window's actual requiredCount, not to N. Genuinely cross-board only:
+  // an all-same-board trapped set would already have been caught earlier
+  // (Medium/Hard) by hintUnitRegionSyncMulti(2/3)'s "trapped" case
+  // (_hintMultiRegionsTrappedInUnits's own per-board version), so this
+  // requires the trapped set to span at least 2 distinct boards. Requires
+  // the trapped regions' open cells to be pairwise disjoint: since boards
+  // share one physical grid, a region on board A and a region on board B
+  // can include the same cell, and summing "remaining" across overlapping
+  // regions would overcount how many distinct stars are actually still
+  // needed. Reuses formatCrossBoardHint for consistent hint rendering
+  // (including its per-region board coloring).
+  p.hintCrossBoardRegionPinnedMulti = function (N, axis = "Row") {
+    const n = this.n;
+    const axisIndices = this.axisIndices[axis];
+    const needing = this.boardIndices.flatMap(bIdx => this.getRegionsNeedingStars(bIdx));
+
+    const candidates = [];
+    for (let startU = 0; startU <= n - N; startU++) {
+      const windowIndices = Array.from({ length: N }, (_, i) => axisIndices[startU + i]);
+      const windowSet = new Set(windowIndices.flat());
+      const allIndices = windowIndices.flat();
+
+      const starsInWindow = allIndices.filter(i => this.vState(i) === CELL.STAR).length;
+      const requiredCount = N * this.starsPerGroup - starsInWindow;
+      if (requiredCount <= 0) continue;
+
+      const trapped = needing.filter(({ region }) => {
+        const regAvail = region.indices.filter(i => this.vState(i) === CELL.NONE);
+        return regAvail.length > 0 && regAvail.every(idx => windowSet.has(idx));
+      });
+      if (trapped.length === 0) continue;
+
+      const boardsTouched = new Set(trapped.map(e => e.region.boardIdx));
+      if (boardsTouched.size < 2) continue; // same-board only: already covered elsewhere
+
+      const idxSets = trapped.map(e => new Set(e.region.indices));
+      if (!this._areDisjoint(idxSets)) continue;
+
+      const totalTrappedNeeded = trapped.reduce((sum, e) => sum + e.remaining, 0);
+      if (totalTrappedNeeded !== requiredCount) continue;
+
+      const regUnion = new Set(trapped.flatMap(e => Array.from(e.region.indices)));
+      const targets = allIndices.filter(idx => this.vState(idx) === CELL.NONE && !regUnion.has(idx));
+      if (targets.length === 0) continue;
+
+      const uList = Array.from({ length: N }, (_, i) => startU + i);
+
+      // Match formatCrossBoardHint's expected combo entry shape.
+      const comboForFormat = trapped.map(e => ({
+        availableIdxs: e.region.indices.filter(i => this.vState(i) === CELL.NONE),
+        original: e.region
+      }));
+      candidates.push({ combo: comboForFormat, targets, uList });
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
+    return candidates.map(({ combo, targets, uList }) => this.formatCrossBoardHint(combo, targets, axis, uList));
+  };
+
+  // -- Tiles (2★+, multi-star-rules-experiment) --------------------------------
+  //
+  // A "tile" is the set of currently-empty cells within some 2x2-bounded
+  // box: two adjacent rows (or columns) times two adjacent columns (or
+  // rows). Every pair of cells inside a 2x2 box touches (orthogonally or
+  // diagonally), so a tile can NEVER hold more than 1 star, regardless of
+  // which of its up to 4 cells are actually still empty.
+  //
+  // A pair of adjacent rows (or columns) -- a "band" -- still needing K
+  // more stars can sometimes have its empties exactly partitioned into K
+  // disjoint tiles (a "tiling"). Since each tile holds at most 1 star and
+  // there are exactly K of them for K needed stars, pigeonhole forces
+  // EVERY tile in that tiling to hold EXACTLY 1 star -- not just "at
+  // most". A band can have more than one way to tile its empties into K
+  // boxes (an isolated empty column can pair with either neighbor), so
+  // multiple tilings -- and hence multiple "confirmed" (exactly-1-star)
+  // tiles -- can coexist for the same band.
+  //
+  // Tilings are board-agnostic (row/column geometry, not regions), so
+  // they're computed once per board state and reused by every board and
+  // every rule below. More inferences from the same tiles are expected to
+  // show up later; add them as their own hintTile* function rather than
+  // folding into an existing one, so a hint always traces back to exactly
+  // one idea. Python port: tools/scorer/rules_multi_star.py's "Tiles"
+  // section (that one doesn't need the topLeftIdx bookkeeping below, since
+  // it never renders a hint).
+
+  // All ways to partition columns [offset, hasEmpty.length) into untouched
+  // singletons (only where NOT hasEmpty) and adjacent pairs ("boxes", each
+  // covering at least one hasEmpty column), such that every hasEmpty
+  // position ends up inside exactly one box. Returns a list of tilings,
+  // each a list of box start-column ints. A run of hasEmpty columns can
+  // tile more than one way (an isolated hasEmpty column can pair with
+  // either neighbor), so this can return several tilings for the same
+  // hasEmpty pattern -- that's the point.
+  p._findTilings = function (hasEmpty, offset = 0) {
+    const n = hasEmpty.length;
+    if (offset === n) return [[]];
+    const results = [];
+    if (!hasEmpty[offset]) {
+      results.push(...this._findTilings(hasEmpty, offset + 1));
+    }
+    if (offset + 1 < n && (hasEmpty[offset] || hasEmpty[offset + 1])) {
+      for (const rest of this._findTilings(hasEmpty, offset + 2)) {
+        results.push([offset, ...rest]);
+      }
+    }
+    return results;
+  };
+
+  // Small memoization helper: hintTile* each independently trigger the
+  // same expensive tiling scan when they run within the same getHint()
+  // call, since only the FIRST rule to produce hints ever gets returned
+  // and this.game.state never changes mid-call. Keyed on a snapshot of
+  // this.game.state rather than tracked mutation sites, so a cache hit is
+  // only ever returned for a state identical to the one it was computed
+  // from.
+  p._cachedOnState = function (cacheKey, computeFn) {
+    const stateString = this.game.state.join(',');
+    if (!this._stateCache) this._stateCache = {};
+    const bucket = this._stateCache[cacheKey];
+    if (bucket && bucket.stateString === stateString) return bucket.value;
+    const value = computeFn();
+    this._stateCache[cacheKey] = { stateString, value };
+    return value;
+  };
+
+  p._groupKey = function (indices) {
+    return [...indices].sort((a, b) => a - b).join(',');
+  };
+
+  // Every confirmed tiling on the board: a list of { tiles }, where
+  // `tiles` is the full set of K disjoint 2x2 tiles from ONE row-band or
+  // column-band covering (each { cells: [idx...], topLeftIdx }) -- kept
+  // together, not flattened, so a hint about any ONE tile can show the
+  // player the WHOLE covering it came from: "these K tiles exactly
+  // partition every empty cell of this row/column pair, which needs
+  // exactly K more stars, so each tile holds exactly one" is the actual
+  // argument: showing just the one relevant tile in isolation doesn't
+  // convey why it's trustworthy. The same physical 2x2 square can appear
+  // in more than one tiling (a row-band and a column-band view of it, or
+  // two different tilings of the same band), so a tile is NOT deduped
+  // away here -- see _allConfirmedTilesFlat for the deduped flat view
+  // rule 3 needs instead. topLeftIdx is the box's own top-left grid cell
+  // (which may not itself be one of `cells`, if that particular corner
+  // is already decided) -- used only for positioning the outline overlay.
+  p._confirmedTiles = function () {
+    return this._cachedOnState('confirmedTiles', () => this._confirmedTilesImpl());
+  };
+
+  p._confirmedTilesImpl = function () {
+    const n = this.n;
+    const quota = this.starsPerGroup;
+    const tilings = [];
+    const isEmpty = (i) => !this.voidCells?.has(i) && this.vState(i) === CELL.NONE;
+    let nextTilingId = 0;
+
+    for (const axis of ['row', 'col']) {
+      for (let u = 0; u < n - 1; u++) {
+        const lineA = [], lineB = [];
+        for (let c = 0; c < n; c++) {
+          if (axis === 'row') {
+            lineA.push(u * n + c);
+            lineB.push((u + 1) * n + c);
+          } else {
+            lineA.push(c * n + u);
+            lineB.push(c * n + (u + 1));
+          }
+        }
+
+        const starsInBand = [...lineA, ...lineB].filter(i => this.vState(i) === CELL.STAR).length;
+        const k = 2 * quota - starsInBand;
+        if (k <= 0) continue;
+
+        const hasEmpty = [];
+        for (let c = 0; c < n; c++) {
+          hasEmpty.push(isEmpty(lineA[c]) || isEmpty(lineB[c]));
+        }
+
+        for (const tiling of this._findTilings(hasEmpty)) {
+          if (tiling.length !== k) continue;
+          // Every tile below shares this same id -- see the color-grouping
+          // comment on _colorSlotsForTiles: all tiles from one row-pair/
+          // col-pair covering are meant to render as the SAME color, since
+          // together they're a single argument ("these K tiles partition
+          // this band's empties"), not K separate ones.
+          const tilingId = nextTilingId++;
+          const tiles = [];
+          for (const boxStart of tiling) {
+            const cells = [lineA[boxStart], lineB[boxStart], lineA[boxStart + 1], lineB[boxStart + 1]]
+              .filter(isEmpty);
+            if (cells.length === 0) continue;
+            const topRow = axis === 'row' ? u : boxStart;
+            const leftCol = axis === 'row' ? boxStart : u;
+            // axis is carried on both the tiling and each tile (the latter
+            // so it survives _allConfirmedTilesFlat's flattening) purely
+            // for hint wording -- "row pair" vs "column pair" -- not used
+            // in any geometry/matching logic.
+            tiles.push({ cells, topLeftIdx: topRow * n + leftCol, tilingId, axis });
+          }
+          if (tiles.length > 0) tilings.push({ tiles, axis });
+        }
+      }
+    }
+    return tilings;
+  };
+
+  // Flattened, deduped view of every confirmed tile across every tiling
+  // (the same physical 2x2 square can be confirmed by more than one
+  // tiling) -- what rule 3 needs, since it searches for K disjoint tiles
+  // regardless of which tiling(s) originally confirmed each one. Each
+  // tile keeps its originating tilingId (see _confirmedTilesImpl), so a
+  // hint combining tiles from several tilings can still color-group them
+  // by which row-pair/col-pair covering each one came from.
+  p._allConfirmedTilesFlat = function () {
+    const byKey = new Map();
+    for (const { tiles } of this._confirmedTiles()) {
+      for (const tile of tiles) {
+        const key = this._groupKey(tile.cells);
+        if (!byKey.has(key)) byKey.set(key, tile);
+      }
+    }
+    return [...byKey.values()];
+  };
+
+  // Assigns one color-slot index (0-3, cycling if more than 4 tilings are
+  // combined into one hint) per DISTINCT tilingId among `tiles`, in
+  // first-seen order, so every tile from the same row-pair/col-pair
+  // covering renders identically -- per the request that grouped tiles all
+  // be one color, and distinct coverings get distinct colors so a player
+  // combining several (as rule 3 does) can tell them apart. The index is
+  // shared by TILE_OUTLINE_COLORS (outline) and HINT_SOURCE_VARIANTS (cell
+  // tint), which are deliberately index-matched -- see constants.js.
+  p._colorSlotsForTiles = function (tiles) {
+    const slotByTilingId = new Map();
+    for (const t of tiles) {
+      if (!slotByTilingId.has(t.tilingId)) {
+        slotByTilingId.set(t.tilingId, slotByTilingId.size % TILE_OUTLINE_COLORS.length);
+      }
+    }
+    return slotByTilingId;
+  };
+
+  // Shared by hintTileSingleEmpty/hintTileTwoEmptyDot/hintTileDisjointQuotaFill:
+  // outlines EVERY tile passed in `outlineTiles` (the full covering(s), for
+  // context -- so the player can see the K-tiles-for-K-stars argument that
+  // makes them trustworthy), but only highlights `highlightTiles` (the
+  // specific tile(s) the CURRENT deduction actually turns on). Highlighting
+  // every tile in a covering got noisy fast once a hint could combine
+  // several coverings at once (rule 3's row-pair + column-pair case) and
+  // didn't even help for rule 1/2, where the other K-1 sibling tiles aren't
+  // individually part of the argument for THIS specific cell -- only the
+  // one relevant tile is. Cells already getting a `marks` color are
+  // dropped from highlights so a cell never gets two conflicting classes.
+  p._tileOutlinesAndHighlights = function (outlineTiles, highlightTiles, excludeFromHighlights) {
+    const exclude = new Set(excludeFromHighlights);
+    const slotByTilingId = this._colorSlotsForTiles(outlineTiles);
+    return {
+      tileOutlines: outlineTiles.map(t => ({
+        topLeftIdx: t.topLeftIdx,
+        color: TILE_OUTLINE_COLORS[slotByTilingId.get(t.tilingId)]
+      })),
+      highlights: highlightTiles.flatMap(t =>
+        t.cells.filter(c => !exclude.has(c))
+          .map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[slotByTilingId.get(t.tilingId)] }))
+      )
+    };
+  };
+
+  // "row pair" / "column pair" -- spelled out per-hint (rule 1/2 always
+  // know the single tiling's axis) instead of the ambiguous "row/column
+  // pair", per user feedback that the slash reads as "which one do you
+  // mean?" rather than "one of these two".
+  p._axisPairLabel = function (axis) {
+    return axis === 'row' ? 'row pair' : 'column pair';
+  };
+
+  // Rule 1 (2★+, Medium): a confirmed tile with only 1 empty cell means
+  // that cell IS the star. Shows the tile's whole originating tiling (not
+  // just the one tile), so the player can see the covering argument that
+  // makes it trustworthy -- see _confirmedTilesImpl's comment.
+  p.hintTileSingleEmpty = function () {
+    const seen = new Map(); // markIdx -> hint, deduped (a tile can be confirmed by >1 tiling)
+    for (const tiling of this._confirmedTiles()) {
+      for (const tile of tiling.tiles) {
+        if (tile.cells.length !== 1) continue;
+        const markIdx = tile.cells[0];
+        if (seen.has(markIdx)) continue;
+        const K = tiling.tiles.length;
+        const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, [tile], [markIdx]);
+        seen.set(markIdx, {
+          description: `This ${this._axisPairLabel(tiling.axis)} needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. This tile's last empty cell must be the star.`,
+          highlights,
+          marks: [{ idx: markIdx, color: HINT_COLOR.TARGET_STAR }],
+          tileOutlines,
+          boardIdx: undefined
+        });
+      }
+    }
+    const hints = [...seen.values()];
+    if (hints.length === 0) return null;
+    hints.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
+    return hints;
+  };
+
+  // Rule 2 (2★+, Hard): a confirmed tile with exactly 2 empty cells
+  // (always mutually touching, since every pair of cells in a 2x2 box
+  // touches) holds exactly 1 star, at one of those two cells -- whichever
+  // it turns out to be. Any OTHER cell touching BOTH of them would touch
+  // that star no matter which of the two it ends up being, so it must be
+  // a dot. Shows the tile's whole originating tiling, same as rule 1.
+  p.hintTileTwoEmptyDot = function () {
+    const seen = new Map(); // key: targets|tile cells -> hint, deduped
+    for (const tiling of this._confirmedTiles()) {
+      for (const tile of tiling.tiles) {
+        if (tile.cells.length !== 2) continue;
+        const [a, b] = tile.cells;
+        const targets = this.getNeighbors(a).filter(i =>
+          this._cellsAdjacent(b, i) && !tile.cells.includes(i) && this.vState(i) === CELL.NONE
+        );
+        if (targets.length === 0) continue;
+        const key = this._groupKey(targets) + '|' + this._groupKey(tile.cells);
+        if (seen.has(key)) continue;
+        const K = tiling.tiles.length;
+        const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, [tile], targets);
+        seen.set(key, {
+          description: `This ${this._axisPairLabel(tiling.axis)} needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. Both of this tile's empty cells touch the marked cell(s), so they must be dots.`,
+          highlights,
+          marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+          tileOutlines,
+          boardIdx: undefined
+        });
+      }
+    }
+    const hints = [...seen.values()];
+    if (hints.length === 0) return null;
+    hints.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
+    return hints;
+  };
+
+  // Backtracking search for k mutually disjoint tiles among `tiles` (each
+  // { cells, topLeftIdx }). Returns the combo (array of k tiles) if found,
+  // else null.
+  p._findDisjointTileCombo = function (tiles, k) {
+    const backtrack = (start, chosen, used) => {
+      if (chosen.length === k) return chosen;
+      for (let idx = start; idx < tiles.length; idx++) {
+        const t = tiles[idx];
+        if (t.cells.some(c => used.has(c))) continue;
+        const result = backtrack(idx + 1, [...chosen, t], new Set([...used, ...t.cells]));
+        if (result) return result;
+      }
+      return null;
+    };
+    return backtrack(0, [], new Set());
+  };
+
+  // Shared by hintTileQuotaFillSingle (Hard, K=1) and
+  // hintTileDisjointQuotaFill (Expert, K>1): for a row/column/region (any
+  // board) needing K more stars, if K mutually disjoint confirmed tiles are
+  // all subsets of its remaining empties, those tiles collectively account
+  // for all K stars -- so every other empty cell in the unit must be a dot.
+  // Split into two tiers by K: spotting a single tile that already covers a
+  // unit's whole remaining need (K=1) is a much smaller ask than combining
+  // several disjoint tiles at once (K>1).
+  p._tileQuotaFillCandidates = function (wantSingle) {
+    const allTiles = this._allConfirmedTilesFlat();
+    const candidates = [];
+    for (const unit of this.units) {
+      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
+      const k = this.starsPerGroup - stars;
+      if (k <= 0) continue;
+      if (wantSingle ? k !== 1 : k <= 1) continue;
+      const avail = new Set(unit.indices.filter(i => this.vState(i) === CELL.NONE));
+      if (avail.size <= k) continue;
+
+      const relevant = allTiles.filter(t => t.cells.every(c => avail.has(c)));
+      if (relevant.length < k) continue;
+
+      const combo = this._findDisjointTileCombo(relevant, k);
+      if (!combo) continue;
+
+      const covered = new Set(combo.flatMap(t => t.cells));
+      const targets = [...avail].filter(i => !covered.has(i));
+      if (targets.length === 0) continue;
+
+      candidates.push({ unit, combo, targets });
+    }
+    return candidates;
+  };
+
+  // Builds hint objects for a list of { unit, combo, targets } candidates
+  // (see _tileQuotaFillCandidates), showing each combo tile's full
+  // originating tiling for context -- same pattern as hintTileSingleEmpty/
+  // hintTileTwoEmptyDot.
+  p._formatTileQuotaFillHints = function (candidates) {
+    if (candidates.length === 0) return null;
+    // Map tilingId -> that tiling's full tile list, so the hint can show
+    // each combo tile's WHOLE originating row-pair/col-pair covering (not
+    // just the one tile that happened to be picked for the combo) -- same
+    // "show the full argument" idea as rules 1/2, applied per combo tile
+    // instead of to a single tiling.
+    const tilesByTilingId = new Map();
+    for (const { tiles } of this._confirmedTiles()) {
+      for (const t of tiles) {
+        if (!tilesByTilingId.has(t.tilingId)) tilesByTilingId.set(t.tilingId, tiles);
+      }
+    }
+    const sorted = [...candidates].sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
+
+    return sorted.map(({ unit, combo, targets }) => {
+      // combo tiles can come from different row-pair/col-pair coverings --
+      // expand each one out to its full sibling tile set (see
+      // tilesByTilingId above) so the player can see why every combo tile
+      // is trustworthy. Only the combo tiles themselves get highlighted,
+      // though (via _tileOutlinesAndHighlights' highlightTiles param) --
+      // they're the ones actually inside THIS region/unit and doing the
+      // work for THIS deduction; a sibling tile from the same covering can
+      // easily sit elsewhere on the board, and highlighting it too just
+      // buries which cells the "still needs" argument is actually about.
+      const tilingIds = [...new Set(combo.map(t => t.tilingId))];
+      const displayTiles = tilingIds.flatMap(id => tilesByTilingId.get(id));
+      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(displayTiles, combo, targets);
+
+      const tileWord = combo.length === 1 ? 'tile' : 'tiles';
+      const holdWord = combo.length === 1 ? 'holds' : 'each hold';
+      const possessive = combo.length === 1 ? 'its' : 'their';
+      const coveringWord = combo.length === 1 ? 'covering is' : 'coverings are';
+      return {
+        description: `The ${combo.length} highlighted ${tileWord} ${holdWord} exactly one star (${possessive} full row- or column-pair ${coveringWord} outlined too), accounting for all ${combo.length} star${combo.length === 1 ? '' : 's'} this ${this._unitKind(unit)} needs -- so every other empty cell here is a dot.`,
+        highlights,
+        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+        tileOutlines,
+        boardIdx: unit.boardIdx
+      };
+    });
+  };
+
+  // Rule 3a (2★+, Hard): the K=1 special case of tile-quota-fill -- a
+  // single confirmed tile already accounts for a unit's entire remaining
+  // need (it's down to its last star), so every other empty cell in the
+  // unit must be a dot.
+  p.hintTileQuotaFillSingle = function () {
+    return this._formatTileQuotaFillHints(this._tileQuotaFillCandidates(true));
+  };
+
+  // Rule 3b (2★+, Expert): the general K>1 case -- K mutually disjoint
+  // confirmed tiles together account for all K stars a unit still needs.
+  p.hintTileDisjointQuotaFill = function () {
+    return this._formatTileQuotaFillHints(this._tileQuotaFillCandidates(false));
+  };
+
+  // -- Lookahead-dots (2★+, restored from pre-experiment) ---------------------
+  //
+  // The multi-star analogue of the 1★ lookahead rules in
+  // solver-rules-single.js. The key difference: placing a single
+  // speculative star in a 2★+ puzzle does NOT, by itself, fill an entire
+  // row/column/region -- it only completes a unit that already held
+  // (starsPerGroup - 1) stars. So "the dots implied by that star" means
+  // adjacency dots (always), plus unit-solved dots for any unit the
+  // placement happens to complete. Python port: rules_multi_star.py's
+  // _rule_lookahead_dots_impl.
   // Shared implementation for hintLookaheadDotsSingleBoard/hintLookaheadDots:
   // speculatively place one star, add only the dots it directly implies, and
   // check for a broken unit. singleBoard=true checks each board in turn,
@@ -638,519 +1193,22 @@ export function applyMultiStarRules(PuzzleSolver) {
     return this._hintLookaheadDotsImpl(false);
   };
 
-  // --- At-least-1 / at-most-1 (2★+) ------------------------------------------
-  //
-  // JS port of the Python engine's tiered at-least-1/at-most-1 rule family;
-  // see tools/scorer/rules_multi_star.py for the full derivation of sources
-  // 1-3 below. A group of cells can be known to jointly hold "at least 1"
-  // star, or jointly hold "at most 1" star. Two forcing checks consume
-  // those facts:
-  //
-  // (a) N+1 candidates, N needed (_applyAtMostOneForcing): if a unit needs
-  //     2 more stars from exactly 3 candidates {x, y, z}, and some pair
-  //     among them is a known at-most-1 group, that pair supplies at most
-  //     1 of the 2 needed stars, so the third candidate is forced.
-  // (b) Q disjoint groups fill the quota (_applyDisjointQuotaFill): if a
-  //     unit needs Q more stars and Q mutually disjoint at-least-1 groups
-  //     are found among its candidates, they account for the quota
-  //     exactly, so every other candidate is forced to a dot.
-  //
-  // Three sources feed those checks, kept separate (not pooled) so a hint
-  // only ever traces back to ONE kind of reasoning: sources 1 and 2 are
-  // single geometric hops a player can check by eye, feeding the Hard-tier
-  // hintClump* rules; source 3 is a two-hop chain, feeding the Expert-tier
-  // hintWitness* rules.
-  //
-  // Hint UI shows the final forcing step (the at-most-1/at-least-1 group
-  // and the forced cell) plus a short label for how each group was found
-  // (the `source` field each producer below attaches) -- not the full
-  // derivation chain (e.g. hintUnitPlacementForced still doesn't re-derive
-  // _enumerateUnitCompletions for the player), but enough that a match
-  // doesn't just assert "trust these highlighted cells."
-
-  p._groupKey = function (indices) {
-    return [...indices].sort((a, b) => a - b).join(',');
-  };
-
-  // Source 3's at-least-1 half. level is 'intermediate' or 'strong' (no
-  // 'weak' -- same reasoning as hintUnitCompletionSatisfiesOtherUnit: a
-  // capacity-free version wouldn't reliably prove anything). See
-  // _unitCompletionsByLevel: 'intermediate' only ever needs one board's
-  // regions to reach its conclusion; 'strong' may need both.
-  // (_cellsForcedToDotIfStarred, the at-most-1 half below, is
-  // deliberately NOT level-gated: it's a simple one-step consequence
-  // check that's equally valid whichever board(s) it happens to touch,
-  // not a capacity-combining argument.)
-  p._findAtLeastOnePairs = function (level) {
-    return this._cachedOnState(`atLeastOnePairs_${level}`, () => this._findAtLeastOnePairsImpl(level));
-  };
-
-  p._findAtLeastOnePairsImpl = function (level) {
-    const pairs = new Map(); // key -> { indices: [i, j], source }
-    for (const unit of this.units) {
-      const completionSets = this._unitCompletionsByLevel(unit, level)
-        .filter(combos => combos !== null && combos.length > 0);
-      if (completionSets.length === 0) continue;
-      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
-      for (let idx1 = 0; idx1 < avail.length; idx1++) {
-        for (let idx2 = idx1 + 1; idx2 < avail.length; idx2++) {
-          const i = avail[idx1], j = avail[idx2];
-          if (completionSets.some(combos => combos.every(combo => combo.includes(i) || combo.includes(j)))) {
-            const key = this._groupKey([i, j]);
-            if (!pairs.has(key)) {
-              pairs.set(key, {
-                indices: [i, j],
-                source: "no valid way to complete a unit leaves both cells empty",
-              });
-            }
-          }
-        }
-      }
-    }
-    return pairs;
-  };
-
-  // Cells that would be forced to a dot as an immediate, one-step
-  // consequence of placing a star at idx: its neighbors (adjacency always
-  // applies, regardless of quota), plus any row/column/region containing
-  // idx that would reach its star quota as a RESULT of this one placement
-  // (i.e. currently has quota - 1 stars).
-  p._cellsForcedToDotIfStarred = function (idx) {
-    const n = this.n;
-    const quota = this.starsPerGroup;
-    const forced = new Set(this.getNeighbors(idx).filter(nb => this.vState(nb) === CELL.NONE));
-
-    const row = Math.floor(idx / n), col = idx % n;
-    for (const unitIndices of [this.axisIndices.Row[row], this.axisIndices.Column[col]]) {
-      const stars = unitIndices.filter(i => this.vState(i) === CELL.STAR).length;
-      if (stars === quota - 1) {
-        unitIndices.forEach(i => { if (i !== idx && this.vState(i) === CELL.NONE) forced.add(i); });
-      }
-    }
-
-    for (const reg of this._getRegionsContaining(idx)) {
-      const stars = reg.indices.filter(i => this.vState(i) === CELL.STAR).length;
-      if (stars === quota - 1) {
-        reg.indices.forEach(i => { if (i !== idx && this.vState(i) === CELL.NONE) forced.add(i); });
-      }
-    }
-
-    return forced;
-  };
-
-  // Source 3's at-most-1 half.
-  p._deriveAtMostOneGroupsFromWitnessPairs = function (atLeastOnePairs) {
-    const groups = new Map();
-    for (const { indices: [i, j] } of atLeastOnePairs.values()) {
-      const forcedByI = this._cellsForcedToDotIfStarred(i);
-      const forcedByJ = this._cellsForcedToDotIfStarred(j);
-      for (const a of forcedByI) {
-        for (const b of forcedByJ) {
-          if (a !== b) {
-            const gkey = this._groupKey([a, b]);
-            if (!groups.has(gkey)) {
-              groups.set(gkey, {
-                indices: [a, b],
-                source: "witness pair: starring either cell forces one of these empty",
-              });
-            }
-          }
-        }
-      }
-    }
-    return groups;
-  };
-
-  // Upper bound on how many stars could simultaneously occupy `cells`,
-  // from mutual non-adjacency alone -- always sound regardless of what
-  // units the cells belong to. Brute-forces every subset, so only meant
-  // for small cell sets (a "tiny clump", e.g. bounded by a 2x2 box --
-  // which always gives exactly 1 -- or smaller/sparser).
-  p._maxStarsFittable = function (cells) {
-    const arr = [...cells];
-    const n = arr.length;
-    let best = 0;
-    for (let mask = 1; mask < (1 << n); mask++) {
-      const subset = [];
-      for (let i = 0; i < n; i++) {
-        if (mask & (1 << i)) subset.push(arr[i]);
-      }
-      if (subset.length <= best) continue;
-      let ok = true;
-      for (let a = 0; a < subset.length && ok; a++) {
-        for (let b = a + 1; b < subset.length; b++) {
-          if (this._cellsAdjacent(subset[a], subset[b])) { ok = false; break; }
-        }
-      }
-      if (ok) best = subset.length;
-    }
-    return best;
-  };
-
-  // Cap on the region's "leftover" cell count source 1 will analyze via
-  // _maxStarsFittable's brute force -- keeps it a cheap "tiny clump" check
-  // rather than a full sub-region solver.
-  p._LINE_SPLIT_REMAINDER_CAP = 4;
-
-  // Small memoization helper for the Hard/Expert "clump"/"witness" analysis
-  // passes below: several sibling rules (hintClump*, hintWitness*) each
-  // independently trigger the same expensive board-wide scan when they run
-  // within the same getHint() call, since only the FIRST rule to produce
-  // hints ever gets returned and this.game.state never changes mid-call
-  // (it's only ever mutated by player actions between hint requests).
-  // Keyed on a snapshot of this.game.state rather than tracked mutation
-  // sites, so a cache hit is only ever returned for a state identical to
-  // the one it was computed from.
-  p._cachedOnState = function (cacheKey, computeFn) {
-    const stateString = this.game.state.join(',');
-    if (!this._stateCache) this._stateCache = {};
-    const bucket = this._stateCache[cacheKey];
-    if (bucket && bucket.stateString === stateString) return bucket.value;
-    const value = computeFn();
-    this._stateCache[cacheKey] = { stateString, value };
-    return value;
-  };
-
-  // Source 1 (see class-level comment above). Returns { directDotHints,
-  // atMostGroups, atLeastGroups }: directDotHints is every "rest of the
-  // line is entirely dots" hint found; atMostGroups is every "rest of
-  // line" cell set found to hold at most 1 star instead; atLeastGroups is
-  // every "inLine" cell set proven to hold at least 1 star (only when
-  // that bound is exactly 1). atMostGroups/atLeastGroups values are
-  // { indices, source }, source being a short player-facing label for how
-  // that group was found -- shown in the hint text so a match doesn't just
-  // say "trust me" (see _applyAtMostOneForcing / _applyDisjointQuotaFill).
-  p._regionLineSplitFacts = function () {
-    return this._cachedOnState('regionLineSplitFacts', () => this._regionLineSplitFactsImpl());
-  };
-
-  p._regionLineSplitFactsImpl = function () {
-    const directDotHints = [];
-    const atMostGroups = new Map();
-    const atLeastGroups = new Map();
-    const cap = this._LINE_SPLIT_REMAINDER_CAP;
-    const n = this.n;
-
-    for (const bIdx of this.boardIndices) {
-      const regionsOnBoard = this.units.filter(u => this._unitKind(u) === "region" && u.boardIdx === bIdx);
-      for (const region of regionsOnBoard) {
-        const avail = region.indices.filter(i => this.vState(i) === CELL.NONE);
-        if (avail.length < 2) continue;
-        const starsInRegion = region.indices.filter(i => this.vState(i) === CELL.STAR).length;
-        const k = this.starsPerGroup - starsInRegion;
-        if (k <= 0) continue;
-
-        for (const axis of ["Row", "Column"]) {
-          const lines = new Map(); // lineIdx -> cells of `avail` in that line
-          for (const i of avail) {
-            const key = axis === "Row" ? Math.floor(i / n) : i % n;
-            if (!lines.has(key)) lines.set(key, []);
-            lines.get(key).push(i);
-          }
-
-          for (const [lineIdx, inLine] of lines) {
-            const inLineSet = new Set(inLine);
-            const remainder = avail.filter(i => !inLineSet.has(i));
-            if (remainder.length === 0 || remainder.length > cap) continue;
-            const m = this._maxStarsFittable(remainder);
-            const q = k - m;
-            if (q < 1) continue; // remainder alone could already cover it
-
-            if (q === 1) {
-              const inLineKey = this._groupKey(inLine);
-              if (!atLeastGroups.has(inLineKey)) {
-                atLeastGroups.set(inLineKey, {
-                  indices: inLine,
-                  source: "the region's leftover need forces a star into this segment",
-                });
-              }
-            }
-
-            const lineIndices = this.axisIndices[axis][lineIdx];
-            const lineStars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
-            const lineNeeded = this.starsPerGroup - lineStars;
-            const restOfLine = lineIndices.filter(i => this.vState(i) === CELL.NONE && !inLineSet.has(i));
-            if (restOfLine.length === 0) continue;
-
-            const bound = lineNeeded - q;
-            const axisWord = axis.toLowerCase();
-            if (bound <= 0) {
-              directDotHints.push({
-                boardIdx: bIdx,
-                description: `This region still needs ${k} star${k === 1 ? '' : 's'}, but the small cluster outside this ${axisWord} (blue) can hold at most ${m}, so its portion in this ${axisWord} (blue) must supply the rest -- leaving no room for stars anywhere else in this ${axisWord}.`,
-                highlights: inLine.map(idx => ({ idx, color: HINT_COLOR.SOURCE }))
-                  .concat(remainder.map(idx => ({ idx, color: HINT_COLOR.SOURCE }))),
-                marks: restOfLine.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-              });
-            } else if (bound === 1) {
-              const gkey = this._groupKey(restOfLine);
-              if (!atMostGroups.has(gkey)) {
-                atMostGroups.set(gkey, {
-                  indices: restOfLine,
-                  source: "the rest of the region is capped to at most 1 star here",
-                });
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return { directDotHints, atMostGroups, atLeastGroups };
-  };
-
-  // Source 2 (see class-level comment above). Board-agnostic: rows/columns
-  // are shared across every board, so this never loops over per-board
-  // regions, unlike source 1.
-  p._findLinePairBoxCoverGroups = function () {
-    return this._cachedOnState('linePairBoxCoverGroups', () => this._findLinePairBoxCoverGroupsImpl());
-  };
-
-  p._findLinePairBoxCoverGroupsImpl = function () {
-    const groups = new Map();
-    const n = this.n;
-
-    for (const axis of ["Row", "Column"]) {
-      const units = this.axisIndices[axis];
-      for (let start = 0; start < n - 1; start++) {
-        const windowIndices = units[start].concat(units[start + 1]);
-        const avail = windowIndices.filter(i => this.vState(i) === CELL.NONE);
-        if (avail.length === 0) continue;
-        const starsInWindow = windowIndices.filter(i => this.vState(i) === CELL.STAR).length;
-        const required = 2 * this.starsPerGroup - starsInWindow;
-        if (required <= 0) continue;
-
-        // Positions along the OTHER axis (columns, if axis === "Row")
-        // that have at least one empty cell in this band.
-        const otherPositions = [...new Set(
-          avail.map(i => axis === "Row" ? i % n : Math.floor(i / n))
-        )].sort((a, b) => a - b);
-
-        // Greedy minimum covering by width-2 spans: start a box at the
-        // leftmost uncovered position, extend one more position right,
-        // skip everything that box now covers, repeat -- the standard
-        // optimal strategy for "minimum number of fixed-width intervals
-        // to cover a set of points", and naturally disjoint (each skips
-        // past its own full span before the next one starts).
-        const boxes = [];
-        let idx = 0;
-        while (idx < otherPositions.length) {
-          const c0 = otherPositions[idx];
-          boxes.push([c0, c0 + 1]);
-          idx++;
-          while (idx < otherPositions.length && otherPositions[idx] <= c0 + 1) idx++;
-        }
-
-        if (boxes.length !== required) continue;
-
-        for (const [c0, c1] of boxes) {
-          const boxCells = avail.filter(i => {
-            const pos = axis === "Row" ? i % n : Math.floor(i / n);
-            return pos === c0 || pos === c1;
-          });
-          if (boxCells.length > 0) {
-            const key = this._groupKey(boxCells);
-            if (!groups.has(key)) {
-              groups.set(key, {
-                indices: boxCells,
-                source: "paired rows/cols covered by 2x2 boxes",
-              });
-            }
-          }
-        }
-      }
-    }
-
-    return groups;
-  };
-
-  // For a unit needing N more stars from exactly N+1 remaining candidates,
-  // if some pair among them is a subset of any known at-most-1 group,
-  // that pair supplies at most 1 of the N needed stars -- so the other
-  // N-1 candidates must jointly supply at least N-1, and since there are
-  // exactly that many of them, ALL of them are forced to stars
-  // (pigeonhole). N=2 is the classic case (a single "third candidate"
-  // forced); this generalizes to any N>=2, which matters for 3-star+
-  // puzzles where a unit can need 3 or more stars from 4 or more
-  // candidates.
-  // `atMostOneGroups` values are { indices, source } -- source is a short
-  // player-facing label for how that group was proven at-most-1 (see the
-  // three producers above: region/line-split, box covering, witness
-  // projection), surfaced in the hint text below instead of the old vague
-  // "based on other constraints elsewhere on the board".
-  p._applyAtMostOneForcing = function (atMostOneGroups) {
-    const hints = [];
-    const groupList = [...atMostOneGroups.values()];
-    for (const unit of this.units) {
-      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
-      const needed = this.starsPerGroup - stars;
-      if (needed < 2) continue;
-      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
-      if (avail.length !== needed + 1) continue;
-
-      for (let x = 0; x < avail.length; x++) {
-        for (let y = x + 1; y < avail.length; y++) {
-          const a = avail[x], b = avail[y];
-          const matched = groupList.find(g => g.indices.includes(a) && g.indices.includes(b));
-          if (matched) {
-            const rest = avail.filter(i => i !== a && i !== b);
-            hints.push({
-              boardIdx: unit.boardIdx,
-              description: rest.length === 1
-                ? `At most one of the two blue-highlighted candidates can be a star (${matched.source}), so the remaining candidate must be a star.`
-                : `At most one of the two blue-highlighted candidates can be a star (${matched.source}), and that's not enough to cover this unit's remaining need on its own -- so every other candidate must be a star.`,
-              highlights: [a, b].map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-              marks: rest.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
-            });
-          }
-        }
-      }
-    }
-    return hints;
-  };
-
-  // Backtracking search for k mutually disjoint groups among `groups`
-  // (each { indices, source }). Returns the combo (an array of k groups)
-  // if found, else null. `groups` and k are both expected to be small in
-  // practice (k is a unit's remaining star quota -- at most
-  // starsPerGroup), so this is cheap.
-  p._findDisjointGroupCombo = function (groups, k) {
-    const backtrack = (start, chosen, used) => {
-      if (chosen.length === k) return chosen;
-      for (let idx = start; idx < groups.length; idx++) {
-        const g = groups[idx];
-        if (g.indices.some(c => used.has(c))) continue;
-        const result = backtrack(idx + 1, [...chosen, g], new Set([...used, ...g.indices]));
-        if (result) return result;
-      }
-      return null;
-    };
-    return backtrack(0, [], new Set());
-  };
-
-  // For a unit needing exactly Q more stars: if Q mutually disjoint
-  // at-least-1 groups can be found, all contained within the unit's
-  // remaining candidates, those groups collectively guarantee exactly Q
-  // stars -- matching the unit's remaining need exactly -- so every other
-  // candidate in the unit, outside their union, must be a dot.
-  //
-  // Q=2 (a still-fully-open 2★ unit) needs two disjoint at-least-1
-  // groups; Q=1 (a unit already at quota-1, down to its last star) needs
-  // just one -- that single group fully accounts for the unit's last
-  // star, so the rest of its empties are dots. Both are the same
-  // principle at different Q.
-  //
-  // `atLeastOneGroups` values are { indices, source } (see the three
-  // producers above). combo.length >= 2 pairs each group's own color
-  // (cycled from HINT_SOURCE_VARIANTS) with its source in the description,
-  // so a multi-group match doesn't just say "trust these colors" -- the
-  // player can check each group's reasoning individually.
-  p._applyDisjointQuotaFill = function (atLeastOneGroups) {
-    const allGroups = [...atLeastOneGroups.values()];
-    const candidates = [];
-    for (const unit of this.units) {
-      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
-      const q = this.starsPerGroup - stars;
-      if (q <= 0) continue;
-      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
-      if (avail.length <= q) continue; // nothing extra to eliminate even if this succeeds
-
-      const availSet = new Set(avail);
-      const relevant = allGroups.filter(g => g.indices.every(c => availSet.has(c)));
-      if (relevant.length < q) continue;
-
-      const combo = this._findDisjointGroupCombo(relevant, q);
-      if (!combo) continue;
-
-      const covered = new Set(combo.flatMap(g => g.indices));
-      const targets = avail.filter(i => !covered.has(i));
-      if (targets.length === 0) continue;
-
-      candidates.push({ unit, combo, targets });
-    }
-
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
-
-    return candidates.map(({ unit, combo, targets }) => {
-      const description = combo.length === 1
-        ? `At least one of the highlighted cells must be a star (${combo[0].source}), and that's this unit's last remaining star -- so every other empty cell here must be a dot.`
-        : `Each of these ${combo.length} differently-colored groups must contain a star -- `
-          + combo.map((g, i) => {
-            const colorName = HINT_SOURCE_VARIANTS[i % HINT_SOURCE_VARIANTS.length].replace('hint-source-', '');
-            return `${colorName}: ${g.source}`;
-          }).join('; ')
-          + ` -- and that already accounts for every star this unit still needs, so every other empty cell here must be a dot.`;
-      return {
-        boardIdx: unit.boardIdx,
-        description,
-        // Each group gets its own color (cycled from HINT_SOURCE_VARIANTS) so
-        // several disjoint groups shown at once are visually distinguishable
-        // instead of blurring into one indistinct blob -- a single group
-        // (the combo.length === 1 case) still just uses plain SOURCE blue.
-        highlights: combo.flatMap((group, i) =>
-          group.indices.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[i % HINT_SOURCE_VARIANTS.length] }))
-        ),
-        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-      };
-    });
-  };
-
-  // -- Hard tier: clump-sourced (sources 1 + 2, single geometric hop) --------
-
-  // Region/line-split's self-contained direct-dots case, standalone.
-  p.hintClumpDirectDots = function () {
-    const { directDotHints } = this._regionLineSplitFacts();
-    return directDotHints.length > 0 ? directDotHints : null;
-  };
-
-  // _applyAtMostOneForcing fed only by sources 1 and 2.
-  p.hintClumpAtMostOneForcing = function () {
-    const { atMostGroups } = this._regionLineSplitFacts();
-    const boxGroups = this._findLinePairBoxCoverGroups();
-    const atMostOneGroups = new Map([...atMostGroups, ...boxGroups]);
-    if (atMostOneGroups.size === 0) return null;
-    const hints = this._applyAtMostOneForcing(atMostOneGroups);
-    return hints.length > 0 ? hints : null;
-  };
-
-  // _applyDisjointQuotaFill fed only by sources 1 and 2.
-  p.hintClumpDisjointQuotaFill = function () {
-    const { atLeastGroups } = this._regionLineSplitFacts();
-    const boxGroups = this._findLinePairBoxCoverGroups();
-    const atLeastOneGroups = new Map([...atLeastGroups, ...boxGroups]);
-    if (atLeastOneGroups.size === 0) return null;
-    return this._applyDisjointQuotaFill(atLeastOneGroups);
-  };
-
-  // -- Hard/Expert tier: witness-sourced (source 3, two-hop chain) -----------
-  //
-  // 'intermediate' (Hard): the at-least-1 pairs only ever needed one
-  // board's regions to prove -- meaningfully harder than the
-  // single-geometric-hop clump rules, but still doesn't require combining
-  // both boards. 'strong' (Expert): may need both boards' regions
-  // combined. Same split as hintUnitPlacementForced etc.
-
-  // _applyAtMostOneForcing fed only by source 3.
-  p.hintWitnessAtMostOneForcing = function (level = 'strong') {
-    const atLeastPairs = this._findAtLeastOnePairs(level);
-    if (atLeastPairs.size === 0) return null;
-    const witnessGroups = this._deriveAtMostOneGroupsFromWitnessPairs(atLeastPairs);
-    if (witnessGroups.size === 0) return null;
-    const hints = this._applyAtMostOneForcing(witnessGroups);
-    return hints.length > 0 ? hints : null;
-  };
-
-  // _applyDisjointQuotaFill fed only by source 3.
-  p.hintWitnessDisjointQuotaFill = function (level = 'strong') {
-    const atLeastPairs = this._findAtLeastOnePairs(level);
-    if (atLeastPairs.size === 0) return null;
-    return this._applyDisjointQuotaFill(atLeastPairs);
-  };
-
   // --- Rule list for starsPerGroup >= 2 ---
   //
   // Used identically for 2★, 3★, and 4★+ puzzles.
+  //
+  // multi-star-rules-experiment branch: deliberately stripped down to
+  // re-derive the tier structure from first principles -- see
+  // rules_multi_star.py's module docstring (the Python mirror of this file)
+  // for what was removed and why. hintLookaheadDots(SingleBoard) and
+  // regionSubsetSync3/4 were also cut in that pass but later restored
+  // (Expert tier, after the Tiles rules) as the ceiling below the
+  // Grandmaster entries. Those Grandmaster entries (lookaheadLoop1/2/3/8,
+  // fromSolution) were never cut in the first place: they're shared with
+  // the 1★ list (solver-rules-single.js), not multi-star-specific, so
+  // leaving them in means multi-star hint cycling always has a fallback
+  // past Expert. `git show gh-pages:solver-rules-multi.js` has the
+  // pre-experiment version if this doesn't pan out.
   p._getMultiStarRuleList = function () {
     return [
       // Error validation
@@ -1165,18 +1223,33 @@ export function applyMultiStarRules(PuzzleSolver) {
       // 'dots' covers both inside-the-unit and outside-the-unit forced dots --
       // see hintUnitPlacementForced's comment for the unified reasoning.
       { key: 'unitPlacementForcedWeakDots',    fn: () => this.hintUnitPlacementForced('weak', 'dots') },
-      // Medium
+      // Moved here from Medium (multi-star-rules-experiment).
       { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },
+      // Medium
       { key: 'unitPlacementForcedIntermediateAll', fn: () => this.hintUnitPlacementForced('intermediate', 'all_stars') },
       { key: 'unitRegionSyncMulti2',           fn: () => this.hintUnitRegionSyncMulti(2) },
       // Reused directly from applySingleStarRules -- copying a known
       // star/dot to its symmetric counterpart doesn't depend on
       // starsPerGroup, so no multi-star variant is needed.
       { key: 'symmetryFillMulti',              fn: () => this.hintSymmetryFill() },
+      // Tiles rule 1 (see the "Tiles" section comment above hintTileSingleEmpty).
+      { key: 'tileSingleEmpty',                fn: () => this.hintTileSingleEmpty() },
+      // Region/line quota fill (see the section comment above
+      // hintRegionLineQuotaFill). weak/intermediate/strong track one tier
+      // above the matching unitPlacementForced level, since this rule needs
+      // a placement-forced fact PLUS a cross-region quota argument on top.
+      { key: 'regionLineQuotaFillWeak',        fn: () => this.hintRegionLineQuotaFill('weak') },
       // Hard
       { key: 'unitPlacementForcedIntermediateAny',  fn: () => this.hintUnitPlacementForced('intermediate', 'any_star') },
       { key: 'unitPlacementForcedIntermediateDots', fn: () => this.hintUnitPlacementForced('intermediate', 'dots') },
       { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
+      // Tiles rule 2.
+      { key: 'tileTwoEmptyDot',                fn: () => this.hintTileTwoEmptyDot() },
+      // Tile-quota-fill's K=1 special case: a single confirmed tile already
+      // covers a unit's whole remaining need. See tileDisjointQuotaFill
+      // (Expert) for K>1.
+      { key: 'tileQuotaFillSingle',            fn: () => this.hintTileQuotaFillSingle() },
+      { key: 'regionLineQuotaFillIntermediate', fn: () => this.hintRegionLineQuotaFill('intermediate') },
       { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
       { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
       { key: 'unitRegionSyncMulti4Plus',       fn: () => {
@@ -1189,12 +1262,9 @@ export function applyMultiStarRules(PuzzleSolver) {
           return candidates.length > 0 ? candidates : null;
         }
       },
+      // Restored from pre-experiment (see the section comment above
+      // hintUnitCompletionSatisfiesOtherUnit).
       { key: 'unitCompletionSatisfiesOtherUnitIntermediate', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('intermediate') },
-      { key: 'clumpDirectDots',                fn: () => this.hintClumpDirectDots() },
-      { key: 'clumpAtMostOneForcing',          fn: () => this.hintClumpAtMostOneForcing() },
-      { key: 'clumpDisjointQuotaFill',         fn: () => this.hintClumpDisjointQuotaFill() },
-      { key: 'witnessAtMostOneForcingIntermediate', fn: () => this.hintWitnessAtMostOneForcing('intermediate') },
-      { key: 'witnessDisjointQuotaFillIntermediate', fn: () => this.hintWitnessDisjointQuotaFill('intermediate') },
       // Symmetry - requires insight but not hard to apply
       { key: 'symmetryDeductionMulti',         fn: () => this.hintSymmetryDeductionMulti() },
       // Expert
@@ -1205,10 +1275,12 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'unitPlacementForcedStrongAll',   fn: () => this.hintUnitPlacementForced('strong', 'all_stars') },
       { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced('strong', 'any_star') },
       { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced('strong', 'dots') },
+      // Tiles rule 3.
+      { key: 'tileDisjointQuotaFill',          fn: () => this.hintTileDisjointQuotaFill() },
+      { key: 'regionLineQuotaFillStrong',      fn: () => this.hintRegionLineQuotaFill('strong') },
+      // Restored from pre-experiment.
       { key: 'unitCompletionSatisfiesOtherUnitStrong', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('strong') },
       { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
-      { key: 'witnessAtMostOneForcingStrong',  fn: () => this.hintWitnessAtMostOneForcing('strong') },
-      { key: 'witnessDisjointQuotaFillStrong', fn: () => this.hintWitnessDisjointQuotaFill('strong') },
       // Cross-board N-regions-pin-N-rows/cols: generalizes the 1★-only
       // hintCrossBoardRegionPinned to any starsPerGroup. Always genuinely
       // cross-board (see hintCrossBoardRegionPinnedMulti's comment).
@@ -1220,7 +1292,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'regionSubsetSync4',              fn: () => this.hintRegionSubsetSync(4) },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
       { key: 'lookaheadDots',                  fn: () => this.hintLookaheadDots() },
-      // Grandmaster
+      // Grandmaster (see this function's leading comment)
       { key: 'lookaheadLoop1',                 fn: () => this.hintLookahead(1) },
       { key: 'lookaheadLoop2',                 fn: () => this.hintLookahead(2) },
       { key: 'lookaheadLoop3',                 fn: () => this.hintLookahead(3) },

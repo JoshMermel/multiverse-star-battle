@@ -17,11 +17,13 @@ from .rules_single_star import SingleStarRules
 from .rules_multi_star import MultiStarRules
 
 
-# 3+ star puzzles don't get the Expert/Grandmaster tier of multi-star rules
-# -- those rules aren't guaranteed correct or fast past 2 stars, so every
-# stars_per_unit >= 3 is capped at the same tier, a real capability gap vs.
-# 2★, kept as-is deliberately.
-MULTI_STAR_TIER_CUTOFF = "Hard"
+# 3+ star puzzles get every multi-star rule up through Expert; only
+# Grandmaster (the N-stage lookahead rules) is capped off, since those are
+# the ones with a real, measured runtime cost at 3★+ (confirmed via
+# recon: the Hard-only cutoff previously used here produced zero
+# incorrect deductions once tried up through Expert -- this is a
+# performance-motivated cutoff, not a correctness one).
+MULTI_STAR_TIER_CUTOFF = "Expert"
 
 
 class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
@@ -103,6 +105,12 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
 
         # The single canonical multi-star (2★+) rule table, shared by 2★, 3★
         # (filtered below), and general multi-star scoring.
+        #
+        # multi-star-rules-experiment branch: deliberately stripped down to
+        # re-derive the tier structure from first principles -- see
+        # rules_multi_star.py's module docstring for what was removed and
+        # why. `git show gh-pages:tools/scorer/composite_scorer.py` has the
+        # pre-experiment version if this doesn't pan out.
         multi_star_rules = [
             # -- Beginner -----------------------------------------------------
             (self.rule_only_empty_multi,                          1,  "Beginner"),
@@ -113,9 +121,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # Covers both inside-the-unit and outside-the-unit forced dots --
             # see rule_unit_placement_forced_cond's docstring.
             (self.rule_unit_placement_forced_weak_dots,          10, "Beginner"),
+            # Moved here from Medium (multi-star-rules-experiment).
+            (self.rule_unit_region_sync_multi_1,                  15, "Beginner"),
 
             # -- Medium -------------------------------------------------------
-            (self.rule_unit_region_sync_multi_1,                  15, "Medium"),
             (self.rule_unit_placement_forced_intermediate_all,    20, "Medium"),
             (self.rule_unit_region_sync_multi_2,                  25, "Medium"),
             # Reused directly from SingleStarRules -- copying a known
@@ -124,26 +133,35 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_main_diagonal_fill,                        20, "Medium"),
             (self.rule_anti_diagonal_fill,                        20, "Medium"),
             (self.rule_rotation_180_fill,                         20, "Medium"),
+            # Tiles (multi-star-rules-experiment) -- see rules_multi_star.py's
+            # "Tiles" section comment for the shared _confirmed_tiles() concept
+            # all three rule_tile_* rules build on.
+            (self.rule_tile_single_empty,                         30, "Medium"),
+            # Region/line quota fill (multi-star-rules-experiment) -- see
+            # rules_multi_star.py's "Region/line quota fill" section comment.
+            # weak/intermediate/strong track the same tier bump as
+            # rule_unit_placement_forced_* one level up (Medium/Hard/Expert
+            # instead of Beginner/Medium/Expert), since this rule needs a
+            # placement-forced fact PLUS a cross-region quota argument on
+            # top of it.
+            (self.rule_region_line_quota_fill_weak,               32, "Medium"),
 
             # -- Hard ---------------------------------------------------------
             (self.rule_unit_placement_forced_intermediate_any,    35, "Hard"),
             (self.rule_unit_placement_forced_intermediate_dots,   35, "Hard"),
             (self.rule_unit_region_sync_multi_3,                  45, "Hard"),
+            (self.rule_tile_two_empty_dot,                        50, "Hard"),
+            # Tile-quota-fill's K=1 special case: a single confirmed tile
+            # already covers a unit's whole remaining need. See
+            # rule_tile_disjoint_quota_fill (Expert) for K>1.
+            (self.rule_tile_quota_fill_single,                    52, "Hard"),
+            (self.rule_region_line_quota_fill_intermediate,       55, "Hard"),
             (self.rule_region_subset_sync_1,                      60, "Hard"),
             (self.rule_region_subset_sync_2,                      65, "Hard"),
             (self.rule_unit_region_sync_multi_4_plus,             80, "Hard"),
-            (self.rule_unit_completion_satisfies_other_unit_intermediate, 85, "Hard"),
-            (self.rule_clump_direct_dots,                         86, "Hard"),
-            (self.rule_clump_at_most_one_forcing,                 87, "Hard"),
-            (self.rule_clump_disjoint_quota_fill,                 88, "Hard"),
-            # Witness (source 3, two-hop chain) reasoning restricted to one
-            # board's regions at a time -- meaningfully harder than the
-            # single-geometric-hop clump rules above, but still doesn't
-            # require combining both boards, so it stays at Hard rather
-            # than Expert. See rule_witness_*_strong below for the
-            # cross-board version.
-            (self.rule_witness_at_most_one_forcing_intermediate,  89, "Hard"),
-            (self.rule_witness_disjoint_quota_fill_intermediate,  90, "Hard"),
+            # Restored from pre-experiment -- see rules_multi_star.py's
+            # "Restored from pre-experiment" section comment.
+            (self.rule_unit_completion_satisfies_other_unit_intermediate, 82, "Hard"),
 
             # -- Symmetry - requires insight but not hard to apply -----------
             (self.rule_rotation_180_multi,                        5, "Symmetry"),
@@ -158,31 +176,27 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_placement_forced_strong_all,          95, "Expert"),
             (self.rule_unit_placement_forced_strong_any,          96, "Expert"),
             (self.rule_unit_placement_forced_strong_dots,         97, "Expert"),
-            (self.rule_unit_completion_satisfies_other_unit_strong, 99, "Expert"),
-            (self.rule_unit_region_sync_multi_2_disjoint,         100, "Expert"),
-            (self.rule_witness_at_most_one_forcing_strong,        101, "Expert"),
-            (self.rule_witness_disjoint_quota_fill_strong,        102, "Expert"),
-            # Cross-board N-regions-pin-N-rows/cols: generalizes the 1★-only
-            # rule_2/3_region_pinned_crossboard_rows/cols to any
-            # stars_per_unit. Always genuinely cross-board (see
-            # _rule_crossboard_n_region_pinned_multi's docstring).
-            (self.rule_crossboard_n_region_pinned_multi_2_rows,   103, "Expert"),
-            (self.rule_crossboard_n_region_pinned_multi_2_cols,   104, "Expert"),
-            (self.rule_crossboard_n_region_pinned_multi_3_rows,   105, "Expert"),
-            (self.rule_crossboard_n_region_pinned_multi_3_cols,   106, "Expert"),
+            (self.rule_tile_disjoint_quota_fill,                  100, "Expert"),
+            (self.rule_region_line_quota_fill_strong,             105, "Expert"),
+            # Restored from pre-experiment.
+            (self.rule_unit_completion_satisfies_other_unit_strong, 108, "Expert"),
+            (self.rule_unit_region_sync_multi_2_disjoint,         109, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_2_rows,   110, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_2_cols,   111, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_3_rows,   112, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_3_cols,   113, "Expert"),
             (self.rule_region_subset_sync_3,                      120, "Expert"),
             (self.rule_region_subset_sync_4,                      150, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),
             (self.rule_lookahead_dots,                            180, "Expert"),
 
-            # -- Grandmaster ----------------------------------------------------
+            # -- Grandmaster ------------------------------------------------
+            # Restored from pre-experiment, per explicit request -- all three
+            # stages enabled (gh-pages keeps 2-stage/3-stage commented out
+            # for performance under active testing; this branch runs them).
             (self.rule_lookahead_1_stage_multi,                   220, "Grandmaster"),
-            # 2-stage/3-stage multi-star lookahead are temporarily disabled
-            # for performance while under active testing -- deliberate, not
-            # a leftover. Leave commented out rather than deleting until
-            # that work concludes.
-#            (self.rule_lookahead_2_stages_multi,                  350, "Grandmaster"),
-#            (self.rule_lookahead_3_stages_multi,                  650, "Grandmaster"),
+            (self.rule_lookahead_2_stages_multi,                  350, "Grandmaster"),
+            (self.rule_lookahead_3_stages_multi,                  650, "Grandmaster"),
         ]
 
         self.rules_2_star = multi_star_rules

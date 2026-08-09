@@ -54,6 +54,16 @@
 
   /* Cross-board hover sync — desktop only */
   --highlight-hover-sync-bg:  rgba(0, 180, 160, 0.13);
+
+  /* "Tiles" rule family (multi-star-rules-experiment): solid box-outline
+     colors for the 2x2 tile overlay -- see TILE_OUTLINE_COLORS in
+     constants.js. Same 4 hues as the SOURCE variants above, but opaque
+     (a border needs full contrast; the -bg rgba values above are too
+     washed out to read as a crisp outline). */
+  --tile-outline-blue:   #007bff;
+  --tile-outline-purple: #9b59ea;
+  --tile-outline-cyan:   #06b6d4;
+  --tile-outline-pink:   #ec4899;
 }
 
 [data-theme="dark"] {
@@ -101,6 +111,13 @@
 
   /* Cross-board hover sync — desktop only */
   --highlight-hover-sync-bg:  rgba(0, 210, 190, 0.18);
+
+  /* "Tiles" rule family — brightened to match this block's higher-contrast-
+     on-dark-backgrounds treatment. */
+  --tile-outline-blue:   #50a0ff;
+  --tile-outline-purple: #b482ff;
+  --tile-outline-cyan:   #2dd2e6;
+  --tile-outline-pink:   #ff6eb4;
 }
 
 /* 2. RESET & BASE STYLES */
@@ -258,6 +275,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .star-battle-grid {
   display: grid;
+  position: relative; /* anchors .tile-outline's absolute positioning */
   user-select: none;
   touch-action: none; /* Prevents scrolling while drawing */
 }
@@ -341,6 +359,40 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Drag highlight uses background-color only, so hint-target-yellow's
    background-image (the circle) composites on top of it naturally. */
 .cell-drag-highlight { background-color: var(--highlight-drag-bg); }
+
+/* "Tiles" rule family (multi-star-rules-experiment): a colored box
+   outlining the 2x2 area a "tile" hint is talking about -- see
+   solver-rules-multi.js's Tiles section and applyHintUI's
+   _applyTileOutlines. Positioned with `position: absolute` (top/left set
+   inline by JS, in cell-size units) rather than as a grid item -- an
+   item placed into .star-battle-grid via an explicit grid-row/
+   grid-column claims that cell of the grid's auto-placement algorithm
+   BEFORE the 81 auto-placed cell divs get laid out, which visibly
+   corrupts their positions (confirmed empirically: cells after the
+   outline's claimed area silently shift over/wrap). Absolute positioning
+   sidesteps grid placement entirely -- pure decoration, no layout
+   interaction. Inset via margin (not a full-bleed border) so two
+   outlines on adjacent tiles never look like they're touching or merging
+   into one shape, and the border alone (no fill) never obscures the
+   star/dot glyph inside a cell. */
+.tile-outline {
+  position: absolute;
+  /* Inset 10% of a cell-size on all four sides: JS sets top/left already
+     shifted by that same amount, so width/height just need to be 20%
+     (2 x 10%) smaller than the full 2-cell span for the result to be
+     symmetric and centered -- see _applyTileOutlines' comment. */
+  width: calc(var(--cell-size) * 1.8);
+  height: calc(var(--cell-size) * 1.8);
+  pointer-events: none;
+  box-sizing: border-box;
+  border: max(2px, calc(var(--cell-size) * 0.05)) solid transparent;
+  border-radius: calc(var(--cell-size) * 0.12);
+  z-index: 6; /* above .dot's z-index: 5 */
+}
+.tile-outline-blue   { border-color: var(--tile-outline-blue); }
+.tile-outline-purple { border-color: var(--tile-outline-purple); }
+.tile-outline-cyan   { border-color: var(--tile-outline-cyan); }
+.tile-outline-pink   { border-color: var(--tile-outline-pink); }
 
 /* Cross-board hover sync — only applied via JS on pointer:fine (desktop) devices */
 .cell-hover-sync { background-color: var(--highlight-hover-sync-bg); }

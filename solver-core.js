@@ -287,8 +287,7 @@ export class PuzzleSolver {
   // difficulty level -- each entry is _enumerateUnitCompletions' own return
   // value (null: unit already at quota; []: that scope alone already finds
   // the unit unsolvable; otherwise the valid combos), used by rules that
-  // come in weak/intermediate/strong variants (hintUnitPlacementForced,
-  // hintUnitCompletionSatisfiesOtherUnit):
+  // come in weak/intermediate/strong variants (hintUnitPlacementForced):
   //
   //  - 'weak': adjacency only, ignoring every other unit's capacity.
   //  - 'strong': full capacity check across every board's units at once --

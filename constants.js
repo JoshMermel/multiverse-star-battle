@@ -24,3 +24,9 @@ export const HINT_SOURCE_VARIANTS = Object.freeze([
   'hint-source-cyan',
   'hint-source-pink',
 ]);
+
+// Plain color names (not full class names) for the "tiles" rule family's 2x2
+// box-outline hints -- see solver-rules-multi.js's Tiles section. Index i
+// here intentionally matches HINT_SOURCE_VARIANTS[i], so a multi-tile hint's
+// outline color always matches that tile's own cell-highlight color.
+export const TILE_OUTLINE_COLORS = Object.freeze(['blue', 'purple', 'cyan', 'pink']);
