@@ -654,13 +654,13 @@ export function applyMultiStarRules(PuzzleSolver) {
           if (k >= 1) {
             const forced = this._forcedCellsInGroup(insideCells, k, existingStars);
             if (forced.length > 0) {
-              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'inside', groupCells: insideCells, forcedCells: forced });
+              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'inside', groupCells: insideCells, forcedCells: forced, lineCount: k, restCount: outsideCount });
             }
           }
           if (outsideCount >= 1) {
             const forced = this._forcedCellsInGroup(outsideCells, outsideCount, existingStars);
             if (forced.length > 0) {
-              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'outside', groupCells: outsideCells, forcedCells: forced });
+              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'outside', groupCells: outsideCells, forcedCells: forced, lineCount: k, restCount: outsideCount });
             }
           }
         }
@@ -684,17 +684,29 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.forcedCells[0] - b.forcedCells[0]);
 
-    return candidates.map(({ boardIdx, lineKind, lineIdx, side, groupCells, forcedCells }) => {
+    return candidates.map(({ boardIdx, lineKind, lineIdx, side, groupCells, forcedCells, lineCount, restCount }) => {
       const lineWord = lineKind === 'row' ? 'row' : 'column';
       const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
       const pronoun = forcedCells.length === 1 ? 'it' : 'they';
       const starPhrase = forcedCells.length === 1 ? 'a star' : 'stars';
-      const sideWord = side === 'inside' ? 'inside' : 'outside';
       const forcedSet = new Set(forcedCells);
+
+      // Lead with the concrete fact the subset-sum match establishes (see
+      // the section comment above): this region places EXACTLY lineCount
+      // stars in the line, not just "at least". 'outside' facts also name
+      // what that leaves for the rest of the region -- that's the count
+      // whose placements are actually being reasoned about below, even
+      // though the marked cells might be only SOME of them (e.g. 1 forced
+      // cell among a 2-star remainder): "every way to do that includes
+      // the marked cell(s)" stays correct either way, unlike asserting the
+      // marked cells are the star count's only home.
+      const restClause = side === 'outside'
+        ? `, leaving exactly ${restCount} star${restCount === 1 ? '' : 's'} for the rest of the region`
+        : '';
 
       return {
         boardIdx,
-        description: `Every way to place the highlighted region's stars ${sideWord} the amber-outlined ${lineWord} includes the marked ${cellWord} -- so ${pronoun} must be ${starPhrase}.`,
+        description: `This region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} in the amber-outlined ${lineWord}${restClause}. Every way to do that includes the marked ${cellWord}, so ${pronoun} must be ${starPhrase}.`,
         highlights: groupCells
           .filter(i => !forcedSet.has(i))
           .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
