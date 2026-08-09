@@ -416,6 +416,13 @@ export function applySingleStarRules(PuzzleSolver) {
   };
 
   // Rule: Check overlapping regions across boards.
+  //
+  // Requires at least 2 shared cells (not just >= 1): with only one shared
+  // cell, "both stars must land in the shared cells" collapses to "the
+  // star is in this one cell", which reads as an oddly roundabout way to
+  // say the same thing a simpler rule would already have caught -- worth
+  // it once there's an actual choice among several shared cells, not when
+  // there's only one.
   p.hintPartialOverlap = function () {
     const n = this.n;
     const candidates = [];
@@ -437,7 +444,7 @@ export function applySingleStarRules(PuzzleSolver) {
             const onlyB   = [...setB].filter(i => !setA.has(i));
             const disjoint = [...onlyA, ...onlyB];
 
-            if (shared.length === 0 || disjoint.length === 0) continue;
+            if (shared.length < 2 || disjoint.length === 0) continue;
 
             const onlyASeesAllOnlyB = onlyA.every(a => onlyB.every(b => cellsSee(a, b, n)));
             if (!onlyASeesAllOnlyB) continue;
