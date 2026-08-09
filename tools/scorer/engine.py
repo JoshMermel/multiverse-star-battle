@@ -9,8 +9,6 @@ in rules_common.py / rules_single_star.py / rules_multi_star.py; see
 composite_scorer.py for how they're assembled into CompositeScorer.
 """
 
-from itertools import combinations
-
 # Tier ordering for display and sorting. UNSOLVED sorts last.
 TIER_ORDER = ["Beginner", "Medium", "Hard", "Symmetry", "Expert", "Grandmaster", "UNSOLVED"]
 _TIER_RANK = {tier: i for i, tier in enumerate(TIER_ORDER)}
@@ -97,9 +95,9 @@ class ScorerCore:
         previous behavior exactly, since a unit is broken the moment it has
         no star and no empty cells left.
 
-        Uses _enumerate_unit_completions(strong=True) for every unit to
-        answer "is there at least one way to solve you given the placements
-        of stars currently on the board?" -- i.e. can this row/column/region's
+        Uses _unit_has_valid_completion for every unit to answer "is there
+        at least one way to solve you given the placements of stars
+        currently on the board?" -- i.e. can this row/column/region's
         remaining stars still be placed somewhere, respecting non-adjacency
         AND every other unit's remaining capacity. A unit still needing stars
         but with zero valid completions is a genuine contradiction: not just
@@ -108,7 +106,7 @@ class ScorerCore:
         other rows/columns/regions that don't have room for them.
 
         `visible_board_idx`, when given, restricts every check (which units
-        get scanned, and what _enumerate_unit_completions is allowed to
+        get scanned, and what _unit_has_valid_completion is allowed to
         reason about) to rows/columns and only that one board's regions --
         for the "single board" lookahead rules, which are meant to only rely
         on information visible from one board.
@@ -119,11 +117,10 @@ class ScorerCore:
         ]
 
         for unit in units:
-            combos = self._enumerate_unit_completions(p, unit, strong=True, visible_board_idx=visible_board_idx)
-            if combos is not None and len(combos) == 0:
+            if not self._unit_has_valid_completion(p, unit, visible_board_idx=visible_board_idx):
                 return True
 
-        # _enumerate_unit_completions returns None once a unit is already at
+        # _unit_has_valid_completion returns True once a unit is already at
         # quota, so it doesn't itself catch a unit that's gone OVER quota --
         # check that separately.
         for unit in units:
@@ -197,6 +194,20 @@ class ScorerCore:
         lookahead check can reason about a shared row/column's capacity
         without silently pulling in the OTHER board's region layout, which
         that check is specifically meant not to depend on.
+
+        Generation itself is a backtracking search over `avail` (in the
+        same index order `combinations()` would enumerate, so results come
+        out in the same order as before) that prunes a candidate cell the
+        instant it's adjacent to an already-chosen cell or an existing
+        star, instead of generating every size-`needed` combination up
+        front via combinations() and filtering adjacency violations out
+        afterward (what this used to do). Pruning during construction cuts
+        off whole branches of the search tree before they're ever built,
+        rather than paying to build them and then throwing them away -- a
+        real cost on wide rows/columns/regions, where adjacent-cell
+        rejections are common. The capacity check (which needs a complete
+        combo to evaluate) still only runs once per surviving leaf, same
+        as before. Mirrors solver-core.js's _enumerateUnitCompletions.
         """
         if quota is None:
             quota = p.stars_per_unit
@@ -211,44 +222,110 @@ class ScorerCore:
             return []
 
         valid = []
-        for combo in combinations(avail, needed):
-            ok = True
-            for idx1 in range(len(combo)):
-                if any(self._cells_adjacent(p, s, combo[idx1]) for s in stars):
-                    ok = False
-                    break
-                for idx2 in range(idx1 + 1, len(combo)):
-                    if self._cells_adjacent(p, combo[idx1], combo[idx2]):
-                        ok = False
-                        break
-                if not ok:
-                    break
-            if not ok:
-                continue
+        chosen = []
 
-            if strong:
-                other_unit_counts = {}
-                for cell in combo:
-                    for other_unit in p.units_by_cell[cell]:
-                        if other_unit["label"] == unit["label"]:
-                            continue
-                        if (visible_board_idx is not None
-                                and other_unit["board_idx"] is not None
-                                and other_unit["board_idx"] != visible_board_idx):
-                            continue
-                        other_unit_counts.setdefault(other_unit["label"], [0, other_unit])
-                        other_unit_counts[other_unit["label"]][0] += 1
-                overloaded = False
-                for add_count, other_unit in other_unit_counts.values():
-                    existing = sum(1 for i in other_unit["indices"] if p.grid[i] == "x")
-                    if existing + add_count > p.stars_per_unit:
-                        overloaded = True
-                        break
-                if overloaded:
+        def try_from(start):
+            if len(chosen) == needed:
+                if not strong or self._combo_respects_capacity(p, chosen, unit, visible_board_idx):
+                    valid.append(tuple(chosen))
+                return
+            # Not enough cells left in `avail` to reach `needed`: prune.
+            if len(avail) - start < needed - len(chosen):
+                return
+            for i in range(start, len(avail)):
+                cell = avail[i]
+                if any(self._cells_adjacent(p, s, cell) for s in stars):
                     continue
+                if any(self._cells_adjacent(p, c, cell) for c in chosen):
+                    continue
+                chosen.append(cell)
+                try_from(i + 1)
+                chosen.pop()
 
-            valid.append(combo)
+        try_from(0)
         return valid
+
+    def _combo_respects_capacity(self, p, combo, unit, visible_board_idx):
+        """
+        Shared by _enumerate_unit_completions (strong mode) and
+        _unit_has_valid_completion below: does placing `combo` (a complete,
+        already adjacency-valid set of `unit`'s remaining stars) push any
+        OTHER row/column/region past its star quota? (`unit` itself is
+        exact by construction, so it's skipped.) Always checks against
+        p.stars_per_unit, never a caller-supplied `quota` override -- see
+        _enumerate_unit_completions' own docstring on why that's never
+        overridden.
+        """
+        other_unit_counts = {}
+        for cell in combo:
+            for other_unit in p.units_by_cell[cell]:
+                if other_unit["label"] == unit["label"]:
+                    continue
+                if (visible_board_idx is not None
+                        and other_unit["board_idx"] is not None
+                        and other_unit["board_idx"] != visible_board_idx):
+                    continue
+                other_unit_counts.setdefault(other_unit["label"], [0, other_unit])
+                other_unit_counts[other_unit["label"]][0] += 1
+        for add_count, other_unit in other_unit_counts.values():
+            existing = sum(1 for i in other_unit["indices"] if p.grid[i] == "x")
+            if existing + add_count > p.stars_per_unit:
+                return False
+        return True
+
+    def _unit_has_valid_completion(self, p, unit, quota=None, visible_board_idx=None):
+        """
+        Cheap existence-only counterpart to _enumerate_unit_completions
+        (always "strong" mode -- the only mode is_board_broken ever needs),
+        for callers that only ask "does `unit` have AT LEAST ONE valid way
+        to place its remaining stars", never the completions themselves.
+        Short-circuits the same adjacency-pruned backtracking search the
+        moment it finds one valid combo, instead of continuing to enumerate
+        the rest. This is the main cost inside every lookahead-family rule
+        (rule_lookahead_*, rule_lookahead_dots*): each speculative
+        placement calls is_board_broken once, which checks EVERY row/
+        column/region in turn, and the common case -- a unit that turns out
+        not to be broken -- used to still pay for a full enumeration just
+        to conclude "yes, completions exist"; existence usually resolves
+        almost immediately instead.
+
+        Returns True when `unit` is already at quota (needed <= 0) --
+        matches _enumerate_unit_completions returning None there, which
+        callers treat as "not broken" (over-quota is caught by a separate
+        check). Mirrors solver-core.js's _unitHasValidCompletion.
+        """
+        if quota is None:
+            quota = p.stars_per_unit
+        indices = unit["indices"]
+        stars = [i for i in indices if p.grid[i] == "x"]
+        needed = quota - len(stars)
+        if needed <= 0:
+            return True
+
+        avail = [i for i in indices if p.grid[i] is None]
+        if len(avail) < needed:
+            return False
+
+        chosen = []
+
+        def try_from(start):
+            if len(chosen) == needed:
+                return self._combo_respects_capacity(p, chosen, unit, visible_board_idx)
+            if len(avail) - start < needed - len(chosen):
+                return False
+            for i in range(start, len(avail)):
+                cell = avail[i]
+                if any(self._cells_adjacent(p, s, cell) for s in stars):
+                    continue
+                if any(self._cells_adjacent(p, c, cell) for c in chosen):
+                    continue
+                chosen.append(cell)
+                if try_from(i + 1):
+                    return True
+                chosen.pop()
+            return False
+
+        return try_from(0)
 
     def _unit_completions_by_level(self, p, unit, level, quota=None):
         """
