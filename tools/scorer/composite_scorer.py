@@ -191,12 +191,18 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_lookahead_dots,                            180, "Expert"),
 
             # -- Grandmaster ------------------------------------------------
-            # Restored from pre-experiment, per explicit request -- all three
-            # stages enabled (gh-pages keeps 2-stage/3-stage commented out
-            # for performance under active testing; this branch runs them).
-            (self.rule_lookahead_1_stage_multi,                   220, "Grandmaster"),
-            (self.rule_lookahead_2_stages_multi,                  350, "Grandmaster"),
-            (self.rule_lookahead_3_stages_multi,                  650, "Grandmaster"),
+            # All three N-stage multi-star lookahead rules are commented out
+            # for performance: each is a full board-wide speculative sweep
+            # per empty cell, repeated per stage, and that's expensive
+            # enough at 3★+ scale that even 1-stage measurably slows things
+            # down. rule_lookahead_dots(_single_board) above (Expert tier)
+            # is the cheaper one-round equivalent and stays active. 1★'s
+            # rule_lookahead_1/2/3_stage (rules_single_star.py) are
+            # untouched. Leave commented rather than deleting, matching
+            # gh-pages' own convention, in case this gets revisited.
+            # (self.rule_lookahead_1_stage_multi,                   220, "Grandmaster"),
+            # (self.rule_lookahead_2_stages_multi,                  350, "Grandmaster"),
+            # (self.rule_lookahead_3_stages_multi,                  650, "Grandmaster"),
         ]
 
         self.rules_2_star = multi_star_rules

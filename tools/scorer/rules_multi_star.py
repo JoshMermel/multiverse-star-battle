@@ -18,9 +18,12 @@ or judged too hard to explain to a player. Restored:
 rule_lookahead_dots(_single_board), rule_region_subset_sync_3/4 (defined
 in rules_common.py), rule_unit_completion_satisfies_other_unit_*,
 rule_unit_region_sync_multi_2_disjoint, rule_crossboard_n_region_pinned_multi_*,
-and rule_lookahead_1/2/3_stage_multi (all three stages enabled, unlike
-gh-pages which keeps 2/3-stage commented out for performance). See
-composite_scorer.py's multi_star_rules for what's still in play. If this
+and rule_lookahead_1/2/3_stage_multi (all three commented out in
+composite_scorer.py for performance -- each is a full board-wide
+speculative sweep per empty cell, repeated per stage, and got noticeably
+slow at 3★+ scale even at 1 stage; rule_lookahead_dots(_single_board)'s
+cheaper one-round version stays active). See composite_scorer.py's
+multi_star_rules for what's still in play. If this
 branch doesn't pan out, `git show gh-pages:tools/scorer/rules_multi_star.py`
 has the pre-experiment version.
 """
@@ -805,9 +808,13 @@ class MultiStarRules:
     # only ever applies ONE round of direct consequences), this repeats the
     # propagation, so it can catch contradictions several steps removed from
     # the speculative placement -- at real computational cost, hence
-    # Grandmaster tier. All three stages are enabled here (gh-pages keeps
-    # 2-stage/3-stage commented out for performance under active testing --
-    # restored anyway per explicit request).
+    # Grandmaster tier. All three stages are commented out in
+    # composite_scorer.py's multi_star_rules for performance (even 1-stage
+    # got noticeably slow at 3★+ scale) -- the same cost shows up in the JS
+    # hint UI's lookaheadLoop1/2/3/8, also commented out there, see
+    # solver-rules-multi.js's _getMultiStarRuleList. Kept for 1★
+    # (rules_single_star.py's rule_lookahead_1/2/3_stage) and available here
+    # if this gets revisited.
 
     def rule_lookahead_1_stage_multi(self, p):
         return self._lookahead_n_stages_multi(p, n_stages=1)
