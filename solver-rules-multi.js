@@ -1251,25 +1251,36 @@ export function applyMultiStarRules(PuzzleSolver) {
   // that cell IS the star. Shows the tile's whole originating tiling (not
   // just the one tile), so the player can see the covering argument that
   // makes it trustworthy -- see _confirmedTilesImpl's comment.
+  //
+  // A tiling can confirm MORE than one single-empty tile at once (e.g. two
+  // different tiles in the same K-tile covering both happen to already
+  // have only 1 empty cell) -- those all get combined into ONE hint here,
+  // rather than one hint per tile forcing the player to cycle through
+  // sibling forced-stars from the exact same covering one at a time.
   p.hintTileSingleEmpty = function () {
-    const seen = new Map(); // markIdx -> hint, deduped (a tile can be confirmed by >1 tiling)
+    const seenMarks = new Set(); // markIdx already claimed by an earlier tiling
+    const hints = [];
     for (const tiling of this._confirmedTiles()) {
-      for (const tile of tiling.tiles) {
-        if (tile.cells.length !== 1) continue;
-        const markIdx = tile.cells[0];
-        if (seen.has(markIdx)) continue;
-        const K = tiling.tiles.length;
-        const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, [tile], [markIdx]);
-        seen.set(markIdx, {
-          description: `This ${this._axisPairLabel(tiling.axis)} needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. This tile's last empty cell must be the star.`,
-          highlights,
-          marks: [{ idx: markIdx, color: HINT_COLOR.TARGET_STAR }],
-          tileOutlines,
-          boardIdx: undefined
-        });
-      }
+      const matchingTiles = tiling.tiles.filter(t => t.cells.length === 1 && !seenMarks.has(t.cells[0]));
+      if (matchingTiles.length === 0) continue;
+
+      const markIdxs = matchingTiles.map(t => t.cells[0]).sort((a, b) => a - b);
+      markIdxs.forEach(idx => seenMarks.add(idx));
+
+      const K = tiling.tiles.length;
+      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, matchingTiles, markIdxs);
+      const forceText = matchingTiles.length === 1
+        ? "This tile's last empty cell must be the star."
+        : `${matchingTiles.length} of these tiles have only one empty cell left, so each one must be the star.`;
+
+      hints.push({
+        description: `This ${this._axisPairLabel(tiling.axis)} needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. ${forceText}`,
+        highlights,
+        marks: markIdxs.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
+        tileOutlines,
+        boardIdx: undefined
+      });
     }
-    const hints = [...seen.values()];
     if (hints.length === 0) return null;
     hints.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
     return hints;
@@ -1281,9 +1292,18 @@ export function applyMultiStarRules(PuzzleSolver) {
   // it turns out to be. Any OTHER cell touching BOTH of them would touch
   // that star no matter which of the two it ends up being, so it must be
   // a dot. Shows the tile's whole originating tiling, same as rule 1.
+  //
+  // Same combining as rule 1 above: a tiling can have more than one
+  // 2-empty tile that each produce a dot deduction, so they're merged into
+  // one hint per tiling -- the union of every contributing tile's own
+  // target cells, deduped (two different tiles can happen to share a
+  // target cell that touches both of them).
   p.hintTileTwoEmptyDot = function () {
-    const seen = new Map(); // key: targets|tile cells -> hint, deduped
+    const seenKeys = new Set(); // "targets|tile cells" already claimed by an earlier tiling
+    const hints = [];
     for (const tiling of this._confirmedTiles()) {
+      const matchingTiles = [];
+      const targetSet = new Set();
       for (const tile of tiling.tiles) {
         if (tile.cells.length !== 2) continue;
         const [a, b] = tile.cells;
@@ -1292,19 +1312,28 @@ export function applyMultiStarRules(PuzzleSolver) {
         );
         if (targets.length === 0) continue;
         const key = this._groupKey(targets) + '|' + this._groupKey(tile.cells);
-        if (seen.has(key)) continue;
-        const K = tiling.tiles.length;
-        const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, [tile], targets);
-        seen.set(key, {
-          description: `This ${this._axisPairLabel(tiling.axis)} needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. Both of this tile's empty cells touch the marked cell(s), so they must be dots.`,
-          highlights,
-          marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-          tileOutlines,
-          boardIdx: undefined
-        });
+        if (seenKeys.has(key)) continue;
+        seenKeys.add(key);
+        matchingTiles.push(tile);
+        targets.forEach(t => targetSet.add(t));
       }
+      if (matchingTiles.length === 0) continue;
+
+      const targetList = [...targetSet].sort((a, b) => a - b);
+      const K = tiling.tiles.length;
+      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, matchingTiles, targetList);
+      const dotText = matchingTiles.length === 1
+        ? "Both of this tile's empty cells touch the marked cell(s), so they must be dots."
+        : `In each of these ${matchingTiles.length} tiles, both empty cells touch the marked cell(s) next to it, so those cells must be dots.`;
+
+      hints.push({
+        description: `This ${this._axisPairLabel(tiling.axis)} needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. ${dotText}`,
+        highlights,
+        marks: targetList.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+        tileOutlines,
+        boardIdx: undefined
+      });
     }
-    const hints = [...seen.values()];
     if (hints.length === 0) return null;
     hints.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
     return hints;
