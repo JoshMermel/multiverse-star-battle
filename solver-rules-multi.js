@@ -412,6 +412,128 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates;
   };
 
+  // -- Region/line partition trap (2★+) --------------------------------------------
+  //
+  // A sibling of hintRegionLineQuotaFill above, built on the same per-region,
+  // per-line completion tally. That rule splits a region's remaining cells
+  // into "in this row/column" and "everywhere else", and asks how many
+  // stars are guaranteed on the IN side (to fill the line's own quota).
+  // This rule asks the same split's question about EITHER side on its
+  // own: whenever a region's cells on one side of that split (in the line,
+  // or outside it -- both are checked) are proven to hold at least m >= 1
+  // of the region's stars, no matter which valid completion turns out to
+  // be real, any candidate cell (anywhere on the board) that's adjacent to
+  // EVERY cell on that side can't be a star: whichever of them ends up
+  // holding the guarantee, that candidate would be touching it. m doesn't
+  // need to equal the number of cells on that side for this to be useful
+  // -- e.g. 3 cells guaranteed to jointly hold only 1 star still traps any
+  // cell touching all 3, even without knowing which one it'll be.
+  //
+  // Concretely, per region/line pair, from the same per-combo tally:
+  //  - IN-line guarantee: minInLine = MIN over combos of (cells in the
+  //    line) -- the same k _regionLineGuaranteesImpl computes.
+  //  - OUT-of-line guarantee: needed - maxInLine, where maxInLine = MAX
+  //    over combos of (cells in the line) -- the complement, since a
+  //    completion placing `count` in the line places (needed - count)
+  //    outside it, so the guaranteed-outside minimum is needed minus the
+  //    guaranteed-inside MAXIMUM.
+  // Both are independent, valid "at least m stars among this fixed cell
+  // set" facts, so both get the same touches-all-of-them-is-a-dot check.
+
+  // Every region/line/side triple, on any board, where the region is
+  // PROVEN to place at least `guarantee` >= 1 of its remaining stars among
+  // a fixed set of its own cells (`groupCells`) -- either every cell it
+  // has in that row/column ('inside'), or every cell it has outside it
+  // ('outside'). Returns an array of
+  // { boardIdx, lineKind, lineIdx, side, groupCells, guarantee }.
+  p._regionLinePartitionGuarantees = function (level) {
+    return this._cachedOnState(`regionLinePartitionGuarantees_${level}`, () => this._regionLinePartitionGuaranteesImpl(level));
+  };
+
+  p._regionLinePartitionGuaranteesImpl = function (level) {
+    const result = [];
+    for (const unit of this.units) {
+      if (unit.boardIdx === undefined) continue; // rows/columns aren't a source here, only regions
+
+      const completionSets = this._unitCompletionsByLevel(unit, level)
+        .filter(combos => combos !== null && combos.length > 0);
+      if (completionSets.length === 0) continue;
+      // Regions always resolve to exactly one scope (see _unitCompletionsByLevel).
+      const combos = completionSets[0];
+      const needed = combos[0].length;
+
+      const rowsTouched = new Set(), colsTouched = new Set();
+      for (const combo of combos) {
+        for (const cell of combo) {
+          rowsTouched.add(Math.floor(cell / this.n));
+          colsTouched.add(cell % this.n);
+        }
+      }
+
+      const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+
+      const tryLine = (lineKind, lineIdx, inLine) => {
+        const countsInLine = combos.map(combo => combo.filter(inLine).length);
+        const minInLine = Math.min(...countsInLine);
+        const maxInLine = Math.max(...countsInLine);
+
+        if (minInLine >= 1) {
+          const insideCells = avail.filter(inLine);
+          if (insideCells.length > 0) {
+            result.push({ boardIdx: unit.boardIdx, lineKind, lineIdx, side: 'inside', groupCells: insideCells, guarantee: minInLine });
+          }
+        }
+
+        const g = needed - maxInLine;
+        if (g >= 1) {
+          const outsideCells = avail.filter(i => !inLine(i));
+          // Should be impossible (g >= 1 means every completion leaves at
+          // least one of its own cells outside the line) but guard anyway.
+          if (outsideCells.length > 0) {
+            result.push({ boardIdx: unit.boardIdx, lineKind, lineIdx, side: 'outside', groupCells: outsideCells, guarantee: g });
+          }
+        }
+      };
+
+      for (const r of rowsTouched) tryLine('row', r, cell => Math.floor(cell / this.n) === r);
+      for (const c of colsTouched) tryLine('col', c, cell => cell % this.n === c);
+    }
+    return result;
+  };
+
+  p.hintRegionLinePartitionTrapped = function (level) {
+    const partitions = this._regionLinePartitionGuarantees(level);
+    const candidates = [];
+
+    for (const { boardIdx, lineKind, lineIdx, side, groupCells, guarantee } of partitions) {
+      const groupSet = new Set(groupCells);
+
+      for (let i = 0; i < this.n * this.n; i++) {
+        if (this.vState(i) !== CELL.NONE) continue;
+        if (groupSet.has(i)) continue;
+        if (!groupCells.every(cell => this._cellsAdjacent(i, cell))) continue;
+        candidates.push({ boardIdx, lineKind, lineIdx, side, groupCells, guarantee, target: i });
+      }
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.target - b.target);
+
+    return candidates.map(({ boardIdx, lineKind, lineIdx, side, groupCells, guarantee, target }) => {
+      const lineWord = lineKind === 'row' ? 'row' : 'column';
+      const cellWord = groupCells.length === 1 ? 'cell' : 'cells';
+      const sideWord = side === 'inside' ? 'inside' : 'outside';
+
+      return {
+        boardIdx,
+        description: `At least ${guarantee} star${guarantee === 1 ? '' : 's'} from the highlighted region falls ${sideWord} the amber-outlined ${lineWord}, among the marked ${cellWord} -- and the circled cell touches every one of them, so it can't be a star.`,
+        highlights: groupCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        marks: [{ idx: target, color: HINT_COLOR.TARGET }],
+        lineHighlight: { boardIdx, axis: lineKind, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
+      };
+    });
+  };
+
   // --- 2★/3★-generalized row/col <-> region sync ---
   // These mirror _hintUnitsCoveredByRegions / _hintRegionsTrappedInUnits (in
   // solver-rules-single.js), but work off each region's remaining star COUNT (via
@@ -1245,6 +1367,15 @@ export function applyMultiStarRules(PuzzleSolver) {
       // above the matching unitPlacementForced level, since this rule needs
       // a placement-forced fact PLUS a cross-region quota argument on top.
       { key: 'regionLineQuotaFillWeak',        fn: () => this.hintRegionLineQuotaFill('weak') },
+      // Region/line partition trap (see the section comment above
+      // hintRegionLinePartitionTrapped) -- a sibling of regionLineQuotaFill
+      // built on the same per-region completion tally, just reasoning
+      // about the guaranteed-inside/outside-the-line counts on their own
+      // instead of summing them across regions. Slotted at the same tier
+      // as its regionLineQuotaFill counterpart, not one above, since it
+      // doesn't need regionLineQuotaFill's extra cross-region subset-sum
+      // step.
+      { key: 'regionLinePartitionTrappedWeak',     fn: () => this.hintRegionLinePartitionTrapped('weak') },
       // Hard
       { key: 'unitPlacementForcedIntermediateAny',  fn: () => this.hintUnitPlacementForced('intermediate', 'any_star') },
       { key: 'unitPlacementForcedIntermediateDots', fn: () => this.hintUnitPlacementForced('intermediate', 'dots') },
@@ -1256,6 +1387,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       // (Expert) for K>1.
       { key: 'tileQuotaFillSingle',            fn: () => this.hintTileQuotaFillSingle() },
       { key: 'regionLineQuotaFillIntermediate', fn: () => this.hintRegionLineQuotaFill('intermediate') },
+      { key: 'regionLinePartitionTrappedIntermediate', fn: () => this.hintRegionLinePartitionTrapped('intermediate') },
       { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
       { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
       { key: 'unitRegionSyncMulti4Plus',       fn: () => {
@@ -1284,6 +1416,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Tiles rule 3.
       { key: 'tileDisjointQuotaFill',          fn: () => this.hintTileDisjointQuotaFill() },
       { key: 'regionLineQuotaFillStrong',      fn: () => this.hintRegionLineQuotaFill('strong') },
+      { key: 'regionLinePartitionTrappedStrong',   fn: () => this.hintRegionLinePartitionTrapped('strong') },
       // Restored from pre-experiment.
       { key: 'unitCompletionSatisfiesOtherUnitStrong', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('strong') },
       { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
