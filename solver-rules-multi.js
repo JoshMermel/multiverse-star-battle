@@ -1,4 +1,4 @@
-import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, TILE_OUTLINE_COLORS } from './constants.js';
+import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, TILE_OUTLINE_COLORS, LINE_HIGHLIGHT_COLOR } from './constants.js';
 
 // 2★+ rule implementations: everything written against an arbitrary
 // this.starsPerGroup rather than assuming exactly 1 star per
@@ -383,18 +383,26 @@ export function applyMultiStarRules(PuzzleSolver) {
         if (targets.length === 0) continue;
 
         const targetSet = new Set(targets);
+        // Point at the line by its outline color, not a row number/column
+        // letter -- axis labels are an optional setting (see renderer.js's
+        // renderBoard), so "Row 5"/"Column C" would be meaningless to a
+        // player with them off. The amber outline band (lineHighlight
+        // below) is drawn either way, so it's the one identifier every
+        // player actually has. Matches LINE_HIGHLIGHT_COLOR/
+        // --line-highlight-amber -- keep this word in sync if that color
+        // ever changes.
         const lineWord = kind === 'row' ? 'row' : 'column';
         const regionWord = combo.length === 1 ? 'region' : 'regions';
-        const possessive = combo.length === 1 ? 'its' : 'their';
         const resolveWord = combo.length === 1 ? 'it resolves' : 'they resolve';
 
         candidates.push({
           boardIdx,
-          description: `Every valid way to fill the outlined ${regionWord} places at least ${needed} of ${possessive} star${needed === 1 ? '' : 's'} in this ${lineWord}, no matter how ${resolveWord} -- exactly what this ${lineWord} still needs, so every other empty cell here must be a dot.`,
+          description: `The amber-outlined ${lineWord} needs ${needed} more star${needed === 1 ? '' : 's'}. The highlighted ${regionWord} always put${combo.length === 1 ? 's' : ''} at least ${needed} there, no matter how ${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
           highlights: combo.flatMap(({ unit }) =>
             unit.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
           ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
           marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+          lineHighlight: { boardIdx, axis: kind, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
         });
       }
     }

@@ -16,10 +16,11 @@ export function applyRenderer(GameClass) {
   p._resetCellCache = function () {
     this._cellsByIndex = new Map();
     this._allCells = [];
-    // The old board's DOM (including any tile-outline overlays) is about
-    // to be replaced wholesale -- drop stale references rather than
-    // leaving them pointing at detached nodes.
+    // The old board's DOM (including any tile-outline/line-highlight
+    // overlays) is about to be replaced wholesale -- drop stale references
+    // rather than leaving them pointing at detached nodes.
     this._hintTileOutlineEls = [];
+    this._hintLineHighlightEls = [];
   };
 
   // Registers one cell element under its index. Called once per cell as
@@ -296,13 +297,15 @@ export function applyRenderer(GameClass) {
   p.applyHintUI = function (hint) {
     const involvedBoards = new Set();
 
-    // Tile outlines are separate overlay elements (not cell classes -- see
-    // _applyTileOutlines), so they don't get swept up by the class-based
+    // Tile outlines and the line-highlight band are separate overlay
+    // elements (not cell classes -- see _applyTileOutlines/
+    // _applyLineHighlight), so they don't get swept up by the class-based
     // highlight loop below and need their own accumulation guard: clear
-    // any outlines from a PREVIOUS hint before drawing this one's, since
+    // any leftovers from a PREVIOUS hint before drawing this one's, since
     // repeated Hint clicks call applyHintUI without necessarily going
     // through clearHintUI in between.
     this._clearTileOutlines();
+    this._clearLineHighlight();
 
     for (const { idx, color, boards } of [...hint.highlights, ...hint.marks]) {
       const targetBoards = boards ?? (hint.boardIdx !== undefined ? [hint.boardIdx] : null);
@@ -321,6 +324,7 @@ export function applyRenderer(GameClass) {
     }
 
     if (hint.tileOutlines) this._applyTileOutlines(hint.tileOutlines);
+    if (hint.lineHighlight) this._applyLineHighlight(hint.lineHighlight);
 
     if (document.body.classList.contains('tab-mode')) {
       if (hint.boardIdx !== undefined) {
@@ -384,6 +388,43 @@ export function applyRenderer(GameClass) {
     this._hintTileOutlineEls = [];
   };
 
+  // Draws one outline box spanning an entire row or column -- see the
+  // "Region/line quota fill" rule family in solver-rules-multi.js. Same
+  // absolute-positioning technique as _applyTileOutlines (see its comment
+  // for why), just sized to span the whole line instead of a 2x2 tile.
+  // Always single-board (the rule's own reasoning never crosses boards --
+  // see hintRegionLineQuotaFill's comment), so this draws on exactly one
+  // board's grid, found via a representative cell at the line's start.
+  p._applyLineHighlight = function ({ boardIdx, axis, index, color }) {
+    const repIdx = axis === 'row' ? index * this.n : index;
+    const cell = this._getCellsByIndex(repIdx)[boardIdx];
+    const grid = cell?.parentElement;
+    if (!grid) return;
+
+    const outline = document.createElement('div');
+    outline.className = `line-highlight line-highlight-${color}`;
+    if (axis === 'row') {
+      outline.style.top = `calc(${index} * var(--cell-size))`;
+      outline.style.left = '0';
+      outline.style.width = `calc(${this.n} * var(--cell-size))`;
+      outline.style.height = 'var(--cell-size)';
+    } else {
+      outline.style.top = '0';
+      outline.style.left = `calc(${index} * var(--cell-size))`;
+      outline.style.width = 'var(--cell-size)';
+      outline.style.height = `calc(${this.n} * var(--cell-size))`;
+    }
+    grid.appendChild(outline);
+    if (!this._hintLineHighlightEls) this._hintLineHighlightEls = [];
+    this._hintLineHighlightEls.push(outline);
+  };
+
+  p._clearLineHighlight = function () {
+    if (!this._hintLineHighlightEls) return;
+    for (const el of this._hintLineHighlightEls) el.remove();
+    this._hintLineHighlightEls = [];
+  };
+
   // Highlights the swap button when the active hint involves a board other
   // than the one currently showing, so the player knows to check it. Cleared
   // whenever the board is actually switched (see _showBoard).
@@ -405,6 +446,7 @@ export function applyRenderer(GameClass) {
       );
     });
     this._clearTileOutlines();
+    this._clearLineHighlight();
     const swapBtn = document.getElementById('board-swap-btn');
     if (swapBtn) swapBtn.classList.remove('board-tab--hint-flag');
   };

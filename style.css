@@ -64,6 +64,15 @@
   --tile-outline-purple: #9b59ea;
   --tile-outline-cyan:   #06b6d4;
   --tile-outline-pink:   #ec4899;
+
+  /* "Region/line quota fill" rule family: outline color for the full-row/
+     column band that anchors which line a hint is about -- see
+     LINE_HIGHLIGHT_COLOR in constants.js. Amber, deliberately distinct
+     from the blue SOURCE region highlight and the tile-outline hues above,
+     so the line band never reads as "part of" the region highlight it's
+     pointing at. Named directly in the hint text ("the amber-outlined
+     row/column") -- keep that wording in sync if this color ever changes. */
+  --line-highlight-amber: #e08e00;
 }
 
 [data-theme="dark"] {
@@ -118,6 +127,10 @@
   --tile-outline-purple: #b482ff;
   --tile-outline-cyan:   #2dd2e6;
   --tile-outline-pink:   #ff6eb4;
+
+  /* "Region/line quota fill" line-band outline -- brightened to match this
+     block's higher-contrast-on-dark-backgrounds treatment. */
+  --line-highlight-amber: #ffb020;
 }
 
 /* 2. RESET & BASE STYLES */
@@ -393,6 +406,26 @@ input[type="number"]::-webkit-inner-spin-button {
 .tile-outline-purple { border-color: var(--tile-outline-purple); }
 .tile-outline-cyan   { border-color: var(--tile-outline-cyan); }
 .tile-outline-pink   { border-color: var(--tile-outline-pink); }
+
+/* "Region/line quota fill" rule family: a single outline box spanning an
+   entire target row or column, so a hint's "this row"/"this column" has a
+   visual anchor -- see solver-rules-multi.js's hintRegionLineQuotaFill and
+   renderer.js's _applyLineHighlight. Same technique as .tile-outline above
+   (absolute-positioned sibling, appended after the cell divs, border only,
+   no fill) for the same reason: border-only never obscures the star/dot
+   glyphs it passes over, and absolute positioning can't corrupt the
+   grid's auto-placement the way an explicit grid-row/grid-column item
+   would. Top/left/width/height are set inline by JS since they depend on
+   which row/column and the board's size (n). */
+.line-highlight {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: max(2px, calc(var(--cell-size) * 0.05)) solid transparent;
+  border-radius: calc(var(--cell-size) * 0.12);
+  z-index: 6; /* above .dot's z-index: 5, same as .tile-outline */
+}
+.line-highlight-amber { border-color: var(--line-highlight-amber); }
 
 /* Cross-board hover sync — only applied via JS on pointer:fine (desktop) devices */
 .cell-hover-sync { background-color: var(--highlight-hover-sync-bg); }

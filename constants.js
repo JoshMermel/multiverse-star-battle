@@ -30,3 +30,13 @@ export const HINT_SOURCE_VARIANTS = Object.freeze([
 // here intentionally matches HINT_SOURCE_VARIANTS[i], so a multi-tile hint's
 // outline color always matches that tile's own cell-highlight color.
 export const TILE_OUTLINE_COLORS = Object.freeze(['blue', 'purple', 'cyan', 'pink']);
+
+// Plain color name for the "region/line quota fill" rule family's full-row/
+// column outline band -- see solver-rules-multi.js's hintRegionLineQuotaFill
+// and renderer.js's _applyLineHighlight. Deliberately not one of the
+// HINT_SOURCE_VARIANTS/TILE_OUTLINE_COLORS hues (those are already in play
+// on the same hint's region highlight), so the line band always reads as
+// its own distinct thing. Matches --line-highlight-amber in style.css and
+// the "amber-outlined" wording in solver-rules-multi.js's hint text --
+// keep all three in sync if this color ever changes.
+export const LINE_HIGHLIGHT_COLOR = 'amber';
