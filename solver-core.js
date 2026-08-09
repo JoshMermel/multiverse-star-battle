@@ -245,6 +245,20 @@ export class PuzzleSolver {
   // board" lookahead check can reason about a shared row/column's capacity without
   // silently pulling in the OTHER board's region layout, which that check is
   // specifically meant not to depend on.
+  //
+  // Generation itself is a backtracking search over `avail` (in the same
+  // index order `getCombinations` would enumerate, so results come out in
+  // the same order as before) that prunes a candidate cell the instant
+  // it's adjacent to an already-chosen cell or an existing star, instead
+  // of generating every size-`needed` combination up front and filtering
+  // adjacency violations out afterward (what this used to do, via
+  // `getCombinations(avail, needed).filter(...)`). Pruning during
+  // construction cuts off whole branches of the search tree before they're
+  // ever built, rather than paying to build them and then throwing them
+  // away -- a real cost on wide rows/columns/regions, where adjacent-cell
+  // rejections are common. The capacity check (which needs a complete
+  // combo to evaluate) still only runs once per surviving leaf, same as
+  // before.
   _enumerateUnitCompletions(unit, strong = true, quota = this.starsPerGroup, state = null, visibleBoardIdx = null) {
     const readState = state ? (i => state[i]) : (i => this.vState(i));
     const stars = unit.indices.filter(i => readState(i) === CELL.STAR);
@@ -254,33 +268,94 @@ export class PuzzleSolver {
     const avail = unit.indices.filter(i => readState(i) === CELL.NONE);
     if (avail.length < needed) return [];
 
-    return this.getCombinations(avail, needed).filter(combo => {
-      // Non-adjacency: combo cells can't touch each other or an existing star.
-      for (let i = 0; i < combo.length; i++) {
-        if (stars.some(s => this._cellsAdjacent(s, combo[i]))) return false;
-        for (let j = i + 1; j < combo.length; j++) {
-          if (this._cellsAdjacent(combo[i], combo[j])) return false;
+    const results = [];
+    const tryFrom = (start, chosen) => {
+      if (chosen.length === needed) {
+        if (!strong || this._comboRespectsCapacity(chosen, unit, readState, visibleBoardIdx)) {
+          results.push(chosen.slice());
         }
+        return;
       }
-      if (!strong) return true;
+      // Not enough cells left in `avail` to reach `needed`: prune.
+      if (avail.length - start < needed - chosen.length) return;
+      for (let i = start; i < avail.length; i++) {
+        const cell = avail[i];
+        if (stars.some(s => this._cellsAdjacent(s, cell))) continue;
+        if (chosen.some(c => this._cellsAdjacent(c, cell))) continue;
+        chosen.push(cell);
+        tryFrom(i + 1, chosen);
+        chosen.pop();
+      }
+    };
+    tryFrom(0, []);
+    return results;
+  }
 
-      // Capacity: this combo must not push any OTHER row/column/region over its star
-      // quota. (The unit being solved is exact by construction, so it's skipped here.)
-      const otherUnitCounts = new Map();
-      for (const cell of combo) {
-        for (const otherUnit of this._unitsByCell[cell]) {
-          if (otherUnit.label === unit.label) continue;
-          if (visibleBoardIdx !== null && otherUnit.boardIdx !== undefined && otherUnit.boardIdx !== visibleBoardIdx) continue;
-          otherUnitCounts.set(otherUnit, (otherUnitCounts.get(otherUnit) || 0) + 1);
-        }
+  // Shared by _enumerateUnitCompletions (strong mode) and
+  // _unitHasValidCompletion below: does placing `combo` (a complete,
+  // already adjacency-valid set of `unit`'s remaining stars) push any
+  // OTHER row/column/region past its star quota? (`unit` itself is exact
+  // by construction, so it's skipped.) Always checks against
+  // this.starsPerGroup, never a caller-supplied `quota` override -- see
+  // _enumerateUnitCompletions' own comment on why that's never overridden.
+  _comboRespectsCapacity(combo, unit, readState, visibleBoardIdx) {
+    const otherUnitCounts = new Map();
+    for (const cell of combo) {
+      for (const otherUnit of this._unitsByCell[cell]) {
+        if (otherUnit.label === unit.label) continue;
+        if (visibleBoardIdx !== null && otherUnit.boardIdx !== undefined && otherUnit.boardIdx !== visibleBoardIdx) continue;
+        otherUnitCounts.set(otherUnit, (otherUnitCounts.get(otherUnit) || 0) + 1);
       }
-      for (const [otherUnit, addCount] of otherUnitCounts) {
-        const existing = otherUnit.indices.filter(i => readState(i) === CELL.STAR).length;
-        if (existing + addCount > this.starsPerGroup) return false;
-      }
+    }
+    for (const [otherUnit, addCount] of otherUnitCounts) {
+      const existing = otherUnit.indices.filter(i => readState(i) === CELL.STAR).length;
+      if (existing + addCount > this.starsPerGroup) return false;
+    }
+    return true;
+  }
 
-      return true;
-    });
+  // Cheap existence-only counterpart to _enumerateUnitCompletions (always
+  // "strong" mode -- the only mode _isBoardBroken/_findAllBrokenUnits ever
+  // need), for callers that only ask "does `unit` have AT LEAST ONE valid
+  // way to place its remaining stars", never the completions themselves.
+  // Short-circuits the same adjacency-pruned backtracking search the
+  // moment it finds one valid combo, instead of continuing to enumerate
+  // the rest. This is the main cost inside every lookahead-family rule
+  // (hintLookahead*, hintLookaheadDots*): each speculative placement calls
+  // _isBoardBroken/_findAllBrokenUnits once, which check EVERY row/column/
+  // region in turn, and the common case -- a unit that turns out not to be
+  // broken -- used to still pay for a full enumeration just to conclude
+  // "yes, completions exist"; existence usually resolves almost
+  // immediately instead.
+  //
+  // Returns true when `unit` is already at quota (needed <= 0) -- matches
+  // _enumerateUnitCompletions returning null there, which callers treat as
+  // "not broken" (over-quota is caught by a separate check).
+  _unitHasValidCompletion(unit, quota = this.starsPerGroup, state = null, visibleBoardIdx = null) {
+    const readState = state ? (i => state[i]) : (i => this.vState(i));
+    const stars = unit.indices.filter(i => readState(i) === CELL.STAR);
+    const needed = quota - stars.length;
+    if (needed <= 0) return true;
+
+    const avail = unit.indices.filter(i => readState(i) === CELL.NONE);
+    if (avail.length < needed) return false;
+
+    const tryFrom = (start, chosen) => {
+      if (chosen.length === needed) {
+        return this._comboRespectsCapacity(chosen, unit, readState, visibleBoardIdx);
+      }
+      if (avail.length - start < needed - chosen.length) return false;
+      for (let i = start; i < avail.length; i++) {
+        const cell = avail[i];
+        if (stars.some(s => this._cellsAdjacent(s, cell))) continue;
+        if (chosen.some(c => this._cellsAdjacent(c, cell))) continue;
+        chosen.push(cell);
+        if (tryFrom(i + 1, chosen)) return true;
+        chosen.pop();
+      }
+      return false;
+    };
+    return tryFrom(0, []);
   }
 
   // Returns an array of "completion sets" for `unit` at the given
@@ -564,8 +639,7 @@ export class PuzzleSolver {
     const broken = [];
 
     for (const unit of units) {
-      const combos = this._enumerateUnitCompletions(unit, true, quota, state, visibleBoardIdx);
-      if (combos !== null && combos.length === 0) {
+      if (!this._unitHasValidCompletion(unit, quota, state, visibleBoardIdx)) {
         broken.push({ type: this._unitKind(unit), label: unit.label, indices: unit.indices, boardIdx: unit.boardIdx });
       }
     }
@@ -607,8 +681,7 @@ export class PuzzleSolver {
       : this.units.filter(u => u.boardIdx === undefined || u.boardIdx === visibleBoardIdx);
 
     for (const unit of units) {
-      const combos = this._enumerateUnitCompletions(unit, true, quota, state, visibleBoardIdx);
-      if (combos !== null && combos.length === 0) return true;
+      if (!this._unitHasValidCompletion(unit, quota, state, visibleBoardIdx)) return true;
     }
     for (const unit of units) {
       const starCount = unit.indices.filter(i => state[i] === CELL.STAR).length;
