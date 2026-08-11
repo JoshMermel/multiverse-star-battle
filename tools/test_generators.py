@@ -493,6 +493,124 @@ class TestSymmetricGeneratorTwoStar:
         assert_stars_per_unit(solutions, TWO_STAR_N, 2)
 
 
+# ── SymmetricGenerator: octo (procedural, odd N) ────────────────────────────
+#
+# octo's N=8 allowlist path is exercised implicitly by whatever calls
+# set_allowlist('octo', [...]) in production; these tests are for the
+# procedural path (odd N with N % 4 == 1 -- see _octo_feasible_combos in
+# symmetric_generator.py), which is what SymmetricGenerator(n,
+# symmetry_type='octo') actually runs for any N != 8. N=9 is the size the
+# app targets; 2-star is the motivating case (a 5-cell centre plus-sign is
+# the minimum region shape able to hold 2 non-touching stars).
+
+OCTO_N = 9
+
+
+class TestSymmetricGeneratorOcto:
+    @pytest.fixture
+    def board_solutions(self):
+        gen = SymmetricGenerator(OCTO_N, symmetry_type='octo')
+        board, solutions = gen.generate()
+        return board, solutions, gen
+
+    def test_correct_region_count(self, board_solutions):
+        board, _, _ = board_solutions
+        assert_board_valid(board, OCTO_N)
+
+    def test_all_regions_contiguous(self, board_solutions):
+        board, _, _ = board_solutions
+        assert_board_valid(board, OCTO_N)
+
+    def test_is_ambiguous(self, board_solutions):
+        _, solutions, _ = board_solutions
+        assert_ambiguous(solutions)
+
+    def test_board_is_symmetric(self, board_solutions):
+        board, _, gen = board_solutions
+        assert_board_symmetric(board, OCTO_N, gen)
+
+    def test_no_singleton_regions(self, board_solutions):
+        """
+        Regression check for the region-size-imbalance issue found during
+        development: place_octo_seeds' regions can end up wildly different
+        starting sizes (whether from a place_regular_seeds remainder or
+        just uneven random split points), and flood_fill's size-blind
+        random draw tends to let whichever region already has the bigger
+        frontier keep winning, starving a smaller one down to a single
+        cell -- fatal for stars_per_unit >= 2. grow_labels's round-robin
+        growth (see try_fill) fixes this reliably for N=9's remaining
+        combos ((0,8)/(4,4)/(8,0) -- (0,0) itself was later dropped
+        entirely, see _octo_feasible_combos); assert it stays fixed.
+        """
+        board, _, _ = board_solutions
+        grid = parse_board(board)
+        regions = get_region_cells(grid)
+        sizes = {rid: len(cells) for rid, cells in regions.items()}
+        assert min(sizes.values()) >= 2, f"found a singleton region: {sizes}"
+
+
+class TestSymmetricGeneratorOctoTwoStar:
+    """
+    The motivating case: N=9 octo with stars_per_unit=2, where the centre
+    plus-sign region is specifically sized to hold 2 non-touching stars
+    (opposite arms).
+    """
+
+    @pytest.fixture
+    def board_and_solutions(self):
+        last_error = None
+        for _ in range(3):
+            gen = SymmetricGenerator(OCTO_N, symmetry_type='octo', stars_per_unit=2)
+            try:
+                return gen.generate(max_attempts=TWO_STAR_MAX_ATTEMPTS)
+            except GenerationError as e:
+                last_error = e
+        raise last_error
+
+    def test_correct_region_count(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, OCTO_N)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, OCTO_N)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_ambiguous(solutions)
+
+    def test_two_stars_per_row(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_stars_per_unit(solutions, OCTO_N, 2)
+
+
+def test_symmetric_generator_octo_n13_structural():
+    """
+    Lightweight structural-only check (no ambiguity solve, which is the
+    expensive part) that the procedural octo path generalizes past N=9 as
+    intended: N=13 is the next N % 4 == 1 size, with a different set of
+    valid (diag_count, mid_count) combos than N=9 (see
+    _octo_feasible_combos) -- exercises that branch of the feasibility math.
+
+    Deliberately doesn't assert against singleton regions here (unlike
+    TestSymmetricGeneratorOcto.test_no_singleton_regions at N=9, the size
+    this app actually targets): grow_labels's round-robin growth (see
+    try_fill) cut N=13's singleton rate a lot but not to zero for every
+    combo (e.g. still ~5-15% for (0,4)/(4,8) in ad-hoc sampling) -- a
+    residual that's fine in practice (a downstream stars_per_unit>=2
+    ambiguity check just rejects and retries), but would make a strict
+    per-call assertion here flaky.
+    """
+    from symmetric_generator import _RectContext
+    n = 13
+    for _ in range(10):
+        ctx = _RectContext(n, n, n, 'octo')
+        grid = ctx.try_fill()
+        assert grid is not None, "try_fill failed for N=13 octo"
+        assert len(set(grid)) == n
+        assert all(v is not None for v in grid)
+
+
 # ── VotingDistrictGenerator ───────────────────────────────────────────────────
 
 @pytest.mark.parametrize("board_size", [6, 7, 8, 9])

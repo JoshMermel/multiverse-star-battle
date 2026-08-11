@@ -8,7 +8,10 @@ Generates Star Battle boards with one of six structural symmetry types:
   double_diagonal - both diagonal reflections (implies 180-degree rotation), but NOT mirror
   rot_90          - 90-degree rotational symmetry (implies rot_180 and rot_270 too)
   rot_180         - 180-degree rotational symmetry
-  octo            - 8-fold symmetry (N=8, no translation; pulls from an allowlist)
+  octo            - 8-fold symmetry (both mirrors + both diagonals; no translation).
+                    N=8 pulls from an allowlist; any odd N >= 5 with N % 4 == 1
+                    (5, 9, 13, 17, ...) is generated procedurally -- see the
+                    "Octo procedural seeding" section comment below.
 
 And one of eight translation types that tile a smaller sub-board across the full grid:
   none       - no tiling, generate the full NxN board directly (default)
@@ -30,10 +33,12 @@ there's a well-defined centre-of-rotation.
 
 Allowlist-based generation
 --------------------------
-Two symmetry types use allowlists rather than procedural generation:
+Two symmetry types use allowlists for their N=8 case rather than procedural
+generation:
 
-  rot_90 (N=8 only) — call set_allowlist('rot_90', [...]) before generating.
-  octo   (N=8 only) — call set_allowlist('octo',   [...]) before generating.
+  rot_90 (N=8 only)        — call set_allowlist('rot_90', [...]) before generating.
+  octo   (N=8 only)        — call set_allowlist('octo',   [...]) before generating.
+  octo   (odd N >= 5)      — procedural instead; see "Octo procedural seeding" below.
 
 Each allowlist entry is a 64-character string of uppercase letters (A–H) encoding
 region labels in row-major order.  set_allowlist() deduplicates entries.  If the
@@ -49,8 +54,15 @@ Each symmetry type has an axis or fixed-point locus where a region can "straddle
 the axis of symmetry.  _decide_straddle_count picks how many such axis-straddling
 region seeds to place first; _place_straddle_seeds plants them.
 _place_regular_seeds then places the remaining regions in symmetric orbit pairs
-(or quads for rot_90 / double_mirror).  symmetric_flood_fill grows all seeded
-regions simultaneously while preserving the chosen symmetry.
+(or quads for rot_90 / double_mirror, or octets for octo).  symmetric_flood_fill
+grows all seeded regions simultaneously while preserving the chosen symmetry.
+
+octo (odd N) replaces straddle seeding entirely with its own
+_RectContext.place_octo_seeds (its fixed-point structure -- a point, plus two
+whole families of axis-rays -- doesn't fit the single-axis straddle-count
+abstraction the other types share); place_regular_seeds/flood_fill still finish
+the board off the same way afterward. See the "Octo procedural seeding" section
+comment further down for the full rationale.
 
 All of these methods operate on a _RectContext that carries (rows, cols, n_regions,
 sym_type), so the same logic handles both rectangular sub-boards and the full square.
@@ -60,12 +72,15 @@ Fixed-point pre-seeding
 A "fixed point" is a cell whose symmetric image is itself.  If flood fill ever
 expands two different regions into the same fixed point simultaneously, the conflict
 is unresolvable.  To prevent this, every fixed point is guaranteed to be assigned
-during straddle seeding before flood fill begins:
+during straddle (or, for octo, bespoke) seeding before flood fill begins:
 
   mirror (odd cols)     : entire middle column (rows cells)
   diagonal              : entire main diagonal (n cells)       [square only]
   double_mirror (odd N) : middle column + middle row, sharing the centre cell
   rot_90 / rot_180      : centre cell only (odd N); none for even N
+  octo (odd N)          : centre cell, both diagonals, and both midlines --
+                           the union of every other type's fixed-point locus
+                           above, since octo's group contains all of theirs
 """
 
 import random
@@ -114,6 +129,109 @@ _VALID_SYMMETRIES = ['none', 'mirror', 'diagonal', 'double_mirror',
 
 _VALID_TRANSLATIONS = ['none', 'vsplit', 'hsplit', 'quadrants', 'vfence', 'hfence',
                        'vsplit3', 'hsplit3']
+
+
+# ── Octo (8-fold dihedral) procedural seeding ──────────────────────────────────
+#
+# 'octo' has two generation paths: N=8 pulls a pre-verified board from an
+# allowlist (see set_allowlist/_try_generate_from_allowlist below); any other
+# odd N >= 5 is generated procedurally by _RectContext.place_octo_seeds,
+# using the board's three-tier fixed-point structure under the full 8-element
+# dihedral group D4 (4 rotations + 4 reflections):
+#
+#   - the centre cell -- the only point fixed by the WHOLE group.
+#   - the 4 diagonal rays (centre -> each corner) -- each individually fixed,
+#     AS A SET, by its own diagonal's reflection (which is the identity on
+#     every cell literally on that diagonal) and only otherwise permuted
+#     among the other 3 rays by the rotation subgroup.
+#   - the 4 orthogonal rays (centre -> each edge midpoint, i.e. the plus
+#     sign's 4 arms) -- same structure, but for the horizontal/vertical
+#     mirrors instead of the diagonal ones.
+#
+# place_octo_seeds plants one region at the centre (a plus sign, extended out
+# along both ray families by some random amount), then hands the remainder
+# of each ray family off to 0, 4, or 8 dedicated regions: 4 means one region
+# per ray (still self-symmetric under that ray's own mirror, so its
+# rotational orbit is exactly the other 3 rays); 8 means splitting each ray
+# into two contiguous by-distance segments, each of which is STILL trivially
+# self-symmetric under its own ray's mirror (a mirror that's the identity
+# along the line can't break a split made along that same line) -- so this
+# doesn't produce one 8-element orbit, it produces two independent 4-element
+# orbits (inner segment x 4 rays, outer segment x 4 rays), which is where
+# the 8 comes from. Any leftover region budget (after the centre + diagonal
+# + midline regions) is generic interior territory with no axis to sit on,
+# so it's finished off by the ordinary place_regular_seeds/flood_fill below,
+# using true 8-element orbits (get_orbit's 'octo' branch).
+#
+# _octo_feasible_combos enumerates which (diag_count, mid_count) choices
+# actually work for a given N: not just this rough count-based room check,
+# but requires the LABEL budget (n_regions - 1 - diag_count - mid_count) to
+# come out to 0 or a multiple of 8, since that's what place_regular_seeds
+# consumes it in. This reduces to requiring N % 4 == 1 (N = 5, 9, 13, 17,
+# ...) once N == n_regions (always true for octo, which never allows
+# translation) -- so this is also the complete answer to "which other N
+# does this generalize to", discovered rather than assumed.
+
+_OCTO_DIAG_DIRS = ((-1, -1), (-1, 1), (1, -1), (1, 1))   # centre -> NW/NE/SW/SE corner
+_OCTO_ORTHO_DIRS = ((-1, 0), (1, 0), (0, -1), (0, 1))    # centre -> N/S/W/E edge midpoint
+
+
+def _octo_feasible_combos(board_n: int, n_regions: int, stars_per_unit: int = 1) -> list:
+    """
+    Every (diag_count, mid_count) in {0,4,8}^2 that's actually achievable
+    for an N=board_n octo board with n_regions total regions: enough room
+    along the centre->edge/corner distance (board_n // 2) for the chosen
+    counts' dedicated region(s), AND a label budget (n_regions - 1 -
+    diag_count - mid_count) that's 0 or a positive multiple of 8, since
+    that remainder is what place_regular_seeds fills in whole orbit-8
+    batches. Returns [] if board_n is even or too small, or no combo
+    clears both bars (e.g. board_n % 4 != 1 when n_regions == board_n).
+
+    diag_count == 0 and mid_count == 0 together (the centre region
+    absorbing EVERY ray) is unconditionally excluded: empirically dead
+    weight, not just a rare combo. At N=9 it never once produced a valid
+    stars_per_unit=2 board across ~100 real attempts, and its
+    stars_per_unit=1 boards always had EXACTLY 4 solutions -- not genuine
+    ambiguity, just the mechanical fact that rotating a solution 90
+    degrees on a rotation-symmetric board yields another "valid" one for
+    free.
+
+    stars_per_unit >= 2 additionally excludes any combo where EITHER
+    count is 0 (the centre region fully absorbing one WHOLE axis, even if
+    the other axis is properly split): at N=9, (0,8) and (8,0) both
+    scored 0 valid stars_per_unit=2 boards across 100+ real attempts,
+    while (4,4) -- the one combo where neither axis is fully absorbed --
+    was the only one that ever worked (~7%). Left available at
+    stars_per_unit=1, where they're merely rarer (not dead) and their
+    boards are structurally fine.
+    """
+    if board_n % 2 == 0:
+        return []
+    center = board_n // 2
+    combos = []
+    for diag in (0, 4, 8):
+        if diag == 8 and center < 2:
+            continue  # need >= 2 cells left on each ray to split into 2
+        for mid in (0, 4, 8):
+            if diag == 0 and mid == 0:
+                continue
+            if stars_per_unit >= 2 and (diag == 0 or mid == 0):
+                continue
+            if mid == 4 and center < 2:
+                continue  # need >= 1 extra cell beyond the mandatory 1-step arm
+            if mid == 8 and center < 3:
+                continue  # need >= 2 extra cells to split into 2
+            remaining = n_regions - 1 - diag - mid
+            if remaining < 0 or remaining % 8 != 0:
+                continue
+            combos.append((diag, mid))
+    return combos
+
+
+def _decide_octo_counts(board_n: int, n_regions: int, stars_per_unit: int = 1) -> Optional[tuple]:
+    """Randomly picks one of _octo_feasible_combos(...), or None if empty."""
+    combos = _octo_feasible_combos(board_n, n_regions, stars_per_unit)
+    return random.choice(combos) if combos else None
 
 
 def set_allowlist(symmetry_type: str, entries: list[str]) -> None:
@@ -259,6 +377,29 @@ class _RectContext:
                           self.idx(C - 1 - c, r)]
         elif self.sym_type == 'rot_180':
             candidates = [flat, self.idx(R - 1 - r, C - 1 - c)]
+        elif self.sym_type == 'octo':
+            # Full 8-element dihedral group (D4) of the square: the 4
+            # rotations plus the 4 reflections (both mirrors, both
+            # diagonals). Only valid for square sub-boards. Always
+            # returned in this SAME fixed order regardless of `flat` --
+            # flood_fill's zip(u_orbit, l_orbit) relies on position i in
+            # any two orbits both being the image under the same group
+            # element g_i, not on orbits being deduplicated or sorted.
+            # For a cell on a symmetry axis some of these 8 coincide
+            # (e.g. the true centre cell maps to itself under all 8); such
+            # duplicates are intentionally left in here (place_regular_seeds
+            # dedupes via set() where that's the right thing to do; this
+            # method must not, or the positional correspondence breaks).
+            candidates = [
+                flat,
+                self.idx(R - 1 - r, c),           # horizontal mirror
+                self.idx(r, C - 1 - c),           # vertical mirror
+                self.idx(R - 1 - r, C - 1 - c),   # 180 rotation
+                self.idx(c, r),                   # main-diagonal transpose
+                self.idx(C - 1 - c, R - 1 - r),   # anti-diagonal transpose
+                self.idx(c, R - 1 - r),           # 90 rotation
+                self.idx(C - 1 - c, r),           # 270 rotation
+            ]
         else:
             candidates = [flat]
 
@@ -603,6 +744,135 @@ class _RectContext:
 
         return labels_used
 
+    # ── Octo seeding ──────────────────────────────────────────────────────────
+    #
+    # Bespoke seeding for 'octo' -- see the module-level "Octo procedural
+    # seeding" section comment for the group-theory rationale. This replaces
+    # decide_straddle_count/place_straddle_seeds entirely for sym_type ==
+    # 'octo' (see try_fill); place_regular_seeds/flood_fill still run
+    # afterward unchanged to fill in the generic interior.
+
+    def place_octo_seeds(self, grid: list, label_offset: int = 0) -> Optional[int]:
+        """
+        Plants (in order):
+          1. A 5-cell "plus sign" at the centre (centre cell + one step in
+             each of the 4 orthogonal directions) -- the minimum size able
+             to hold 2 non-touching stars (opposite arms), which is the
+             whole reason this symmetry type is interesting for 2-star
+             boards.
+          2. Randomly extends that SAME centre region further out along
+             the 4 diagonal rays and/or the 4 orthogonal rays, then hands
+             the rest of each ray family off to 0, 4, or 8 new dedicated
+             regions (see _octo_feasible_combos for which counts this N
+             supports).
+
+        Diagonal ray cells are connected with the orthogonal "staircase"
+        bridge cells between consecutive steps (mirroring
+        place_straddle_seeds's 'diagonal' case above), since two diagonal
+        steps are only 8-connected to each other, not 4-connected, and
+        every contiguity check in this codebase assumes 4-connectivity.
+        Both bridge cells (not just one) are added at each step so the
+        region stays symmetric under its own diagonal's reflection as a
+        SET even though individual off-diagonal bridge cells aren't each
+        individually fixed by it.
+
+        Returns the number of labels consumed, or None if this N has no
+        valid (diag_count, mid_count) combo. Only meaningful when rows ==
+        cols and both are odd -- true for every octo _RectContext, since
+        octo is square-only and never allows translation (see
+        _SQUARE_ONLY_SYMMETRIES / SymmetricGenerator._validate).
+        """
+        board_n = self.rows
+        counts = _decide_octo_counts(board_n, self.n_regions, self.stars_per_unit)
+        if counts is None:
+            return None
+        diag_count, mid_count = counts
+        center = board_n // 2
+        labels_used = 0
+
+        def cell(dist, dr, dc):
+            return self.idx(center + dr * dist, center + dc * dist)
+
+        def ray_with_bridges(start, end, dr, dc):
+            """Diagonal-ray cells at distances [start, end] from centre
+            along (dr, dc), plus the staircase bridges connecting each
+            consecutive pair of steps."""
+            cells = [cell(d, dr, dc) for d in range(start, end + 1)]
+            for d in range(start, end):
+                r0, c0 = center + dr * d, center + dc * d
+                r1, c1 = center + dr * (d + 1), center + dc * (d + 1)
+                cells.append(self.idx(r0, c1))
+                cells.append(self.idx(r1, c0))
+            return cells
+
+        def ray_plain(start, end, dr, dc):
+            """Orthogonal-ray cells at distances [start, end] -- already
+            4-connected to each other, no bridging needed."""
+            return [cell(d, dr, dc) for d in range(start, end + 1)]
+
+        def paint(cells, label):
+            for c_idx in cells:
+                if grid[c_idx] is None:
+                    grid[c_idx] = label
+
+        # -- Centre region: the plus sign, extended -----------------------
+        center_label = label_offset + labels_used
+        labels_used += 1
+        grid[self.idx(center, center)] = center_label
+
+        # mid_len/diag_len: how far (in steps from centre) the CENTRE
+        # region itself reaches before handing off to dedicated regions.
+        # The orthogonal arm always reaches at least 1 step (the mandatory
+        # plus sign); the diagonal arm has no such minimum, since the base
+        # plus sign has no diagonal cells at all.
+        if mid_count == 0:
+            mid_len = center
+        elif mid_count == 4:
+            mid_len = random.randint(1, center - 1)
+        else:  # 8
+            mid_len = random.randint(1, center - 2)
+
+        if diag_count == 0:
+            diag_len = center
+        elif diag_count == 4:
+            diag_len = random.randint(0, center - 1)
+        else:  # 8
+            diag_len = random.randint(0, center - 2)
+
+        for dr, dc in _OCTO_ORTHO_DIRS:
+            paint(ray_plain(1, mid_len, dr, dc), center_label)
+        for dr, dc in _OCTO_DIAG_DIRS:
+            if diag_len > 0:
+                paint(ray_with_bridges(1, diag_len, dr, dc), center_label)
+
+        # -- Dedicated diagonal region(s): centre's leftover -> corner ----
+        if diag_count in (4, 8):
+            if diag_count == 4:
+                segments = [(diag_len + 1, center)]
+            else:
+                split = random.randint(diag_len + 1, center - 1)
+                segments = [(diag_len + 1, split), (split + 1, center)]
+            for start, end in segments:
+                for dr, dc in _OCTO_DIAG_DIRS:
+                    label = label_offset + labels_used
+                    labels_used += 1
+                    paint(ray_with_bridges(start, end, dr, dc), label)
+
+        # -- Dedicated midline region(s): centre's leftover -> edge -------
+        if mid_count in (4, 8):
+            if mid_count == 4:
+                segments = [(mid_len + 1, center)]
+            else:
+                split = random.randint(mid_len + 1, center - 1)
+                segments = [(mid_len + 1, split), (split + 1, center)]
+            for start, end in segments:
+                for dr, dc in _OCTO_ORTHO_DIRS:
+                    label = label_offset + labels_used
+                    labels_used += 1
+                    paint(ray_plain(start, end, dr, dc), label)
+
+        return labels_used
+
     # ── Regular seeding ───────────────────────────────────────────────────────
 
     def place_regular_seeds(self, grid: list, labels_used: int, label_offset: int = 0):
@@ -610,9 +880,14 @@ class _RectContext:
         Plants the remaining region seeds in symmetric orbits until all
         n_regions have been seeded (relative to label_offset).
         """
-        orbit_size = 4 if self.sym_type in _QUAD_SYMMETRIES else 2
-        if self.sym_type == 'none':
+        if self.sym_type == 'octo':
+            orbit_size = 8
+        elif self.sym_type in _QUAD_SYMMETRIES:
+            orbit_size = 4
+        elif self.sym_type == 'none':
             orbit_size = 1
+        else:
+            orbit_size = 2
 
         indices = [i for i in range(self.size()) if grid[i] is None]
         random.shuffle(indices)
@@ -628,6 +903,41 @@ class _RectContext:
                     current_label += 1
 
     # ── Flood fill ────────────────────────────────────────────────────────────
+
+    def _try_resolve_edge(self, grid: list, u_idx: int, l_idx: int) -> Optional[list]:
+        """
+        Attempts to extend l_idx's region onto u_idx in one orbit-consistent
+        step: for every position i, image u_orbit[i] must end up labeled
+        the same as l_orbit[i]'s CURRENT label (grid[l_orbit[i]]), since
+        both are meant to be images of the same underlying cell under the
+        same symmetry. Returns the list of newly-filled cell indices on
+        success (already-filled orbit images are left untouched and
+        omitted -- can be [] if u_idx got filled by a concurrent
+        resolution first), or None if u's images would need two different
+        labels simultaneously (unresolvable this round).
+
+        Factored out of flood_fill so grow_labels can reuse the exact same
+        symmetry-preserving step for a scoped, non-random growth pass.
+        """
+        if grid[u_idx] is not None:
+            return []
+
+        u_orbit = self.get_orbit(u_idx)
+        l_orbit = self.get_orbit(l_idx)
+
+        candidate_assignments = {}
+        for u_img, l_img in zip(u_orbit, l_orbit):
+            label = grid[l_img]
+            if u_img in candidate_assignments and candidate_assignments[u_img] != label:
+                return None
+            candidate_assignments[u_img] = label
+
+        newly_filled = []
+        for u_img, label in candidate_assignments.items():
+            if grid[u_img] is None:
+                grid[u_img] = label
+                newly_filled.append(u_img)
+        return newly_filled
 
     def flood_fill(self, grid: list) -> bool:
         """
@@ -651,33 +961,52 @@ class _RectContext:
             frontier[pick], frontier[-1] = frontier[-1], frontier[pick]
             u_idx, l_idx = frontier.pop()
 
-            if grid[u_idx] is not None:
-                continue
-
-            u_orbit = self.get_orbit(u_idx)
-            l_orbit = self.get_orbit(l_idx)
-
-            candidate_assignments = {}
-            possible = True
-            for u_img, l_img in zip(u_orbit, l_orbit):
-                label = grid[l_img]
-                if u_img in candidate_assignments and candidate_assignments[u_img] != label:
-                    possible = False
-                    break
-                candidate_assignments[u_img] = label
-
-            if not possible:
+            newly_filled = self._try_resolve_edge(grid, u_idx, l_idx)
+            if newly_filled is None:
                 failures += 1
                 continue
 
-            for u_img, label in candidate_assignments.items():
-                if grid[u_img] is None:
-                    grid[u_img] = label
-                    for nb in _rect_neighbors(u_img, self.cols, self.rows):
-                        if grid[nb] is None:
-                            frontier.append((nb, u_img))
+            for u_img in newly_filled:
+                for nb in _rect_neighbors(u_img, self.cols, self.rows):
+                    if grid[nb] is None:
+                        frontier.append((nb, u_img))
 
         return failures < max_failures
+
+    def grow_labels(self, grid: list, labels, rounds: int) -> None:
+        """
+        Gives each label in `labels` up to `rounds` extra orbit-consistent
+        growth steps (_try_resolve_edge), processed round-robin (one
+        random edge per label per round, order shuffled each round) so no
+        single label gets ahead purely by going first.
+
+        Used to give freshly-placed single-cell regular-seed regions a
+        fair head start before the general, unweighted flood_fill runs:
+        flood_fill picks uniformly among ALL frontier edges regardless of
+        which region they belong to, so a region that starts with a much
+        bigger frontier (e.g. octo's centre region after place_octo_seeds,
+        when it absorbs a whole axis) tends to keep winning that random
+        draw and can starve a same-sized-budget regular seed down to a
+        single cell -- fatal for stars_per_unit >= 2, since a 1-cell
+        region can never hold more than 1 star. A label with no available
+        frontier edge in a given round (already boxed in, or its orbit
+        images are all already claimed) is silently skipped that round.
+        """
+        labels = list(labels)
+        for _ in range(rounds):
+            random.shuffle(labels)
+            for label in labels:
+                edges = [
+                    (i, nb)
+                    for i in range(self.size())
+                    if grid[i] is None
+                    for nb in _rect_neighbors(i, self.cols, self.rows)
+                    if grid[nb] == label
+                ]
+                if not edges:
+                    continue
+                u_idx, l_idx = random.choice(edges)
+                self._try_resolve_edge(grid, u_idx, l_idx)
 
     # ── Sub-board generation ──────────────────────────────────────────────────
 
@@ -691,12 +1020,42 @@ class _RectContext:
         """
         grid = [None] * self.size()
 
-        straddle_count = self.decide_straddle_count()
-        if straddle_count is None:
-            return None  # unsupported combination (e.g. rot_90 for certain sizes)
+        if self.sym_type == 'octo':
+            # Bespoke three-tier (centre / diagonal / midline) seeding --
+            # see place_octo_seeds's own docstring. Replaces
+            # decide_straddle_count/place_straddle_seeds entirely for this
+            # sym_type; place_regular_seeds/flood_fill below still finish
+            # off the generic interior the same way as every other type.
+            labels_used = self.place_octo_seeds(grid, label_offset)
+            if labels_used is None:
+                return None  # this N has no valid axis-region combo
+        else:
+            straddle_count = self.decide_straddle_count()
+            if straddle_count is None:
+                return None  # unsupported combination (e.g. rot_90 for certain sizes)
+            labels_used = self.place_straddle_seeds(grid, straddle_count, label_offset)
 
-        labels_used = self.place_straddle_seeds(grid, straddle_count, label_offset)
         self.place_regular_seeds(grid, labels_used, label_offset)
+
+        if self.sym_type == 'octo':
+            # place_octo_seeds' dedicated diagonal/midline regions can end
+            # up wildly different sizes purely from where its random split
+            # points landed (independent of whether any regular-seed
+            # remainder exists at all -- this affects fully-axis-seeded
+            # combos like (4,8)/(8,4) too, not just ones with leftover
+            # regular seeds). flood_fill's plain random frontier draw
+            # favors whichever region currently has the biggest frontier,
+            # which compounds that initial disparity round after round and
+            # can starve a small region down to 1 cell -- fatal for
+            # stars_per_unit >= 2. Round-robin every octo region through
+            # grow_labels FIRST, so no region can get ahead of the others
+            # purely by starting with more frontier, before falling
+            # through to flood_fill's unweighted approach to mop up
+            # whatever grow_labels alone can't resolve (a full round with
+            # no progress for a label, e.g. it's boxed in, or a genuine
+            # multi-way orbit conflict). See grow_labels's docstring.
+            all_labels = range(label_offset, label_offset + self.n_regions)
+            self.grow_labels(grid, all_labels, rounds=self.size())
 
         if not self.flood_fill(grid):
             return None
@@ -792,8 +1151,12 @@ class SymmetricGenerator(Generator):
         if symmetry_type is None:
             if translation_type == 'none':
                 eligible = [s for s in _VALID_SYMMETRIES if s != 'none']
-                # 'octo' requires N=8 and a non-empty allowlist.
-                if n != 8 or not _ALLOWLISTS.get('octo'):
+                # 'octo': N=8 needs a non-empty allowlist; any other odd
+                # N >= 5 needs at least one valid axis-region combo (see
+                # _octo_feasible_combos -- reduces to N % 4 == 1).
+                octo_via_allowlist = (n == 8 and _ALLOWLISTS.get('octo'))
+                octo_via_procedural = _octo_feasible_combos(n, n)
+                if not (octo_via_allowlist or octo_via_procedural):
                     eligible = [s for s in eligible if s != 'octo']
                 # 'rot_90' on N=8 uses an allowlist; exclude if allowlist is empty.
                 if n == 8 and not _ALLOWLISTS.get('rot_90'):
@@ -876,16 +1239,22 @@ class SymmetricGenerator(Generator):
                     f"(got {sub_rows}x{sub_cols} for N={n})."
                 )
 
-        # octo is only supported for N=8, translation='none'.
+        # octo never supports translation, and is only generatable for
+        # N=8 (allowlist) or an odd N >= 5 with a valid axis-region combo
+        # (procedural -- see _octo_feasible_combos; this reduces to N % 4
+        # == 1, i.e. N = 5, 9, 13, 17, ...).
         if sym_type == 'octo':
-            if n != 8:
-                raise ValueError(
-                    f"symmetry_type='octo' is only supported for N=8 (got N={n})."
-                )
             if trans_type != 'none':
                 raise ValueError(
                     f"symmetry_type='octo' does not support translation "
                     f"(got translation_type={trans_type!r})."
+                )
+            if n != 8 and not _octo_feasible_combos(n, n):
+                raise ValueError(
+                    f"symmetry_type='octo' is only supported for N=8 (allowlist) "
+                    f"or an odd N >= 5 with a valid axis-region combo -- N={n} has "
+                    f"neither (procedural generation needs N % 4 == 1: N=5, 9, 13, "
+                    f"17, ...)."
                 )
 
     # ── Wrappers (delegate to _RectContext) ────────────────────────────────────
@@ -925,10 +1294,13 @@ class SymmetricGenerator(Generator):
 
     def _try_generate_full(self):
         """Direct generation of the full NxN board (no tiling)."""
-        # Use allowlist for rot_90 on 8×8 boards and for all octo boards.
+        # Use allowlist for rot_90 on 8x8 boards, and for octo on 8x8
+        # boards specifically (its only even-N support). Any other octo N
+        # (odd, >= 5) goes through the procedural ctx.try_fill() path
+        # below like every other symmetry type.
         use_allowlist = (
             (self.sym_type == 'rot_90' and self.n == 8) or
-            self.sym_type == 'octo'
+            (self.sym_type == 'octo' and self.n == 8)
         )
         if use_allowlist:
             return self._try_generate_from_allowlist()
