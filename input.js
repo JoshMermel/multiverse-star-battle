@@ -1,5 +1,7 @@
 // Mixin for binding DOM input events and setting up UI controls.
 
+import { CELL } from './constants.js';
+
 export function applyInput(GameClass) {
   const p = GameClass.prototype;
 
@@ -115,6 +117,12 @@ export function applyInput(GameClass) {
       },
       { key: 'setting-auto-fill-dots', applyOnInit: false, onChange: null },
       { key: 'setting-show-timer', applyOnInit: true, onChange: (self, v) => self._applyShowTimer(v) },
+      // applyOnInit: false -- the at-load register/unregister decision is
+      // already made by index.html's inline bootstrap script, which runs
+      // before this module even loads (see its own comment for why).
+      // onChange only needs to handle the LIVE case: the player flipping
+      // this switch mid-session.
+      { key: 'setting-aggressive-caching', applyOnInit: false, onChange: (self, v) => self._applyAggressiveCaching(v) },
     ];
 
     for (const { key, applyOnInit, onChange } of settingsToggles) {
@@ -155,6 +163,38 @@ export function applyInput(GameClass) {
         this._clearAllSaveData();
       }
     });
+  };
+
+  // Registers/unregisters the offline service worker live, for when the
+  // player flips "Aggressive caching" mid-session rather than at page
+  // load (that initial decision belongs to index.html's inline bootstrap
+  // script, which runs before this module even loads -- see its own
+  // comment). The OFF branch mirrors that script's teardown exactly, so
+  // switching off mid-session leaves things in the same state as loading
+  // the page with it already off: skipping re-registration alone isn't
+  // enough, since an already-active worker keeps intercepting fetches
+  // until it's actually unregistered.
+  p._applyAggressiveCaching = function (enabled) {
+    if (!('serviceWorker' in navigator)) return;
+
+    if (enabled) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => this.showToast('Aggressive caching on — the app and puzzles will be cached for offline play.', 'info', 3500))
+        .catch((err) => {
+          console.warn('Service worker registration failed:', err);
+          this.showToast('Could not enable aggressive caching.', 'error', 3000);
+        });
+    } else {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => reg.unregister());
+      });
+      if ('caches' in window) {
+        caches.keys().then((keys) => {
+          keys.filter((k) => k.startsWith('msb-')).forEach((k) => caches.delete(k));
+        });
+      }
+      this.showToast('Aggressive caching off.', 'info', 2000);
+    }
   };
 
   // --- Global Event Listeners ---
@@ -404,12 +444,17 @@ export function applyInput(GameClass) {
         grid.appendChild(header);
       }
 
+      const isSolved = solvedIds.has(puz._cachedId);
+      const isInProgress = !isSolved && this._puzzleHasProgress(puz._cachedId);
+
       const tile = document.createElement('button');
       tile.className = 'browse-tile';
       tile.textContent = num;
-      tile.setAttribute('aria-label', `Puzzle ${num}${solvedIds.has(puz._cachedId) ? ' (solved)' : ''}`);
+      tile.setAttribute('aria-label',
+        `Puzzle ${num}${isSolved ? ' (solved)' : isInProgress ? ' (in progress)' : ''}`);
 
-      if (solvedIds.has(puz._cachedId)) tile.classList.add('bt-solved');
+      if (isSolved) tile.classList.add('bt-solved');
+      else if (isInProgress) tile.classList.add('bt-in-progress');
       if (puz._cachedId === currentId) tile.classList.add('bt-current');
 
       tile.onclick = () => {
@@ -425,6 +470,20 @@ export function applyInput(GameClass) {
     // Scroll active puzzle tile into view.
     const currentTile = grid.querySelector('.bt-current');
     if (currentTile) currentTile.scrollIntoView({ block: 'nearest' });
+  };
+
+  // Whether a (not-yet-solved) puzzle has any player-made marks saved for
+  // it -- i.e. it should show as "in progress" (yellow) rather than
+  // untouched (gray) in the browse grid. A save record always exists once
+  // a puzzle has been visited at all (see history.js's saveCurrentState),
+  // including right after doReset() clears it back to every cell CELL.NONE
+  // -- so "in progress" specifically means the saved state contains at
+  // least one star or dot, not just "a save record exists". This is what
+  // makes a reset puzzle fall back to gray instead of staying yellow.
+  p._puzzleHasProgress = function (puzzleId) {
+    const { storageManager } = this._deps;
+    const savedState = storageManager.getPuzzleState(puzzleId);
+    return !!savedState && savedState.some(cell => cell !== CELL.NONE);
   };
 
   // Find the first unsolved puzzle index in the active book.

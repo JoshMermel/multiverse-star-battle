@@ -14,6 +14,8 @@
   /* Semantic */
   --color-solved: #2e7d32;
   --color-solved-dark: #1b5e20;
+  --color-progress: #f9a825;
+  --color-progress-dark: #f57f17;
   --color-error: #c62828;
   --color-win: #6a1b9a;
 
@@ -82,6 +84,8 @@
 
   --color-solved: #66bb6a;
   --color-solved-dark: #388e3c;
+  --color-progress: #ffca28;
+  --color-progress-dark: #ffb300;
   --color-error: #ef5350;
   --color-win: #ce93d8;
 
@@ -739,9 +743,10 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-right: 2px;
 }
 
-.legend-solved   { background: var(--color-solved); }
-.legend-current  { background: var(--primary-blue); }
-.legend-unsolved { background: var(--border-light); border: 1px solid var(--border-strong); }
+.legend-solved     { background: var(--color-solved); }
+.legend-in-progress { background: var(--color-progress); }
+.legend-current    { background: var(--primary-blue); }
+.legend-unsolved   { background: var(--border-light); border: 1px solid var(--border-strong); }
 
 .browse-jump-btn {
   font-size: 0.82rem;
@@ -783,6 +788,9 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .browse-tile.bt-solved { background: var(--color-solved); color: white; }
 .browse-tile.bt-solved:not(:disabled):hover { background: var(--color-solved-dark); }
+
+.browse-tile.bt-in-progress { background: var(--color-progress); color: #3a2a00; }
+.browse-tile.bt-in-progress:not(:disabled):hover { background: var(--color-progress-dark); }
 
 .browse-tile.bt-current {
   border-color: var(--primary-blue);

@@ -115,6 +115,16 @@
               <span class="toggle-track"><span class="toggle-thumb"></span></span>
             </div>
           </label>
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Aggressive caching</span>
+              <span class="settings-desc">Caches the app and puzzles so everything works with no internet connection — turn this on before a flight, off once you're back online</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="setting-aggressive-caching" role="switch" aria-checked="false">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
         </div>
         <div class="settings-account-zone">
           <div class="settings-row-text">
@@ -206,6 +216,7 @@
         <div class="browse-toolbar">
           <div class="browse-legend">
             <span class="legend-dot legend-solved"></span> Solved
+            <span class="legend-dot legend-in-progress"></span> In progress
             <span class="legend-dot legend-current"></span> Current
             <span class="legend-dot legend-unsolved"></span> Unsolved
           </div>
@@ -222,41 +233,48 @@
   <script type="module" src="script.js"></script>
 
   <script>
-    // Register the offline service worker. This caches the app shell and
+    // Register the offline service worker only if the player has opted
+    // into "Aggressive caching" in Settings (default OFF — see
+    // #setting-aggressive-caching in the settings modal above, and
+    // input.js's _applyAggressiveCaching for the live-toggle counterpart
+    // to this at-load decision). When on, it caches the app shell and
     // opportunistically caches puzzle data as it's fetched, so the game
     // keeps working across reloads and app restarts with no network —
     // e.g. for playing offline on a flight.
     //
-    // Dev escape hatch: sw.js's cache-first shell serving (deliberately —
-    // see its own comments) makes local testing painful, since an edited
-    // file can keep serving stale content for a navigation or two even
-    // after the background refresh kicks in. Visit once with ?sw=off to
-    // unregister and stay off — persisted in localStorage, so it survives
-    // further reloads/navigations with no ?sw param at all — until you
-    // visit with ?sw=on again. No code edits or devtools digging needed
-    // either way.
-    const SW_DEV_DISABLED_KEY = 'sb_dev_sw_disabled';
+    // This runs as a classic (non-module) inline script specifically so
+    // it executes synchronously during parsing, before script.js's
+    // deferred module graph loads — letting it tear down any worker/
+    // caches left over from a PREVIOUS visit (when the setting was on) as
+    // early as possible. Skipping re-registration alone isn't enough once
+    // the setting is off: an already-active worker from a prior visit
+    // keeps intercepting fetches — including for script.js itself — until
+    // it's actually unregistered.
+    //
+    // Dev/manual override: visit once with ?sw=on or ?sw=off to set the
+    // exact same localStorage key the Settings toggle uses — persisted,
+    // so it survives further reloads/navigations with no ?sw param at
+    // all, AND shows up correctly toggled next time Settings is opened.
+    const AGGRESSIVE_CACHING_KEY = 'setting-aggressive-caching';
     const swParam = new URLSearchParams(location.search).get('sw');
-    if (swParam === 'off') localStorage.setItem(SW_DEV_DISABLED_KEY, '1');
-    if (swParam === 'on') localStorage.removeItem(SW_DEV_DISABLED_KEY);
+    if (swParam === 'on') localStorage.setItem(AGGRESSIVE_CACHING_KEY, 'true');
+    if (swParam === 'off') localStorage.setItem(AGGRESSIVE_CACHING_KEY, 'false');
 
     if ('serviceWorker' in navigator) {
-      if (localStorage.getItem(SW_DEV_DISABLED_KEY)) {
-        // Actively tear down any worker/caches left over from before the
-        // toggle was flipped off — skipping re-registration alone isn't
-        // enough, since an already-active worker from a prior visit keeps
-        // intercepting fetches until it's unregistered.
+      if (localStorage.getItem(AGGRESSIVE_CACHING_KEY) === 'true') {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch((err) => {
+            console.warn('Service worker registration failed:', err);
+          });
+        });
+      } else {
+        // Off — the default for anyone who's never touched the setting,
+        // and the state for anyone who's explicitly opted back out.
         navigator.serviceWorker.getRegistrations().then((regs) => {
           regs.forEach((reg) => reg.unregister());
         });
         caches.keys().then((keys) => {
           keys.filter((k) => k.startsWith('msb-')).forEach((k) => caches.delete(k));
-        });
-      } else {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').catch((err) => {
-            console.warn('Service worker registration failed:', err);
-          });
         });
       }
     }
