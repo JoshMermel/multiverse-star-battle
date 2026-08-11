@@ -387,6 +387,465 @@ class MultiStarRules:
     def rule_region_line_quota_fill_strong(self, p):
         return self._region_line_quota_fill(p, level='strong')
 
+    # -- Region/line partition trap (2★+) ----------------------------------------
+    #
+    # A sibling of _region_line_quota_fill above, built on the same per-region,
+    # per-line completion tally. That rule splits a region's remaining cells
+    # into "in this row/column" and "everywhere else", and asks how many
+    # stars are guaranteed on the IN side (to fill the line's own quota).
+    # This rule asks the same split's question about EITHER side on its own:
+    # whenever a region's cells on one side of that split (in the line, or
+    # outside it -- both are checked) are proven to hold at least m >= 1 of
+    # the region's stars, no matter which valid completion turns out to be
+    # real, any candidate cell (anywhere on the board) that's adjacent to
+    # EVERY cell on that side can't be a star: whichever of them ends up
+    # holding the guarantee, that candidate would be touching it. m doesn't
+    # need to equal the number of cells on that side for this to be useful --
+    # e.g. 3 cells guaranteed to jointly hold only 1 star still traps any
+    # cell touching all 3, even without knowing which one it'll be.
+    #
+    # Concretely, per region/line pair, from the same per-combo tally:
+    #  - IN-line guarantee: min_in_line = MIN over combos of (cells in the
+    #    line) -- the same k _region_line_guarantees_impl computes.
+    #  - OUT-of-line guarantee: needed - max_in_line, where max_in_line = MAX
+    #    over combos of (cells in the line) -- the complement, since a
+    #    completion placing `count` in the line places (needed - count)
+    #    outside it, so the guaranteed-outside minimum is needed minus the
+    #    guaranteed-inside MAXIMUM.
+    # Both are independent, valid "at least m stars among this fixed cell
+    # set" facts, so both get the same touches-all-of-them-is-a-dot check.
+    # Python port of hintRegionLinePartitionTrapped in solver-rules-multi.js.
+
+    def _region_line_partition_guarantees(self, p, level):
+        return self._cached_on_grid(
+            p, f'_region_line_partition_guarantees_cache_{level}',
+            lambda: self._region_line_partition_guarantees_impl(p, level))
+
+    def _region_line_partition_guarantees_impl(self, p, level):
+        """
+        Every region/line/side triple, on any board, where the region is
+        PROVEN to place at least `guarantee` >= 1 of its remaining stars
+        among a fixed set of its own cells (`group_cells`) -- either every
+        cell it has in that row/column ('inside'), or every cell it has
+        outside it ('outside'). Returns a list of dicts with keys
+        board_idx/line_kind/line_idx/side/group_cells/guarantee.
+        """
+        combo_sets_by_unit = self._get_placement_forced_combos(p, level)
+        result = []
+        for unit in p.units:
+            if unit["board_idx"] is None:
+                continue  # rows/columns aren't a source here, only regions
+            completion_sets = combo_sets_by_unit.get(id(unit))
+            if not completion_sets:
+                continue
+            # Regions always resolve to exactly one scope (see
+            # _unit_completions_by_level).
+            combos = completion_sets[0]
+            needed = len(combos[0])
+
+            rows_touched = set()
+            cols_touched = set()
+            for combo in combos:
+                for cell in combo:
+                    r, c = p.get_rc(cell)
+                    rows_touched.add(r)
+                    cols_touched.add(c)
+
+            avail = [i for i in unit["indices"] if p.grid[i] is None]
+
+            def try_line(line_kind, line_idx, in_line):
+                counts_in_line = [sum(1 for cell in combo if in_line(cell)) for combo in combos]
+                min_in_line = min(counts_in_line)
+                max_in_line = max(counts_in_line)
+
+                if min_in_line >= 1:
+                    inside_cells = [i for i in avail if in_line(i)]
+                    if inside_cells:
+                        result.append({
+                            "board_idx": unit["board_idx"], "line_kind": line_kind, "line_idx": line_idx,
+                            "side": "inside", "group_cells": inside_cells, "guarantee": min_in_line,
+                        })
+
+                g = needed - max_in_line
+                if g >= 1:
+                    outside_cells = [i for i in avail if not in_line(i)]
+                    # Should be impossible (g >= 1 means every completion
+                    # leaves at least one of its own cells outside the
+                    # line) but guard anyway.
+                    if outside_cells:
+                        result.append({
+                            "board_idx": unit["board_idx"], "line_kind": line_kind, "line_idx": line_idx,
+                            "side": "outside", "group_cells": outside_cells, "guarantee": g,
+                        })
+
+            for r in rows_touched:
+                try_line("row", r, lambda cell, r=r: p.get_rc(cell)[0] == r)
+            for c in cols_touched:
+                try_line("col", c, lambda cell, c=c: p.get_rc(cell)[1] == c)
+        return result
+
+    def _region_line_partition_trapped(self, p, level):
+        for entry in self._region_line_partition_guarantees(p, level):
+            group_cells = entry["group_cells"]
+            group_set = set(group_cells)
+            targets = [
+                i for i in range(p.n * p.n)
+                if p.grid[i] is None and i not in group_set
+                and all(self._cells_adjacent(p, i, cell) for cell in group_cells)
+            ]
+            if not targets:
+                continue
+            label = (f"RegionLinePartitionTrapped({entry['side']} of "
+                      f"{entry['line_kind']} {entry['line_idx']}, "
+                      f"B{entry['board_idx'] + 1}, level={level})")
+            changes = sum(p.validate_and_set(idx, ".", label, self.verbose) for idx in targets)
+            if changes > 0:
+                return changes
+        return 0
+
+    def rule_region_line_partition_trapped_weak(self, p):
+        return self._region_line_partition_trapped(p, level='weak')
+
+    def rule_region_line_partition_trapped_intermediate(self, p):
+        return self._region_line_partition_trapped(p, level='intermediate')
+
+    def rule_region_line_partition_trapped_strong(self, p):
+        return self._region_line_partition_trapped(p, level='strong')
+
+    # -- Region/line partition forced star (2★+) ---------------------------------
+    #
+    # A second sibling reasoning off the same per-region guarantees
+    # _region_line_guarantees computes (used by _region_line_quota_fill /
+    # _find_subset_sum_combo above), but drawing a different conclusion from
+    # the same successful subset-sum match: _region_line_quota_fill uses it
+    # to dot every OTHER cell in the line, since the matched regions'
+    # guarantees already account for the line's whole remaining need. This
+    # rule notices something else that same match implies: since the
+    # matched regions' k's already sum EXACTLY to the line's need, none of
+    # them can contribute MORE than its own guaranteed k -- that would
+    # overshoot the line's actual quota, which is impossible. So each
+    # matched region's in-line count is pinned to EXACTLY k, not just "at
+    # least k". That pins its remainder too (its own total need minus k), on
+    # BOTH sides of the split -- letting each side be reasoned about as its
+    # own small local placement problem: how many ways are there to fit
+    # exactly that many non-touching stars among just those cells? If every
+    # local arrangement agrees on some cell, that cell must be a star. E.g.
+    # a "rest" shaped like a P-pentomino needing 2 non-touching stars might
+    # only have a couple of valid 2-cell arrangements, all of which happen
+    # to include one specific cell.
+    #
+    # Why ignoring the rest of the board (no capacity checks, no reasoning
+    # about which cells the OTHER side's completion touches) is still sound:
+    # the true realized arrangement on a side must itself be one of the
+    # valid LOCAL ones (adjacency is the only thing that can ever disqualify
+    # it), so it's necessarily a MEMBER of the set _forced_cells_in_group
+    # enumerates -- a cell common to that whole (possibly larger, since it
+    # ignores extra constraints the true arrangement also happens to
+    # satisfy) set is common to the true arrangement too. Same principle as
+    # 'weak' mode in _enumerate_unit_completions. Python port of
+    # hintRegionLinePartitionForced/_forcedCellsInGroup in
+    # solver-rules-multi.js.
+
+    def _forced_cells_in_group(self, p, cells, k, existing_stars):
+        """
+        Every cell in `cells` that appears in EVERY valid way to choose `k`
+        mutually non-touching cells from `cells` alone (also not touching
+        any of `existing_stars`). Returns [] if there's no valid
+        arrangement, or if the valid arrangements don't all agree on any
+        cell.
+        """
+        candidates = [c for c in cells if not any(self._cells_adjacent(p, s, c) for s in existing_stars)]
+        if k <= 0 or len(candidates) < k:
+            return []
+
+        intersection = None
+        chosen = []
+
+        def try_from(start):
+            nonlocal intersection
+            if intersection is not None and len(intersection) == 0:
+                return  # nothing left to narrow
+            if len(chosen) == k:
+                if intersection is None:
+                    intersection = set(chosen)
+                else:
+                    intersection &= set(chosen)
+                return
+            if len(candidates) - start < k - len(chosen):
+                return
+            for i in range(start, len(candidates)):
+                cell = candidates[i]
+                if any(self._cells_adjacent(p, c, cell) for c in chosen):
+                    continue
+                chosen.append(cell)
+                try_from(i + 1)
+                chosen.pop()
+                if intersection is not None and len(intersection) == 0:
+                    return
+
+        try_from(0)
+        return list(intersection) if intersection else []
+
+    def _region_line_partition_forced_facts(self, p, level):
+        return self._cached_on_grid(
+            p, f'_region_line_partition_forced_facts_cache_{level}',
+            lambda: self._region_line_partition_forced_facts_impl(p, level))
+
+    def _region_line_partition_forced_facts_impl(self, p, level):
+        """
+        Every region/line/side triple, on any board, where a successful
+        _region_line_quota_fill-style subset-sum match pins the region's
+        split to an exact count and some specific cell is forced across
+        every local arrangement of that side's share. Returns a list of
+        dicts with keys unit/side/forced_cells/line_count/rest_count.
+        """
+        guarantees = self._region_line_guarantees(p, level)
+        result = []
+
+        for (kind, line_idx), entries in guarantees.items():
+            line_indices = p.row_indices[line_idx] if kind == "row" else p.col_indices[line_idx]
+            in_line = (
+                (lambda cell, r=line_idx: p.get_rc(cell)[0] == r) if kind == "row"
+                else (lambda cell, c=line_idx: p.get_rc(cell)[1] == c)
+            )
+
+            stars = sum(1 for i in line_indices if p.grid[i] == "x")
+            needed = p.stars_per_unit - stars
+            if needed <= 0:
+                continue
+            avail = [i for i in line_indices if p.grid[i] is None]
+            if not avail:
+                continue
+
+            # Same board grouping as _region_line_quota_fill -- never
+            # cross-board (see rule_crossboard_region_line_partition_forced
+            # below for that case).
+            by_board = {}
+            for board_idx, k, unit in entries:
+                by_board.setdefault(board_idx, []).append((k, unit))
+
+            for board_idx, board_entries in by_board.items():
+                combo = self._find_subset_sum_combo(board_entries, needed)
+                if combo is None:
+                    continue
+
+                # Every region in this matched combo is now pinned to
+                # EXACTLY its own guaranteed k in this line (see the
+                # section comment above).
+                for k, unit in combo:
+                    region_stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
+                    region_needed = p.stars_per_unit - region_stars
+                    outside_count = region_needed - k
+
+                    inside_cells = [i for i in unit["indices"] if p.grid[i] is None and in_line(i)]
+                    outside_cells = [i for i in unit["indices"] if p.grid[i] is None and not in_line(i)]
+                    existing_stars = [i for i in unit["indices"] if p.grid[i] == "x"]
+
+                    if k >= 1:
+                        forced = self._forced_cells_in_group(p, inside_cells, k, existing_stars)
+                        if forced:
+                            result.append({
+                                "unit": unit, "side": "inside", "forced_cells": forced,
+                                "line_count": k, "rest_count": outside_count,
+                            })
+                    if outside_count >= 1:
+                        forced = self._forced_cells_in_group(p, outside_cells, outside_count, existing_stars)
+                        if forced:
+                            result.append({
+                                "unit": unit, "side": "outside", "forced_cells": forced,
+                                "line_count": k, "rest_count": outside_count,
+                            })
+        return result
+
+    def _region_line_partition_forced(self, p, level):
+        # A cell can end up forced via more than one fact (row and column
+        # reasoning about the same region can coincide) -- dedupe by the
+        # exact forced-cell set.
+        seen = set()
+        for fact in self._region_line_partition_forced_facts(p, level):
+            key = frozenset(fact["forced_cells"])
+            if key in seen:
+                continue
+            seen.add(key)
+            label = f"RegionLinePartitionForced({fact['unit']['label']}, {fact['side']}, level={level})"
+            changes = sum(
+                p.validate_and_set(idx, "x", label, self.verbose) for idx in fact["forced_cells"]
+            )
+            if changes > 0:
+                return changes
+        return 0
+
+    def rule_region_line_partition_forced_weak(self, p):
+        return self._region_line_partition_forced(p, level='weak')
+
+    def rule_region_line_partition_forced_intermediate(self, p):
+        return self._region_line_partition_forced(p, level='intermediate')
+
+    def rule_region_line_partition_forced_strong(self, p):
+        return self._region_line_partition_forced(p, level='strong')
+
+    # -- Cross-board region/line quota fill + partition forced (Grandmaster, 2★+) -
+    #
+    # _region_line_quota_fill and _region_line_partition_forced_facts both
+    # deliberately group a line's per-region guarantees BY BOARD before
+    # subset-summing, and only ever search within one board's regions at a
+    # time (see both functions' "Never cross-board" comments) -- the
+    # same-board case is already sound and cheap, so there was no reason to
+    # widen the search. This section adds the genuinely cross-board
+    # generalization of that same subset-sum match: pool guarantees from
+    # EVERY board for a line, and search for a combo that sums to the line's
+    # need using regions from more than one board at once. E.g. board 1's
+    # region A alone guarantees 1 star in the line, and board 2's region K
+    # alone guarantees 1 star in the same line; individually neither covers
+    # a needed=2 line, but together they do.
+    #
+    # This is only sound if the matched regions' remaining cells are
+    # pairwise DISJOINT: boards share one physical grid, so a region on
+    # board 1 and a region on board 2 can include the very same cell, and
+    # summing guarantees across overlapping regions would double-count how
+    # many distinct stars are actually still available. Same concern
+    # _rule_crossboard_n_region_pinned_multi already handles for the
+    # trapped-region-pin rule, via _are_disjoint -- this is the same fix
+    # applied to the subset-sum search directly (checked incrementally
+    # during the backtracking search below, rather than after the fact).
+    #
+    # Also requires the winning combo to span >= 2 distinct boards: an
+    # all-same-board match would already have been found by the plain
+    # per-board versions above, so this only exists to catch the genuinely
+    # cross-board case (mirrors _rule_crossboard_n_region_pinned_multi's own
+    # "boards_touched < 2: already covered elsewhere" guard).
+    #
+    # Only built on 'strong'-level guarantees: a region's own "at least k in
+    # this line" fact is true regardless of which level computed it (a
+    # weaker level just enumerates a superset of completions, so its k is a
+    # safe -- if possibly looser -- lower bound), but 'strong' is the level
+    # already used by the Expert-tier siblings this generalizes, and
+    # cross-board combination is itself the expensive, deep reasoning step
+    # that earns the Grandmaster tier -- there's no separate weak/
+    # intermediate cross-board tier the way the per-region levels have.
+
+    def _find_crossboard_subset_sum_combo(self, entries, target):
+        """
+        Like _find_subset_sum_combo, but `entries` are pooled from ALL
+        boards (the raw (board_idx, k, unit) tuples _region_line_guarantees
+        returns, not grouped by board first), and a valid combo must
+        additionally have pairwise-disjoint index sets (checked
+        incrementally via `used`) and span at least 2 distinct boards
+        (checked once a full-target combo is found).
+        """
+        def backtrack(i, remaining, chosen, used, boards):
+            if remaining == 0:
+                return list(chosen) if len(boards) >= 2 else None
+            if i >= len(entries) or remaining < 0:
+                return None
+            board_idx, k, unit = entries[i]
+            unit_idxs = set(unit["indices"])
+            if k <= remaining and used.isdisjoint(unit_idxs):
+                chosen.append(entries[i])
+                result = backtrack(i + 1, remaining - k, chosen, used | unit_idxs, boards | {board_idx})
+                if result is not None:
+                    return result
+                chosen.pop()
+            return backtrack(i + 1, remaining, chosen, used, boards)
+        return backtrack(0, target, [], frozenset(), frozenset())
+
+    def rule_crossboard_region_line_quota_fill(self, p):
+        """
+        Cross-board generalization of rule_region_line_quota_fill_strong
+        (see section comment above): once a cross-board combo of regions'
+        guarantees sums exactly to a line's remaining need, every other
+        empty cell in that line must be a dot.
+        """
+        guarantees = self._region_line_guarantees(p, level='strong')
+        for (kind, line_idx), entries in guarantees.items():
+            line_indices = p.row_indices[line_idx] if kind == "row" else p.col_indices[line_idx]
+            stars = sum(1 for i in line_indices if p.grid[i] == "x")
+            needed = p.stars_per_unit - stars
+            if needed <= 0:
+                continue
+            avail = [i for i in line_indices if p.grid[i] is None]
+            if not avail:
+                continue
+
+            combo = self._find_crossboard_subset_sum_combo(entries, needed)
+            if combo is None:
+                continue
+
+            covered = set()
+            boards_used = set()
+            for board_idx, _, unit in combo:
+                covered |= set(unit["indices"])
+                boards_used.add(board_idx)
+            targets = [i for i in avail if i not in covered]
+            if not targets:
+                continue
+
+            boards_label = ", ".join(f"B{b + 1}" for b in sorted(boards_used))
+            label = f"CrossBoardRegionLineQuotaFill({kind} {line_idx}, {boards_label})"
+            changes = sum(p.validate_and_set(idx, ".", label, self.verbose) for idx in targets)
+            if changes > 0:
+                return changes
+        return 0
+
+    def rule_crossboard_region_line_partition_forced(self, p):
+        """
+        Cross-board generalization of rule_region_line_partition_forced_strong
+        (see section comment above): once a cross-board combo pins a
+        region's in-line count to an exact k, its remainder (own quota
+        minus k) is pinned too, on both sides of the split -- and either
+        side's local placement problem may force a specific cell to be a
+        star.
+        """
+        guarantees = self._region_line_guarantees(p, level='strong')
+        seen = set()
+
+        for (kind, line_idx), entries in guarantees.items():
+            line_indices = p.row_indices[line_idx] if kind == "row" else p.col_indices[line_idx]
+            in_line = (
+                (lambda cell, r=line_idx: p.get_rc(cell)[0] == r) if kind == "row"
+                else (lambda cell, c=line_idx: p.get_rc(cell)[1] == c)
+            )
+
+            stars = sum(1 for i in line_indices if p.grid[i] == "x")
+            needed = p.stars_per_unit - stars
+            if needed <= 0:
+                continue
+            avail = [i for i in line_indices if p.grid[i] is None]
+            if not avail:
+                continue
+
+            combo = self._find_crossboard_subset_sum_combo(entries, needed)
+            if combo is None:
+                continue
+
+            for board_idx, k, unit in combo:
+                region_stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
+                region_needed = p.stars_per_unit - region_stars
+                outside_count = region_needed - k
+
+                inside_cells = [i for i in unit["indices"] if p.grid[i] is None and in_line(i)]
+                outside_cells = [i for i in unit["indices"] if p.grid[i] is None and not in_line(i)]
+                existing_stars = [i for i in unit["indices"] if p.grid[i] == "x"]
+
+                forced_sides = []
+                if k >= 1:
+                    forced_sides.append(("inside", self._forced_cells_in_group(p, inside_cells, k, existing_stars)))
+                if outside_count >= 1:
+                    forced_sides.append(("outside", self._forced_cells_in_group(p, outside_cells, outside_count, existing_stars)))
+
+                for side, forced in forced_sides:
+                    if not forced:
+                        continue
+                    key = frozenset(forced)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    label = f"CrossBoardRegionLinePartitionForced({unit['label']}, {side})"
+                    changes = sum(p.validate_and_set(idx, "x", label, self.verbose) for idx in forced)
+                    if changes > 0:
+                        return changes
+        return 0
+
     def _hint_multi_regions_trapped_or_covered(self, p, unit_combo, b_idx, axis):
         """
         Quota-aware trapped/covered region <-> unit-combo sync for board

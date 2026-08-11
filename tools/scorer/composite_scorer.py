@@ -145,6 +145,19 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # placement-forced fact PLUS a cross-region quota argument on
             # top of it.
             (self.rule_region_line_quota_fill_weak,               32, "Medium"),
+            # Region/line partition trap + forced-star (multi-star-rules-sync
+            # with solver-rules-multi.js) -- siblings of region_line_quota_fill
+            # built on the same per-region completion tally, just reasoning
+            # about the guaranteed-inside/outside-the-line counts on their
+            # own instead of summing them across regions. Slotted at the
+            # same tier as their region_line_quota_fill counterpart, not one
+            # above, since they don't need its extra cross-region subset-sum
+            # step. The forced-star variant runs first at each tier, same as
+            # unit_placement_forced's 'all_stars' running before
+            # 'any_star'/'dots' -- confirming a star outright is a bigger
+            # win than excluding one.
+            (self.rule_region_line_partition_forced_weak,         33, "Medium"),
+            (self.rule_region_line_partition_trapped_weak,        34, "Medium"),
 
             # -- Hard ---------------------------------------------------------
             (self.rule_unit_placement_forced_intermediate_any,    35, "Hard"),
@@ -156,6 +169,8 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # rule_tile_disjoint_quota_fill (Expert) for K>1.
             (self.rule_tile_quota_fill_single,                    52, "Hard"),
             (self.rule_region_line_quota_fill_intermediate,       55, "Hard"),
+            (self.rule_region_line_partition_forced_intermediate, 56, "Hard"),
+            (self.rule_region_line_partition_trapped_intermediate, 57, "Hard"),
             (self.rule_region_subset_sync_1,                      60, "Hard"),
             (self.rule_region_subset_sync_2,                      65, "Hard"),
             (self.rule_unit_region_sync_multi_4_plus,             80, "Hard"),
@@ -178,6 +193,8 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_placement_forced_strong_dots,         97, "Expert"),
             (self.rule_tile_disjoint_quota_fill,                  100, "Expert"),
             (self.rule_region_line_quota_fill_strong,             105, "Expert"),
+            (self.rule_region_line_partition_forced_strong,       106, "Expert"),
+            (self.rule_region_line_partition_trapped_strong,      107, "Expert"),
             # Restored from pre-experiment.
             (self.rule_unit_completion_satisfies_other_unit_strong, 108, "Expert"),
             (self.rule_unit_region_sync_multi_2_disjoint,         109, "Expert"),
@@ -191,6 +208,17 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_lookahead_dots,                            180, "Expert"),
 
             # -- Grandmaster ------------------------------------------------
+            # Cross-board region/line quota fill + partition forced -- see
+            # rules_multi_star.py's "Cross-board region/line quota fill +
+            # partition forced" section comment. Genuinely cross-board only
+            # (same-board matches are already caught by the Expert-tier
+            # region_line_quota_fill_strong/region_line_partition_forced_strong
+            # above), so this is strictly additional reasoning, not a
+            # duplicate of those. Forced-star runs first, same convention as
+            # every other weak/any/dots-style pairing in this table.
+            (self.rule_crossboard_region_line_partition_forced,   200, "Grandmaster"),
+            (self.rule_crossboard_region_line_quota_fill,         210, "Grandmaster"),
+
             # All three N-stage multi-star lookahead rules are commented out
             # for performance: each is a full board-wide speculative sweep
             # per empty cell, repeated per stage, and that's expensive

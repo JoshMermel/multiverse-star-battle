@@ -716,6 +716,207 @@ export function applyMultiStarRules(PuzzleSolver) {
     });
   };
 
+  // -- Cross-board region/line quota fill + partition forced (Grandmaster, 2★+) -
+  //
+  // hintRegionLineQuotaFill and _regionLinePartitionForcedFactsImpl both
+  // deliberately group a line's per-region guarantees BY BOARD before
+  // subset-summing, and only ever search within one board's regions at a
+  // time (see both functions' "Never cross-board" comments) -- the
+  // same-board case is already sound and cheap, so there was no reason to
+  // widen the search. This section adds the genuinely cross-board
+  // generalization of that same subset-sum match: pool guarantees from
+  // EVERY board for a line, and search for a combo that sums to the
+  // line's need using regions from more than one board at once. E.g.
+  // board 1's region A alone guarantees 1 star in the line, and board 2's
+  // region K alone guarantees 1 star in the same line; individually
+  // neither covers a needed=2 line, but together they do.
+  //
+  // This is only sound if the matched regions' remaining cells are
+  // pairwise DISJOINT: boards share one physical grid, so a region on
+  // board 1 and a region on board 2 can include the very same cell, and
+  // summing guarantees across overlapping regions would double-count how
+  // many distinct stars are actually still available -- the same concern
+  // hintCrossBoardRegionPinnedMulti already handles for the
+  // trapped-region-pin rule, via _areDisjoint (this is that same fix
+  // applied to the subset-sum search directly, checked incrementally
+  // during the backtracking search below). Also requires the winning
+  // combo to span >= 2 distinct boards: an all-same-board match would
+  // already have been found by the plain per-board hints above, so this
+  // only exists to catch the genuinely cross-board case (mirrors
+  // hintCrossBoardRegionPinnedMulti's own "boardsTouched < 2: already
+  // covered elsewhere" guard).
+  //
+  // Only built on 'strong'-level guarantees: a region's own "at least k
+  // in this line" fact is true regardless of which level computed it (a
+  // weaker level just enumerates a superset of completions, so its k is
+  // a safe -- if possibly looser -- lower bound), but 'strong' is the
+  // level already used by the Expert-tier siblings this generalizes, and
+  // cross-board combination is itself the expensive, deep reasoning step
+  // that earns the Grandmaster tier -- there's no separate weak/
+  // intermediate cross-board tier the way the per-region levels have.
+  // Python port: rules_multi_star.py's matching section.
+
+  // Like _findSubsetSumCombo, but `entries` are pooled from ALL boards
+  // (the raw { boardIdx, k, unit } entries _regionLineGuarantees returns,
+  // not grouped by board first), and a valid combo must additionally have
+  // pairwise-disjoint index sets (checked incrementally via `used`) and
+  // span at least 2 distinct boards (checked once a full-target combo is
+  // found).
+  p._findCrossBoardSubsetSumCombo = function (entries, target) {
+    const backtrack = (i, remaining, chosen, used, boards) => {
+      if (remaining === 0) return boards.size >= 2 ? chosen.slice() : null;
+      if (i >= entries.length || remaining < 0) return null;
+      const entry = entries[i];
+      const unitIdxs = entry.unit.indices;
+      const disjoint = unitIdxs.every(idx => !used.has(idx));
+      if (entry.k <= remaining && disjoint) {
+        chosen.push(entry);
+        const result = backtrack(
+          i + 1, remaining - entry.k, chosen,
+          new Set([...used, ...unitIdxs]), new Set([...boards, entry.boardIdx]));
+        if (result) return result;
+        chosen.pop();
+      }
+      return backtrack(i + 1, remaining, chosen, used, boards);
+    };
+    return backtrack(0, target, [], new Set(), new Set());
+  };
+
+  // Cross-board generalization of hintRegionLineQuotaFill('strong'): once
+  // a cross-board combo of regions' guarantees sums exactly to a line's
+  // remaining need, every other empty cell in that line must be a dot.
+  p.hintCrossBoardRegionLineQuotaFill = function () {
+    const guarantees = this._regionLineGuarantees('strong');
+    const candidates = [];
+
+    for (const [key, entries] of guarantees) {
+      const [kind, idxStr] = key.split(':');
+      const lineIdx = Number(idxStr);
+      const lineIndices = kind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
+
+      const stars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
+      const needed = this.starsPerGroup - stars;
+      if (needed <= 0) continue;
+      const avail = lineIndices.filter(i => this.vState(i) === CELL.NONE);
+      if (avail.length === 0) continue;
+
+      const combo = this._findCrossBoardSubsetSumCombo(entries, needed);
+      if (!combo) continue;
+
+      const covered = new Set(combo.flatMap(e => e.unit.indices));
+      const targets = avail.filter(i => !covered.has(i));
+      if (targets.length === 0) continue;
+
+      const targetSet = new Set(targets);
+      const lineWord = kind === 'row' ? 'row' : 'column';
+      const regionWord = combo.length === 1 ? 'region' : 'regions';
+      const resolveWord = combo.length === 1 ? 'it resolves' : 'they resolve';
+      const boardsNote = this._describeBoards(combo.map(e => e.boardIdx));
+
+      candidates.push({
+        boardIdx: undefined,
+        description: `Cross-board (${boardsNote}): the amber-outlined ${lineWord} needs ${needed} more `
+          + `star${needed === 1 ? '' : 's'}. The highlighted ${regionWord} on different boards always `
+          + `put${combo.length === 1 ? 's' : ''} at least ${needed} there between them, no matter how `
+          + `${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
+        highlights: combo.flatMap(({ unit }) =>
+          unit.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
+            .map(idx => ({ idx, color: HINT_COLOR.SOURCE, boards: [unit.boardIdx] }))
+        ),
+        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+        lineHighlight: { boardIdx: combo[0].unit.boardIdx, axis: kind, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
+      });
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
+    return candidates;
+  };
+
+  // Cross-board generalization of hintRegionLinePartitionForced('strong'):
+  // once a cross-board combo pins a region's in-line count to an exact k,
+  // its remainder (own quota minus k) is pinned too, on both sides of the
+  // split -- and either side's local placement problem may force a
+  // specific cell to be a star.
+  p.hintCrossBoardRegionLinePartitionForced = function () {
+    const guarantees = this._regionLineGuarantees('strong');
+    const seen = new Map();
+
+    for (const [key, entries] of guarantees) {
+      const [kind, idxStr] = key.split(':');
+      const lineIdx = Number(idxStr);
+      const lineIndices = kind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
+      const inLine = kind === 'row'
+        ? (cell => Math.floor(cell / this.n) === lineIdx)
+        : (cell => cell % this.n === lineIdx);
+
+      const stars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
+      const needed = this.starsPerGroup - stars;
+      if (needed <= 0) continue;
+      const avail = lineIndices.filter(i => this.vState(i) === CELL.NONE);
+      if (avail.length === 0) continue;
+
+      const combo = this._findCrossBoardSubsetSumCombo(entries, needed);
+      if (!combo) continue;
+
+      for (const { unit, k } of combo) {
+        const regionStars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
+        const regionNeeded = this.starsPerGroup - regionStars;
+        const outsideCount = regionNeeded - k;
+
+        const insideCells = unit.indices.filter(i => this.vState(i) === CELL.NONE && inLine(i));
+        const outsideCells = unit.indices.filter(i => this.vState(i) === CELL.NONE && !inLine(i));
+        const existingStars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
+
+        if (k >= 1) {
+          const forced = this._forcedCellsInGroup(insideCells, k, existingStars);
+          if (forced.length > 0) {
+            const fkey = this._groupKey(forced);
+            if (!seen.has(fkey)) {
+              seen.set(fkey, { unit, side: 'inside', groupCells: insideCells, forcedCells: forced, lineKind: kind, lineIdx, lineCount: k, restCount: outsideCount });
+            }
+          }
+        }
+        if (outsideCount >= 1) {
+          const forced = this._forcedCellsInGroup(outsideCells, outsideCount, existingStars);
+          if (forced.length > 0) {
+            const fkey = this._groupKey(forced);
+            if (!seen.has(fkey)) {
+              seen.set(fkey, { unit, side: 'outside', groupCells: outsideCells, forcedCells: forced, lineKind: kind, lineIdx, lineCount: k, restCount: outsideCount });
+            }
+          }
+        }
+      }
+    }
+
+    const candidates = [...seen.values()];
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.forcedCells[0] - b.forcedCells[0]);
+
+    return candidates.map(({ unit, side, groupCells, forcedCells, lineKind, lineIdx, lineCount, restCount }) => {
+      const lineWord = lineKind === 'row' ? 'row' : 'column';
+      const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
+      const pronoun = forcedCells.length === 1 ? 'it' : 'they';
+      const starPhrase = forcedCells.length === 1 ? 'a star' : 'stars';
+      const forcedSet = new Set(forcedCells);
+      const restClause = side === 'outside'
+        ? `, leaving exactly ${restCount} star${restCount === 1 ? '' : 's'} for the rest of the region`
+        : '';
+
+      return {
+        boardIdx: unit.boardIdx,
+        description: `Cross-board: this region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} `
+          + `in the amber-outlined ${lineWord}${restClause}, combined with a region on another board to cover `
+          + `the line's whole need. Every way to do that includes the marked ${cellWord}, so ${pronoun} must be ${starPhrase}.`,
+        highlights: groupCells
+          .filter(i => !forcedSet.has(i))
+          .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        marks: forcedCells.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
+        lineHighlight: { boardIdx: unit.boardIdx, axis: lineKind, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
+      };
+    });
+  };
+
   // --- 2★/3★-generalized row/col <-> region sync ---
   // These mirror _hintUnitsCoveredByRegions / _hintRegionsTrappedInUnits (in
   // solver-rules-single.js), but work off each region's remaining star COUNT (via
@@ -1648,7 +1849,21 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'regionSubsetSync4',              fn: () => this.hintRegionSubsetSync(4) },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
       { key: 'lookaheadDots',                  fn: () => this.hintLookaheadDots() },
-      // Grandmaster (see this function's leading comment)
+      // Grandmaster
+      // Cross-board region/line quota fill + partition forced -- see the
+      // section comment above hintCrossBoardRegionLineQuotaFill. Genuinely
+      // cross-board only (same-board matches are already caught by the
+      // Expert-tier regionLineQuotaFillStrong/regionLinePartitionForcedStrong
+      // above), so this is strictly additional reasoning, not a duplicate
+      // of those. Forced-star runs first, same convention as every other
+      // weak/any/dots-style pairing in this list. Matches Python's
+      // rule_crossboard_region_line_partition_forced/
+      // rule_crossboard_region_line_quota_fill in rules_multi_star.py --
+      // unlike the N-stage lookahead rules below, these are bounded by the
+      // (small) number of regions touching one line, not a full board
+      // sweep, so they stay enabled here.
+      { key: 'crossBoardRegionLinePartitionForced', fn: () => this.hintCrossBoardRegionLinePartitionForced() },
+      { key: 'crossBoardRegionLineQuotaFill',        fn: () => this.hintCrossBoardRegionLineQuotaFill() },
       // lookaheadLoop1/2/3/8 all commented out for performance: hintLookahead
       // does a full board-wide speculative sweep per empty cell per stage,
       // and that's gotten noticeably slow at 3★+ scale -- even 1 stage.
