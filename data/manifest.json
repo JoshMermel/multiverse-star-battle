@@ -10,6 +10,7 @@
     "Curiosities":      { "icon": "🤔",     "blurb": "Interesting to look at, less fun to solve"},
     "9x9":              { "icon": "9x9",    "blurb": "Two Stars - Beginner → Expert and more", "desc": "Still experimental" },
     "13x13":            { "icon": "13x13",  "blurb": "Three stars in each row, column, and region", "desc": "Still experimental" },
+    "14x14":            { "icon": "14x14",  "blurb": "Three stars in each row, column, and region", "desc": "Still experimental" },
     "Signoff":          { "icon": "💌",     "blurb": "A puzzle-y message from the creator"},
     "Experimental":     { "icon": "🧪",     "blurb": "Work in progress"}
   },
@@ -42,6 +43,7 @@
     {"id": "three_stars",           "label": "Two Boards",              "group": "13x13", "stars": 3},
     {"id": "three_stars_mono",      "label": "1-Board",                 "group": "13x13", "stars": 3},
     {"id": "three_stars_trio",      "label": "3-Boards",                "group": "13x13", "stars": 3},
+    {"id": "14x14_mono",            "label": "1-Board",                 "group": "14x14", "stars": 3},
     {"id": "8x8_symmetric",         "label": "Symmetric",               "group": "Symmetry",         "desc": "Each board has rotational, mirror, or translation symmetry", "stars": 1},
     {"id": "symmetric_mono",        "label": "Symmetric 1-board",       "group": "Symmetry",         "desc": "One board with rotational, mirror, or translation symmetry", "stars": 1},
     {"id": "8x8_twin",              "label": "Twin",                    "group": "Symmetry",         "desc": "Both boards are the same, one flipped or rotated", "stars": 1},
