@@ -1,3 +1,7 @@
 data/tmp.csv
 tools/*.csv
 tools/sym_data/*.csv
+
+# Local-only imports of third-party puzzles (never commit someone else's
+# puzzle content) -- see data/_local_psb_import.csv.
+data/_local_*.csv
