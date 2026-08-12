@@ -191,6 +191,11 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_placement_forced_strong_all,          95, "Expert"),
             (self.rule_unit_placement_forced_strong_any,          96, "Expert"),
             (self.rule_unit_placement_forced_strong_dots,         97, "Expert"),
+            # 1★ counterpart (rule_crossboard_partial_overlap, rules_single_star.py)
+            # sits early in Expert there too; see rules_multi_star.py's
+            # "Cross-board partial overlap" section comment for the
+            # stars_per_unit-agnostic algebra behind it.
+            (self.rule_crossboard_partial_overlap_multi,          98, "Expert"),
             (self.rule_tile_disjoint_quota_fill,                  100, "Expert"),
             (self.rule_region_line_quota_fill_strong,             105, "Expert"),
             (self.rule_region_line_partition_forced_strong,       106, "Expert"),

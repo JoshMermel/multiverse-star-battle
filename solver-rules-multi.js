@@ -1243,6 +1243,90 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates.map(({ combo, targets, uList }) => this.formatCrossBoardHint(combo, targets, axis, uList));
   };
 
+  // -- Cross-board partial overlap (2★+) --------------------------------------
+  //
+  // Multi-star generalization of hintPartialOverlap (solver-rules-single.js,
+  // 1★ only). Two regions on different boards, each still needing its full
+  // starsPerGroup quota (no star placed in either yet), that share almost
+  // all their cells: shared = cells common to both regions' shapes,
+  // onlyA/onlyB = each region's own leftover cells. Both regions obey the
+  // same equation against the SAME shared cells -- stars(shared) +
+  // stars(onlyA) = starsPerGroup = stars(shared) + stars(onlyB) -- so
+  // stars(shared) cancels out and stars(onlyA) always equals stars(onlyB),
+  // regardless of what starsPerGroup actually is.
+  //
+  // If every onlyA cell is ADJACENT to every onlyB cell, any star in onlyA
+  // would touch a star in onlyB and vice versa -- so onlyA and onlyB can't
+  // both hold a star simultaneously, and since their counts are forced
+  // equal, the only value that works is 0 for both. Every onlyA/onlyB cell
+  // must be a dot.
+  //
+  // Needs ADJACENCY specifically, not the broader "sees" (same row/column/
+  // adjacent) the 1★ version uses: for 1★, two cells in the same row
+  // already can't both be stars (a row only ever holds 1), but once
+  // starsPerGroup > 1 that's no longer true -- only physical touching is
+  // still an unconditional "can't both be stars" fact.
+  //
+  // Requires >= 2 shared cells AND both onlyA and onlyB non-empty:
+  // - < 2 shared cells: matches hintPartialOverlap's own guard -- with
+  //   only 1 shared cell, "the star is in the shared cells" is just a
+  //   roundabout way of saying "the star is in this one cell".
+  // - onlyA or onlyB empty: one region's cells would be a strict subset of
+  //   the other's, and the deduction that follows (the containing region's
+  //   extra cells must be dots) is real but a DIFFERENT, simpler argument
+  //   (no adjacency involved at all) -- not this rule's job to claim
+  //   credit for via a vacuously-true "every pair adjacent" check over an
+  //   empty side.
+  p.hintCrossBoardPartialOverlapMulti = function () {
+    const candidates = [];
+    const numBoards = this.game.regions.length;
+
+    for (let boardA = 0; boardA < numBoards; boardA++) {
+      for (let boardB = boardA + 1; boardB < numBoards; boardB++) {
+        const boardARegions = this.getUnsolvedRegions(boardA);
+        const boardBRegions = this.getUnsolvedRegions(boardB);
+
+        for (const regA of boardARegions) {
+          const setA = new Set(regA.indices.filter(i => this.vState(i) === CELL.NONE));
+          if (setA.size === 0) continue;
+          for (const regB of boardBRegions) {
+            const setB = new Set(regB.indices.filter(i => this.vState(i) === CELL.NONE));
+            if (setB.size === 0) continue;
+
+            const shared = [...setA].filter(i => setB.has(i));
+            if (shared.length < 2) continue;
+            const onlyA = [...setA].filter(i => !setB.has(i));
+            const onlyB = [...setB].filter(i => !setA.has(i));
+            if (onlyA.length === 0 || onlyB.length === 0) continue;
+
+            const allAdjacent = onlyA.every(a => onlyB.every(b => this._cellsAdjacent(a, b)));
+            if (!allAdjacent) continue;
+
+            const disjoint = [...onlyA, ...onlyB];
+            const targets = disjoint.filter(i => this.vState(i) === CELL.NONE);
+            if (targets.length === 0) continue;
+
+            candidates.push({ shared, onlyA, onlyB, boardA, boardB });
+          }
+        }
+      }
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.onlyA[0] ?? 0) - (b.onlyA[0] ?? 0));
+    return candidates.map(({ shared, onlyA, onlyB, boardA, boardB }) => ({
+      boardIdx: undefined,
+      description: `These two regions (${this._describeBoards([boardA, boardB])}) overlap almost entirely. Their few different cells touch, so they must match -- and matching stars would touch too, so they're all dots.`,
+      highlights: shared
+        .filter(i => this.vState(i) === CELL.NONE)
+        .map(i => ({ idx: i, color: HINT_COLOR.SOURCE, boards: [boardA, boardB] })),
+      marks: [
+        ...onlyA.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardA] })),
+        ...onlyB.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardB] })),
+      ]
+    }));
+  };
+
   // -- Tiles (2★+, multi-star-rules-experiment) --------------------------------
   //
   // A "tile" is the set of currently-empty cells within some 2x2-bounded
@@ -1830,6 +1914,11 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'unitPlacementForcedStrongAll',   fn: () => this.hintUnitPlacementForced('strong', 'all_stars') },
       { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced('strong', 'any_star') },
       { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced('strong', 'dots') },
+      // 1★ counterpart (hintPartialOverlap, solver-rules-single.js) sits
+      // early in Expert there too; see the section comment above
+      // hintCrossBoardPartialOverlapMulti for the starsPerGroup-agnostic
+      // algebra behind it.
+      { key: 'crossBoardPartialOverlapMulti',  fn: () => this.hintCrossBoardPartialOverlapMulti() },
       // Tiles rule 3.
       { key: 'tileDisjointQuotaFill',          fn: () => this.hintTileDisjointQuotaFill() },
       { key: 'regionLineQuotaFillStrong',      fn: () => this.hintRegionLineQuotaFill('strong') },

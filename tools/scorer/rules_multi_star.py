@@ -1155,6 +1155,83 @@ class MultiStarRules:
                         return changes
         return 0
 
+    # -- Cross-board partial overlap (2★+) --------------------------------------
+    #
+    # Multi-star generalization of rule_crossboard_partial_overlap
+    # (rules_single_star.py, 1★ only). Two regions on different boards, each
+    # still needing its full stars_per_unit quota (no star placed in either
+    # yet), that share almost all their cells: shared = cells common to
+    # both regions' shapes, onlyA/onlyB = each region's own leftover cells.
+    # Both regions obey the same equation against the SAME shared cells --
+    # stars(shared) + stars(onlyA) = stars_per_unit = stars(shared) +
+    # stars(onlyB) -- so stars(shared) cancels out and stars(onlyA) always
+    # equals stars(onlyB), regardless of what stars_per_unit actually is.
+    #
+    # If every onlyA cell is ADJACENT to every onlyB cell, any star in
+    # onlyA would touch a star in onlyB and vice versa -- so onlyA and
+    # onlyB can't both hold a star simultaneously, and since their counts
+    # are forced equal, the only value that works is 0 for both. Every
+    # onlyA/onlyB cell must be a dot.
+    #
+    # Note this needs ADJACENCY specifically, not the broader "sees" (same
+    # row/column/adjacent) the 1★ version uses: for 1★, two cells in the
+    # same row already can't both be stars (a row only ever holds 1), but
+    # once stars_per_unit > 1 that's no longer true -- only physical
+    # touching is still an unconditional "can't both be stars" fact.
+    #
+    # Requires >= 2 shared cells, matching solver-rules-single.js's
+    # hintPartialOverlap: with only 1 shared cell, "the star is in the
+    # shared cells" is just a roundabout way of saying "the star is in
+    # this one cell" -- not worth surfacing as its own hint until there's
+    # an actual choice among several.
+
+    def rule_crossboard_partial_overlap_multi(self, p):
+        for b1, b2 in combinations(range(p.n_boards), 2):
+            unsolved_b1 = [c for c, idxs in p.regions[b1].items()
+                           if not any(p.grid[i] == "x" for i in idxs)]
+            unsolved_b2 = [c for c, idxs in p.regions[b2].items()
+                           if not any(p.grid[i] == "x" for i in idxs)]
+
+            for r1_char in unsolved_b1:
+                r1_avail = {i for i in p.regions[b1][r1_char] if p.grid[i] is None}
+                if not r1_avail:
+                    continue
+                for r2_char in unsolved_b2:
+                    r2_avail = {i for i in p.regions[b2][r2_char] if p.grid[i] is None}
+                    if not r2_avail:
+                        continue
+                    shared = r1_avail & r2_avail
+                    if len(shared) < 2:
+                        continue
+                    only_a = r1_avail - r2_avail
+                    only_b = r2_avail - r1_avail
+                    # Both sides must be non-empty: if one region's cells
+                    # are a strict subset of the other's (only_a or only_b
+                    # empty), the all()-over-empty-cross-product below is
+                    # vacuously true, which would fire with no adjacency
+                    # actually checked. That degenerate case is real (a
+                    # region strictly contained in a same-quota region
+                    # forces the outer region's extra cells to be dots
+                    # too), but it's a different, simpler argument than
+                    # this rule's -- not this rule's job to claim credit
+                    # for it via a vacuous pass.
+                    if not only_a or not only_b:
+                        continue
+                    disjoint = only_a | only_b
+                    if not all(self._cells_adjacent(p, a, b) for a in only_a for b in only_b):
+                        continue
+                    changes = sum(
+                        p.validate_and_set(
+                            idx, ".",
+                            f"Cross-board partial overlap (multi) "
+                            f"B{b1 + 1}:{r1_char}/B{b2 + 1}:{r2_char}",
+                            self.verbose)
+                        for idx in disjoint if p.grid[idx] is None
+                    )
+                    if changes > 0:
+                        return changes
+        return 0
+
     # -- Cross-board N-regions-pin-N-rows/cols (2★+) ---------------------------
     #
     # Generalizes rule_2/3_region_pinned_crossboard_rows/cols (1★-only,
