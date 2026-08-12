@@ -299,7 +299,12 @@ export function applyRules(GameClass) {
       const winToastAlreadyVisible = toast.classList.contains('toast-win') &&
         !toast.classList.contains('toast-hidden');
       if (!suppressWinToast && !winToastAlreadyVisible) {
-        this.showToast("🏆 Perfect! You've solved the Multiverse Star Battle!", "win", 15000);
+        // A single-board puzzle has no "multiverse" to speak of -- quietly
+        // demote the brag to match (still "Star Battle", just not "Multi").
+        const winMessage = this.regions.length === 1
+          ? "🏆 Perfect! You've solved the Universe Star Battle!"
+          : "🏆 Perfect! You've solved the Multiverse Star Battle!";
+        this.showToast(winMessage, "win", 15000);
       }
     } else {
       // Resume the timer if it was already started this session but is
