@@ -294,9 +294,12 @@ def canonical_relabel(board_str):
     return "".join(new_chars)
 
 
-def voronoi_flood_fill(grid, n, size_variation=0.0):
+def voronoi_flood_fill(grid, n, size_variation=0.0, weights=None):
     """
     Fills an n×n grid by flood-fill from the seeded cells (non-None values).
+    A seed's region can already span several disconnected cells (e.g. a
+    pre-bridged multi-star seed group) -- the fill just treats every
+    same-valued cell as one shared frontier, growing them all together.
 
     size_variation=0.0 (default): all seeds grow at equal rate, producing
     roughly equal-sized regions.
@@ -311,6 +314,13 @@ def voronoi_flood_fill(grid, n, size_variation=0.0):
       1.0 → moderate         (CV ≈ 1.0)
       2.0 → strong           (CV ≈ 1.4)
       4.0 → dramatic         (CV ≈ 2.0)
+
+    weights: optional explicit {region_id: weight} override, for callers
+    that want deliberate (not randomized) control over which regions grow
+    fast vs. stay small -- e.g. forcing a chosen subset of regions to stay
+    near-minimal by giving them a tiny weight, while the rest split the
+    board normally. Takes precedence over size_variation; any region id
+    missing from the dict defaults to weight 1.0.
 
     Implementation: at each step, a region is chosen proportional to its
     weight (weighted random selection), then a random cell from that
@@ -327,7 +337,9 @@ def voronoi_flood_fill(grid, n, size_variation=0.0):
     from collections import defaultdict
 
     # Assign growth weights.
-    if size_variation > 0.0:
+    if weights is not None:
+        weights = {rid: weights.get(rid, 1.0) for rid in region_ids}
+    elif size_variation > 0.0:
         alpha = 1.0 / size_variation
         weights = {rid: random.gammavariate(alpha, 1.0) for rid in region_ids}
     else:

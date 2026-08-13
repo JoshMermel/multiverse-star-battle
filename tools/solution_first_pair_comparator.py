@@ -89,6 +89,11 @@ class SolutionFirstPairComparator(Comparator):
             joint_solutions = get_solutions_capped_multi(
                 grids, n, cap=2, stars_per_unit=stars_per_unit
             )
+            if joint_solutions is None:
+                # Inconclusive timeout -- see get_solutions_capped_multi's
+                # docstring. Treat as a failed attempt, not a confirmed unique
+                # intersection.
+                return None
 
             if len(joint_solutions) <= 1:
                 # Gracefully handle invariant violations rather than crashing.
@@ -141,7 +146,11 @@ class SolutionFirstPairComparator(Comparator):
                     sols = get_solutions_capped_multi(
                         subset_grids, n, cap=2, stars_per_unit=stars_per_unit
                     )
-                if len(sols) <= 1:
+                # None means the search couldn't confirm this subset is
+                # ambiguous within budget -- can't verify the "requires all
+                # boards" property either way, so treat it the same as
+                # "found <=1 solutions": we can't stand behind this puzzle.
+                if sols is None or len(sols) <= 1:
                     return False
         return True
 

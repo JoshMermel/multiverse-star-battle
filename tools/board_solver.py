@@ -96,7 +96,7 @@ def get_all_solutions(grid, n, stars_per_unit=1):
     return get_all_solutions_multi([grid], n, stars_per_unit)
 
 
-def get_solutions_capped(grid, n, cap=2, stars_per_unit=1):
+def get_solutions_capped(grid, n, cap=2, stars_per_unit=1, time_limit_seconds=15.0):
     """
     Like get_all_solutions, but stops searching as soon as `cap` distinct
     solutions have been found.
@@ -108,8 +108,15 @@ def get_solutions_capped(grid, n, cap=2, stars_per_unit=1):
     single one before returning. This is the oracle used by
     SolutionFirstGenerator's repair loop, where it's called every
     iteration and only ever needs at most 2 solutions.
+
+    Returns None if the search couldn't reach a trustworthy answer within
+    time_limit_seconds -- see get_solutions_capped_multi's docstring for
+    why that case needs to be a distinct sentinel rather than just
+    whatever partial solution set was found. Callers MUST check for None
+    and treat it as "retry from scratch", never as "confirmed <= cap
+    solutions".
     """
-    return get_solutions_capped_multi([grid], n, cap, stars_per_unit)
+    return get_solutions_capped_multi([grid], n, cap, stars_per_unit, time_limit_seconds)
 
 
 def get_all_solutions_multi(grids, n, stars_per_unit=1):
@@ -126,7 +133,7 @@ def get_all_solutions_multi(grids, n, stars_per_unit=1):
     return collector.solutions
 
 
-def get_solutions_capped_multi(grids, n, cap=2, stars_per_unit=1):
+def get_solutions_capped_multi(grids, n, cap=2, stars_per_unit=1, time_limit_seconds=15.0):
     """
     Like get_all_solutions_multi, but stops as soon as `cap` distinct
     joint solutions have been found. This is the oracle used by
@@ -134,12 +141,39 @@ def get_solutions_capped_multi(grids, n, cap=2, stars_per_unit=1):
     whether the intersection has more than one member, and if so, one
     alternate to diff against -- never the full (potentially large)
     intersection.
+
+    Unlike random_star_placement's time limit, a naive cutoff here would
+    be a correctness bug, not just a performance one: this function's job
+    is to PROVE how many solutions exist (up to cap), and a caller uses
+    "<=1 solutions found" as its signal that a board is uniquely solvable.
+    If the search were simply cut off at the time limit with, say, only
+    the already-known intended solution found so far, that would look
+    identical to "confirmed unique" even though the real second solution
+    just hadn't been discovered yet -- silently shipping an ambiguous
+    puzzle as if it were unique.
+
+    The fix relies on what each terminal status actually means here: if
+    `cap` distinct solutions were already collected, that's a positive,
+    trustworthy fact regardless of whether search stopped early (finding
+    `cap` real solutions doesn't need proof that no more exist). It's
+    only trustworthy to report FEWER than `cap` when the search was
+    genuinely exhaustive (OPTIMAL/INFEASIBLE) rather than merely time-
+    limited (UNKNOWN) -- so that specific combination is the one case
+    this treats as inconclusive.
+
+    Returns collector.solutions normally, or None if the time limit was
+    hit before the search could either reach `cap` solutions or prove
+    there are fewer -- callers MUST treat None as "don't know, retry from
+    scratch", never as a valid (possibly empty) solution set.
     """
     model, x = _build_star_model_multi(grids, n, stars_per_unit)
     solver = cp_model.CpSolver()
     solver.parameters.enumerate_all_solutions = True
+    solver.parameters.max_time_in_seconds = time_limit_seconds
     collector = _CappedSolutionCollector(x, cap)
-    solver.solve(model, collector)
+    status = solver.solve(model, collector)
+    if len(collector.solutions) < cap and status == cp_model.UNKNOWN:
+        return None
     return collector.solutions
 
 

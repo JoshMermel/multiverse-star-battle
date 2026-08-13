@@ -93,8 +93,36 @@ def _build_letter_pair(args, n, output_rows):
     return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows, randomize_orientation_for_output=False, match_variants=False)
 
 
+# Above this many stars per row/column/region, plain solution-first
+# construction (small_region_frac=0.0) reliably produces boards our own
+# difficulty scorer can't solve at all -- UNSOLVED tier, meaning it needs
+# real backtracking, not deduction. Measured across a small_region_frac
+# sweep at N=17/stars=4, N=21/stars=5, and N=25/stars=6: unbiased
+# construction landed UNSOLVED essentially every time at all three
+# scales, while forcing a healthy fraction of regions to stay small
+# (small_region_frac -- see seed_and_grow in solution_first_core.py)
+# consistently pushed results down to Beginner/Easy instead, with higher
+# fractions doing better (0.6 mostly Beginner with an occasional Medium
+# slip; 0.8 was Beginner basically every time). At stars<=3, plain
+# construction already produces a reasonable difficulty spread on its
+# own, so this leaves that path untouched.
+#
+# This is a blunt, "if you asked for a lot of stars you probably want it
+# actually solvable" default, not a hard rule -- if you specifically want
+# a hard/Expert 4+-star puzzle, just edit MONO_EASY_SMALL_REGION_FRAC
+# below (0.0 disables the bias entirely, matching the old behaviour).
+MONO_HIGH_STAR_THRESHOLD = 3
+MONO_EASY_SMALL_REGION_FRAC = 0.7
+
+
 def _build_mono(args, n, output_rows):
-    gen = SolutionFirstGenerator(n, stars_per_unit=args.stars, size_variation=args.size_variation)
+    small_region_frac = (
+        MONO_EASY_SMALL_REGION_FRAC if args.stars > MONO_HIGH_STAR_THRESHOLD else 0.0
+    )
+    gen = SolutionFirstGenerator(
+        n, stars_per_unit=args.stars, size_variation=args.size_variation,
+        small_region_frac=small_region_frac,
+    )
     return MonoComparator(gen, n, output_rows)
 
 

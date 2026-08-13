@@ -32,10 +32,13 @@ from solution_first_core import (
 class SolutionFirstGenerator(Generator):
     """Solution-first generator for unique-solution single-board puzzles."""
 
-    def __init__(self, n, stars_per_unit=1, size_variation=0.0):
+    def __init__(self, n, stars_per_unit=1, size_variation=0.0,
+                 small_region_frac=0.0, small_region_weight=0.02):
         super().__init__(n)
         self.stars_per_unit = stars_per_unit
         self.size_variation = size_variation
+        self.small_region_frac = small_region_frac
+        self.small_region_weight = small_region_weight
 
     def _try_generate(self):
         n = self.n
@@ -45,7 +48,9 @@ class SolutionFirstGenerator(Generator):
         if star_cells is None:
             return None
 
-        result = seed_and_grow(star_cells, n, stars_per_unit, self.size_variation)
+        result = seed_and_grow(star_cells, n, stars_per_unit, self.size_variation,
+                                small_region_frac=self.small_region_frac,
+                                small_region_weight=self.small_region_weight)
         if result is None:
             return None
         grid, star_groups = result
@@ -56,6 +61,11 @@ class SolutionFirstGenerator(Generator):
 
         for _ in range(MAX_REPAIR_STEPS):
             solutions = get_solutions_capped(grid, n, cap=2, stars_per_unit=stars_per_unit)
+            if solutions is None:
+                # Search timed out inconclusively -- see get_solutions_capped's
+                # docstring. NOT the same as "confirmed unique"; treat this
+                # attempt as a loss and let the outer retry loop start fresh.
+                return None
 
             if len(solutions) <= 1:
                 # Invariant: the intended solution must always remain valid
