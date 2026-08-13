@@ -519,6 +519,7 @@ export function applyInput(GameClass) {
     const catObj = (id) => this.categories.find(c => c.id === id);
     const catDesc = (id) => catObj(id)?.desc ?? '';
     const catStars = (id) => catObj(id)?.stars ?? 1;
+    const catSize = (id) => catObj(id)?.size ?? null;
 
     const getStructuredCategories = () => {
       const groups = [];
@@ -597,24 +598,28 @@ export function applyInput(GameClass) {
       body.appendChild(grid);
     };
 
-    const renderDrill = (group) => {
+    // Renders the flat list of book buttons for `cats` -- either an entire
+    // group, or one size-bucket within a group -- with a back button
+    // labelled `backLabel` that invokes `onBack`. Shared by renderDrill
+    // (groups with one size, or none at all) and renderSizePicker's
+    // per-size drill-down, so both land on identical-looking book lists.
+    const renderCatList = (cats, headerTitle, headerDesc, backLabel, onBack) => {
       const activeCatId = catSelect.value;
-      const meta = groupMeta(group.group);
       body.innerHTML = '';
 
       const back = document.createElement('button');
       back.className = 'bp-back-btn';
-      back.textContent = '← All books';
-      back.onclick = renderGroups;
+      back.textContent = backLabel;
+      back.onclick = onBack;
 
       const title = document.createElement('div');
       title.className = 'bp-drill-title';
-      title.textContent = group.group;
+      title.textContent = headerTitle;
 
       const list = document.createElement('div');
       list.className = 'bp-diff-list';
 
-      group.cats.forEach(cat => {
+      cats.forEach(cat => {
         const btn = document.createElement('button');
         const isSelected = cat.id === activeCatId;
         const desc = catDesc(cat.id);
@@ -633,13 +638,80 @@ export function applyInput(GameClass) {
 
       body.appendChild(back);
       body.appendChild(title);
+      if (headerDesc) {
+        const groupDesc = document.createElement('p');
+        groupDesc.className = 'bp-group-desc-header';
+        groupDesc.textContent = headerDesc;
+        body.appendChild(groupDesc);
+      }
+      body.appendChild(list);
+    };
+
+    // A group whose categories span more than one board size (e.g. One
+    // Star's 18 books across 8x8/6x6/12x12) gets an extra "choose a size"
+    // screen here before the book list, so it doesn't dump everything into
+    // one long flat list. Categories with no `size` set at all (or a group
+    // where every category shares the same size) fall straight through to
+    // the plain flat list -- unchanged from before this existed.
+    const renderSizePicker = (group, sizes, hasOther) => {
+      const activeCatId = catSelect.value;
+      const meta = groupMeta(group.group);
+      body.innerHTML = '';
+
+      const back = document.createElement('button');
+      back.className = 'bp-back-btn';
+      back.textContent = '← All books';
+      back.onclick = renderGroups;
+
+      const title = document.createElement('div');
+      title.className = 'bp-drill-title';
+      title.textContent = group.group;
+
+      const grid = document.createElement('div');
+      grid.className = 'bp-groups';
+
+      const catsForSize = (size) => size
+        ? group.cats.filter(c => catSize(c.id) === size)
+        : group.cats.filter(c => !catSize(c.id));
+
+      const addSizeCard = (size, label) => {
+        const cats = catsForSize(size);
+        const isActive = cats.some(c => c.id === activeCatId);
+        const sub = `${cats.length} book${cats.length === 1 ? '' : 's'}`;
+        const card = makeGroupCard(label, meta.icon, sub, '', isActive, '');
+        card.onclick = () => renderCatList(
+          cats, `${group.group} · ${label}`, '', `← ${group.group}`,
+          () => renderSizePicker(group, sizes, hasOther)
+        );
+        grid.appendChild(card);
+      };
+
+      sizes.forEach(size => addSizeCard(size, size));
+      if (hasOther) addSizeCard(null, 'Other');
+
+      body.appendChild(back);
+      body.appendChild(title);
       if (meta.desc) {
         const groupDesc = document.createElement('p');
         groupDesc.className = 'bp-group-desc-header';
         groupDesc.textContent = meta.desc;
         body.appendChild(groupDesc);
       }
-      body.appendChild(list);
+      body.appendChild(grid);
+    };
+
+    const renderDrill = (group) => {
+      const meta = groupMeta(group.group);
+      const sizes = [...new Set(group.cats.map(c => catSize(c.id)).filter(Boolean))]
+        .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+      const hasOther = sizes.length > 0 && group.cats.some(c => !catSize(c.id));
+
+      if (sizes.length < 2) {
+        renderCatList(group.cats, group.group, meta.desc, '← All books', renderGroups);
+        return;
+      }
+
+      renderSizePicker(group, sizes, hasOther);
     };
 
     const selectCategory = (catId) => { closeModal(); this.selectCategory(catId); };
