@@ -462,7 +462,7 @@ export function applySingleStarRules(PuzzleSolver) {
     candidates.sort((a, b) => (a.shared[0] ?? 0) - (b.shared[0] ?? 0));
     return candidates.map(({ shared, onlyA, onlyB, boardA, boardB }) => ({
       boardIdx: undefined,
-      description: `These two regions (${this._describeBoards([boardA, boardB])}) overlap. Any star placed in a non-shared cell would see all the non-shared cells of the other region, making that region unsolvable. Both stars must land in the shared cells.`,
+      description: `These two regions (${this._describeBoards([boardA, boardB])}) overlap. A star outside the shared cells would leave the other region unsolvable, so both stars must land there.`,
       // A shared cell is a candidate for BOTH regions at once, so it's
       // relevant on both boards, not just one.
       highlights: shared
@@ -541,7 +541,7 @@ export function applySingleStarRules(PuzzleSolver) {
     candidates.sort((a, b) => a.testIdx - b.testIdx);
     return candidates.map(({ testIdx, broken, boardIdx }) => ({
       boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
-      description: `The blue cells must contain a star. This is impossible if the circled cell holds a star.`,
+      description: `The blue cells must contain a star — impossible if the circled cell holds one.`,
       highlights: broken.indices.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
       marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }]
     }));
@@ -594,7 +594,7 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (this.isMainDiagonalSymmetric) {
       const desc = this.mainDiagInternal && !this.mainDiagCrossBoard
-        ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution is symmetric.`
+        ? `Each board has diagonal symmetry across the main diagonal (↘).`
         : `The solution is symmetric across the main diagonal (↘).`;
       const hint = this._hintSymmetryFill(i => (i % n) * n + Math.floor(i / n), desc);
       if (hint) results.push(hint);
@@ -602,7 +602,7 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (this.isAntiDiagonalSymmetric) {
       const desc = this.antiDiagInternal && !this.antiDiagCrossBoard
-        ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution is symmetric.`
+        ? `Each board has diagonal symmetry across the anti-diagonal (↙).`
         : `The solution is symmetric across the anti-diagonal (↙).`;
       const hint = this._hintSymmetryFill(
         i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
@@ -623,30 +623,30 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (this.internalRotation180 || this.crossboardRotation180) {
       const description = this.internalRotation180 && this.crossboardRotation180
-        ? `Each board has 180° rotational symmetry, and every board is also paired with another board that's its 180° rotation. Any cell that "sees" its own rotation cannot be a star.`
+        ? `Each board has 180° symmetry, both on its own and paired with another board. A cell that "sees" its rotation can't be a star.`
         : this.internalRotation180
-        ? `Each board independently has 180° rotational symmetry. Any cell that "sees" its own rotation cannot be a star.`
-        : `Every board is paired with another board that's its 180° rotation. Any cell that "sees" its counterpart on the paired board cannot be a star.`;
+        ? `Each board has 180° rotational symmetry. A cell that "sees" its own rotation can't be a star.`
+        : `Each board is paired with its 180° rotation. A cell that "sees" its counterpart can't be a star.`;
       const hint = this._hintSymmetry(i => (n * n - 1) - i, description);
       if (hint) results.push(hint);
     }
 
     if (this.isMainDiagonalSymmetric) {
       const description = this.mainDiagCrossBoard && this.mainDiagInternal
-        ? `Every board is paired with another board that's its reflection across the main diagonal (↘), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+        ? `Each board is paired with its reflection across the main diagonal (↘), and also has that symmetry internally. A cell that "sees" its own reflection can't be a star.`
         : this.mainDiagInternal
-        ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-        : `Every board is paired with another board that's its reflection across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`;
+        ? `Each board has diagonal symmetry across the main diagonal (↘). A cell that "sees" its own reflection can't be a star.`
+        : `Each board is paired with its reflection across the main diagonal (↘). A cell that "sees" its own reflection can't be a star.`;
       const hint = this._hintSymmetry(i => (i % n) * n + Math.floor(i / n), description);
       if (hint) results.push(hint);
     }
 
     if (this.isAntiDiagonalSymmetric) {
       const description = this.antiDiagCrossBoard && this.antiDiagInternal
-        ? `Every board is paired with another board that's its reflection across the anti-diagonal (↙), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
+        ? `Each board is paired with its reflection across the anti-diagonal (↙), and also has that symmetry internally. A cell that "sees" its own reflection can't be a star.`
         : this.antiDiagInternal
-        ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`
-        : `Every board is paired with another board that's its reflection across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection cannot be a star.`;
+        ? `Each board has diagonal symmetry across the anti-diagonal (↙). A cell that "sees" its own reflection can't be a star.`
+        : `Each board is paired with its reflection across the anti-diagonal (↙). A cell that "sees" its own reflection can't be a star.`;
       const hint = this._hintSymmetry(
         i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
         description
@@ -658,10 +658,10 @@ export function applySingleStarRules(PuzzleSolver) {
     const tryDiagParity = (diagIndices, dirLabel, crossBoard, internal) => {
       const parity = n % 2 === 0 ? 'even' : 'odd';
       const reason = crossBoard && internal
-        ? `Every board is paired with another board that's its ${dirLabel} reflection, and each also has that symmetry internally`
+        ? `Each board pairs with its ${dirLabel} reflection, and also has that symmetry internally`
         : internal
         ? `Each board independently has ${dirLabel} diagonal symmetry`
-        : `Every board is paired with another board that's its ${dirLabel} reflection`;
+        : `Each board is paired with its ${dirLabel} reflection`;
 
       const diagStars  = diagIndices.filter(i => this.vState(i) === CELL.STAR).length;
       const diagEmpties = diagIndices.filter(i => this.vState(i) === CELL.NONE);
@@ -671,7 +671,7 @@ export function applySingleStarRules(PuzzleSolver) {
         const idx   = diagEmpties[0];
         const color = needStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET;
         results.push({
-          description: `${reason}, so by parity the diagonal must have an ${parity} number of stars — this cell must be a ${needStar ? 'star' : 'dot'}.`,
+          description: `${reason}, so by parity the diagonal needs an ${parity} number of stars — this cell is a ${needStar ? 'star' : 'dot'}.`,
           highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
             .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
           marks: [{ idx, color }],
@@ -689,7 +689,7 @@ export function applySingleStarRules(PuzzleSolver) {
         }));
         if (!allSeeEachOther) return;
         results.push({
-          description: `${reason}, so by parity the diagonal must have an ${parity} number of stars — the remaining diagonal cells must all be dots.`,
+          description: `${reason}, so by parity the diagonal needs an ${parity} number of stars — the rest of the diagonal is dots.`,
           highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
             .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
           marks: diagEmpties.map(i => ({ idx: i, color: HINT_COLOR.TARGET })),

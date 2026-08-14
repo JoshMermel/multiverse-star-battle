@@ -483,8 +483,9 @@ export class PuzzleSolver {
     const sourcePhrase = sourceRegs.length === 1 ? "One region" : `A group of ${sourceRegs.length} regions`;
     const targetPhrase = targetRegs.length === 1 ? "another region" : `a group of ${targetRegs.length} other regions`;
     const boardNote = crossBoard ? ` (${this._describeBoards([sourceBoardIdx])} vs. ${this._describeBoards([targetBoardIdx])})` : '';
+    const restIs = targetRegs.length === 1 ? "that region is" : "those regions are";
     const description = `${sourcePhrase} needs exactly as many stars as ${targetPhrase}${boardNote}, and all of its candidate cells `
-      + `fall inside theirs too -- so the rest of ${targetRegs.length === 1 ? "that region" : "those regions"} must be dots.`;
+      + `fall inside theirs too -- so the rest of ${restIs} dots.`;
 
     return {
       boardIdx: crossBoard ? undefined : sourceBoardIdx,

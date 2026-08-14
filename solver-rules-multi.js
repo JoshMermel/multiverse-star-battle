@@ -58,28 +58,28 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     if (this.internalRotation180 || this.crossboardRotation180) {
       const description = this.internalRotation180 && this.crossboardRotation180
-        ? `Each board has 180° rotational symmetry, and every board is also paired with another board that's its 180° rotation. Any cell that "sees" its own rotation (in a shared row/column, or a shared region with no room for both) cannot be a star.`
+        ? `Each board has 180° symmetry, both on its own and paired with another board. A cell that "sees" its own rotation (shares a row/column, or a region with no room for both) can't be a star.`
         : this.internalRotation180
-        ? `Each board independently has 180° rotational symmetry. Any cell that "sees" its own rotation (in a shared row/column, or a shared region with no room for both) cannot be a star.`
-        : `Every board is paired with another board that's its 180° rotation. Any cell that "sees" its counterpart (in a shared row/column, or a shared region with no room for both) cannot be a star.`;
+        ? `Each board has 180° rotational symmetry. A cell that "sees" its own rotation (shares a row/column, or a region with no room for both) can't be a star.`
+        : `Each board is paired with its 180° rotation. A cell that "sees" its counterpart (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (n * n - 1) - i, description);
     }
 
     if (this.isMainDiagonalSymmetric) {
       const description = this.mainDiagCrossBoard && this.mainDiagInternal
-        ? `Every board is paired with another board that's its reflection across the main diagonal (↘), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`
+        ? `Each board is paired with its reflection across the main diagonal (↘), and also has that symmetry internally. A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
         : this.mainDiagInternal
-        ? `Each board independently has diagonal symmetry across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`
-        : `Every board is paired with another board that's its reflection across the main diagonal (↘). The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`;
+        ? `Each board has diagonal symmetry across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
+        : `Each board is paired with its reflection across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (i % n) * n + Math.floor(i / n), description);
     }
 
     if (this.isAntiDiagonalSymmetric) {
       const description = this.antiDiagCrossBoard && this.antiDiagInternal
-        ? `Every board is paired with another board that's its reflection across the anti-diagonal (↙), and each board also has that symmetry internally. The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`
+        ? `Each board is paired with its reflection across the anti-diagonal (↙), and also has that symmetry internally. A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
         : this.antiDiagInternal
-        ? `Each board independently has diagonal symmetry across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`
-        : `Every board is paired with another board that's its reflection across the anti-diagonal (↙). The solution must be symmetric, so any cell that "sees" its own reflection (in a shared row/column, or a shared region with no room for both) cannot be a star.`;
+        ? `Each board has diagonal symmetry across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
+        : `Each board is paired with its reflection across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)), description);
     }
 
@@ -94,10 +94,10 @@ export function applyMultiStarRules(PuzzleSolver) {
     const tryDiagParity = (diagIndices, dirLabel, crossBoard, internal) => {
       const parity = totalStars % 2 === 0 ? 'even' : 'odd';
       const reason = crossBoard && internal
-        ? `Every board is paired with another board that's its ${dirLabel} reflection, and each also has that symmetry internally`
+        ? `Each board pairs with its ${dirLabel} reflection, and also has that symmetry internally`
         : internal
         ? `Each board independently has ${dirLabel} diagonal symmetry`
-        : `Every board is paired with another board that's its ${dirLabel} reflection`;
+        : `Each board is paired with its ${dirLabel} reflection`;
 
       const diagStars = diagIndices.filter(i => this.vState(i) === CELL.STAR).length;
       const diagEmpties = diagIndices.filter(i => this.vState(i) === CELL.NONE);
@@ -107,7 +107,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         const idx = diagEmpties[0];
         const color = needStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET;
         results.push({
-          description: `${reason}, so by parity the diagonal must have an ${parity} number of stars — this cell must be a ${needStar ? 'star' : 'dot'}.`,
+          description: `${reason}, so by parity the diagonal needs an ${parity} number of stars — this cell is a ${needStar ? 'star' : 'dot'}.`,
           highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
             .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
           marks: [{ idx, color }],
@@ -120,7 +120,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         ));
         if (!allIncompatible) return;
         results.push({
-          description: `${reason}, so by parity the diagonal must have an ${parity} number of stars — the remaining diagonal cells must all be dots.`,
+          description: `${reason}, so by parity the diagonal needs an ${parity} number of stars — the rest of the diagonal is dots.`,
           highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
             .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
           marks: diagEmpties.map(i => ({ idx: i, color: HINT_COLOR.TARGET })),
@@ -228,7 +228,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       if (forcedStars.length > 0) {
         hints.push({
-          description: `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it must be a star.`,
+          description: `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it's a star.`,
           highlights: unit.indices
             .filter(i => this.vState(i) === CELL.NONE && !forcedStars.includes(i))
             .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
@@ -242,7 +242,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       // go there.
       if (forcedDots.length > 0) {
         hints.push({
-          description: `Every valid way to place this ${unitType}'s ${starsWord}${caveat} is incompatible with a star at the marked cell(s), so they must be dots.`,
+          description: `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cell(s), so they're dots.`,
           highlights: unit.indices
             .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
             .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
@@ -687,8 +687,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates.map(({ boardIdx, lineKind, lineIdx, side, groupCells, forcedCells, lineCount, restCount }) => {
       const lineWord = lineKind === 'row' ? 'row' : 'column';
       const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
-      const pronoun = forcedCells.length === 1 ? 'it' : 'they';
-      const starPhrase = forcedCells.length === 1 ? 'a star' : 'stars';
+      const itsAStar = forcedCells.length === 1 ? "it's a star" : "they're stars";
       const forcedSet = new Set(forcedCells);
 
       // Lead with the concrete fact the subset-sum match establishes (see
@@ -706,7 +705,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       return {
         boardIdx,
-        description: `This region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} in the amber-outlined ${lineWord}${restClause}. Every way to do that includes the marked ${cellWord}, so ${pronoun} must be ${starPhrase}.`,
+        description: `This region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} in the amber-outlined ${lineWord}${restClause}. Every way to do that includes the marked ${cellWord}, so ${itsAStar}.`,
         highlights: groupCells
           .filter(i => !forcedSet.has(i))
           .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
@@ -896,8 +895,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates.map(({ unit, side, groupCells, forcedCells, lineKind, lineIdx, lineCount, restCount }) => {
       const lineWord = lineKind === 'row' ? 'row' : 'column';
       const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
-      const pronoun = forcedCells.length === 1 ? 'it' : 'they';
-      const starPhrase = forcedCells.length === 1 ? 'a star' : 'stars';
+      const itsAStar = forcedCells.length === 1 ? "it's a star" : "they're stars";
       const forcedSet = new Set(forcedCells);
       const restClause = side === 'outside'
         ? `, leaving exactly ${restCount} star${restCount === 1 ? '' : 's'} for the rest of the region`
@@ -907,7 +905,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         boardIdx: unit.boardIdx,
         description: `Cross-board: this region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} `
           + `in the amber-outlined ${lineWord}${restClause}, combined with a region on another board to cover `
-          + `the line's whole need. Every way to do that includes the marked ${cellWord}, so ${pronoun} must be ${starPhrase}.`,
+          + `the line's whole need. Every way to do that includes the marked ${cellWord}, so ${itsAStar}.`,
         highlights: groupCells
           .filter(i => !forcedSet.has(i))
           .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
@@ -959,7 +957,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     return {
       boardIdx: bIdx,
-      description: `The blue region(s) still need exactly ${starsPhrase} in total — exactly what's left for ${unitsPhrase} — so all of it must land inside, and the rest of those regions must be dots.`,
+      description: `The blue region(s) still need exactly ${starsPhrase} in total — exactly what's left for ${unitsPhrase} — so all of it lands inside, and the rest of those regions are dots.`,
       highlights: touchingRegs.flatMap(({ region }) =>
         region.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
       ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
@@ -999,11 +997,13 @@ export function applyMultiStarRules(PuzzleSolver) {
     const targetSet = new Set(targets);
     const N = windowIndices.length;
     const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
+    const needVerb = N === 1 ? 'needs' : 'need';
+    const isVerb = N === 1 ? 'is' : 'are';
     const starsPhrase = requiredCount === 1 ? "1 star" : `${requiredCount} stars`;
 
     return {
       boardIdx: bIdx,
-      description: `${unitsPhrase[0].toUpperCase()}${unitsPhrase.slice(1)} still need exactly ${starsPhrase} in total, which is exactly what's left in the blue region(s) — so the rest of ${unitsPhrase} must be dots.`,
+      description: `${unitsPhrase[0].toUpperCase()}${unitsPhrase.slice(1)} still ${needVerb} exactly ${starsPhrase} in total, which is exactly what's left in the blue region(s) — so the rest of ${unitsPhrase} ${isVerb} dots.`,
       highlights: pinnedRegs.flatMap(({ region }) =>
         region.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
       ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
@@ -1128,7 +1128,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     const caveat = level === 'intermediate' ? ' (using only this board\'s regions)' : ' (potentially combining both boards\' regions)';
     return candidates.map(({ unit, other, targets }) => ({
-      description: `Every valid way to place this ${this._unitKind(unit)}'s remaining star(s)${caveat} completely fills up this ${this._unitKind(other)} too, so the rest of that ${this._unitKind(other)} must be dots.`,
+      description: `Every way to place this ${this._unitKind(unit)}'s remaining star(s)${caveat} completely fills up this ${this._unitKind(other)} too, so the rest of that ${this._unitKind(other)} is dots.`,
       highlights: unit.indices
         .filter(i => this.vState(i) === CELL.NONE)
         .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
@@ -1620,8 +1620,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       const K = tiling.tiles.length;
       const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, matchingTiles, targetList);
       const dotText = matchingTiles.length === 1
-        ? "Both of this tile's empty cells touch the marked cell(s), so they must be dots."
-        : `In each of these ${matchingTiles.length} tiles, both empty cells touch the marked cell(s) next to it, so those cells must be dots.`;
+        ? "Both of this tile's empty cells touch the marked cell(s), so they're dots."
+        : `In each of these ${matchingTiles.length} tiles, both empty cells touch the marked cell(s) next to it, so those cells are dots.`;
 
       hints.push({
         description: `This ${this._axisPairLabel(tiling.axis)} needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. ${dotText}`,

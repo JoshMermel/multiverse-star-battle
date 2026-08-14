@@ -231,7 +231,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
     candidates.sort((a, b) => a - b);
     return candidates.map(testIdx => ({
       boardIdx: undefined,
-      description: `Placing a star here would make the puzzle unsolvable. Seeing why requires some lookahead.`,
+      description: `Placing a star here would make the puzzle unsolvable (takes some lookahead to see why).`,
       highlights: [],
       marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }]
     }));
