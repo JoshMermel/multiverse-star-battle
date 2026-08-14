@@ -56,6 +56,10 @@
 
   /* Cross-board hover sync — desktop only */
   --highlight-hover-sync-bg:  rgba(0, 180, 160, 0.13);
+  /* Same hue as hover-sync above, lower alpha so the full row/column band
+     (setting-row-col-highlight) reads as a softer secondary highlight
+     rather than competing with the cursor cell itself. */
+  --highlight-hover-line-bg:  rgba(0, 180, 160, 0.11);
 
   /* "Tiles" rule family (multi-star-rules-experiment): solid box-outline
      colors for the 2x2 tile overlay -- see TILE_OUTLINE_COLORS in
@@ -124,6 +128,9 @@
 
   /* Cross-board hover sync — desktop only */
   --highlight-hover-sync-bg:  rgba(0, 210, 190, 0.18);
+  /* Same hue as hover-sync above, lower alpha — see the light-theme block
+     above for why. */
+  --highlight-hover-line-bg:  rgba(0, 210, 190, 0.09);
 
   /* "Tiles" rule family — brightened to match this block's higher-contrast-
      on-dark-backgrounds treatment. */
@@ -434,8 +441,14 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Cross-board hover sync — only applied via JS on pointer:fine (desktop) devices */
 .cell-hover-sync { background-color: var(--highlight-hover-sync-bg); }
 
-/* Drag takes priority over hover sync when both classes are present */
+/* Cursor row/column band across all boards — opt-in, see
+   setting-row-col-highlight in Settings and _setHoverSync in renderer.js.
+   Never applied to the cursor cell itself (that's .cell-hover-sync above). */
+.cell-hover-line { background-color: var(--highlight-hover-line-bg); }
+
+/* Drag takes priority over hover sync/row-col-line when both are present */
 .cell-drag-highlight.cell-hover-sync { background-color: var(--highlight-drag-bg); }
+.cell-drag-highlight.cell-hover-line { background-color: var(--highlight-drag-bg); }
 
 /* 5b. AXIS LABELS */
 

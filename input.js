@@ -116,6 +116,10 @@ export function applyInput(GameClass) {
         }
       },
       { key: 'setting-auto-fill-dots', applyOnInit: false, onChange: null },
+      // No apply step, same as auto-fill-dots above -- _setHoverSync reads
+      // this straight off localStorage on every hover, so there's nothing
+      // to (re-)apply when the toggle itself changes.
+      { key: 'setting-row-col-highlight', applyOnInit: false, onChange: null },
       { key: 'setting-show-timer', applyOnInit: true, onChange: (self, v) => self._applyShowTimer(v) },
       // applyOnInit: false -- the at-load register/unregister decision is
       // already made by index.html's inline bootstrap script, which runs

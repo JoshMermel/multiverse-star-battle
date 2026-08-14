@@ -233,10 +233,28 @@ export function applyRenderer(GameClass) {
     });
   };
 
-  // Sync cell hover state across boards.
+  // Sync cell hover state across boards. When "setting-row-col-highlight"
+  // is on, also bands the cursor's full row and column across every board
+  // — read live off localStorage (no separate apply/re-render step needed,
+  // same pattern as auto-fill-dots) so toggling it in Settings takes effect
+  // on the very next hover, mid-session.
   p._setHoverSync = function (idx, on) {
     this._getCellsByIndex(idx).forEach(cell => {
       cell.classList.toggle('cell-hover-sync', on);
+    });
+
+    if (localStorage.getItem('setting-row-col-highlight') !== 'true') return;
+    const n = this.n;
+    const row = Math.floor(idx / n);
+    const col = idx % n;
+    const lineIndices = new Set();
+    for (let c = 0; c < n; c++) lineIndices.add(row * n + c);
+    for (let r = 0; r < n; r++) lineIndices.add(r * n + col);
+    lineIndices.delete(idx); // the cursor cell already has its own highlight
+    lineIndices.forEach(i => {
+      this._getCellsByIndex(i).forEach(cell => {
+        cell.classList.toggle('cell-hover-line', on);
+      });
     });
   };
 
