@@ -354,7 +354,20 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 /* Cell state overlays. No !important needed — .cell sets background-color: white
-   at the same specificity, and these classes appear later in the cascade. */
+   at the same specificity, and these classes appear later in the cascade.
+
+   Priority (lowest to highest -- these are all plain background-color
+   rules at equal specificity, so for a cell carrying more than one class,
+   whichever is defined LAST here wins): cursor row/column band < error <
+   hint highlights < drag < the cursor's own cell. The row/column band
+   (.cell-hover-line, below) is opt-in decoration (setting-row-col-
+   highlight) that should never bury more important information -- it's
+   defined first/lowest specifically so a hint or error underneath it
+   still reads clearly. The cursor's own cell (.cell-hover-sync) is the
+   opposite: the one thing that should always stay visible regardless of
+   what else is going on in that cell, so it's defined last/highest. */
+.cell-hover-line { background-color: var(--highlight-hover-line-bg); }
+
 .error-cell          { background-color: var(--highlight-error-bg); }
 
 .error-cell .star { color: var(--highlight-error-star); }
@@ -383,6 +396,12 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Drag highlight uses background-color only, so hint-target-yellow's
    background-image (the circle) composites on top of it naturally. */
 .cell-drag-highlight { background-color: var(--highlight-drag-bg); }
+
+/* Cross-board hover sync — only applied via JS on pointer:fine (desktop)
+   devices. Defined last/highest of this group (see the priority comment
+   above .cell-hover-line) so the cursor's own cell reads clearly even
+   over a hint or error highlight. */
+.cell-hover-sync { background-color: var(--highlight-hover-sync-bg); }
 
 /* "Tiles" rule family (multi-star-rules-experiment): a colored box
    outlining the 2x2 area a "tile" hint is talking about -- see
@@ -437,14 +456,6 @@ input[type="number"]::-webkit-inner-spin-button {
   z-index: 6; /* above .dot's z-index: 5, same as .tile-outline */
 }
 .line-highlight-amber { border-color: var(--line-highlight-amber); }
-
-/* Cross-board hover sync — only applied via JS on pointer:fine (desktop) devices */
-.cell-hover-sync { background-color: var(--highlight-hover-sync-bg); }
-
-/* Cursor row/column band across all boards — opt-in, see
-   setting-row-col-highlight in Settings and _setHoverSync in renderer.js.
-   Never applied to the cursor cell itself (that's .cell-hover-sync above). */
-.cell-hover-line { background-color: var(--highlight-hover-line-bg); }
 
 /* Drag takes priority over hover sync/row-col-line when both are present */
 .cell-drag-highlight.cell-hover-sync { background-color: var(--highlight-drag-bg); }
