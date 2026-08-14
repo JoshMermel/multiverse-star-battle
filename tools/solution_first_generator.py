@@ -33,12 +33,14 @@ class SolutionFirstGenerator(Generator):
     """Solution-first generator for unique-solution single-board puzzles."""
 
     def __init__(self, n, stars_per_unit=1, size_variation=0.0,
-                 small_region_frac=0.0, small_region_weight=0.02):
+                 small_region_frac=0.0, small_region_weight=0.02,
+                 small_region_weight_max=None):
         super().__init__(n)
         self.stars_per_unit = stars_per_unit
         self.size_variation = size_variation
         self.small_region_frac = small_region_frac
         self.small_region_weight = small_region_weight
+        self.small_region_weight_max = small_region_weight_max
 
     def _try_generate(self):
         n = self.n
@@ -50,7 +52,8 @@ class SolutionFirstGenerator(Generator):
 
         result = seed_and_grow(star_cells, n, stars_per_unit, self.size_variation,
                                 small_region_frac=self.small_region_frac,
-                                small_region_weight=self.small_region_weight)
+                                small_region_weight=self.small_region_weight,
+                                small_region_weight_max=self.small_region_weight_max)
         if result is None:
             return None
         grid, star_groups = result

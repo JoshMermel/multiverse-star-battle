@@ -114,6 +114,23 @@ def _build_letter_pair(args, n, output_rows):
 MONO_HIGH_STAR_THRESHOLD = 3
 MONO_EASY_SMALL_REGION_FRAC = 0.7
 
+# Every "small" region used to share this exact weight, so they all
+# finished at roughly the same tiny size -- every easy deduction was
+# available in the first few seconds and nothing else surfaced later.
+# Sampling each one's weight from [MIN, MAX] instead spreads them out:
+# some stay pinned near MIN (still resolve immediately), others grow
+# enough that they only open up once a dot inferred elsewhere narrows
+# their candidates -- see small_region_weight_max in seed_and_grow.
+#
+# MAX chosen from a sweep at N=17/stars=4, count=20/config (see
+# region_grow_test/sweep.py in scratch): round-0 "region shape alone
+# forces a star" count (the hintUnitPlacementForced/
+# rule_unit_placement_forced_cond deduction, weak level, on the
+# untouched board) dropped from a mean of 29.0 at the old flat 0.02 to
+# 16.0 at MAX=0.10, with Beginner-tier yield down from 85% to 65%.
+MONO_EASY_SMALL_REGION_WEIGHT_MIN = 0.02
+MONO_EASY_SMALL_REGION_WEIGHT_MAX = 0.10
+
 
 def _build_mono(args, n, output_rows):
     small_region_frac = (
@@ -122,6 +139,8 @@ def _build_mono(args, n, output_rows):
     gen = SolutionFirstGenerator(
         n, stars_per_unit=args.stars, size_variation=args.size_variation,
         small_region_frac=small_region_frac,
+        small_region_weight=MONO_EASY_SMALL_REGION_WEIGHT_MIN,
+        small_region_weight_max=MONO_EASY_SMALL_REGION_WEIGHT_MAX,
     )
     return MonoComparator(gen, n, output_rows)
 

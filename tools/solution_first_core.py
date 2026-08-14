@@ -81,7 +81,8 @@ def stars_to_solution_string(star_cells_set, n):
 
 
 def seed_and_grow(star_cells, n, stars_per_unit=1, size_variation=0.0,
-                   small_region_frac=0.0, small_region_weight=0.02):
+                   small_region_frac=0.0, small_region_weight=0.02,
+                   small_region_weight_max=None):
     """
     Grows an n×n board from `star_cells` (a flat list of n*stars_per_unit
     cell indices) into n contiguous regions, each containing exactly
@@ -128,6 +129,19 @@ def seed_and_grow(star_cells, n, stars_per_unit=1, size_variation=0.0,
     a solver little to grab onto early. 0.0 (default) leaves every group
     at equal weight, matching the old unbiased behaviour.
 
+    small_region_weight_max: optional. When set (> small_region_weight),
+    each small group gets its own weight drawn uniformly from
+    [small_region_weight, small_region_weight_max] instead of every small
+    group sharing exactly small_region_weight. A single shared weight
+    means every "small" region finishes at roughly the same (tiny) size,
+    so a puzzle either has a wall of trivially-resolvable regions at the
+    very start or none at all -- graded weights spread those regions out:
+    some stay pinned near-minimal (still resolve immediately), others grow
+    enough that they only become solvable once a dot inferred elsewhere
+    narrows their candidates down, so easy deductions keep surfacing
+    through the solve instead of front-loading them all in the first few
+    seconds. None (default) keeps the old single-weight behaviour.
+
     Returns (grid, star_groups) or None on failure (including: this
     particular grouping couldn't all be connected without running out of
     board -- callers should just retry with a fresh star placement).
@@ -160,7 +174,8 @@ def seed_and_grow(star_cells, n, stars_per_unit=1, size_variation=0.0,
     if small_region_frac > 0:
         n_small = round(len(groups) * small_region_frac)
         small_gids = set(random.sample(range(len(groups)), n_small))
-        weights = {gid: (small_region_weight if gid in small_gids else 1.0)
+        hi = small_region_weight_max if small_region_weight_max is not None else small_region_weight
+        weights = {gid: (random.uniform(small_region_weight, hi) if gid in small_gids else 1.0)
                    for gid in range(len(groups))}
 
     grid = voronoi_flood_fill(grid, n, size_variation=size_variation, weights=weights)
