@@ -376,6 +376,29 @@ class ScorerCore:
 
         return try_from(0)
 
+    def _cached_on_grid(self, p, cache_attr, compute_fn):
+        """
+        Small memoization helper: several expensive computations (unit
+        completion enumeration, tiling scans, region/line guarantee
+        tallies) independently trigger the SAME work when called more than
+        once against an unchanged grid -- e.g. rule_unit_placement_forced_*
+        alone calls _unit_completions_by_level for every unit up to 3 times
+        per level (once per cond), and separate rules (rule_tile_*, the
+        region/line quota-fill family) each ask the same underlying
+        question again. Only one rule can succeed -- and mutate the grid --
+        per round (see ScorerCore.solve), so a cache hit is always safe to
+        reuse for as long as `key` stays keyed on a full grid snapshot
+        rather than tracked mutation call sites.
+        """
+        cache = getattr(p, cache_attr, None)
+        if cache is None:
+            cache = {}
+            setattr(p, cache_attr, cache)
+        key = tuple(p.grid)
+        if key not in cache:
+            cache[key] = compute_fn()
+        return cache[key]
+
     def _unit_completions_by_level(self, p, unit, level, quota=None):
         """
         Python port of solver-core.js's _unitCompletionsByLevel. Returns a
@@ -402,7 +425,24 @@ class ScorerCore:
         Weak and strong always return a single-entry list (uniform shape
         with intermediate), so callers can treat all three levels
         identically.
+
+        Cached per (unit, level, quota) for the current grid: this is the
+        shared low-level primitive behind rule_unit_placement_forced_cond
+        (via _get_placement_forced_combos, called up to 3x per level, once
+        per cond, all asking the exact same question), the region/line
+        guarantee family (_region_line_guarantees_impl,
+        _region_line_partition_guarantees_impl -- each a separate full
+        sweep over the same units at the same level), and
+        rule_unit_completion_satisfies_other_unit -- without this, a
+        single solve round can redo the same expensive enumeration for the
+        same unit many times over, even though each of those callers
+        already caches its OWN top-level result (that only avoids re-
+        asking each OTHER, not the shared enumeration underneath).
         """
+        cache_key = f"_unit_completions_cache_{unit['label']}_{level}_{quota}"
+        return self._cached_on_grid(p, cache_key, lambda: self._unit_completions_by_level_impl(p, unit, level, quota))
+
+    def _unit_completions_by_level_impl(self, p, unit, level, quota):
         if level == 'weak':
             return [self._enumerate_unit_completions(p, unit, strong=False, quota=quota)]
         if level == 'strong':

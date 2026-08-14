@@ -1587,25 +1587,6 @@ class MultiStarRules:
                 results.append([offset] + rest)
         return results
 
-    def _cached_on_grid(self, p, cache_attr, compute_fn):
-        """
-        Small memoization helper: rule_tile_* each independently trigger
-        the same expensive tiling scan when they run in the same round
-        with no state change between them (only one rule can succeed --
-        and mutate the grid -- per round; see ScorerCore.solve). Keyed on
-        a full grid snapshot rather than tracked mutation call sites, so a
-        cache hit is only ever returned for a grid state identical to the
-        one it was computed from.
-        """
-        cache = getattr(p, cache_attr, None)
-        if cache is None:
-            cache = {}
-            setattr(p, cache_attr, cache)
-        key = tuple(p.grid)
-        if key not in cache:
-            cache[key] = compute_fn()
-        return cache[key]
-
     def _confirmed_tiles(self, p):
         return self._cached_on_grid(p, '_confirmed_tiles_cache', lambda: self._confirmed_tiles_impl(p))
 
