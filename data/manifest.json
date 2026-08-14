@@ -1,14 +1,14 @@
 {
   "groups": {
     "__ungrouped__":    { "icon": "📅" },
-    "One Star":         { "icon": "⭐",       "blurb": "One star in each row, column, and region",      "desc": "Puzzles by size and difficulty" },
-    "Two Star":         { "icon": "⭐⭐",     "blurb": "Two stars in each row, column, and region",     "desc": "Puzzles by size and difficulty" },
-    "Three Star":       { "icon": "⭐⭐⭐",   "blurb": "Three stars in each row, column, and region",   "desc": "Puzzles by size and difficulty" },
-    "Four Star":        { "icon": "⭐⭐⭐⭐", "blurb": "Four stars in each row, column, and region",    "desc": "Puzzles by size and difficulty" },
-    "Symmetry":         { "icon": "🔀",       "blurb": "Puzzles with symmetry"},
+    "One Star":         { "icon": "1️⃣",       "blurb": "One star in each row, column, and region",      "desc": "One star puzzles by size and difficulty" },
+    "Two Star":         { "icon": "2️⃣",     "blurb": "Two stars in each row, column, and region",     "desc": "Two star puzzles by size and difficulty" },
+    "Three Star":       { "icon": "3️⃣",   "blurb": "Three stars in each row, column, and region",   "desc": "Three star puzzles by size and difficulty" },
     "Rectangles":       { "icon": "⊞",        "blurb": "Rectangles and squares"},
     "Playground":       { "icon": "🛝",       "blurb": "Other puzzle ideas"},
     "Curiosities":      { "icon": "🤔",       "blurb": "Interesting to look at, less fun to solve"},
+    "Giants":           { "icon": "🐋",       "blurb": "Huge puzzles with assorted star counts (desktop only)"},
+    "Symmetry":         { "icon": "🔀",       "blurb": "Puzzles with symmetry"},
     "Signoff":          { "icon": "💌",       "blurb": "A puzzle-y message from the creator"},
     "Experimental":     { "icon": "🧪",       "blurb": "Work in progress"}
   },
@@ -42,7 +42,6 @@
     {"id": "three_stars_mono",      "label": "13x13 1-Board",           "group": "Three Star", "stars": 3},
     {"id": "three_stars_trio",      "label": "13x13 3-Boards",          "group": "Three Star", "stars": 3},
     {"id": "14x14_mono",            "label": "14x13 1-Board",           "group": "Three Star", "stars": 3},
-    {"id": "17x17_mono",            "label": "17x17 1-Board",           "group": "Four Star", "stars": 4},
     {"id": "8x8_symmetric",         "label": "Symmetric",               "group": "Symmetry",         "desc": "Each board has rotational, mirror, or translation symmetry", "stars": 1},
     {"id": "symmetric_mono",        "label": "Symmetric 1-board",       "group": "Symmetry",         "desc": "One board with rotational, mirror, or translation symmetry", "stars": 1},
     {"id": "8x8_twin",              "label": "Twin",                    "group": "Symmetry",         "desc": "Both boards are the same, one flipped or rotated", "stars": 1},
@@ -61,12 +60,14 @@
     {"id": "two_star_equal_area",   "label": "9x9 Equal Area",          "group": "Playground",       "desc": "All regions have equal area - extremely hard", "stars": 2},
     {"id": "voronoi",               "label": "Voronoi",                 "group": "Playground",       "desc": "Regions generated like a voronoi diagram, feels different from random 8x8 though", "stars": 1},
     {"id": "void",                  "label": "Void",                    "group": "Curiosities",      "desc": "Puzzles with voids", "stars": 1},
-    {"id": "giants",                "label": "Giants",                  "group": "Curiosities",      "desc": "Too big - desktop only", "stars": 1},
-    {"id": "giant_mono",            "label": "Giant 1-board",           "group": "Curiosities",      "desc": "Too big - desktop only", "stars": 1},
     {"id": "quadruplets",           "label": "Identical Quadruplets",   "group": "Curiosities",      "desc": "Four identical boards with a unique shared solution", "stars": 1},
     {"id": "symmetric_triplets",    "label": "Symmetric Triplets",      "group": "Curiosities",      "desc": "Three identical boards with internal symmetry", "stars": 1},
     {"id": "half_dozen",            "label": "6 Boards",                "group": "Curiosities",      "desc": "Is more better?", "stars": 1},
     {"id": "not_for_humans",        "label": "Not For Humans",          "group": "Curiosities",      "desc": "The absolute hardest puzzles - too hard for human solvers.", "stars": 1},
+    {"id": "giants",                "label": "20x20",                  "group": "Giants", "stars": 1},
+    {"id": "giant_mono",            "label": "20x20 1-board",           "group": "Giants", "stars": 1},
+    {"id": "17x17_mono",            "label": "17x17 1-Board",           "group": "Giants", "stars": 4},
+    {"id": "21x21_mono",            "label": "21x21 1-Board",           "group": "Giants", "stars": 5},
     {"id": "signoff",               "label": "Signoff",                 "group": "Signoff", "stars": 1}
   ]
 }
