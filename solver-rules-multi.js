@@ -1377,23 +1377,9 @@ export function applyMultiStarRules(PuzzleSolver) {
     return results;
   };
 
-  // Small memoization helper: hintTile* each independently trigger the
-  // same expensive tiling scan when they run within the same getHint()
-  // call, since only the FIRST rule to produce hints ever gets returned
-  // and this.game.state never changes mid-call. Keyed on a snapshot of
-  // this.game.state rather than tracked mutation sites, so a cache hit is
-  // only ever returned for a state identical to the one it was computed
-  // from.
-  p._cachedOnState = function (cacheKey, computeFn) {
-    const stateString = this.game.state.join(',');
-    if (!this._stateCache) this._stateCache = {};
-    const bucket = this._stateCache[cacheKey];
-    if (bucket && bucket.stateString === stateString) return bucket.value;
-    const value = computeFn();
-    this._stateCache[cacheKey] = { stateString, value };
-    return value;
-  };
-
+  // Cache key helper for _cachedOnState (solver-core.js) callers that key
+  // on a set of cell indices -- order-independent, so the same group of
+  // cells always produces the same key regardless of how it was assembled.
   p._groupKey = function (indices) {
     return [...indices].sort((a, b) => a - b).join(',');
   };

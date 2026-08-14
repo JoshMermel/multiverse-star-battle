@@ -13,6 +13,53 @@ composite_scorer.py for how they're assembled into CompositeScorer.
 TIER_ORDER = ["Beginner", "Medium", "Hard", "Symmetry", "Expert", "Grandmaster", "UNSOLVED"]
 _TIER_RANK = {tier: i for i, tier in enumerate(TIER_ORDER)}
 
+# _enumerate_unit_completions bails out (returns None, same as "already at
+# quota" -- every caller already treats that as "this unit contributes
+# nothing", the correct behavior for "we didn't check" as much as "we
+# checked and there's nothing") once a unit's completion count would
+# plausibly exceed this. Past that many valid non-touching placements, no
+# single cell is ever common to all of them (or excluded from all of them)
+# -- the "every completion agrees" argument this enumeration exists to
+# support just doesn't fire on unconstrained units that large, no matter
+# how long you search. Set to None to disable the cap entirely (e.g. for
+# an offline scoring run where wall-clock time matters less than never
+# skipping a potential deduction).
+#
+# Gated on an estimate of C(avail, needed) (see _estimate_combos below),
+# NOT a flat ratio of avail/needed -- a flat ratio breaks down badly for
+# small `needed`: a region down to its last star (needed=1) with a dozen
+# empty cells is cheap (C(12,1)=12, no combinatorial blowup at all, since
+# there's nothing to combine) but would trip a naive "avail > 4x needed"
+# check anyway, silently discarding perfectly ordinary, fast, and
+# sometimes-genuinely-forced deductions.
+#
+# Mirrors ENUMERATION_COMBO_CAP in solver-core.js -- see that constant's
+# comment for the measured JS numbers behind this value (a 97-cell region
+# on a real 21x21/5-star puzzle took ~19s to enumerate at this size for
+# zero payoff; C(97,5) is on the order of 64 million). Verified against a
+# broad puzzle corpus (see tools/verify_enumeration_cap.py) to produce
+# identical score/tier for every puzzle tested, both with and without this
+# cap enabled.
+ENUMERATION_COMBO_CAP = 500000
+
+
+def _estimate_combos(m, k, cap):
+    """
+    Cheap, early-exiting estimate of C(m, k) (the binomial coefficient) --
+    only ever needs `k` multiply/divide steps (k is a star count, always
+    small in practice), and bails the moment the running product clears
+    `cap` since callers only care "is this over the cap", not the exact
+    value. Mirrors estimateCombos in solver-core.js.
+    """
+    if k <= 0 or k > m:
+        return 0
+    result = 1
+    for i in range(k):
+        result = result * (m - i) / (i + 1)
+        if result > cap:
+            return result
+    return result
+
 
 class ScorerCore:
     """
@@ -220,6 +267,8 @@ class ScorerCore:
         avail = [i for i in indices if p.grid[i] is None]
         if len(avail) < needed:
             return []
+        if ENUMERATION_COMBO_CAP is not None and _estimate_combos(len(avail), needed, ENUMERATION_COMBO_CAP) > ENUMERATION_COMBO_CAP:
+            return None
 
         valid = []
         chosen = []

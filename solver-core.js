@@ -1,6 +1,52 @@
 import { CELL, HINT_COLOR } from './constants.js';
 import { getNeighbors8, cellsAdjacent, rowIndices, colIndices } from './geometry.js';
 
+// _enumerateUnitCompletions bails out (returns null, same as "already at
+// quota" -- every caller already treats that as "this unit contributes
+// nothing", the correct behavior for "we didn't check" as much as "we
+// checked and there's nothing") once a unit's completion count would
+// plausibly exceed this. Past that many valid non-touching placements, no
+// single cell is ever common to all of them (or excluded from all of
+// them) -- the "every completion agrees" argument this enumeration exists
+// to support just doesn't fire on unconstrained units that large, no
+// matter how long you search.
+//
+// Gated on an estimate of C(avail, needed) (see _estimateCombos below),
+// NOT a flat ratio of avail/needed -- a flat ratio breaks down badly for
+// small `needed`: a region down to its last star (needed=1) with a dozen
+// empty cells is cheap (C(12,1)=12, no combinatorial blowup at all, since
+// there's nothing to combine) but would trip a naive "avail > 4x needed"
+// check anyway, silently discarding perfectly ordinary, fast, and
+// sometimes-genuinely-forced deductions. (Caught by testing this fix
+// against a 2-star puzzle -- see git history.) C(avail, needed) is what
+// actually drives the search cost, so it's what the cutoff is on.
+//
+// Measured on a real 21x21/5-star puzzle with a few intentionally
+// oversized leftover regions (see small_region_frac in
+// tools/solution_first_core.py): a 97-cell region's weak-mode enumeration
+// alone took ~19s at its start-of-game size (needed=5) for zero payoff --
+// C(97,5) is on the order of 64 million. At the 500,000 threshold below,
+// real (adjacency-pruned) completion counts were still only in the
+// hundreds of thousands, nowhere near unanimous, so there's real margin
+// here, not just a lucky cutoff. Tune if some puzzle shape ever proves
+// this too aggressive or too lax.
+const ENUMERATION_COMBO_CAP = 500000;
+
+// Cheap, early-exiting estimate of C(m, k) (the binomial coefficient) --
+// only ever needs `k` multiply/divide steps (k is a star count, always
+// small in practice), and bails the moment the running product clears
+// `cap` since callers only care "is this over the cap", not the exact
+// value.
+function estimateCombos(m, k, cap) {
+  if (k <= 0 || k > m) return 0;
+  let result = 1;
+  for (let i = 0; i < k; i++) {
+    result = (result * (m - i)) / (i + 1);
+    if (result > cap) return result;
+  }
+  return result;
+}
+
 // Core solving engine: precomputation, generic unit/board helpers, the
 // getHint() dispatcher, simulation/lookahead machinery, and symmetry
 // detection -- everything that's already agnostic to starsPerGroup.
@@ -83,6 +129,27 @@ export class PuzzleSolver {
   vState(idx, stateArray = this.game.state) {
     if (this.voidIndices.has(idx)) return CELL.DOT;
     return stateArray[idx];
+  }
+
+  // Small memoization helper: several expensive computations (unit
+  // completion enumeration, tiling scans, region/line guarantee tallies)
+  // independently trigger the SAME work when called more than once within
+  // one getHint() pass -- e.g. hintUnitPlacementForced alone calls
+  // _unitCompletionsByLevel for every unit up to 3 times per level (once
+  // per filterCondition), and separate rules (hintTile*, the region/line
+  // quota-fill family) each ask the same underlying question again.
+  // this.game.state never changes mid-call (lookahead rules only ever
+  // mutate sandboxed copies), so a cache hit is always safe to reuse for
+  // as long as `cacheKey` stays keyed on a snapshot of it, rather than on
+  // tracked mutation sites.
+  _cachedOnState(cacheKey, computeFn) {
+    const stateString = this.game.state.join(',');
+    if (!this._stateCache) this._stateCache = {};
+    const bucket = this._stateCache[cacheKey];
+    if (bucket && bucket.stateString === stateString) return bucket.value;
+    const value = computeFn();
+    this._stateCache[cacheKey] = { stateString, value };
+    return value;
   }
 
   // Get all units (rows, columns, and regions).
@@ -267,6 +334,7 @@ export class PuzzleSolver {
 
     const avail = unit.indices.filter(i => readState(i) === CELL.NONE);
     if (avail.length < needed) return [];
+    if (estimateCombos(avail.length, needed, ENUMERATION_COMBO_CAP) > ENUMERATION_COMBO_CAP) return null;
 
     const results = [];
     const tryFrom = (start, chosen) => {
@@ -378,11 +446,22 @@ export class PuzzleSolver {
   //
   // Weak and strong always return a single-entry array (uniform shape with
   // intermediate), so callers can treat all three levels identically.
+  //
+  // Cached per (unit, level, quota) for the current board state: this is
+  // the shared low-level primitive behind hintUnitPlacementForced (called
+  // up to 3x per level, once per filterCondition, all asking the exact
+  // same question), _regionLineGuaranteesImpl,
+  // _regionLinePartitionGuaranteesImpl (a separate full sweep over the
+  // same units at the same level), and hintUnitCompletionSatisfiesOtherUnit
+  // -- without this, a single getHint() call can redo the same expensive
+  // enumeration for the same unit many times over.
   _unitCompletionsByLevel(unit, level, quota = this.starsPerGroup) {
-    if (level === 'weak') return [this._enumerateUnitCompletions(unit, false, quota)];
-    if (level === 'strong') return [this._enumerateUnitCompletions(unit, true, quota)];
-    const scopes = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
-    return scopes.map(bIdx => this._enumerateUnitCompletions(unit, true, quota, null, bIdx));
+    return this._cachedOnState(`unitCompletions_${unit.label}_${level}_${quota}`, () => {
+      if (level === 'weak') return [this._enumerateUnitCompletions(unit, false, quota)];
+      if (level === 'strong') return [this._enumerateUnitCompletions(unit, true, quota)];
+      const scopes = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
+      return scopes.map(bIdx => this._enumerateUnitCompletions(unit, true, quota, null, bIdx));
+    });
   }
 
   // --- Hint Dispatch ---
