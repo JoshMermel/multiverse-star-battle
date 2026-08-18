@@ -931,13 +931,21 @@ class MultiStarRules:
         changes = 0
         units = p.row_indices if axis == "row" else p.col_indices
 
-        # Slide a window of size 'n' across the board's units
+        # Slide a window of size 'n' across the board's units. No "already has
+        # a star" pre-filter here (unlike the 1★-only rule_only_empty this was
+        # copied from, where any star IS the unit's full quota) -- at
+        # stars_per_unit > 1, a unit can hold a star and still need more, and
+        # skipping the whole window in that case silently disabled this rule
+        # almost immediately on any 2★+ puzzle once a few stars land. The
+        # downstream _hint_multi_regions_trapped_or_covered already computes
+        # each unit's remaining need correctly (stars placed subtract from
+        # its quota, whether that's 0 or more left), so no pre-filter is
+        # needed: a fully-solved unit already has nothing left to decide
+        # (rule_exclude_solved_unit dots it out well before this Hard-tier
+        # rule runs) and contributes 0 to the window's required count either
+        # way.
         for start_idx in range(p.n - n + 1):
             window_units = [units[i] for i in range(start_idx, start_idx + n)]
-
-            # Skip if any unit in the window already has a settled star
-            if any(any(p.grid[i] == "x" for i in unit) for unit in window_units):
-                continue
 
             for b_idx in range(p.n_boards):
                 changes = self._hint_multi_regions_trapped_or_covered(p, window_units, b_idx, axis)
