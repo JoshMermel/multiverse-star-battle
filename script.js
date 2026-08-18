@@ -137,8 +137,15 @@ class StarBattleGame {
     // boards-per-row: ceil(sqrt(N)) gives a roughly square grid layout
     // (e.g. 4 boards → 2×2, 6 boards → 3×2, 9 boards → 3×3).
     document.documentElement.style.setProperty('--board-count', this.regions.length);
+    const boardsPerRow = Math.ceil(Math.sqrt(this.regions.length));
+    document.documentElement.style.setProperty('--boards-per-row', boardsPerRow);
+    // board-rows: how many rows the boards actually wrap into at that
+    // boards-per-row width -- needed alongside --boards-per-row so CSS can
+    // size cells against available viewport HEIGHT too, not just width (a
+    // 2-row layout needs cells half as tall to fit the same vertical
+    // space as a 1-row layout would). See --cell-size's height term.
     document.documentElement.style.setProperty(
-      '--boards-per-row', Math.ceil(Math.sqrt(this.regions.length))
+      '--board-rows', Math.ceil(this.regions.length / boardsPerRow)
     );
 
     // Create and append containers for each board dynamically.

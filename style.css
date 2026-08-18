@@ -3,7 +3,17 @@
   --grid-n: 8; /* Updated by JS */
   --board-count: 2; /* Updated by JS to the actual number of boards */
   --boards-per-row: 2; /* Updated by JS: ceil(sqrt(board-count)), controls grid wrapping */
-  --cell-size: min(60px, 85vw / var(--grid-n));
+  --board-rows: 1; /* Updated by JS: ceil(board-count / boards-per-row) */
+  /* Third min() term keeps a large single/mono board from forcing a tall
+     page scroll on short viewports (laptop screens especially) -- without
+     it, cell size only ever responded to width. 270px approximates the
+     header + controls chrome above the board (measured ~214-218px) plus
+     some bottom breathing room; (grid-n + 1) is the label row plus the N
+     board rows; --board-rows divides that budget again for multi-row
+     board layouts, where each row of boards needs its own share of the
+     vertical space. See the min-width:900px and max-width:600px blocks
+     below for the same term sized to those layouts' own chrome height. */
+  --cell-size: min(60px, 85vw / var(--grid-n), calc((100vh - 270px) / var(--board-rows) / (var(--grid-n) + 1)));
   --line-thin: 1px solid #ccc;
 
   /* Brand */
@@ -561,8 +571,16 @@ input[type="number"]::-webkit-inner-spin-button {
     /* Size cells so that boards-per-row boards (+ their row-label column each)
        fit within the available width. boards-per-row = ceil(sqrt(board-count)),
        set by JS — so 4 boards → 2 per row at ~42vw each, 6 boards → 3 per row
-       at ~28vw each, etc. The +1 accounts for the row-label column width. */
-    --cell-size: clamp(28px, calc(84vw / var(--boards-per-row) / (var(--grid-n) + 1)), 55px);
+       at ~28vw each, etc. The +1 accounts for the row-label column width.
+       clamp()'s middle argument also takes a min() against a height-based
+       size (see the same term's comment on :root's --cell-size above) so a
+       large single/mono board doesn't force a tall page scroll on short
+       (laptop) viewports -- 270px matches that same chrome-height estimate,
+       measured against this breakpoint's own header/controls layout. */
+    --cell-size: clamp(28px, min(
+      calc(84vw / var(--boards-per-row) / (var(--grid-n) + 1)),
+      calc((100vh - 270px) / var(--board-rows) / (var(--grid-n) + 1))
+    ), 55px);
   }
   #boards-wrapper {
     flex-direction: row;
@@ -581,8 +599,15 @@ input[type="number"]::-webkit-inner-spin-button {
 @media (max-width: 600px) {
   :root {
     /* Divide by (grid-n + 1) to account for the row-label column, which is
-       one cell-size wide and makes the labeled grid (N+1) cells across. */
-    --cell-size: clamp(28px, calc(85vw / (var(--grid-n) + 1)), 65px);
+       one cell-size wide and makes the labeled grid (N+1) cells across.
+       min() against a height-based size too (same reasoning as the wider
+       breakpoints above) -- 370px approximates this breakpoint's own,
+       taller, wrapped header/controls chrome (measured ~320px) plus some
+       bottom breathing room. */
+    --cell-size: clamp(28px, min(
+      calc(85vw / (var(--grid-n) + 1)),
+      calc((100vh - 370px) / var(--board-rows) / (var(--grid-n) + 1))
+    ), 65px);
   }
 
   /* Contain horizontal overflow inside the wrapper, not the page body.
