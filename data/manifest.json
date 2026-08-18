@@ -38,10 +38,11 @@
     {"id": "two_stars_expert",      "label": "9x9 Expert",              "group": "Two Star", "stars": 2},
     {"id": "two_stars_mono",        "label": "9x9 1-Board",             "group": "Two Star", "stars": 2},
     {"id": "10x10_mono",            "label": "10x10 1-Board",           "group": "Two Star", "stars": 2},
+    {"id": "14x14_mono_2",          "label": "14x14 1-Board",           "group": "Two Star", "stars": 2},
     {"id": "three_stars",           "label": "13x13 Two Boards",        "group": "Three Star", "stars": 3},
     {"id": "three_stars_mono",      "label": "13x13 1-Board",           "group": "Three Star", "stars": 3},
     {"id": "three_stars_trio",      "label": "13x13 3-Boards",          "group": "Three Star", "stars": 3},
-    {"id": "14x14_mono",            "label": "14x13 1-Board",           "group": "Three Star", "stars": 3},
+    {"id": "14x14_mono_3",          "label": "14x14 1-Board",           "group": "Three Star", "stars": 3},
     {"id": "8x8_symmetric",         "label": "Symmetric",               "group": "Symmetry",         "desc": "Each board has rotational, mirror, or translation symmetry", "stars": 1},
     {"id": "symmetric_mono",        "label": "Symmetric 1-board",       "group": "Symmetry",         "desc": "One board with rotational, mirror, or translation symmetry", "stars": 1},
     {"id": "8x8_twin",              "label": "Twin",                    "group": "Symmetry",         "desc": "Both boards are the same, one flipped or rotated", "stars": 1},
@@ -64,9 +65,9 @@
     {"id": "symmetric_triplets",    "label": "Symmetric Triplets",      "group": "Curiosities",      "desc": "Three identical boards with internal symmetry", "stars": 1},
     {"id": "half_dozen",            "label": "6 Boards",                "group": "Curiosities",      "desc": "Is more better?", "stars": 1},
     {"id": "not_for_humans",        "label": "Not For Humans",          "group": "Curiosities",      "desc": "The absolute hardest puzzles - too hard for human solvers.", "stars": 1},
+    {"id": "17x17_mono",            "label": "17x17 1-Board",           "group": "Giants", "stars": 4},
     {"id": "giants",                "label": "20x20",                  "group": "Giants", "stars": 1},
     {"id": "giant_mono",            "label": "20x20 1-board",           "group": "Giants", "stars": 1},
-    {"id": "17x17_mono",            "label": "17x17 1-Board",           "group": "Giants", "stars": 4},
     {"id": "21x21_mono",            "label": "21x21 1-Board",           "group": "Giants", "stars": 5},
     {"id": "signoff",               "label": "Signoff",                 "group": "Signoff", "stars": 1}
   ]
