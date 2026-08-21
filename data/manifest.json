@@ -68,6 +68,8 @@
     {"id": "6x6_square_free",       "label": "6x6 Square Free",         "group": "Playground",       "desc": "Regions have no 2x2 squares", "stars": 1},
     {"id": "8x8_square_free",       "label": "8x8 Square Free",         "group": "Playground",       "desc": "Regions have no 2x2 squares", "stars": 1},
     {"id": "8x8_square_free_mono",  "label": "8x8 Square Free 1-board", "group": "Playground",       "desc": "Regions have no 2x2 squares", "stars": 1},
+    {"id": "9x9_square_free",       "label": "9x9 Square Free",         "group": "Playground",       "desc": "Regions have no 2x2 squares", "stars": 2},
+    {"id": "9x9_square_free_mono",  "label": "9x9 Square Free 1-board", "group": "Playground",       "desc": "Regions have no 2x2 squares", "stars": 2},
     {"id": "6x6_equal_area",        "label": "6x6 Equal Area",          "group": "Playground",       "desc": "All regions have equal area - quite hard", "stars": 1},
     {"id": "8x8_equal_area",        "label": "8x8 Equal Area",          "group": "Playground",       "desc": "All regions have equal area - extremely hard", "stars": 1},
     {"id": "two_star_equal_area",   "label": "9x9 Equal Area",          "group": "Playground",       "desc": "All regions have equal area - extremely hard", "stars": 2},
