@@ -148,7 +148,10 @@ def _build_mono(args, n, output_rows):
 def _build_solution_first_pair(args, n, output_rows):
     return SolutionFirstPairComparator(
         n, output_rows, board_count=args.board_count, stars_per_unit=args.stars,
-        size_variation=args.size_variation)
+        size_variation=args.size_variation,
+        small_region_frac=args.small_region_frac,
+        small_region_weight=args.small_region_weight,
+        small_region_weight_max=args.small_region_weight_max)
 
 # Scratch/dev boilerplate for testing new generators or comparators by hand,
 # edited in place per experiment rather than kept as a stable mode. The
@@ -474,6 +477,18 @@ inferred from each puzzle's own solution.
 
 --size-variation and --board-count only affect mono/solution_first_pair.
 
+--small-region-frac/--small-region-weight/--small-region-weight-max bias
+solution_first_pair (and mono, though mono's own difficulty tuning is
+already baked into MONO_EASY_SMALL_REGION_FRAC/WEIGHT_* in this file --
+these flags let you override that per-invocation) toward easier puzzles:
+a fraction of each board's regions are forced to stay small, which tends
+to produce more immediately-obvious deductions. Unbiased (all defaults)
+skews hard/UNSOLVED at larger N -- see seed_and_grow's docstring in
+solution_first_core.py for the full mechanics, and the difficulty-tuning
+memory notes from this project's own 14x14/2-star mono work for real
+yield/tier numbers at one N/star combo (they don't necessarily transfer
+directly to the 2-board pair case -- worth its own sweep).
+
 Examples:
   python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100
   python3 gen_puzzles.py generate --mode symmetric_pair --n 6 --count 50 --output sym6.csv
@@ -508,6 +523,21 @@ Examples:
     gen_p.add_argument("--board-count", type=int, default=2,
                        dest="board_count",
                        help="Number of boards, solution_first_pair only (default: 2)")
+    gen_p.add_argument("--small-region-frac", type=float, default=0.0,
+                       dest="small_region_frac",
+                       help="Fraction of regions forced to stay small (easy-bias), "
+                            "mono/solution_first_pair only (default: 0.0, unbiased). "
+                            "See seed_and_grow's docstring in solution_first_core.py.")
+    gen_p.add_argument("--small-region-weight", type=float, default=0.02,
+                       dest="small_region_weight",
+                       help="Growth weight floor for small regions, mono/solution_first_pair "
+                            "only (default: 0.02). Only matters when --small-region-frac > 0.")
+    gen_p.add_argument("--small-region-weight-max", type=float, default=None,
+                       dest="small_region_weight_max",
+                       help="Growth weight ceiling for small regions, mono/solution_first_pair "
+                            "only (default: None, i.e. every small region shares exactly "
+                            "--small-region-weight instead of a graded range). Only matters "
+                            "when --small-region-frac > 0.")
     gen_p.add_argument("--seed", type=int, default=None,
                        help="Random seed for reproducible generation. The seed used is "
                             "always printed at the start of the run -- rerun with "

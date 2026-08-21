@@ -38,7 +38,9 @@ class SolutionFirstPairComparator(Comparator):
     """Solution-first constructor for individually-ambiguous, jointly-unique board groups."""
 
     def __init__(self, n, output_rows, board_count=2, stars_per_unit=1,
-                 size_variation=0.0, randomize_orientation_for_output=True):
+                 size_variation=0.0, randomize_orientation_for_output=True,
+                 small_region_frac=0.0, small_region_weight=0.02,
+                 small_region_weight_max=None):
         super().__init__(n, output_rows, randomize_orientation_for_output)
         if board_count < 2:
             raise ValueError(
@@ -48,6 +50,16 @@ class SolutionFirstPairComparator(Comparator):
         self.board_count = board_count
         self.stars_per_unit = stars_per_unit
         self.size_variation = size_variation
+        # Same easy-bias knobs as SolutionFirstGenerator/seed_and_grow (see
+        # its docstring in solution_first_core.py) -- forces a fraction of
+        # each board's OWN regions to stay small, independently per board
+        # (every board gets its own random small_region_frac draw, so which
+        # regions end up small differs board to board even though they all
+        # share the same star placement). 0.0/0.02/None default reproduces
+        # the old fully-unbiased behavior exactly.
+        self.small_region_frac = small_region_frac
+        self.small_region_weight = small_region_weight
+        self.small_region_weight_max = small_region_weight_max
 
     def _next_pair(self):
         result = self._try_generate_group()
@@ -70,7 +82,12 @@ class SolutionFirstPairComparator(Comparator):
         grids = []
         all_star_groups = []
         for _ in range(self.board_count):
-            result = seed_and_grow(star_cells, n, stars_per_unit, self.size_variation)
+            result = seed_and_grow(
+                star_cells, n, stars_per_unit, self.size_variation,
+                small_region_frac=self.small_region_frac,
+                small_region_weight=self.small_region_weight,
+                small_region_weight_max=self.small_region_weight_max,
+            )
             if result is None:
                 return None
             grid, star_groups = result
