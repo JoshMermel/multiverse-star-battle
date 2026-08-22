@@ -51,7 +51,7 @@
     {"id": "13x13_medium",          "label": "13x13 Medium",            "group": "Three Star", "stars": 3, "size": "13x13"},
     {"id": "13x13_hard",            "label": "13x13 Hard",              "group": "Three Star", "stars": 3, "size": "13x13"},
     {"id": "13x13_expert",          "label": "13x13 Expert",            "group": "Three Star", "stars": 3, "size": "13x13"},
-    {"id": "three_stars_mono",      "label": "13x13 1-Board",           "group": "Three Star", "stars": 3, "size": "13x13"},
+    {"id": "13x13_mono",            "label": "13x13 1-Board",           "group": "Three Star", "stars": 3, "size": "13x13"},
     {"id": "three_stars_trio",      "label": "13x13 3-Boards",          "group": "Three Star", "stars": 3, "size": "13x13"},
     {"id": "14x14_beginner_3",      "label": "14x14 Beginner",          "group": "Three Star", "stars": 3, "size": "14x14"},
     {"id": "14x14_medium_3",        "label": "14x14 Medium",            "group": "Three Star", "stars": 3, "size": "14x14"},
