@@ -271,17 +271,18 @@ export function applyRenderer(GameClass) {
 
   // Enable/disable undo and redo buttons based on history position.
   p.updateControls = function () {
-    const undoBtn = document.getElementById('undo-btn');
-    const redoBtn = document.getElementById('redo-btn');
-    undoBtn.disabled = (this.historyIdx === 0);
-    redoBtn.disabled = (this.historyIdx >= this.history.length - 1);
+    const undoDisabled = (this.historyIdx === 0);
+    const redoDisabled = (this.historyIdx >= this.history.length - 1);
+    document.querySelectorAll('.ctrl-undo').forEach(btn => btn.disabled = undoDisabled);
+    document.querySelectorAll('.ctrl-redo').forEach(btn => btn.disabled = redoDisabled);
   };
 
   // Update loading state overlay and controls.
   p.setLoading = function (isLoading) {
-    const ids = ['prev-puz', 'next-puz', 'puzzle-input', 'category-select',
-      'hint-btn', 'check-btn', 'reset-btn'];
+    const ids = ['prev-puz', 'next-puz', 'puzzle-input', 'category-select'];
     ids.forEach(id => document.getElementById(id).disabled = isLoading);
+    const classes = ['ctrl-hint', 'ctrl-check', 'ctrl-reset'];
+    classes.forEach(cls => document.querySelectorAll(`.${cls}`).forEach(btn => btn.disabled = isLoading));
     const boardsWrapper = document.getElementById('boards-wrapper');
     boardsWrapper.style.opacity = isLoading ? '0.4' : '1';
     boardsWrapper.style.pointerEvents = isLoading ? 'none' : '';
@@ -501,6 +502,14 @@ export function applyRenderer(GameClass) {
 
   p._applyDarkMode = function (on) {
     document.documentElement.setAttribute('data-theme', on ? 'dark' : '');
+  };
+
+  // Show/hide the duplicate control bar at the bottom of the page (the
+  // "Buttons also on bottom" setting) -- handy on puzzles whose boards are
+  // tall enough to scroll the top bar out of view. See #controls-bottom
+  // in style.css for how the class actually toggles display.
+  p._applyBottomControls = function (on) {
+    document.body.classList.toggle('show-bottom-controls', on);
   };
 
   p._applyTabMode = function (on) {

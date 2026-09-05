@@ -518,6 +518,25 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-block: 20px;
 }
 
+/* Duplicate control bar at the bottom of the page -- off by default,
+   shown by the "Buttons also on bottom" setting (see _applyBottomControls
+   in renderer.js) for puzzles whose boards are tall enough to scroll the
+   top bar out of view. Shares its non-display layout with #controls;
+   `display` itself is gated on body.show-bottom-controls below (and
+   again, at higher specificity via source order, in the mobile block)
+   so it stays hidden until the setting is turned on. */
+#controls-bottom {
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 800px;
+  margin-block: 20px;
+}
+
+.bottom-controls { display: none; }
+body.show-bottom-controls .bottom-controls { display: flex; }
+
 /* 7. TOASTS & FEEDBACK */
 #toast {
   position: fixed;
@@ -654,24 +673,28 @@ input[type="number"]::-webkit-inner-spin-button {
   .step-btn {
     padding: 12px 20px; /* Larger hit targets for mobile */
   }
-  #controls {
-    display: grid;
+  #controls, #controls-bottom {
     grid-template-columns: repeat(6, 1fr);
     gap: 8px;
   }
+  #controls { display: grid; }
+  /* Same specificity as the unconditional show rule above, but declared
+     later -- wins at this breakpoint so the bottom bar grids instead of
+     flexing when the setting is on. See #controls-bottom's own comment. */
+  body.show-bottom-controls .bottom-controls { display: grid; }
 
   /* Row 1: board state actions */
-  #undo-btn { grid-column: span 2; }
-  #redo-btn { grid-column: span 2; }
-  #reset-btn { grid-column: span 2; }
+  .ctrl-undo { grid-column: span 2; }
+  .ctrl-redo { grid-column: span 2; }
+  .ctrl-reset { grid-column: span 2; }
 
   /* Row 2: help and checking tools */
-  #check-btn { grid-column: span 3; }
-  #hint-btn  { grid-column: span 3; }
+  .ctrl-check { grid-column: span 3; }
+  .ctrl-hint  { grid-column: span 3; }
 
   /* Shorter label on mobile */
-  #check-btn { font-size: 0; }
-  #check-btn::after {
+  .ctrl-check { font-size: 0; }
+  .ctrl-check::after {
     content: attr(data-mobile-label);
     font-size: var(--btn-font-size);
   }

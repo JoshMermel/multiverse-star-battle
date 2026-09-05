@@ -9,10 +9,13 @@ export function applyInput(GameClass) {
 
   // Set up event handlers for control buttons.
   p.setupControls = function () {
-    document.getElementById('undo-btn').onclick = () => this.undo();
-    document.getElementById('redo-btn').onclick = () => this.redo();
-    document.getElementById('check-btn').onclick = () => this.checkCorrectness();
-    document.getElementById('hint-btn').onclick = () => this.getHint();
+    // Each control has a twin in the bottom bar (see index.html's
+    // #controls-bottom, shown only when "Buttons also on bottom" is on),
+    // so bind by role class rather than a single id.
+    document.querySelectorAll('.ctrl-undo').forEach(btn => btn.onclick = () => this.undo());
+    document.querySelectorAll('.ctrl-redo').forEach(btn => btn.onclick = () => this.redo());
+    document.querySelectorAll('.ctrl-check').forEach(btn => btn.onclick = () => this.checkCorrectness());
+    document.querySelectorAll('.ctrl-hint').forEach(btn => btn.onclick = () => this.getHint());
     this.setupBrowseModal();
     this.setupBookPicker();
     this.setupSettings();
@@ -81,7 +84,7 @@ export function applyInput(GameClass) {
   // Set up reset confirmation modal.
   p.setupResetModal = function () {
     const { open } = this.setupModal('reset-modal', { onConfirm: () => this.doReset() });
-    document.getElementById('reset-btn').onclick = open;
+    document.querySelectorAll('.ctrl-reset').forEach(btn => btn.onclick = open);
   };
 
   // --- Settings ---
@@ -100,6 +103,7 @@ export function applyInput(GameClass) {
     const settingsToggles = [
       { key: 'setting-dark-mode', applyOnInit: true, onChange: (self, v) => self._applyDarkMode(v) },
       { key: 'setting-tab-mode', applyOnInit: false, onChange: (self, v) => self._applyTabMode(v) },
+      { key: 'setting-buttons-on-bottom', applyOnInit: true, onChange: (self, v) => self._applyBottomControls(v) },
       {
         key: 'setting-axis-labels', applyOnInit: false, onChange: (self) => {
           // Re-render boards to apply/remove labels.

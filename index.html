@@ -42,11 +42,11 @@
 
   <main id="game-container">
     <section id="controls" aria-label="Game controls">
-      <button id="undo-btn">Undo</button>
-      <button id="redo-btn">Redo</button>
-      <button id="reset-btn">Reset</button>
-      <button id="check-btn" data-mobile-label="Check">Correct so far?</button>
-      <button id="hint-btn">Hint</button>
+      <button id="undo-btn" class="ctrl-undo">Undo</button>
+      <button id="redo-btn" class="ctrl-redo">Redo</button>
+      <button id="reset-btn" class="ctrl-reset">Reset</button>
+      <button id="check-btn" class="ctrl-check" data-mobile-label="Check">Correct so far?</button>
+      <button id="hint-btn" class="ctrl-hint">Hint</button>
     </section>
 
     <div id="boards-wrapper">
@@ -54,6 +54,14 @@
         <button id="board-swap-btn" class="board-tab">Swap to Board 2</button>
       </div>
     </div>
+
+    <section id="controls-bottom" class="bottom-controls" aria-label="Game controls (bottom)">
+      <button id="undo-btn-bottom" class="ctrl-undo">Undo</button>
+      <button id="redo-btn-bottom" class="ctrl-redo">Redo</button>
+      <button id="reset-btn-bottom" class="ctrl-reset">Reset</button>
+      <button id="check-btn-bottom" class="ctrl-check" data-mobile-label="Check">Correct so far?</button>
+      <button id="hint-btn-bottom" class="ctrl-hint">Hint</button>
+    </section>
   </main>
 
   <div id="toast" class="toast-hidden" role="alert" aria-live="polite"></div>
@@ -92,6 +100,16 @@
             </div>
             <div class="toggle-switch">
               <input type="checkbox" id="setting-axis-labels" role="switch" aria-checked="false">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Buttons also on bottom</span>
+              <span class="settings-desc">Also show the undo/redo/reset/hint controls at the bottom of the page, for puzzles tall enough that the top bar scrolls out of view</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="setting-buttons-on-bottom" role="switch" aria-checked="false">
               <span class="toggle-track"><span class="toggle-thumb"></span></span>
             </div>
           </label>
