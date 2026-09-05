@@ -108,8 +108,14 @@ export function applyInput(GameClass) {
       { key: 'setting-tab-mode', applyOnInit: false, onChange: (self, v) => self._applyTabMode(v) },
       {
         key: 'setting-axis-labels', applyOnInit: false, onChange: (self) => {
-          // Re-render boards to apply/remove labels.
+          // Re-render boards to apply/remove labels. Every board's grid is
+          // getting torn down and rebuilt below, so the cell cache has to be
+          // cleared first -- same as _renderBoards does for a full puzzle
+          // load -- or the old (now-detached) cells from before this toggle
+          // stick around alongside the new ones, corrupting every cache
+          // lookup (_getCellsByIndex/_allCells) until the next puzzle load.
           if (self.currentPuzzle && self.regions) {
+            self._resetCellCache();
             self.regions.forEach((regionString, idx) => {
               const boardEl = document.getElementById(`board${idx + 1}`);
               if (boardEl) {
