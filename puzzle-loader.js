@@ -160,6 +160,10 @@ export function applyPuzzleLoader(GameClass) {
 
     const clampedPuz = Math.max(1, Math.min(targetPuz, total));
     puzInput.value = clampedPuz;
+    // Tracked separately from puzInput.value -- see its own comment
+    // (stepPuzzle, input.js) for why the box's live text isn't a safe
+    // stand-in for "the puzzle actually on screen".
+    this.currentPuzzleNum = clampedPuz;
 
     await this.loadPuzzle(this.loadedPuzzles[clampedPuz - 1], catId);
   };
@@ -205,6 +209,7 @@ export function applyPuzzleLoader(GameClass) {
     puzInput.max = total;
     const clampedSlot = Math.max(1, Math.min(targetSlot, total));
     puzInput.value = clampedSlot;
+    this.currentPuzzleNum = clampedSlot;
     document.getElementById('puzzle-count-label').textContent = `of ${total}`;
 
     await this._loadDailyPuzzleBySlot(clampedSlot);

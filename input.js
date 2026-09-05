@@ -348,8 +348,10 @@ export function applyInput(GameClass) {
         : catSelect.value;
       if (isNaN(val)) val = 1;
 
-      // Skip if puzzle is already active.
-      if (this.currentCategoryId === catId && this.currentPuzzle?.id === val) return;
+      // Skip if puzzle is already active. currentPuzzleNum (not
+      // currentPuzzle.id) -- see stepPuzzle's comment for why the two
+      // differ for the "daily" category.
+      if (this.currentCategoryId === catId && this.currentPuzzleNum === val) return;
 
       this.setLoading(true);
       try {
@@ -363,7 +365,16 @@ export function applyInput(GameClass) {
     };
 
     this.stepPuzzle = (delta) => {
-      let val = parseInt(puzInput.value) || 1;
+      // Steps from the puzzle actually on screen (currentPuzzleNum, set
+      // by loadCategory/loadDailyCategory once a load completes) rather
+      // than puzInput.value, which can hold an uncommitted draft the
+      // user typed but never pressed Enter on. Reading the box directly
+      // used to mean typing "50" (without committing) and clicking →
+      // jumped straight to 51 -- silently skipping the puzzle you typed
+      // and never showing it at all. currentPuzzle?.id isn't a safe
+      // substitute either: for the "daily" category it's the puzzle's
+      // position in a much larger source file, not its 1-4 daily slot.
+      let val = this.currentPuzzleNum || 1;
       const total = parseInt(puzInput.max) || 0;
 
       if (delta < 0 && val <= 1) {
@@ -397,9 +408,13 @@ export function applyInput(GameClass) {
       }
     });
 
-    // Commit selection on blur.
+    // Clicking away from an uncommitted edit discards it rather than
+    // acting like a silent Enter -- typing a number and then clicking
+    // the board (or anything else) shouldn't navigate you away without
+    // asking. Only Enter (above) and the native spinner arrows (via the
+    // 'input' handler above) actually commit.
     puzInput.addEventListener('blur', () => {
-      this.commitPuzzleSelection();
+      puzInput.value = this.currentPuzzleNum || 1;
     });
   };
 
