@@ -1787,6 +1787,232 @@ class MultiStarRules:
         """Rule 3b (Expert): the general K>1 case -- see _tile_quota_fill."""
         return self._tile_quota_fill(p, want_single=False)
 
+    # -- Tiles: partial tiling + trapped "bar" (2★+) -----------------------------
+    #
+    # A sibling of rule 1/2/3 above, built on the SAME 2x2-tile pigeonhole
+    # idea (_confirmed_tiles), but for bands where a COMPLETE tiling
+    # doesn't exist. A row-pair or column-pair band's empties don't always
+    # partition cleanly into exactly the K boxes the band needs -- e.g. a
+    # run of consecutive "only one of the two lines is empty here"
+    # positions of ODD length can never itself split into 2-wide boxes, no
+    # matter how the rest of the band tiles. When that happens today,
+    # _confirmed_tiles finds NOTHING for the whole band -- one bad stretch
+    # throws away every tile the band's OTHER, perfectly tileable portions
+    # could have confirmed.
+    #
+    # This rule instead looks for a PARTIAL tiling: some number of clean
+    # boxes covering everything EXCEPT one contiguous "bar" -- a run where
+    # only one of the band's two lines is empty at every position (so it's
+    # a straight run of single cells, never two adjacent ones, i.e. a
+    # simple path -- no two bar cells ever touch except consecutive ones
+    # in the run). Those j boxes hold at most j stars between them (1
+    # each, same as always); the band needs k total; so the bar alone
+    # must hold at least (k - j). That "at least m stars, non-adjacent,
+    # packed into this specific path of cells" fact traps any OUTSIDE
+    # cell touching enough of the bar to drop its own achievable max
+    # below that minimum -- same "guarantee -> trap" shape as
+    # _region_line_partition_trapped, just with the guarantee coming from
+    # tile pigeonholing instead of a cross-region quota sum.
+    #
+    # A single band can have several genuinely different valid splits
+    # (the bar can sit at the start, the end, or in the middle, with
+    # tiled stretches on either side) -- this searches every contiguous
+    # candidate bar, not just the single "best" one, since a smaller bar
+    # with a smaller guarantee can still trap a cell a bigger bar's own
+    # (larger) guarantee doesn't reach. For a FIXED bar, though, only the
+    # tightest (largest) guarantee is ever useful -- a looser one can
+    # never trap more than the tightest already does -- so per bar this
+    # keeps only the smallest achievable tile count.
+    #
+    # Verified against every occurrence found in 420 real generated
+    # puzzles across 2★/3★/4★ books: fired 382 times, 0 unsound
+    # deductions (cross-checked against each puzzle's actual solution).
+    # JS port: solver-rules-multi.js's matching section (hintTileBarTrapped).
+
+    def _prefix_tiling_dp(self, has_empty):
+        """
+        Every (offset, tile_count) reachable by cleanly tiling
+        [0, offset) of `has_empty` with the same singleton (only where
+        NOT has_empty) / box (2 adjacent positions, at least one
+        has_empty) rule _find_tilings uses, together with a breadcrumb to
+        reconstruct one concrete tiling for any specific reachable
+        (offset, tile_count) pair (see _reconstruct_prefix_boxes). Needed
+        because a FIXED has_empty pattern doesn't tile with a unique box
+        count the way a plain domino-counting approach would assume --
+        e.g. has_empty [False,True,True,False] tiles as either
+        singleton+box+singleton (1 box) or box+box (2 boxes), both ending
+        at offset 4 -- so "can [0, offset) tile with exactly k boxes"
+        needs its own reachability search per count, not just "can it
+        tile at all". Returns a list (one dict per offset 0..n) mapping
+        count -> (via, prev_offset, prev_count).
+        """
+        n = len(has_empty)
+        reachable = [dict() for _ in range(n + 1)]
+        reachable[0][0] = None
+        for offset in range(n):
+            for count in list(reachable[offset].keys()):
+                if not has_empty[offset] and count not in reachable[offset + 1]:
+                    reachable[offset + 1][count] = ("singleton", offset, count)
+                if (offset + 1 < n and (has_empty[offset] or has_empty[offset + 1])
+                        and (count + 1) not in reachable[offset + 2]):
+                    reachable[offset + 2][count + 1] = ("box", offset, count)
+        return reachable
+
+    def _reconstruct_prefix_boxes(self, reachable, end_offset, count):
+        """
+        Walks a _prefix_tiling_dp's breadcrumbs back from (end_offset,
+        count) to (0, 0), collecting the box-start offsets used (same
+        shape _find_tilings returns). Caller must already know
+        (end_offset, count) is reachable.
+        """
+        boxes = []
+        offset, c = end_offset, count
+        while offset > 0:
+            via, prev_offset, prev_count = reachable[offset][c]
+            if via == "box":
+                boxes.insert(0, prev_offset)
+            offset, c = prev_offset, prev_count
+        return boxes
+
+    def _max_non_touching_along_path(self, p, path_cells, blocked):
+        """
+        Maximum number of mutually non-touching cells choosable from
+        `path_cells`, given IN ORDER along the bar. A "bar" is always a
+        simple path when read in that order -- exactly one cell per
+        row/column of a straight 2-line band, so only consecutive entries
+        can ever touch -- which makes this a plain O(length)
+        max-independent-set-on-a-path scan instead of the general
+        (exponential) search _forced_cells_in_group needs for an
+        unordered cell set. `blocked` are cells (existing stars, or a
+        candidate being tested) whose neighbors should count as unusable.
+        """
+        blocked_neighbors = set()
+        for b in blocked:
+            blocked_neighbors.update(p._neighbor_map[b])
+        prev2, prev1 = 0, 0
+        for cell in path_cells:
+            usable = 0 if cell in blocked_neighbors else 1
+            cur = max(prev1, prev2 + usable)
+            prev2, prev1 = prev1, cur
+        return prev1
+
+    def _tile_bar_facts(self, p):
+        return self._cached_on_grid(p, '_tile_bar_facts_cache', lambda: self._tile_bar_facts_impl(p))
+
+    def _tile_bar_facts_impl(self, p):
+        """
+        Every (axis, line_idx, tiles, bar_cells, need) fact across every
+        row-pair/column-pair band -- see the section comment above for
+        the reasoning. tiles is one concrete witness tiling (cell sets)
+        for the SMALLEST tile count achieving that bar, since a smaller
+        count means a bigger (tighter) `need`.
+        """
+        n = p.n
+        quota = p.stars_per_unit
+        facts = []
+
+        def is_empty(i):
+            return i not in p.void_cells and p.grid[i] is None
+
+        for axis in ("row", "col"):
+            for u in range(n - 1):
+                if axis == "row":
+                    line_a = [u * n + c for c in range(n)]
+                    line_b = [(u + 1) * n + c for c in range(n)]
+                else:
+                    line_a = [c * n + u for c in range(n)]
+                    line_b = [c * n + (u + 1) for c in range(n)]
+
+                band_indices = [i for i in line_a + line_b if i not in p.void_cells]
+                stars_in_band = sum(1 for i in band_indices if p.grid[i] == "x")
+                k = 2 * quota - stars_in_band
+                if k <= 0:
+                    continue
+
+                is_empty_a = [is_empty(line_a[c]) for c in range(n)]
+                is_empty_b = [is_empty(line_b[c]) for c in range(n)]
+                has_empty = [is_empty_a[c] or is_empty_b[c] for c in range(n)]
+                width = [int(is_empty_a[c]) + int(is_empty_b[c]) for c in range(n)]
+
+                prefix_dp = self._prefix_tiling_dp(has_empty)
+                suffix_dp = self._prefix_tiling_dp(list(reversed(has_empty)))
+
+                for bar_start in range(n):
+                    if not prefix_dp[bar_start]:
+                        continue
+                    for bar_end in range(bar_start + 1, n + 1):
+                        if not all(has_empty[c] and width[c] == 1 for c in range(bar_start, bar_end)):
+                            continue
+
+                        rev_bar_start = n - bar_end
+                        suffix_counts = suffix_dp[rev_bar_start]
+                        if not suffix_counts:
+                            continue
+
+                        min_prefix_count = min(prefix_dp[bar_start].keys())
+                        min_suffix_count = min(suffix_counts.keys())
+                        j = min_prefix_count + min_suffix_count
+                        need = k - j
+                        if need < 1:
+                            continue
+
+                        bar_cells = [
+                            line_a[c] if is_empty_a[c] else line_b[c]
+                            for c in range(bar_start, bar_end)
+                        ]
+
+                        prefix_boxes = self._reconstruct_prefix_boxes(prefix_dp, bar_start, min_prefix_count)
+                        rev_suffix_boxes = self._reconstruct_prefix_boxes(suffix_dp, rev_bar_start, min_suffix_count)
+                        # A box at reversed offset r covers reversed
+                        # positions r, r+1 -- i.e. original positions
+                        # n-1-r and n-2-r -- so its original
+                        # (smaller-index) box-start is n-2-r.
+                        suffix_boxes = [n - 2 - r for r in rev_suffix_boxes]
+
+                        tiles = []
+                        for box_start in prefix_boxes + suffix_boxes:
+                            a1, b1 = line_a[box_start], line_b[box_start]
+                            a2, b2 = line_a[box_start + 1], line_b[box_start + 1]
+                            cells = frozenset(i for i in (a1, b1, a2, b2) if is_empty(i))
+                            tiles.append(cells)
+
+                        facts.append({
+                            "axis": axis, "line_idx": u, "tiles": tiles,
+                            "bar_cells": bar_cells, "need": need,
+                        })
+        return facts
+
+    def rule_tile_bar_trapped(self, p):
+        """Rule 4 (Expert): see the section comment above for the reasoning."""
+        existing_stars = [i for i in range(p.n * p.n) if p.grid[i] == "x"]
+
+        for fact in self._tile_bar_facts(p):
+            bar_cells = fact["bar_cells"]
+            need = fact["need"]
+            base_max = self._max_non_touching_along_path(p, bar_cells, existing_stars)
+            if base_max < need:
+                continue  # shouldn't happen on a consistent grid; guard anyway
+
+            bar_set = set(bar_cells)
+            outside_candidates = set()
+            for cell in bar_cells:
+                for nb in p._neighbor_map[cell]:
+                    if p.grid[nb] is None and nb not in bar_set:
+                        outside_candidates.add(nb)
+
+            targets = [
+                cand for cand in outside_candidates
+                if self._max_non_touching_along_path(p, bar_cells, existing_stars + [cand]) < need
+            ]
+            if not targets:
+                continue
+
+            label = f"TileBarTrapped({fact['axis']} {fact['line_idx']}, need={need})"
+            changes = sum(p.validate_and_set(idx, ".", label, self.verbose) for idx in targets)
+            if changes > 0:
+                return changes
+        return 0
+
     # -- Lookahead-dots (2★+, restored from pre-experiment) ---------------------
     #
     # The multi-star analogue of the 1★ lookahead rules in

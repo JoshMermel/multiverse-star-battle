@@ -1846,6 +1846,254 @@ export function applyMultiStarRules(PuzzleSolver) {
   // entry still active, so it's always the final fallback past Expert.
   // `git show gh-pages:solver-rules-multi.js` has the pre-experiment
   // version if this doesn't pan out.
+  // -- Tiles: partial tiling + trapped "bar" (2★+) -----------------------------------
+  //
+  // A sibling of rule 1/2/3 above, built on the SAME 2x2-tile pigeonhole
+  // idea (_confirmedTilesImpl), but for bands where a COMPLETE tiling
+  // doesn't exist. A row-pair or column-pair band's empties don't always
+  // partition cleanly into exactly the K boxes the band needs -- e.g. a
+  // run of consecutive "only one of the two lines is empty here"
+  // positions of ODD length can never itself split into 2-wide boxes, no
+  // matter how the rest of the band tiles. When that happens today,
+  // _confirmedTilesImpl finds NOTHING for the whole band -- one bad
+  // stretch throws away every tile the band's OTHER, perfectly tileable
+  // portions could have confirmed.
+  //
+  // This rule instead looks for a PARTIAL tiling: some number of clean
+  // boxes covering everything EXCEPT one contiguous "bar" -- a run where
+  // only one of the band's two lines is empty at every position (so it's
+  // a straight run of single cells, never two adjacent ones, i.e. a
+  // simple path -- no two bar cells ever touch except consecutive ones in
+  // the run). Those j boxes hold at most j stars between them (1 each,
+  // same as always); the band needs k total; so the bar alone must hold
+  // at least (k - j). That "at least m stars, non-adjacent, packed into
+  // this specific path of cells" fact traps any OUTSIDE cell touching
+  // enough of the bar to drop its own achievable max below that minimum --
+  // same "guarantee -> trap" shape as hintRegionLinePartitionTrapped, just
+  // with the guarantee coming from tile pigeonholing instead of a
+  // cross-region quota sum.
+  //
+  // A single band can have several genuinely different valid splits (the
+  // bar can sit at the start, the end, or in the middle, with tiled
+  // stretches on either side) -- e.g. a real 17x17/4★ case with j=5 and a
+  // 7-cell bar, ANOTHER with j=6 and a 5-cell bar, and a third with j=7
+  // and a 3-cell bar, all for variations on the same idea. This searches
+  // every contiguous candidate bar, not just the single "best" one, since
+  // a smaller bar with a smaller guarantee can still trap a cell a bigger
+  // bar's own (larger) guarantee doesn't reach (different cells touch
+  // different bars). For a FIXED bar, though, only the tightest (largest)
+  // guarantee is ever useful -- a looser one can never trap more than the
+  // tightest already does -- so per bar this keeps only the smallest
+  // achievable tile count.
+  //
+  // Verified against two real occurrences on 17x17_mono puzzle_7610
+  // (#2001): a 5-tile/7-cell-bar case forcing >=3 (correctly traps one
+  // cell) and a 6-tile/5-cell-bar case forcing >=2 (correctly traps a
+  // different cell) -- both cross-checked against that puzzle's actual
+  // solution, confirming neither trapped cell is really a star. Python
+  // port: tools/scorer/rules_multi_star.py's matching section.
+
+  // Every (offset, tileCount) reachable by cleanly tiling [0, offset) of
+  // `hasEmpty` with the same singleton (only where NOT hasEmpty) / box (2
+  // adjacent positions, at least one hasEmpty) rule _findTilings uses,
+  // together with enough breadcrumbs to reconstruct one concrete tiling
+  // for any specific reachable (offset, tileCount) pair (see
+  // _reconstructPrefixBoxes). Needed because a FIXED hasEmpty pattern
+  // doesn't tile with a unique box count the way a plain domino-counting
+  // DP would assume -- e.g. hasEmpty [false,true,true,false] tiles as
+  // either singleton+box+singleton (1 box) or box+box (2 boxes), both
+  // ending at offset 4 -- so "can [0, offset) tile with exactly k boxes"
+  // needs its own reachability search per count, not just "can it tile at
+  // all". Returns one Map<count, {via, prevOffset, prevCount}> per offset
+  // (index 0..n).
+  p._prefixTilingDP = function (hasEmpty) {
+    const n = hasEmpty.length;
+    const reachable = Array.from({ length: n + 1 }, () => new Map());
+    reachable[0].set(0, null);
+    for (let offset = 0; offset < n; offset++) {
+      for (const count of reachable[offset].keys()) {
+        if (!hasEmpty[offset] && !reachable[offset + 1].has(count)) {
+          reachable[offset + 1].set(count, { via: 'singleton', prevOffset: offset, prevCount: count });
+        }
+        if (offset + 1 < n && (hasEmpty[offset] || hasEmpty[offset + 1]) && !reachable[offset + 2].has(count + 1)) {
+          reachable[offset + 2].set(count + 1, { via: 'box', prevOffset: offset, prevCount: count });
+        }
+      }
+    }
+    return reachable;
+  };
+
+  // Walks a _prefixTilingDP's breadcrumbs back from (endOffset, count) to
+  // (0, 0), collecting the box-start offsets used along the way (same
+  // shape _findTilings returns). Caller must already know (endOffset,
+  // count) is reachable.
+  p._reconstructPrefixBoxes = function (reachable, endOffset, count) {
+    const boxes = [];
+    let offset = endOffset, c = count;
+    while (offset > 0) {
+      const step = reachable[offset].get(c);
+      if (step.via === 'box') boxes.unshift(step.prevOffset);
+      offset = step.prevOffset;
+      c = step.prevCount;
+    }
+    return boxes;
+  };
+
+  // Maximum number of mutually non-touching cells choosable from
+  // `pathCells`, given IN ORDER along the bar. A "bar" is always a simple
+  // path when read in that order -- exactly one cell per row/column of a
+  // straight 2-line band, so only consecutive entries can ever touch --
+  // which makes this a plain O(length) max-independent-set-on-a-path scan
+  // instead of the general (exponential) search _forcedCellsInGroup needs
+  // for an unordered cell set. `blocked` are cells (existing stars, or a
+  // candidate being tested) whose neighbors should count as unusable.
+  p._maxNonTouchingAlongPath = function (pathCells, blocked) {
+    const blockedNeighbors = new Set();
+    for (const b of blocked) for (const nb of this.getNeighbors(b)) blockedNeighbors.add(nb);
+    let prev2 = 0, prev1 = 0;
+    for (const cell of pathCells) {
+      const usable = blockedNeighbors.has(cell) ? 0 : 1;
+      const cur = Math.max(prev1, prev2 + usable);
+      prev2 = prev1;
+      prev1 = cur;
+    }
+    return prev1;
+  };
+
+  p._tileBarFacts = function () {
+    return this._cachedOnState('tileBarFacts', () => this._tileBarFactsImpl());
+  };
+
+  // Every (axis, lineIdx, tiles, barCells, need) fact across every
+  // row-pair/column-pair band -- see this section's own comment above for
+  // the reasoning. tiles is one concrete witness tiling (topLeftIdx +
+  // cells per tile, same shape _confirmedTilesImpl produces) for the
+  // SMALLEST tile count achieving that bar, since a smaller count means a
+  // bigger (tighter) `need`.
+  p._tileBarFactsImpl = function () {
+    const n = this.n;
+    const quota = this.starsPerGroup;
+    const isEmpty = (i) => !this.voidCells?.has(i) && this.vState(i) === CELL.NONE;
+    const facts = [];
+
+    for (const axis of ['row', 'col']) {
+      for (let u = 0; u < n - 1; u++) {
+        const lineA = [], lineB = [];
+        for (let c = 0; c < n; c++) {
+          if (axis === 'row') { lineA.push(u * n + c); lineB.push((u + 1) * n + c); }
+          else { lineA.push(c * n + u); lineB.push(c * n + (u + 1)); }
+        }
+
+        const starsInBand = [...lineA, ...lineB].filter(i => this.vState(i) === CELL.STAR).length;
+        const k = 2 * quota - starsInBand;
+        if (k <= 0) continue;
+
+        const isEmptyA = lineA.map(isEmpty), isEmptyB = lineB.map(isEmpty);
+        const hasEmpty = lineA.map((_, c) => isEmptyA[c] || isEmptyB[c]);
+        const width = lineA.map((_, c) => (isEmptyA[c] ? 1 : 0) + (isEmptyB[c] ? 1 : 0));
+
+        const prefixDP = this._prefixTilingDP(hasEmpty);
+        const reversedHasEmpty = hasEmpty.slice().reverse();
+        const suffixDP = this._prefixTilingDP(reversedHasEmpty);
+
+        for (let barStart = 0; barStart < n; barStart++) {
+          // Once the prefix [0, barStart) itself can't be cleanly tiled at
+          // all, no barEnd starting here can work either.
+          if (prefixDP[barStart].size === 0) continue;
+          for (let barEnd = barStart + 1; barEnd <= n; barEnd++) {
+            let validBar = true;
+            for (let c = barStart; c < barEnd; c++) {
+              if (!hasEmpty[c] || width[c] !== 1) { validBar = false; break; }
+            }
+            if (!validBar) continue;
+
+            const revBarStart = n - barEnd; // suffix [barEnd, n) == reversed-prefix [0, n-barEnd)
+            const suffixCounts = suffixDP[revBarStart];
+            if (suffixCounts.size === 0) continue;
+
+            const minPrefixCount = Math.min(...prefixDP[barStart].keys());
+            const minSuffixCount = Math.min(...suffixCounts.keys());
+            const j = minPrefixCount + minSuffixCount;
+            const need = k - j;
+            if (need < 1) continue;
+
+            const barCells = [];
+            for (let c = barStart; c < barEnd; c++) {
+              barCells.push(isEmptyA[c] ? lineA[c] : lineB[c]);
+            }
+
+            const prefixBoxOffsets = this._reconstructPrefixBoxes(prefixDP, barStart, minPrefixCount);
+            const revSuffixBoxOffsets = this._reconstructPrefixBoxes(suffixDP, revBarStart, minSuffixCount);
+            // A box at reversed offset r covers reversed positions r, r+1
+            // -- i.e. original positions n-1-r and n-2-r -- so its
+            // original (smaller-index) box-start is n-2-r.
+            const suffixBoxOffsets = revSuffixBoxOffsets.map(r => n - 2 - r);
+            const tileBoxStarts = [...prefixBoxOffsets, ...suffixBoxOffsets];
+
+            const tiles = tileBoxStarts.map(boxStart => {
+              const cells = [lineA[boxStart], lineB[boxStart], lineA[boxStart + 1], lineB[boxStart + 1]]
+                .filter(isEmpty);
+              const topRow = axis === 'row' ? u : boxStart;
+              const leftCol = axis === 'row' ? boxStart : u;
+              return { cells, topLeftIdx: topRow * n + leftCol };
+            });
+
+            facts.push({ axis, lineIdx: u, tiles, barCells, need });
+          }
+        }
+      }
+    }
+    return facts;
+  };
+
+  p.hintTileBarTrapped = function () {
+    const existingStars = [];
+    for (let i = 0; i < this.n * this.n; i++) {
+      if (this.vState(i) === CELL.STAR) existingStars.push(i);
+    }
+
+    const seen = new Map(); // "targets|bar cells" already claimed by an earlier fact
+    const hints = [];
+    for (const { axis, lineIdx, tiles, barCells, need } of this._tileBarFacts()) {
+      const baseMax = this._maxNonTouchingAlongPath(barCells, existingStars);
+      if (baseMax < need) continue; // shouldn't happen on a consistent board; guard anyway
+
+      const barSet = new Set(barCells);
+      const outsideCandidates = new Set();
+      for (const cell of barCells) {
+        for (const nb of this.getNeighbors(cell)) {
+          if (this.vState(nb) === CELL.NONE && !barSet.has(nb)) outsideCandidates.add(nb);
+        }
+      }
+
+      const targets = [...outsideCandidates].filter(cand =>
+        this._maxNonTouchingAlongPath(barCells, [...existingStars, cand]) < need
+      );
+      if (targets.length === 0) continue;
+
+      targets.sort((a, b) => a - b);
+      const key = this._groupKey(targets) + '|' + this._groupKey(barCells);
+      if (seen.has(key)) continue;
+      seen.set(key, true);
+
+      const lineWord = axis === 'row' ? 'row' : 'column';
+      const cellWord = targets.length === 1 ? 'cell' : 'cells';
+      const barWord = barCells.length === 1 ? 'cell' : 'cells';
+
+      hints.push({
+        boardIdx: undefined,
+        description: `${tiles.length} confirmed tile${tiles.length === 1 ? '' : 's'} (outlined) hold at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} between them, so the amber-outlined ${lineWord}'s ${barCells.length}-${barWord} leftover strip must hold at least ${need} star${need === 1 ? '' : 's'}. The marked ${cellWord} touch${targets.length === 1 ? 'es' : ''} enough of it to rule out every way to fit that many, so ${targets.length === 1 ? "it's" : "they're"} dots.`,
+        highlights: barCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+        tileOutlines: tiles.map(t => ({ topLeftIdx: t.topLeftIdx, color: TILE_OUTLINE_COLORS[1] })),
+        lineHighlight: { boardIdx: 0, axis, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
+      });
+    }
+    if (hints.length === 0) return null;
+    hints.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
+    return hints;
+  };
+
   p._getMultiStarRuleList = function () {
     return [
       // Error validation
@@ -1934,6 +2182,11 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'crossBoardPartialOverlapMulti',  fn: () => this.hintCrossBoardPartialOverlapMulti() },
       // Tiles rule 3.
       { key: 'tileDisjointQuotaFill',          fn: () => this.hintTileDisjointQuotaFill() },
+      // Tiles rule 4 (see the section comment above hintTileBarTrapped) --
+      // needs a genuinely incomplete tiling (a band _confirmedTilesImpl
+      // gives up on entirely) to have anything to say, so it's slotted
+      // after every rule built on complete tilings.
+      { key: 'tileBarTrapped',                 fn: () => this.hintTileBarTrapped() },
       { key: 'regionLineQuotaFillStrong',      fn: () => this.hintRegionLineQuotaFill('strong') },
       { key: 'regionLinePartitionForcedStrong',    fn: () => this.hintRegionLinePartitionForced('strong') },
       { key: 'regionLinePartitionTrappedStrong',   fn: () => this.hintRegionLinePartitionTrapped('strong') },

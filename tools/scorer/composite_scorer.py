@@ -197,6 +197,12 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # stars_per_unit-agnostic algebra behind it.
             (self.rule_crossboard_partial_overlap_multi,          98, "Expert"),
             (self.rule_tile_disjoint_quota_fill,                  100, "Expert"),
+            # Tile rule 4 -- needs a genuinely incomplete tiling (a band
+            # rule_tile_single_empty/two_empty_dot/quota_fill give up on
+            # entirely) to have anything to say, so it's slotted after
+            # every rule built on complete tilings. See its own section
+            # comment (rules_multi_star.py, above rule_tile_bar_trapped).
+            (self.rule_tile_bar_trapped,                          102, "Expert"),
             (self.rule_region_line_quota_fill_strong,             105, "Expert"),
             (self.rule_region_line_partition_forced_strong,       106, "Expert"),
             (self.rule_region_line_partition_trapped_strong,      107, "Expert"),
