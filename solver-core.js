@@ -811,26 +811,49 @@ export class PuzzleSolver {
     return true;
   }
 
-  // True when every board can be paired off with exactly one OTHER board such that
-  // applying `transformFn` to one board's region layout produces its partner's layout.
-  // Applying the transform to the whole multi-board puzzle then just permutes boards
-  // pairwise (partner <-> partner) while leaving the overall constraint set -- rows,
-  // columns, and every board's regions -- unchanged as a set, so the (unique) solution
-  // must itself be invariant under the transform. Requires an even number of boards.
+  // True when every board can be accounted for under `transformFn` -- each board either
+  // paired off with exactly one OTHER board whose region layout it becomes under the
+  // transform, or (board count needn't be even for this) left paired with ITSELF, when
+  // it's internally symmetric under the same transform. Applying the transform to the
+  // whole multi-board puzzle then just permutes boards among themselves this way
+  // (partner <-> partner, self-symmetric boards fixed in place) while leaving the
+  // overall constraint set -- rows, columns, and every board's regions -- unchanged as
+  // a set, so the (unique) solution must itself be invariant under the transform,
+  // self-symmetric boards included.
+  //
+  // This used to require an even board count, treating "some boards pair up, others are
+  // internally symmetric" as if it needed separate handling from "every board pairs up"
+  // (this function, even count only) or "every board is internally symmetric"
+  // (_computeInternalDiagonalSymmetry / _computeInternalRotation180, any count) -- two
+  // different all-or-nothing checks, OR'd together by callers (still true today --
+  // harmless, since this function is now a strict superset of the internal-only check,
+  // but kept for clarity/documentation of intent). But `transformFn` is always an
+  // involution here (diagonal reflection or 180° rotation: applying it twice is the
+  // identity), so any permutation of the boards it could possibly induce decomposes into
+  // only fixed points (self-paired) and 2-cycles (real partners) -- there's no other
+  // shape a valid assignment could take. So "some self-paired, some real partners" isn't
+  // a third case to reason about separately, it's the fully general one, and it works
+  // for any board count, including odd ones: e.g. 3 boards where two are 180° partners
+  // and the third has its own internal 180° symmetry forces the same conclusion (the
+  // solution must be 180°-invariant) that a pure 4-board partner-only or 3-board
+  // all-internal case would.
   //
   // This subsumes the old "exactly two boards, and they're partners" check: with two
   // boards there's only one possible pairing, so it's a strict generalization to any
-  // even number of boards where a valid pairing exists (not necessarily board[i] paired
-  // with board[i+1] -- any perfect matching works, e.g. board1<->board3, board2<->board4).
+  // board count where a valid (self-pairs-allowed) matching exists (not necessarily
+  // board[i] paired with board[i+1] -- any perfect matching works, e.g. board1<->board3,
+  // board2 self-paired, board4<->board5).
   //
-  // `transformFn` is always an involution here (diagonal reflection or 180° rotation),
-  // which makes "A is B's transform-partner" a symmetric relation (if applying it to A
-  // gives B, applying it to B gives back A) -- so this reduces to a perfect-matching
-  // existence check over the "is a transform-partner of" graph.
+  // `transformFn` being an involution also makes "A is B's transform-partner" (including
+  // A is A's own) a symmetric relation -- so this reduces to a perfect-matching-with-
+  // self-loops existence check over the "is a transform-partner of" graph.
   _isBoardSymmetric(transformFn) {
     const numBoards = this.game.regions.length;
-    if (numBoards === 0 || numBoards % 2 !== 0) return false;
+    if (numBoards === 0) return false;
 
+    const selfPaired = this.game.regions.map((r, i) =>
+      this._regionsAreTransformPartners(r, r, transformFn)
+    );
     const partners = Array.from({ length: numBoards }, () => new Array(numBoards).fill(false));
     for (let i = 0; i < numBoards; i++) {
       for (let j = i + 1; j < numBoards; j++) {
@@ -845,6 +868,7 @@ export class PuzzleSolver {
       const i = used.indexOf(false);
       if (i === -1) return true;
       used[i] = true;
+      if (selfPaired[i] && findMatching()) return true;
       for (let j = i + 1; j < numBoards; j++) {
         if (!used[j] && partners[i][j]) {
           used[j] = true;

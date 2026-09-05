@@ -227,33 +227,57 @@ class StarBattlePuzzle:
 
     def _crossboard_symmetry(self, mirror_fn):
         """
-        True if every board can be paired off with exactly one OTHER board
-        such that applying mirror_fn to one board's region layout produces
-        its partner's layout. Applying the transform to the whole
-        multi-board puzzle then just permutes boards pairwise (partner <->
-        partner) while leaving the overall constraint set -- rows, columns,
-        and every board's regions -- unchanged as a set, so the (unique)
-        solution must itself be invariant under the transform. Requires an
-        even number of boards.
+        True if every board can be accounted for under mirror_fn -- each
+        board either paired off with exactly one OTHER board whose region
+        layout it becomes under the transform, or (board count needn't be
+        even for this) left paired with ITSELF, when it's internally
+        symmetric under the same transform. Applying the transform to the
+        whole multi-board puzzle then just permutes boards among
+        themselves this way (partner <-> partner, self-symmetric boards
+        fixed in place) while leaving the overall constraint set -- rows,
+        columns, and every board's regions -- unchanged as a set, so the
+        (unique) solution must itself be invariant under the transform,
+        self-symmetric boards included.
+
+        This used to require an even board count, treating "some boards
+        pair up, others are internally symmetric" as if it needed separate
+        handling from "every board pairs up" (_crossboard_symmetry, even
+        count only) or "every board is internally symmetric"
+        (_internal_symmetry, any count) -- two different all-or-nothing
+        checks, OR'd together by callers. But mirror_fn is always an
+        involution here (diagonal reflection or 180-degree rotation:
+        applying it twice is the identity), so any permutation of the
+        boards it could possibly induce decomposes into only fixed points
+        (self-paired) and 2-cycles (real partners) -- there's no other
+        shape a valid assignment could take. So "some self-paired, some
+        real partners" isn't a third case to reason about separately, it's
+        the fully general one, and it works for any board count, including
+        odd ones: e.g. 3 boards where two are 180-degree partners and the
+        third has its own internal 180-degree symmetry forces the same
+        conclusion (the solution must be 180-degree-invariant) that a pure
+        4-board partner-only or 3-board all-internal case would.
 
         This subsumes the old "exactly two boards, and they're mirror
         images of each other" check: with two boards there's only one
-        possible pairing, so it's a strict generalization to any even board
-        count where a valid pairing exists -- not necessarily board[i]
-        paired with board[i+1]; any perfect matching works, e.g.
-        board1<->board3, board2<->board4.
+        possible pairing, so it's a strict generalization to any board
+        count where a valid (self-pairs-allowed) matching exists -- not
+        necessarily board[i] paired with board[i+1]; any perfect matching
+        works, e.g. board1<->board3, board2 self-paired, board4<->board5.
 
-        mirror_fn is always an involution here (diagonal reflection or
-        180-degree rotation), which makes "A is B's mirror-partner" a
-        symmetric relation (if applying it to A gives B, applying it to B
-        gives back A) -- so this reduces to a perfect-matching existence
-        check over the "is a mirror-partner of" graph. Board counts here are
-        small, so a simple backtracking search is plenty fast.
+        mirror_fn being an involution also makes "A is B's mirror-partner"
+        (including A is A's own) a symmetric relation -- so this reduces to
+        a perfect-matching-with-self-loops existence check over the "is a
+        mirror-partner of" graph. Board counts here are small, so a simple
+        backtracking search is plenty fast.
         """
         n_boards = self.n_boards
-        if n_boards == 0 or n_boards % 2 != 0:
+        if n_boards == 0:
             return False
 
+        self_paired = [
+            self._check_pairwise_symmetry(mirror_fn, src_board=b, dst_board=b)
+            for b in range(n_boards)
+        ]
         partners = [[False] * n_boards for _ in range(n_boards)]
         for i in range(n_boards):
             for j in range(i + 1, n_boards):
@@ -267,6 +291,8 @@ class StarBattlePuzzle:
                 return True
             i = used.index(False)
             used[i] = True
+            if self_paired[i] and find_matching():
+                return True
             for j in range(i + 1, n_boards):
                 if not used[j] and partners[i][j]:
                     used[j] = True
@@ -282,12 +308,15 @@ class StarBattlePuzzle:
         """
         Checks each diagonal candidate (main, then anti) exactly once and
         returns (symmetric_fns, has_main, has_anti). A diagonal symmetry
-        applies if either:
-          (a) every board can be paired with another board that's its
-              diagonal reflection (cross-board; requires an even board
-              count and a valid pairing -- see _crossboard_symmetry), OR
-          (b) every board independently has that diagonal symmetry (internal).
-        In both cases uniqueness forces the solution to respect the symmetry.
+        applies whenever every board can be accounted for under that
+        reflection -- paired with another board that's its diagonal
+        reflection, or (no even board count required) left paired with
+        itself, if it has that diagonal symmetry internally -- see
+        _crossboard_symmetry, which covers both (and any mix) in one
+        check. Either way, uniqueness forces the solution to respect the
+        symmetry. _internal_symmetry is also OR'd in below for its own
+        sake, though it's now a strict subset of _crossboard_symmetry's
+        result -- harmless, but kept for clarity/documentation of intent.
         """
         n = self.n
         candidates = [
@@ -305,7 +334,12 @@ class StarBattlePuzzle:
         return self._internal_symmetry(mirror_fn)
 
     def _detect_crossboard_rotation_180(self):
-        """True if every board is paired with another board that's its 180-degree rotation."""
+        """
+        True if every board can be accounted for under 180-degree
+        rotation -- paired with another board that's its rotation, or (no
+        even board count required) left paired with itself if it's
+        internally 180-degree-symmetric. See _crossboard_symmetry.
+        """
         total = self.n * self.n
         mirror_fn = lambda i: total - 1 - i
         return self._crossboard_symmetry(mirror_fn)
