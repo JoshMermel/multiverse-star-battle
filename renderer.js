@@ -510,6 +510,10 @@ export function applyRenderer(GameClass) {
   // in style.css for how the class actually toggles display.
   p._applyBottomControls = function (on) {
     document.body.classList.toggle('show-bottom-controls', on);
+    // The bottom bar eats into the vertical space _recomputeBoardLayout
+    // measures for the >=900px grid layout, so a live toggle needs to
+    // reshuffle board sizing, not just its own visibility.
+    this._recomputeBoardLayout();
   };
 
   p._applyTabMode = function (on) {
@@ -540,6 +544,153 @@ export function applyRenderer(GameClass) {
         this._showBoard(nextBoard);
       };
     }
+
+    // Tab mode changes how many boards are ever visible at once (1,
+    // instead of every board), which is exactly what the >=900px grid
+    // layout sizes around -- recompute so a wide-screen player who turns
+    // this on gets one big board instead of a small multi-board grid.
+    // _renderBoards calls _applyTabMode unconditionally on every puzzle
+    // load, so this also covers the initial per-puzzle sizing pass --
+    // no separate call needed there.
+    this._recomputeBoardLayout();
+  };
+
+  // --- Board Layout Sizing (>=900px row-wrapping grid) ---
+  //
+  // Below the min-width:900px breakpoint, #boards-wrapper stacks boards in
+  // a single column and CSS alone sizes cells (see style.css's :root and
+  // max-width:600px --cell-size formulas) -- each board just gets the full
+  // available width, no board-count math needed.
+  //
+  // At >=900px, boards wrap into a row-by-row grid instead, and how many
+  // fit per row depends on this puzzle's own N and board count against the
+  // ACTUAL available box -- something a fixed vw/vh CSS formula can only
+  // approximate (see the min-width:900px block's own comment for how that
+  // used to go wrong: assuming a board-count-only "boards per row" guess,
+  // e.g. ceil(sqrt(3)) = 2 for a 3-board puzzle, regardless of whether 3
+  // boards might easily fit on one row at that size -- sizing for a
+  // 2-row layout that then never actually renders, wasting space on both
+  // axes). So this measures the real thing instead:
+  //  - the real available width: #boards-wrapper's own clientWidth (already
+  //    nets out page padding/max-width, unlike a vw guess),
+  //  - the real available height: window.innerHeight minus #boards-wrapper's
+  //    own getBoundingClientRect().top (nets out the ACTUAL rendered header
+  //    and controls above it, not a guessed chrome-height constant) minus
+  //    whatever's reserved below it (the bottom control bar, if the
+  //    "Buttons also on bottom" setting is on, else a little breathing room),
+  //  - the real column/row gaps, read live via getComputedStyle so this
+  //    stays in sync if that CSS value ever changes.
+  //
+  // Then it decides how many boards sit per row from WIDTH ALONE: the
+  // most that fit without any cell dropping below MIN_CELL. Only once
+  // that's fixed does height come in, as a cap on cell size -- and only
+  // when there's a single row of boards, since that's the only
+  // arrangement where avoiding a page scroll is actually the goal; once
+  // multiple rows are unavoidable, scrolling between them is normal (see
+  // this function's own comment further down for why capping every row
+  // was itself a bug). Row count never changes because of height. That
+  // split matters, not just for clean code: an
+  // earlier version picked whichever (per-row count, cell size) pair
+  // MAXIMIZED cell size outright, height included, which is a
+  // non-monotonic function of the available box -- e.g. dragging a
+  // window's corner smaller shrinks both width and height together, and
+  // 2-per-row can lose to 3-per-row purely because 2 rows' worth of
+  // height stopped fitting, even though 3-per-row is narrower "progress"
+  // in the wrong direction. That showed up as real, reported jank: boards
+  // would jump from 3 per row to 2 mid-drag, then SNAP BACK to 3 the
+  // moment the drag ended and the debounced recompute ran once more
+  // against the final, smaller box. Width-only row-count avoids this
+  // entirely -- it can only ever go DOWN as the window narrows, never
+  // back up, regardless of what height is doing.
+  //
+  // "Actually fits" per row is computed the SAME way #boards-wrapper's
+  // own flex-wrap will lay them out (available width / one board's
+  // footprint, rounded down), so the assumed per-row count and the real
+  // rendered one can't disagree the way the old ceil(sqrt(count)) guess
+  // could. That also means no CSS layout change was needed here --
+  // #boards-wrapper keeps its existing flex-wrap (including its nice
+  // centered-last-row behavior); only the cell size fed into it changes.
+  //
+  // Tab mode only ever shows one board at a time, so it sizes as if
+  // board count were 1 (one big board) rather than the puzzle's real
+  // count -- see the call site in _applyTabMode above.
+  //
+  // Runs once per puzzle load (via _applyTabMode) and again on resize
+  // (see setupGlobalListeners in input.js) and whenever the bottom
+  // control bar's visibility changes (_applyBottomControls) -- both
+  // affect the available box this measures.
+  p._recomputeBoardLayout = function () {
+    const wrapper = document.getElementById('boards-wrapper');
+    if (!wrapper || !this.n || !this.regions) return;
+
+    const root = document.documentElement;
+    const DESKTOP_BREAKPOINT = 900; // matches style.css's min-width:900px
+    if (window.innerWidth < DESKTOP_BREAKPOINT) {
+      // Hand sizing back to the stacked-layout CSS formulas.
+      root.style.removeProperty('--cell-size');
+      root.style.removeProperty('--boards-per-row');
+      return;
+    }
+
+    const isTabActive = document.body.classList.contains('tab-mode');
+    const boardCount = isTabActive ? 1 : this.regions.length;
+
+    const wrapperStyle = getComputedStyle(wrapper);
+    const colGap = parseFloat(wrapperStyle.columnGap) || 0;
+    const rowGap = parseFloat(wrapperStyle.rowGap) || 0;
+    const availableWidth = wrapper.clientWidth;
+
+    const bottomControls = document.getElementById('controls-bottom');
+    const bottomVisible = bottomControls && getComputedStyle(bottomControls).display !== 'none';
+    // 20px covers #controls-bottom's own margin-block; 24px is just
+    // breathing room at the bottom of the page when it's hidden.
+    const bottomReserve = bottomVisible
+      ? bottomControls.getBoundingClientRect().height + 20
+      : 24;
+    const availableHeight = window.innerHeight - wrapper.getBoundingClientRect().top - bottomReserve;
+
+    // Same (grid-n + 1) convention as the CSS formulas: always reserve the
+    // row-label column's width/height, whether or not the "Axis labels"
+    // setting is actually on, so toggling it doesn't reflow every board.
+    const unitsPerBoard = this.n + 1;
+    const MIN_CELL = 28;
+    const MAX_CELL = 90; // sanity cap -- purely aesthetic/usability past this, not a space constraint
+    const cellFromWidth = (perRow) => (availableWidth - (perRow - 1) * colGap) / perRow / unitsPerBoard;
+
+    // Width alone decides perRow: the most boards that fit per row
+    // without any cell dropping below MIN_CELL. Starting from
+    // boardCount and counting down means the first candidate that
+    // clears MIN_CELL is also the largest one that does.
+    let perRow = 1;
+    for (let candidate = boardCount; candidate >= 1; candidate--) {
+      if (cellFromWidth(candidate) >= MIN_CELL) {
+        perRow = candidate;
+        break;
+      }
+    }
+
+    // Height only ever caps cell size for that fixed row count -- it
+    // never feeds back into perRow (see this function's comment for why).
+    // But it only applies AT ALL when there's a single row: the point of
+    // the cap is to keep one full row of boards from forcing a page
+    // scroll to see the bottom of it, which stops being the relevant
+    // question once boards are ALREADY going to need more than one row
+    // -- at that point the player scrolls between rows regardless (same
+    // as the stacked mobile layout, uncontroversially), so capping cell
+    // size for a 2nd or 3rd row too just makes every board needlessly
+    // tiny despite plenty of width being free next to them (a real
+    // reported bug: at the width where 3 boards no longer fit even 2 per
+    // row, each of the resulting 3 stacked single-board "rows" was
+    // capped to roughly availableHeight/3, even though nothing else was
+    // competing for that width).
+    const rows = Math.ceil(boardCount / perRow);
+    const cellFromHeight = rows === 1
+      ? availableHeight / unitsPerBoard
+      : Infinity;
+    const cellSize = Math.max(MIN_CELL, Math.min(cellFromWidth(perRow), cellFromHeight, MAX_CELL));
+
+    root.style.setProperty('--cell-size', `${Math.floor(cellSize)}px`);
+    root.style.setProperty('--boards-per-row', perRow);
   };
 
   p._showBoard = function (boardNum) {

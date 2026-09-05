@@ -211,6 +211,24 @@ export function applyInput(GameClass) {
 
   // Attach global key and click event listeners.
   p.setupGlobalListeners = function () {
+    // The >=900px board grid is sized in JS against the actual measured
+    // viewport (see _recomputeBoardLayout, renderer.js), so unlike the
+    // pure-CSS stacked layouts below that breakpoint, it needs an explicit
+    // recompute whenever the window resizes or a phone rotates. Throttled
+    // to once per animation frame rather than debounced to "150ms after
+    // resize events stop" -- the latter made a live drag look frozen,
+    // then jump to its final size all at once the moment the user paused
+    // or let go, instead of tracking the drag smoothly.
+    let rafScheduled = false;
+    window.addEventListener('resize', () => {
+      if (rafScheduled) return;
+      rafScheduled = true;
+      requestAnimationFrame(() => {
+        rafScheduled = false;
+        this._recomputeBoardLayout();
+      });
+    });
+
     window.addEventListener('keydown', (e) => {
       // Navigate puzzles with arrow keys unless focused on inputs.
       const tag = document.activeElement?.tagName;
