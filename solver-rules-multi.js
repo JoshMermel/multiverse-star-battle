@@ -280,6 +280,13 @@ export function applyMultiStarRules(PuzzleSolver) {
   // for them. (Cells from a CHOSEN region beyond its own counted guarantee stay
   // untouched -- we know the count, not which of the region's cells in the line
   // realizes it.) Python port: rules_multi_star.py's matching section.
+  //
+  // At 'weak' (Medium), this whole family -- quota fill, partition forced,
+  // and partition trap below -- is restricted to lines that need EXACTLY
+  // one more star. Summing several regions' guarantees to hit a line's
+  // quota is a genuinely harder skill than reading off one region's own
+  // guarantee, so that combinatorial step (needed >= 2) is reserved for
+  // 'intermediate'/'strong' (Hard/Expert), where it's the whole point.
 
   // Every region, on any board, PROVEN (at the given _unitCompletionsByLevel
   // level) to place at least k >= 1 of its remaining stars in a given
@@ -363,6 +370,13 @@ export function applyMultiStarRules(PuzzleSolver) {
       const stars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
       const needed = this.starsPerGroup - stars;
       if (needed <= 0) continue;
+      // At 'weak' (Medium), only bite off the easy case: the line needs
+      // exactly one more star, so there's nothing to sum -- a single
+      // region's own guarantee already settles it. Multi-region subset-sum
+      // matches (needed >= 2) stay reserved for intermediate/strong
+      // (Hard/Expert), where combining several regions' guarantees is the
+      // whole point.
+      if (level === 'weak' && needed !== 1) continue;
       const avail = lineIndices.filter(i => this.vState(i) === CELL.NONE);
       if (avail.length === 0) continue;
 
@@ -473,6 +487,16 @@ export function applyMultiStarRules(PuzzleSolver) {
       const avail = unit.indices.filter(i => this.vState(i) === CELL.NONE);
 
       const tryLine = (lineKind, lineIdx, inLine) => {
+        // Same 'weak' (Medium) restriction as hintRegionLineQuotaFill/
+        // hintRegionLinePartitionForced -- see hintRegionLineQuotaFill's
+        // comment. This rule doesn't do its own subset-sum match, but it's
+        // still keyed to a row/column, so it gets the same easy-case-only
+        // gate: only reason about lines that need exactly one more star.
+        if (level === 'weak') {
+          const lineIndices = lineKind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
+          const lineStars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
+          if (this.starsPerGroup - lineStars !== 1) return;
+        }
         const countsInLine = combos.map(combo => combo.filter(inLine).length);
         const minInLine = Math.min(...countsInLine);
         const maxInLine = Math.max(...countsInLine);
@@ -626,6 +650,9 @@ export function applyMultiStarRules(PuzzleSolver) {
       const stars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
       const needed = this.starsPerGroup - stars;
       if (needed <= 0) continue;
+      // Same 'weak' restriction as hintRegionLineQuotaFill -- see its
+      // comment. A single region's own guarantee is all Medium should need.
+      if (level === 'weak' && needed !== 1) continue;
       const avail = lineIndices.filter(i => this.vState(i) === CELL.NONE);
       if (avail.length === 0) continue;
 

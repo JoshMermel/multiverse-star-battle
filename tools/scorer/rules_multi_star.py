@@ -273,6 +273,13 @@ class MultiStarRules:
     # nothing left over for them. (Cells from a CHOSEN region beyond its own
     # counted guarantee stay untouched -- we know the count, not which of the
     # region's cells in the line realizes it.)
+    #
+    # At 'weak' (Medium), this whole family -- quota fill, partition forced,
+    # and partition trap below -- is restricted to lines that need EXACTLY
+    # one more star. Summing several regions' guarantees to hit a line's
+    # quota is a genuinely harder skill than reading off one region's own
+    # guarantee, so that combinatorial step (needed >= 2) is reserved for
+    # 'intermediate'/'strong' (Hard/Expert), where it's the whole point.
     def _region_line_guarantees(self, p, level):
         return self._cached_on_grid(
             p, f'_region_line_guarantees_cache_{level}',
@@ -348,6 +355,14 @@ class MultiStarRules:
             stars = sum(1 for i in line_indices if p.grid[i] == "x")
             needed = p.stars_per_unit - stars
             if needed <= 0:
+                continue
+            # At 'weak' (Medium), only bite off the easy case: the line
+            # needs exactly one more star, so there's nothing to sum -- a
+            # single region's own guarantee already settles it. Multi-region
+            # subset-sum matches (needed >= 2) stay reserved for
+            # intermediate/strong (Hard/Expert), where combining several
+            # regions' guarantees is the whole point.
+            if level == 'weak' and needed != 1:
                 continue
             avail = [i for i in line_indices if p.grid[i] is None]
             if not avail:
@@ -454,6 +469,17 @@ class MultiStarRules:
             avail = [i for i in unit["indices"] if p.grid[i] is None]
 
             def try_line(line_kind, line_idx, in_line):
+                # Same 'weak' (Medium) restriction as _region_line_quota_fill/
+                # _region_line_partition_forced -- see _region_line_quota_fill's
+                # comment. This rule doesn't do its own subset-sum match, but
+                # it's still keyed to a row/column, so it gets the same
+                # easy-case-only gate: only reason about lines that need
+                # exactly one more star.
+                if level == 'weak':
+                    line_indices = p.row_indices[line_idx] if line_kind == "row" else p.col_indices[line_idx]
+                    line_stars = sum(1 for i in line_indices if p.grid[i] == "x")
+                    if p.stars_per_unit - line_stars != 1:
+                        return
                 counts_in_line = [sum(1 for cell in combo if in_line(cell)) for combo in combos]
                 min_in_line = min(counts_in_line)
                 max_in_line = max(counts_in_line)
@@ -612,6 +638,10 @@ class MultiStarRules:
             stars = sum(1 for i in line_indices if p.grid[i] == "x")
             needed = p.stars_per_unit - stars
             if needed <= 0:
+                continue
+            # Same 'weak' restriction as _region_line_quota_fill -- see its
+            # comment. A single region's own guarantee is all Medium should need.
+            if level == 'weak' and needed != 1:
                 continue
             avail = [i for i in line_indices if p.grid[i] is None]
             if not avail:
