@@ -100,10 +100,12 @@ export function applyInput(GameClass) {
     // puzzle load instead (see loadPuzzle / renderBoard). auto-fill-dots
     // has no apply step at all -- its value is just read from localStorage
     // on demand elsewhere.
+    // Order matches the settings modal (index.html), which is sorted by
+    // how often a setting gets used rather than alphabetically or by topic.
     const settingsToggles = [
       { key: 'setting-dark-mode', applyOnInit: true, onChange: (self, v) => self._applyDarkMode(v) },
+      { key: 'setting-auto-fill-dots', applyOnInit: false, onChange: null },
       { key: 'setting-tab-mode', applyOnInit: false, onChange: (self, v) => self._applyTabMode(v) },
-      { key: 'setting-buttons-on-bottom', applyOnInit: true, onChange: (self, v) => self._applyBottomControls(v) },
       {
         key: 'setting-axis-labels', applyOnInit: false, onChange: (self) => {
           // Re-render boards to apply/remove labels.
@@ -119,12 +121,12 @@ export function applyInput(GameClass) {
           }
         }
       },
-      { key: 'setting-auto-fill-dots', applyOnInit: false, onChange: null },
+      { key: 'setting-show-timer', applyOnInit: true, onChange: (self, v) => self._applyShowTimer(v) },
+      { key: 'setting-buttons-on-bottom', applyOnInit: true, onChange: (self, v) => self._applyBottomControls(v) },
       // No apply step, same as auto-fill-dots above -- _setHoverSync reads
       // this straight off localStorage on every hover, so there's nothing
       // to (re-)apply when the toggle itself changes.
       { key: 'setting-row-col-highlight', applyOnInit: false, onChange: null },
-      { key: 'setting-show-timer', applyOnInit: true, onChange: (self, v) => self._applyShowTimer(v) },
       // applyOnInit: false -- the at-load register/unregister decision is
       // already made by index.html's inline bootstrap script, which runs
       // before this module even loads (see its own comment for why).
