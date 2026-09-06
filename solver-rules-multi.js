@@ -2100,7 +2100,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       hints.push({
         boardIdx: undefined,
-        description: `The ${tiles.length} confirmed tile${tiles.length === 1 ? '' : 's'} (outlined) provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} blue ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}. The marked ${cellWord} touch${targets.length === 1 ? 'es' : ''} enough of ${barCells.length === 1 ? 'it' : 'them'} to rule out every way to fit that many, so ${targets.length === 1 ? "it's" : "they're"} ${dotWord}.`,
+        description: `The ${tiles.length} tile${tiles.length === 1 ? '' : 's'} provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} blue ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}. The marked ${cellWord} touch${targets.length === 1 ? 'es' : ''} enough of ${barCells.length === 1 ? 'it' : 'them'} to rule out every way to fit that many, so ${targets.length === 1 ? "it's" : "they're"} ${dotWord}.`,
         highlights: barCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines: tiles.map(t => ({ topLeftIdx: t.topLeftIdx, color: TILE_OUTLINE_COLORS[1] })),
