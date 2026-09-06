@@ -263,6 +263,64 @@ def flood_fill(grid, n, excluded_region=None, reject_singletons=False):
     return grid
 
 
+def flood_fill_favor_smallest(grid, n, power=1.5):
+    """
+    Like flood_fill, but a frontier cell's claiming region is chosen with
+    probability proportional to 1 / current_size(region)**power, instead of
+    uniformly among its bordering regions.
+
+    This is self-correcting rather than voronoi_flood_fill's static
+    per-seed weighting: every single frontier decision re-checks each
+    candidate region's size *as it stands right now*, so a region that
+    fell behind earlier gets a boost on its very next opportunity, and a
+    region that's pulling ahead gets throttled immediately. It exists for
+    SquareFreeDeboxGenerator, where degenerate 1-2 cell regions are worse
+    than useless (they can never legally hold 2+ non-touching stars) --
+    biasing growth this way measurably cuts down how often they occur.
+    power=0 recovers plain flood_fill's uniform behaviour; higher power
+    pushes harder toward equal-sized regions.
+
+    Returns the filled grid, or None if any cell couldn't be reached.
+    """
+    sizes = Counter(v for v in grid if v is not None)
+    frontier = set()
+    for i in range(n * n):
+        if grid[i] is not None:
+            for nb in get_neighbors_4(i, n):
+                if grid[nb] is None:
+                    frontier.add(nb)
+
+    while frontier:
+        idx = random.choice(list(frontier))
+        frontier.remove(idx)
+
+        neighbor_regs = list({
+            grid[nb] for nb in get_neighbors_4(idx, n) if grid[nb] is not None
+        })
+        if not neighbor_regs:
+            continue
+
+        weights = [1.0 / (sizes[r] ** power) for r in neighbor_regs]
+        total = sum(weights)
+        r = random.uniform(0.0, total)
+        chosen = neighbor_regs[-1]
+        for reg, w in zip(neighbor_regs, weights):
+            r -= w
+            if r <= 0.0:
+                chosen = reg
+                break
+
+        grid[idx] = chosen
+        sizes[chosen] += 1
+        for nb in get_neighbors_4(idx, n):
+            if grid[nb] is None:
+                frontier.add(nb)
+
+    if any(v is None for v in grid):
+        return None
+    return grid
+
+
 def pretty_print(flat_board, n):
     """
     Prints an n×n flat board string as a grid, one row per line.

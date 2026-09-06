@@ -21,6 +21,7 @@ from random_generator import RandomGenerator
 from letter_generator import LetterGenerator
 from subdivision_generator import SubdivisionGenerator
 from square_free_generator import SquareFreeGenerator
+from square_free_debox_generator import SquareFreeDeboxGenerator
 from symmetric_generator import SymmetricGenerator
 from voting_district_generator import VotingDistrictGenerator
 from voronoi_generator import VoronoiGenerator
@@ -396,6 +397,64 @@ class TestSquareFreGenerator:
 # filtering) produced only 2 structurally-complete boards, and neither was
 # 2-star ambiguous. Not worth a flaky/slow test; revisit if the underlying
 # growth algorithm changes.
+
+
+# ── SquareFreeDeboxGenerator ──────────────────────────────────────────────────
+#
+# Different construction than SquareFreeGenerator (flood-fill, always
+# completes, then locally patch any 2x2 violations -- see the class
+# docstring for why), which is also why it can cover 2-star here where
+# SquareFreeGenerator can't.
+
+@pytest.mark.parametrize("board_size", [6, 7, 8, 9])
+class TestSquareFreeDeboxGenerator:
+    @pytest.fixture
+    def board_and_solutions(self, board_size):
+        gen = SquareFreeDeboxGenerator(board_size)
+        return gen.generate(), board_size
+
+    def test_correct_region_count(self, board_and_solutions):
+        (board, _), board_size = board_and_solutions
+        assert_board_valid(board, board_size)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        (board, _), board_size = board_and_solutions
+        assert_board_valid(board, board_size)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        (_, solutions), _ = board_and_solutions
+        assert_ambiguous(solutions)
+
+    def test_no_2x2_block(self, board_and_solutions):
+        (board, _), board_size = board_and_solutions
+        assert_no_2x2_block(board, board_size)
+
+
+class TestSquareFreeDeboxGeneratorTwoStar:
+    @pytest.fixture
+    def board_and_solutions(self):
+        gen = SquareFreeDeboxGenerator(TWO_STAR_N, stars_per_unit=2)
+        return gen.generate(max_attempts=TWO_STAR_MAX_ATTEMPTS)
+
+    def test_correct_region_count(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_all_regions_contiguous(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_board_valid(board, TWO_STAR_N)
+
+    def test_is_ambiguous(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_ambiguous(solutions)
+
+    def test_two_stars_per_row(self, board_and_solutions):
+        _, solutions = board_and_solutions
+        assert_stars_per_unit(solutions, TWO_STAR_N, 2)
+
+    def test_no_2x2_block(self, board_and_solutions):
+        board, _ = board_and_solutions
+        assert_no_2x2_block(board, TWO_STAR_N)
 
 
 # ── SymmetricGenerator ────────────────────────────────────────────────────────

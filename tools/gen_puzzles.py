@@ -14,6 +14,7 @@ Generation usage:
     python3 gen_puzzles.py generate --mode mono --n 8 --count 100
     python3 gen_puzzles.py generate --mode solution_first_pair --n 8 --count 100 --board-count 3
     python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100 --score-after
+    python3 gen_puzzles.py generate --mode square_free_pair --n 9 --count 100 --stars 2
 
 Scoring usage:
     python3 gen_puzzles.py score --input puzzles.csv
@@ -54,6 +55,7 @@ from quad_aligned_generator import QuadAlignedGenerator
 from random_generator import RandomGenerator
 from subdivision_generator import SubdivisionGenerator
 from square_free_generator import SquareFreeGenerator
+from square_free_debox_generator import SquareFreeDeboxGenerator
 from symmetric_generator import SymmetricGenerator
 from venn_generator import VennGenerator
 from voronoi_generator import VoronoiGenerator
@@ -159,10 +161,12 @@ def _build_solution_first_pair(args, n, output_rows):
 # mode, and the unreachable line after it is kept on purpose as the next
 # thing to swap in, not dead code to clean up.
 def _build_tmp(args, n, output_rows):
-    gen_a = RandomGenerator(n)
-    return TripleComparator(gen_a, n, output_rows)
-    gen_b = SymmetricGenerator(n, symmetry_type="none", translation_type="hsplit")
-    return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows, match_variants=False)
+    gen = SquareFreeDeboxGenerator(n, stars_per_unit=args.stars)
+    return MonoComparator(gen, n, output_rows)
+
+    gen_a = SymmetricGenerator(n, symmetry_type="octo", translation_type="none", stars_per_unit=args.stars)
+    gen_b = SymmetricGenerator(n, symmetry_type="rot_180", translation_type="vsplit3", stars_per_unit=args.stars)
+    return AsymmetricPoolComparator(gen_a, gen_b, n, output_rows, match_variants=True)
 
 
 # Maps mode names to factory lambdas.
@@ -179,6 +183,7 @@ MODES = {
     'sudoku_pair':          lambda a, n, r: _build_sudoku_pair(n, r, stars_per_unit=a.stars),
     'mono':                 lambda a, n, r: _build_mono(a, n, r),
     'solution_first_pair':  lambda a, n, r: _build_solution_first_pair(a, n, r),
+    'square_free_pair':     lambda a, n, r: SymmetricPoolComparator(SquareFreeDeboxGenerator(n, stars_per_unit=a.stars), n, r),
 }
 
 # Modes whose underlying generator/comparator actually varies its region
@@ -189,7 +194,7 @@ MODES = {
 STARS_CAPABLE_MODES = {
     'random_pair', 'symmetric_pair', 'self_entangled', 'super_symmetric',
     'letter_pair', 'voting_district_pair', 'sudoku_pair', 'mono',
-    'solution_first_pair',
+    'tmp', 'solution_first_pair', 'square_free_pair',
 }
 
 # Smallest board size that can plausibly fit a given star count. Non-touching
@@ -469,6 +474,7 @@ Modes:
   sudoku_pair            Fixed sudoku 3x3-box board paired with random boards (n=9 only)
   mono                   Single-board puzzles with a unique solution (SolutionFirstGenerator)
   solution_first_pair    board_count boards, each individually ambiguous, jointly unique
+  square_free_pair       Two boards with 'square-free' regions (no 2x2 same-region block)
 
 --stars (default 1) sets how many stars each row/column/region must
 contain. Every mode above supports it except tmp (scratch/dev boilerplate,
@@ -500,6 +506,7 @@ Examples:
   python3 gen_puzzles.py generate --mode mono --n 8 --count 100
   python3 gen_puzzles.py generate --mode solution_first_pair --n 8 --count 50 --board-count 3
   python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100 --seed 12345
+  python3 gen_puzzles.py generate --mode square_free_pair --n 9 --count 50 --stars 2
         """,
     )
     gen_p.add_argument("--mode", choices=list(MODES.keys()), required=True,
