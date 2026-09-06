@@ -1,6 +1,5 @@
 data/tmp.csv
 tools/*.csv
-tools/sym_data/*.csv
 
 # Generated puzzles not yet ready to serve from data/ -- staging area only,
 # never published.
