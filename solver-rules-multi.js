@@ -2005,6 +2005,23 @@ export function applyMultiStarRules(PuzzleSolver) {
             for (let c = barStart; c < barEnd; c++) {
               if (!hasEmpty[c] || width[c] !== 1) { validBar = false; break; }
             }
+            // Also require the whole bar to be confined to a single one of
+            // the pair's two lines. A bar that alternates -- some
+            // positions drawn from lineA, others from lineB -- is still a
+            // genuine simple path (consecutive cells stay diagonally
+            // adjacent either way, so the max-non-touching DP is unaffected)
+            // and the deduction is just as sound, but highlighted it reads
+            // as the marked strip jumping between rows/columns, which is
+            // confusing even when correct. Skipping it costs nothing: the
+            // search tries every barStart/barEnd independently, so the same
+            // final target is generally still reachable via a same-line bar
+            // with one more tile absorbing the flip point instead.
+            if (validBar) {
+              const barSide = isEmptyA[barStart];
+              for (let c = barStart + 1; c < barEnd; c++) {
+                if (isEmptyA[c] !== barSide) { validBar = false; break; }
+              }
+            }
             if (!validBar) continue;
 
             const revBarStart = n - barEnd; // suffix [barEnd, n) == reversed-prefix [0, n-barEnd)
@@ -2079,14 +2096,14 @@ export function applyMultiStarRules(PuzzleSolver) {
       const lineWord = axis === 'row' ? 'row' : 'column';
       const cellWord = targets.length === 1 ? 'cell' : 'cells';
       const barWord = barCells.length === 1 ? 'cell' : 'cells';
+      const dotWord = targets.length === 1 ? 'a dot' : 'dots';
 
       hints.push({
         boardIdx: undefined,
-        description: `${tiles.length} confirmed tile${tiles.length === 1 ? '' : 's'} (outlined) hold at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} between them, so the amber-outlined ${lineWord}'s ${barCells.length}-${barWord} leftover strip must hold at least ${need} star${need === 1 ? '' : 's'}. The marked ${cellWord} touch${targets.length === 1 ? 'es' : ''} enough of it to rule out every way to fit that many, so ${targets.length === 1 ? "it's" : "they're"} dots.`,
+        description: `The ${tiles.length} confirmed tile${tiles.length === 1 ? '' : 's'} (outlined) provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} blue ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}. The marked ${cellWord} touch${targets.length === 1 ? 'es' : ''} enough of ${barCells.length === 1 ? 'it' : 'them'} to rule out every way to fit that many, so ${targets.length === 1 ? "it's" : "they're"} ${dotWord}.`,
         highlights: barCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines: tiles.map(t => ({ topLeftIdx: t.topLeftIdx, color: TILE_OUTLINE_COLORS[1] })),
-        lineHighlight: { boardIdx: 0, axis, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
       });
     }
     if (hints.length === 0) return null;

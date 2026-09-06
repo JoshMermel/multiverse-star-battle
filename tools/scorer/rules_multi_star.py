@@ -1943,6 +1943,13 @@ class MultiStarRules:
                     for bar_end in range(bar_start + 1, n + 1):
                         if not all(has_empty[c] and width[c] == 1 for c in range(bar_start, bar_end)):
                             continue
+                        # Also require the whole bar to stay on a single one
+                        # of the pair's two lines -- see the JS port
+                        # (solver-rules-multi.js, same spot) for why a
+                        # same-line bar is preferred even though an
+                        # alternating one is equally sound.
+                        if len({is_empty_a[c] for c in range(bar_start, bar_end)}) > 1:
+                            continue
 
                         rev_bar_start = n - bar_end
                         suffix_counts = suffix_dp[rev_bar_start]
