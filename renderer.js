@@ -647,7 +647,16 @@ export function applyRenderer(GameClass) {
     const bottomReserve = bottomVisible
       ? bottomControls.getBoundingClientRect().height + 20
       : 24;
-    const availableHeight = window.innerHeight - wrapper.getBoundingClientRect().top - bottomReserve;
+    // getBoundingClientRect().top is relative to the current SCROLL
+    // POSITION, not the page -- adding window.scrollY converts it to the
+    // wrapper's fixed distance from the top of the document, so this comes
+    // out the same regardless of where the page happens to be scrolled
+    // when a puzzle loads (a real reported bug: navigating to a new
+    // puzzle while scrolled down measured a shorter, scroll-shrunk "top"
+    // and so a taller availableHeight, sizing boards bigger than the
+    // viewport could actually fit and pushing the controls off-screen).
+    const wrapperDocTop = wrapper.getBoundingClientRect().top + window.scrollY;
+    const availableHeight = window.innerHeight - wrapperDocTop - bottomReserve;
 
     // Same (grid-n + 1) convention as the CSS formulas: always reserve the
     // row-label column's width/height, whether or not the "Axis labels"
