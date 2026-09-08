@@ -420,6 +420,27 @@ input[type="number"]::-webkit-inner-spin-button {
   outline: 2px solid var(--highlight-hint-red-out);
   outline-offset: -2px;
 }
+/* A colorblind player reported being unable to tell this apart from
+   .error-cell's OWN red (the live rule-violation highlight, always on
+   regardless of hints) -- hitting Hint while an error already shows just
+   re-marks the same cells in a second, barely-distinguishable red. The
+   "X" badge is the real fix: a shape, not a hue, so it reads as "the
+   hint is about this cell" no matter how red-vs-red renders for that
+   player. --text-primary (not a red) so it never itself depends on red
+   perception -- just shape + contrast against the highlight tint
+   beneath it. Positioned absolute/corner (not a flex child) so it never
+   competes with a centered star/dot glyph in the same cell. */
+.hint-error-red::after {
+  content: '✕';
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  font-size: calc(var(--cell-size) * 0.32);
+  line-height: 1;
+  font-weight: bold;
+  color: var(--text-primary);
+  pointer-events: none;
+}
 .hint-target-green { background-color: var(--highlight-hint-green-bg); }
 .hint-target-yellow {
   /* Use background-image so background-color can still show through beneath it */
