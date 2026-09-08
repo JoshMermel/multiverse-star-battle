@@ -3,6 +3,23 @@
 export function applyRenderer(GameClass) {
   const p = GameClass.prototype;
 
+  // Shared with _updateCellSizeSettingVisibility below (and duplicated,
+  // deliberately, as a plain number in style.css's own min-width:900px
+  // rule and input.js's resize-listener comment -- same tradeoff as
+  // MAX_CELL below: one crisp source per file beats a cross-file import
+  // for a value this small and this rarely touched).
+  const DESKTOP_BREAKPOINT = 900;
+
+  // "Board size" setting (index.html's #setting-cell-size segmented
+  // control) -- caps how big _recomputeBoardLayout lets a cell grow on a
+  // spacious screen. Large matches the fixed 90px this app always used
+  // before the setting existed, so anyone who's never touched the
+  // setting sees no change. Purely a ceiling: on a cramped window where
+  // the width/height-fit size is already below the chosen cap, this does
+  // nothing -- see _recomputeBoardLayout's own MIN_CELL/MAX_CELL comment.
+  const CELL_SIZE_CAPS = { small: 60, medium: 75, large: 90 };
+  const getCellSizeCap = () => CELL_SIZE_CAPS[localStorage.getItem('setting-cell-size')] || CELL_SIZE_CAPS.large;
+
   // --- Cell index cache ---
   //
   // Every cell across every board, indexed by cell index (one entry per
@@ -624,8 +641,7 @@ export function applyRenderer(GameClass) {
     if (!wrapper || !this.n || !this.regions) return;
 
     const root = document.documentElement;
-    const DESKTOP_BREAKPOINT = 900; // matches style.css's min-width:900px
-    if (window.innerWidth < DESKTOP_BREAKPOINT) {
+    if (window.innerWidth < DESKTOP_BREAKPOINT) { // matches style.css's min-width:900px
       // Hand sizing back to the stacked-layout CSS formulas.
       root.style.removeProperty('--cell-size');
       root.style.removeProperty('--boards-per-row');
@@ -663,7 +679,7 @@ export function applyRenderer(GameClass) {
     // setting is actually on, so toggling it doesn't reflow every board.
     const unitsPerBoard = this.n + 1;
     const MIN_CELL = 28;
-    const MAX_CELL = 90; // sanity cap -- purely aesthetic/usability past this, not a space constraint
+    const MAX_CELL = getCellSizeCap(); // sanity cap -- purely aesthetic/usability past this, not a space constraint; see the "Board size" setting above
     const cellFromWidth = (perRow) => (availableWidth - (perRow - 1) * colGap) / perRow / unitsPerBoard;
 
     // Width alone decides perRow: the most boards that fit per row
@@ -700,6 +716,19 @@ export function applyRenderer(GameClass) {
 
     root.style.setProperty('--cell-size', `${Math.floor(cellSize)}px`);
     root.style.setProperty('--boards-per-row', perRow);
+  };
+
+  // The "Board size" setting only has any effect above DESKTOP_BREAKPOINT
+  // (below it, cell size comes entirely from style.css's own formulas,
+  // which don't consult this setting at all) -- so the row that controls
+  // it is hidden below that width rather than left visible-but-inert.
+  // Called once at settings setup and again on every resize (same
+  // listener that drives _recomputeBoardLayout, input.js), so it stays
+  // correct even for the rare case of a desktop window resized narrower
+  // while the settings modal happens to be open.
+  p._updateCellSizeSettingVisibility = function () {
+    const row = document.getElementById('setting-cell-size-row');
+    if (row) row.hidden = window.innerWidth < DESKTOP_BREAKPOINT;
   };
 
   p._showBoard = function (boardNum) {

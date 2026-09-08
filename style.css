@@ -1238,6 +1238,28 @@ body.show-bottom-controls .bottom-controls { display: flex; }
 }
 .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
 
+/* Segmented control (e.g. Board size: Small/Medium/Large) -- same idea as
+   the toggle switch above but for a small closed set of choices instead
+   of a boolean. */
+.segmented-control {
+  display: flex;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.segmented-control button {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  border: none;
+  background: var(--bg-white);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.segmented-control button + button { border-left: 1px solid var(--border-strong); }
+.segmented-control button[aria-checked="true"] { background: var(--primary-blue); color: #fff; }
+
 /* Settings danger zone */
 .settings-danger-zone {
   display: flex;

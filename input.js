@@ -153,6 +153,29 @@ export function applyInput(GameClass) {
       });
     }
 
+    // --- Board size ---
+    //
+    // A 3-way choice (Small/Medium/Large), not a boolean, so it's wired
+    // separately from settingsToggles above instead of shoehorned into
+    // that boolean-only loop. See _recomputeBoardLayout/
+    // _updateCellSizeSettingVisibility (renderer.js) for what the value
+    // actually does and why the row is hidden below desktop width.
+    const CELL_SIZE_KEY = 'setting-cell-size';
+    const cellSizeControl = document.getElementById('setting-cell-size');
+    const cellSizeButtons = [...cellSizeControl.querySelectorAll('button')];
+    const setCellSizeSelection = (value) => {
+      cellSizeButtons.forEach(btn => btn.setAttribute('aria-checked', String(btn.dataset.value === value)));
+    };
+    setCellSizeSelection(localStorage.getItem(CELL_SIZE_KEY) || 'large');
+    cellSizeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        localStorage.setItem(CELL_SIZE_KEY, btn.dataset.value);
+        setCellSizeSelection(btn.dataset.value);
+        this._recomputeBoardLayout();
+      });
+    });
+    this._updateCellSizeSettingVisibility();
+
     // --- Clear Saves ---
     const clearSavesBtn = document.getElementById('clear-saves-btn');
     let clearSavesConfirmPending = false;
@@ -232,6 +255,7 @@ export function applyInput(GameClass) {
       requestAnimationFrame(() => {
         rafScheduled = false;
         this._recomputeBoardLayout();
+        this._updateCellSizeSettingVisibility();
       });
     });
 
