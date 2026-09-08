@@ -96,6 +96,7 @@ class StarBattleGame {
     await this._initPuzzleState(puzzleData, categoryId);
     this._renderBoards();
     this._updateStarsBadges();
+    this._updateBoardsMatchHelpText();
     this._syncPuzzleLoadBookkeeping(categoryId, puzzleData);
 
     this.solver = new PuzzleSolver(this);
@@ -174,6 +175,24 @@ class StarBattleGame {
     const helpStars = document.getElementById('help-stars-count');
     if (helpStars) {
       helpStars.textContent = this.starsPerGroup === 1 ? '1 star' : `${this.starsPerGroup} stars`;
+    }
+  }
+
+  // The "boards always match" help paragraph only makes sense once there's
+  // more than one board to match -- omit it entirely for single-board
+  // (mono) puzzles, say "both boards" for the common 2-board case, and
+  // "all N boards" for anything larger (triplets, quadruplets, ...).
+  _updateBoardsMatchHelpText() {
+    const para = document.getElementById('help-boards-match-text');
+    const countSpan = document.getElementById('help-boards-match-count');
+    if (!para || !countSpan) return;
+
+    const numBoards = this.regions.length;
+    para.hidden = numBoards <= 1;
+    if (numBoards === 2) {
+      countSpan.textContent = 'both boards';
+    } else if (numBoards > 2) {
+      countSpan.textContent = `all ${numBoards} boards`;
     }
   }
 

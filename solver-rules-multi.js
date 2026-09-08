@@ -1584,7 +1584,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         : `${matchingTiles.length} of these tiles have only one empty cell left, so each one must be the star.`;
 
       hints.push({
-        description: `This ${this._axisPairLabel(tiling.axis)} needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. ${forceText}`,
+        description: `This ${this._axisPairLabel(tiling.axis)} still needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. ${forceText}`,
         highlights,
         marks: markIdxs.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
         tileOutlines,
@@ -1637,7 +1637,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         : `In each of these ${matchingTiles.length} tiles, both empty cells touch the marked cell(s) next to it, so those cells are dots.`;
 
       hints.push({
-        description: `This ${this._axisPairLabel(tiling.axis)} needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. ${dotText}`,
+        description: `This ${this._axisPairLabel(tiling.axis)} still needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. ${dotText}`,
         highlights,
         marks: targetList.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
@@ -1735,10 +1735,8 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       const tileWord = combo.length === 1 ? 'tile' : 'tiles';
       const holdWord = combo.length === 1 ? 'holds' : 'each hold';
-      const possessive = combo.length === 1 ? 'its' : 'their';
-      const coveringWord = combo.length === 1 ? 'covering is' : 'coverings are';
       return {
-        description: `The ${combo.length} highlighted ${tileWord} ${holdWord} exactly one star (${possessive} full row- or column-pair ${coveringWord} outlined too), accounting for all ${combo.length} star${combo.length === 1 ? '' : 's'} this ${this._unitKind(unit)} needs -- so every other empty cell here is a dot.`,
+        description: `The ${combo.length} highlighted ${tileWord} ${holdWord} exactly one star, accounting for all ${combo.length} star${combo.length === 1 ? '' : 's'} this ${this._unitKind(unit)} needs -- so every other empty cell here is a dot.`,
         highlights,
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
@@ -2070,7 +2068,12 @@ export function applyMultiStarRules(PuzzleSolver) {
     }
 
     const seen = new Map(); // "targets|bar cells" already claimed by an earlier fact
-    const hints = [];
+    // { axis, lineIdx, barLen, hint } per surviving fact -- one row-pair/
+    // column-pair band can produce several valid bar/tile splits (see
+    // _tileBarFactsImpl's barStart/barEnd search), which read as redundant
+    // near-duplicate hints once shown together. Collected here so only the
+    // widest bar per band gets kept, below.
+    const candidates = [];
     for (const { axis, lineIdx, tiles, barCells, need } of this._tileBarFacts()) {
       const baseMax = this._maxNonTouchingAlongPath(barCells, existingStars);
       if (baseMax < need) continue; // shouldn't happen on a consistent board; guard anyway
@@ -2096,14 +2099,32 @@ export function applyMultiStarRules(PuzzleSolver) {
       const lineWord = axis === 'row' ? 'row' : 'column';
       const barWord = barCells.length === 1 ? 'cell' : 'cells';
 
-      hints.push({
-        boardIdx: undefined,
-        description: `The ${tiles.length} tile${tiles.length === 1 ? '' : 's'} provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} blue ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}.`,
-        highlights: barCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-        tileOutlines: tiles.map(t => ({ topLeftIdx: t.topLeftIdx, color: TILE_OUTLINE_COLORS[1] })),
+      candidates.push({
+        axis, lineIdx, barLen: barCells.length,
+        hint: {
+          boardIdx: undefined,
+          description: `The ${tiles.length} tile${tiles.length === 1 ? '' : 's'} provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} blue ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}.`,
+          highlights: barCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+          tileOutlines: tiles.map(t => ({ topLeftIdx: t.topLeftIdx, color: TILE_OUTLINE_COLORS[1] })),
+        },
       });
     }
+
+    // Keep only the widest-bar candidate per (axis, lineIdx) band. A
+    // narrower bar for the same band is a weaker version of the exact same
+    // argument (fewer blue cells forced to carry the same or a smaller
+    // "at least" count), so once the widest one is shown the rest add
+    // nothing -- they were reading as near-duplicate hints on the same
+    // board state.
+    const bestByBand = new Map();
+    for (const c of candidates) {
+      const bandKey = `${c.axis}|${c.lineIdx}`;
+      const existing = bestByBand.get(bandKey);
+      if (!existing || c.barLen > existing.barLen) bestByBand.set(bandKey, c);
+    }
+    const hints = [...bestByBand.values()].map(c => c.hint);
+
     if (hints.length === 0) return null;
     hints.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
     return hints;
