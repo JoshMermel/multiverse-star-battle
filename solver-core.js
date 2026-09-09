@@ -515,9 +515,15 @@ export class PuzzleSolver {
   // the last-resort fallback, since padding with "just look at the answer"
   // isn't a real hint. The original hint always comes first (easier tier
   // before harder), with the padding appended after.
+  //
+  // Except checkForErrors: padding past it would mean showing the player
+  // a real deduction hint in the same breath as "fix your mistake first",
+  // which doesn't make sense -- there's nothing to deduce from a board
+  // that's currently wrong. That hint should just stand alone.
   _buildHintBatch(hints, rules, matchedIndex) {
     const batch = this._shuffle(hints.slice());
     if (batch.length > 1) return batch;
+    if (rules[matchedIndex].key === 'checkForErrors') return batch;
 
     for (let j = matchedIndex + 1; j < rules.length; j++) {
       const { key, fn } = rules[j];

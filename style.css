@@ -57,7 +57,7 @@
   --highlight-hint-blue-bg:   rgba(0,   123, 255, 0.25);
   --highlight-hint-red-bg:    rgba(255, 0,   0,   0.22);
   --highlight-hint-red-out:   rgba(200, 0,   0,   0.55);
-  --highlight-hint-green-bg:  rgba(0,   200, 0,   0.25);
+  --highlight-hint-green-bg:  rgba(0,   140, 0,   0.9);
   --highlight-hint-yellow:    rgba(255, 255, 0,   0.65);
   --highlight-error-star:     #d00;
 
@@ -133,7 +133,7 @@
   --highlight-hint-blue-bg:   rgba(80,  160, 255, 0.35);
   --highlight-hint-red-bg:    rgba(255, 80,  80,  0.35);
   --highlight-hint-red-out:   rgba(255, 100, 100, 0.70);
-  --highlight-hint-green-bg:  rgba(80,  220, 80,  0.30);
+  --highlight-hint-green-bg:  rgba(70,  230, 70,  0.9);
   --highlight-hint-yellow:    rgba(255, 255, 80,  0.50);
   --highlight-error-star:     #ff6b6b;
 
@@ -444,6 +444,16 @@ input[type="number"]::-webkit-inner-spin-button {
   color: var(--text-primary);
   pointer-events: none;
 }
+/* Same blue as .hint-source-blue, deliberately: a forced-star cell is
+   part of the same region a hint's other highlighted cells belong to
+   (rules exclude it from their own `highlights` list since it plays a
+   different role, but visually it reads much more clearly as "part of
+   this region, AND it's the star" than as a plain white cell floating
+   next to a blue-highlighted region). The green star below is drawn on
+   top of this via ::before -- see that rule's own comment for why a
+   flat background-color here can't also carry the star shape. */
+.hint-target-green { background-color: var(--highlight-hint-blue-bg); }
+
 /* The highlight itself is star-shaped, not a square fill -- "this empty
    cell will be a star" as a shape, not only a hue, same accessibility
    rationale as the error-hint's X badge above and the same technique
@@ -452,7 +462,10 @@ input[type="number"]::-webkit-inner-spin-button {
    background-color). A separate ::before (not .hint-target-green itself)
    carries the color/shape so clip-path only clips this overlay -- clipping
    the cell div directly would also clip its own border/grid-lines, which
-   still need to render as a normal square regardless of this highlight. */
+   still need to render as a normal square regardless of this highlight.
+   Solid/near-opaque (unlike the other translucent highlight-bg colors),
+   not just a different hue, so it reads as clean green rather than
+   blending into a blue-green wash on top of the blue background above. */
 .hint-target-green::before {
   content: '';
   position: absolute;
