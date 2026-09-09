@@ -64,8 +64,11 @@
   /* Extra SOURCE shades for hints that highlight several disjoint groups
      at once -- see HINT_SOURCE_VARIANTS in constants.js. Chosen to stay
      clear of every other highlight hue already in use here (yellow/green/
-     red/orange/teal). */
-  --highlight-hint-purple-bg: rgba(155, 89,  234, 0.25);
+     red/orange/teal). Brown (was purple -- see HINT_SOURCE_VARIANTS'
+     comment) is deliberately darker/more desaturated than blue/cyan/pink,
+     not just a different hue, so it stays distinguishable from blue by
+     lightness alone even for color vision that can't separate them by hue. */
+  --highlight-hint-brown-bg:  rgba(139, 90,  43,  0.25);
   --highlight-hint-cyan-bg:   rgba(6,   182, 212, 0.28);
   --highlight-hint-pink-bg:   rgba(236, 72,  153, 0.22);
 
@@ -82,7 +85,7 @@
      (a border needs full contrast; the -bg rgba values above are too
      washed out to read as a crisp outline). */
   --tile-outline-blue:   #007bff;
-  --tile-outline-purple: #9b59ea;
+  --tile-outline-brown:  #8b5a2b;
   --tile-outline-cyan:   #06b6d4;
   --tile-outline-pink:   #ec4899;
 
@@ -137,7 +140,7 @@
   /* Extra SOURCE shades — see the light-theme block above for why these
      hues were picked. Boosted opacity to match the rest of this block's
      higher-contrast-on-dark-backgrounds treatment. */
-  --highlight-hint-purple-bg: rgba(180, 130, 255, 0.35);
+  --highlight-hint-brown-bg:  rgba(200, 150, 90,  0.35);
   --highlight-hint-cyan-bg:   rgba(45,  210, 230, 0.35);
   --highlight-hint-pink-bg:   rgba(255, 110, 180, 0.32);
 
@@ -150,7 +153,7 @@
   /* "Tiles" rule family — brightened to match this block's higher-contrast-
      on-dark-backgrounds treatment. */
   --tile-outline-blue:   #50a0ff;
-  --tile-outline-purple: #b482ff;
+  --tile-outline-brown:  #d9a066;
   --tile-outline-cyan:   #2dd2e6;
   --tile-outline-pink:   #ff6eb4;
 
@@ -412,7 +415,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .hint-source-blue  { background-color: var(--highlight-hint-blue-bg); }
 /* Extra SOURCE shades, cycled per group when a hint highlights several
    disjoint groups at once -- see HINT_SOURCE_VARIANTS in constants.js. */
-.hint-source-purple { background-color: var(--highlight-hint-purple-bg); }
+.hint-source-brown { background-color: var(--highlight-hint-brown-bg); }
 .hint-source-cyan   { background-color: var(--highlight-hint-cyan-bg); }
 .hint-source-pink   { background-color: var(--highlight-hint-pink-bg); }
 .hint-error-red    {
@@ -441,7 +444,26 @@ input[type="number"]::-webkit-inner-spin-button {
   color: var(--text-primary);
   pointer-events: none;
 }
-.hint-target-green { background-color: var(--highlight-hint-green-bg); }
+/* The highlight itself is star-shaped, not a square fill -- "this empty
+   cell will be a star" as a shape, not only a hue, same accessibility
+   rationale as the error-hint's X badge above and the same technique
+   .hint-target-yellow already uses (its highlight is a circle, not a
+   square, via background-image/background-size rather than a flat
+   background-color). A separate ::before (not .hint-target-green itself)
+   carries the color/shape so clip-path only clips this overlay -- clipping
+   the cell div directly would also clip its own border/grid-lines, which
+   still need to render as a normal square regardless of this highlight. */
+.hint-target-green::before {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  background-color: var(--highlight-hint-green-bg);
+  clip-path: polygon(
+    50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%,
+    50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%
+  );
+  pointer-events: none;
+}
 .hint-target-yellow {
   /* Use background-image so background-color can still show through beneath it */
   background-image: radial-gradient(circle, var(--highlight-hint-yellow) 70%, transparent 71%);
@@ -490,7 +512,7 @@ input[type="number"]::-webkit-inner-spin-button {
   z-index: 6; /* above .dot's z-index: 5 */
 }
 .tile-outline-blue   { border-color: var(--tile-outline-blue); }
-.tile-outline-purple { border-color: var(--tile-outline-purple); }
+.tile-outline-brown { border-color: var(--tile-outline-brown); }
 .tile-outline-cyan   { border-color: var(--tile-outline-cyan); }
 .tile-outline-pink   { border-color: var(--tile-outline-pink); }
 

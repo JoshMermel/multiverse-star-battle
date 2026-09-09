@@ -18,9 +18,20 @@ export const HINT_COLOR = Object.freeze({
 // instead of blurring into one indistinct blob of blue. Index 0 intentionally
 // matches HINT_COLOR.SOURCE, so a single-group hint still renders exactly as
 // before.
+//
+// Was blue/purple/cyan/pink -- a colorblind player reported being unable to
+// reliably tell the purple slot apart from blue. Purple is a blue+red
+// blend, and protanopia/deuteranopia (by far the most common forms of
+// color blindness) both reduce red-channel perception, so that blend reads
+// as a dimmer, less saturated blue rather than a distinctly different hue.
+// Replaced with brown, separated from every other slot (and from the rest
+// of the app's highlight hues -- error red, target-star green, target
+// yellow, line-highlight amber) by lightness/saturation as well as hue,
+// which holds up across every type of color vision deficiency, not just
+// the red-green ones.
 export const HINT_SOURCE_VARIANTS = Object.freeze([
   'hint-source-blue',
-  'hint-source-purple',
+  'hint-source-brown',
   'hint-source-cyan',
   'hint-source-pink',
 ]);
@@ -29,7 +40,7 @@ export const HINT_SOURCE_VARIANTS = Object.freeze([
 // box-outline hints -- see solver-rules-multi.js's Tiles section. Index i
 // here intentionally matches HINT_SOURCE_VARIANTS[i], so a multi-tile hint's
 // outline color always matches that tile's own cell-highlight color.
-export const TILE_OUTLINE_COLORS = Object.freeze(['blue', 'purple', 'cyan', 'pink']);
+export const TILE_OUTLINE_COLORS = Object.freeze(['blue', 'brown', 'cyan', 'pink']);
 
 // Plain color name for the "region/line quota fill" rule family's full-row/
 // column outline band -- see solver-rules-multi.js's hintRegionLineQuotaFill
