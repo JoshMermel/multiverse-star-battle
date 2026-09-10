@@ -78,6 +78,7 @@ export function applyRules(GameClass) {
     // cells that were already dots for some OTHER reason (e.g. two groups
     // whose cells overlap), so a cell only reverts to empty once every
     // reason justifying it is gone.
+    const newlyDotted = [];
     for (const { indices, reason } of fillGroups) {
       for (const i of indices) {
         if (this.voidCells?.has(i)) continue;
@@ -87,9 +88,29 @@ export function applyRules(GameClass) {
           this._getCellsByIndex(i).forEach(cell => {
             this.updateCellVisual(cell, CELL.DOT);
           });
+          newlyDotted.push(i);
         }
         this._addDotReason(i, reason);
       }
+    }
+
+    // Same brief flash handleStart's right-click path gives the clicked
+    // cell itself (script.js) -- placing one star can auto-dot many other
+    // cells at once here, and without this the player has no visual cue
+    // which cells just changed as a side effect of their single click. A
+    // dedicated class (cell-autodot-flash), not cell-drag-highlight itself
+    // -- this can run mid-pointerup (a star placed via a drag/click commit
+    // auto-dots other cells before that SAME handler's clearDragHighlights()
+    // call), and clearDragHighlights() unconditionally wipes every
+    // .cell-drag-highlight synchronously, which would erase this flash
+    // before the browser ever painted it. See style.css for why the two
+    // classes render identically.
+    if (newlyDotted.length > 0) {
+      const flashedCells = newlyDotted.flatMap(i => this._getCellsByIndex(i));
+      flashedCells.forEach(cell => cell.classList.add('cell-autodot-flash'));
+      setTimeout(() => {
+        flashedCells.forEach(cell => cell.classList.remove('cell-autodot-flash'));
+      }, 80);
     }
   };
 

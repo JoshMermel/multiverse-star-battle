@@ -31,9 +31,47 @@ export function applySingleStarRules(PuzzleSolver) {
     }));
   };
 
+  // Shared by hintDomino and hintTileDomino: given two orthogonally-
+  // adjacent empty cells known to be a "domino" (a unit/tile with no star
+  // yet and exactly these 2 candidates, so exactly one of them holds the
+  // unit's single star), returns every other empty cell that can't be a
+  // star as a result -- the rest of the row/column the domino lies along
+  // (whichever of the two cells gets the star, that line's quota is met
+  // either way), plus any cell adjacent to BOTH domino cells (adjacent to
+  // the star regardless of which one it turns out to be). Returns null if
+  // the pair isn't actually orthogonally adjacent, or if nothing new gets
+  // eliminated.
+  p._dominoEliminationTargets = function (idxA, idxB) {
+    const n = this.n;
+    const rA = Math.floor(idxA / n), cA = idxA % n;
+    const rB = Math.floor(idxB / n), cB = idxB % n;
+
+    if (Math.abs(rA - rB) + Math.abs(cA - cB) !== 1) return null;
+
+    // Eliminate empty cells along the shared axis.
+    const blockedIndices = new Set();
+    if (rA === rB) {
+      for (let k = 0; k < n; k++) blockedIndices.add(rA * n + k);
+    } else {
+      for (let k = 0; k < n; k++) blockedIndices.add(k * n + cA);
+    }
+
+    // Eliminate common neighbors.
+    const adjA = new Set(this.getNeighbors(idxA));
+    const adjB = new Set(this.getNeighbors(idxB));
+    for (const idx of adjA) {
+      if (adjB.has(idx)) blockedIndices.add(idx);
+    }
+
+    blockedIndices.delete(idxA);
+    blockedIndices.delete(idxB);
+
+    const targets = Array.from(blockedIndices).filter(idx => this.vState(idx) === CELL.NONE);
+    return targets.length > 0 ? targets : null;
+  };
+
   // Rule: Check for domino patterns in unsolved regions.
   p.hintDomino = function () {
-    const n = this.n;
     const candidates = [];
 
     for (const bIdx of this.boardIndices) {
@@ -42,36 +80,10 @@ export function applySingleStarRules(PuzzleSolver) {
         if (empty.length !== 2) continue;
 
         const [idxA, idxB] = empty;
-        const rA = Math.floor(idxA / n), cA = idxA % n;
-        const rB = Math.floor(idxB / n), cB = idxB % n;
+        const targets = this._dominoEliminationTargets(idxA, idxB);
+        if (!targets) continue;
 
-        // Only orthogonally adjacent pairs.
-        if (Math.abs(rA - rB) + Math.abs(cA - cB) !== 1) continue;
-
-        // Eliminate empty cells along the shared axis.
-        const blockedIndices = new Set();
-        if (rA === rB) {
-          for (let k = 0; k < n; k++) blockedIndices.add(rA * n + k);
-        } else {
-          for (let k = 0; k < n; k++) blockedIndices.add(k * n + cA);
-        }
-
-        // Eliminate common neighbors.
-        const adjA = new Set(this.getNeighbors(idxA));
-        const adjB = new Set(this.getNeighbors(idxB));
-        for (const idx of adjA) {
-          if (adjB.has(idx)) blockedIndices.add(idx);
-        }
-
-        blockedIndices.delete(idxA);
-        blockedIndices.delete(idxB);
-
-        const targets = Array.from(blockedIndices)
-          .filter(idx => this.vState(idx) === CELL.NONE);
-
-        if (targets.length > 0) {
-          candidates.push({ idxA, idxB, targets, boardIdx: region.boardIdx });
-        }
+        candidates.push({ idxA, idxB, targets, boardIdx: region.boardIdx });
       }
     }
 
@@ -666,6 +678,109 @@ export function applySingleStarRules(PuzzleSolver) {
     };
   };
 
+  // --- Tiles for 1★ (Expert) ---
+  //
+  // The multi-star "Tiles" family (solver-rules-multi.js's _confirmedTiles:
+  // a row-pair or column-pair whose empty cells can be exactly partitioned
+  // into 2x2 boxes, one star guaranteed per box) is already starsPerGroup-
+  // agnostic -- _confirmedTilesImpl's quota is this.starsPerGroup, so it
+  // already produces the correct k=2 (2*1 - starsInBand) tiling for 1★
+  // boards, it just never got any 1★-specific rules built on top of it.
+  // These three reuse that same machinery (and, where possible, the exact
+  // existing 1★ elimination logic for a "confirmed single star among these
+  // cells" unit) applied to a TILE instead of a row/column/region:
+  //   - hintTileDomino: a tile whose empty cells ARE a domino -- feeds
+  //     _dominoEliminationTargets exactly like hintDomino does.
+  //   - hintTileSeesTooMuch: a tile with exactly 3 empty cells -- feeds
+  //     _hintSeesTooMuchForUnits exactly like hintUnitSeesTooMuch does.
+  //   - hintTileRegionSubset: a tile entirely inside one unsolved region --
+  //     that region's own star is satisfied by the tile, so the rest of
+  //     the region (outside the tile) must be dots. Structurally inert on
+  //     a regionless board (getUnsolvedRegions is always empty there),
+  //     same as every other region-based rule.
+  //
+  // Recognizing the 2-line tiling structure at all is a genuinely harder
+  // pattern than spotting an already-grouped region's own domino/sees-too-
+  // much/subset relationship, so all three sit at Expert, not alongside
+  // their same-logic Beginner/Hard counterparts.
+
+  // Rule: a confirmed tile (this._confirmedTiles()) whose empty cells are
+  // themselves a domino.
+  p.hintTileDomino = function () {
+    const candidates = [];
+    for (const tiling of this._confirmedTiles()) {
+      for (const tile of tiling.tiles) {
+        if (tile.cells.length !== 2) continue;
+        const [idxA, idxB] = tile.cells;
+        const targets = this._dominoEliminationTargets(idxA, idxB);
+        if (!targets) continue;
+        candidates.push({ idxA, idxB, targets });
+      }
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.idxA - b.idxA || a.idxB - b.idxB);
+    return candidates.map(({ idxA, idxB, targets }) => ({
+      description: "This tile's empty cells are a domino -- a star must be in the blue domino.",
+      highlights: [
+        { idx: idxA, color: HINT_COLOR.SOURCE },
+        { idx: idxB, color: HINT_COLOR.SOURCE }
+      ],
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+      boardIdx: undefined
+    }));
+  };
+
+  // Rule: a confirmed tile with exactly 3 empty cells, all seen by some
+  // external cell.
+  p.hintTileSeesTooMuch = function () {
+    const tileUnits = [];
+    for (const tiling of this._confirmedTiles()) {
+      for (const tile of tiling.tiles) {
+        if (tile.cells.length === 3) tileUnits.push({ indices: tile.cells, boardIdx: undefined });
+      }
+    }
+    if (tileUnits.length === 0) return null;
+    const hints = this._hintSeesTooMuchForUnits(tileUnits);
+    return hints?.map(hint => ({ ...hint, description: `This tile's empty cells must contain a star.` })) ?? null;
+  };
+
+  // Rule: a confirmed tile entirely inside one unsolved region -- the
+  // tile's guaranteed star satisfies that region too, so the rest of the
+  // region (outside the tile) must be dots.
+  p.hintTileRegionSubset = function () {
+    const candidates = [];
+    for (const bIdx of this.boardIndices) {
+      const cellToRegionMap = this.buildCellToRegionMap(bIdx);
+      const unsolvedRegs = this.getUnsolvedRegions(bIdx);
+      if (unsolvedRegs.length === 0) continue;
+
+      for (const tiling of this._confirmedTiles()) {
+        for (const tile of tiling.tiles) {
+          if (tile.cells.length === 0) continue;
+          const labels = new Set(tile.cells.map(i => cellToRegionMap[i]).filter(Boolean));
+          if (labels.size !== 1) continue;
+          const [label] = labels;
+          const region = unsolvedRegs.find(r => r.label === label);
+          if (!region) continue;
+
+          const tileSet = new Set(tile.cells);
+          const targets = region.indices.filter(i => !tileSet.has(i) && this.vState(i) === CELL.NONE);
+          if (targets.length === 0) continue;
+
+          candidates.push({ tile, region, targets, boardIdx: bIdx });
+        }
+      }
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.tile.cells[0] - b.tile.cells[0]);
+    return candidates.map(({ tile, region, targets, boardIdx }) => ({
+      description: `This tile sits entirely inside ${region.label} -- its guaranteed star satisfies that region too, so the rest of ${region.label} must be dots.`,
+      highlights: tile.cells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+      boardIdx
+    }));
+  };
+
   // --- Rule list for starsPerGroup === 1 ---
   //
   // Kept as the single source of truth for hint ordering/priority; getHint()
@@ -697,6 +812,9 @@ export function applySingleStarRules(PuzzleSolver) {
       { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
       { key: 'symmetryDeduction',        fn: () => this.hintSymmetryDeduction() },
       // Expert
+      { key: 'tileDomino',               fn: () => this.hintTileDomino() },
+      { key: 'tileSeesTooMuch',          fn: () => this.hintTileSeesTooMuch() },
+      { key: 'tileRegionSubset',         fn: () => this.hintTileRegionSubset() },
       { key: 'disjointUnitRegionSync3',  fn: () => this.hintDisjointUnitRegionSync(3) },
       { key: 'rowColLineSync3',          fn: () => this.hintRowColLineSync(3) },
       { key: 'crossBoardPinned2Row',     fn: () => this.hintCrossBoardRegionPinned(2, "Row") },

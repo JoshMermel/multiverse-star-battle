@@ -2106,7 +2106,11 @@ export function applyMultiStarRules(PuzzleSolver) {
           description: `The ${tiles.length} tile${tiles.length === 1 ? '' : 's'} provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} blue ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}.`,
           highlights: barCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
           marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-          tileOutlines: tiles.map(t => ({ topLeftIdx: t.topLeftIdx, color: TILE_OUTLINE_COLORS[1] })),
+          // Index 0 (blue), matching every other tile hint's single-
+          // covering case -- hints display one at a time, so there's never
+          // a second concurrent covering here needing a distinct color the
+          // way _colorSlotsForTiles exists for (rule 3's combined case).
+          tileOutlines: tiles.map(t => ({ topLeftIdx: t.topLeftIdx, color: TILE_OUTLINE_COLORS[0] })),
         },
       });
     }
