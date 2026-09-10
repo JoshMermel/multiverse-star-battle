@@ -45,3 +45,16 @@ export function rowIndices(n, r) {
 export function colIndices(n, c) {
   return Array.from({ length: n }, (_, k) => k * n + c);
 }
+
+// True when a board's region string carries no real region partition --
+// i.e. every non-void cell shares a single region id ("regionless"/
+// "shapeless" star battle: just rows, columns, adjacency, and voids, with
+// no shape constraint). A real region layout always uses more than one id
+// (one per row's worth of stars), so this is a safe, format-free way to
+// detect the variant: no separate flag needed anywhere upstream, a board
+// string with <= 1 distinct non-void id just IS regionless.
+export function isRegionlessBoard(regionString) {
+  const ids = new Set(regionString);
+  ids.delete('*');
+  return ids.size <= 1;
+}

@@ -519,6 +519,11 @@ export function applyRenderer(GameClass) {
 
   p._applyDarkMode = function (on) {
     document.documentElement.setAttribute('data-theme', on ? 'dark' : '');
+    // The regionless help-rule text names void cells' color (black/white),
+    // which flips with the theme -- refresh it live rather than leaving it
+    // stale until the next puzzle load. No-ops safely before any puzzle
+    // has loaded (_updateStarsBadges checks for its DOM targets).
+    this._updateStarsBadges?.();
   };
 
   // Show/hide the duplicate control bar at the bottom of the page (the

@@ -22,7 +22,7 @@ enumerating each board's solutions separately and intersecting in Python
 from collections import defaultdict
 from ortools.sat.python import cp_model
 
-from board_utils import VOID_CHAR, get_neighbors_8
+from board_utils import VOID_CHAR, get_neighbors_8, is_regionless_board
 
 
 def _build_star_model_multi(grids, n, stars_per_unit=2):
@@ -68,8 +68,15 @@ def _build_star_model_multi(grids, n, stars_per_unit=2):
                 model.add_implication(x[i], x[nb].negated())
 
     # One independent "exactly stars_per_unit stars per region" constraint
-    # set per board.
+    # set per board -- skipped for a regionless board (see
+    # is_regionless_board): its non-void cells all share one id, which
+    # isn't a real quota-bearing region and would otherwise wrongly cap
+    # the WHOLE board at stars_per_unit stars instead of n * stars_per_unit
+    # (one per row). Rows/columns above already constrain it correctly on
+    # their own.
     for grid in grids:
+        if is_regionless_board(grid):
+            continue
         region_map = defaultdict(list)
         for i, reg_id in enumerate(grid):
             if reg_id != VOID_CHAR:

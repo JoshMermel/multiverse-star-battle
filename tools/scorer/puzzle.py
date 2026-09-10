@@ -8,7 +8,7 @@ symmetry detection) every rule family reads from.
 
 import string
 
-from board_utils import VOID_CHAR, get_neighbors_8
+from board_utils import VOID_CHAR, get_neighbors_8, is_regionless_board
 
 
 class StarBattlePuzzle:
@@ -54,6 +54,22 @@ class StarBattlePuzzle:
         for i in self.void_cells:
             self.grid[i] = "."
 
+        # Per-board "no real region partition" flag -- see is_regionless_board.
+        # A board flagged here gets an EMPTY self.regions[b_idx] (see
+        # _map_regions), so nothing downstream mistakes its non-void cells
+        # for one giant region: every consumer that iterates
+        # self.regions[b_idx].items()/.keys()/.values() (units, sees-too-
+        # much, region-combo rules, etc.) naturally treats it as having no
+        # regions at all, rather than one region spanning almost the whole
+        # board (which would wrongly cap that board at stars_per_unit
+        # stars total instead of n * stars_per_unit). cell_to_region below
+        # is NOT emptied -- it still needs the real per-cell label string
+        # for symmetry detection (see _check_pairwise_symmetry), and a
+        # handful of rule call sites that look up a cell's region character
+        # directly (not via self.regions[b_idx].items()) check
+        # regionless_boards themselves before indexing self.regions with it,
+        # to avoid a KeyError against the now-empty dict.
+        self.regionless_boards = [is_regionless_board(b) for b in boards]
         self.regions = [self._map_regions(b) for b in boards]
 
         # Row/col index lists exclude void cells so that constraint checks
@@ -92,7 +108,15 @@ class StarBattlePuzzle:
         self.has_crossboard_rotation_180 = self._detect_crossboard_rotation_180()
 
     def _map_regions(self, board_str):
-        """Builds region→[cell_idx] mapping, skipping void cells."""
+        """
+        Builds region→[cell_idx] mapping, skipping void cells. Returns {}
+        for a regionless board (see is_regionless_board) rather than one
+        entry mapping almost the whole board to a single id -- that one
+        "region" isn't a real quota-bearing group, so it shouldn't be
+        treated like one anywhere downstream.
+        """
+        if is_regionless_board(board_str):
+            return {}
         mapping = {}
         for idx, char in enumerate(board_str):
             if char != VOID_CHAR:

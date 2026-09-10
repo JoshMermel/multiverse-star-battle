@@ -3,9 +3,10 @@ import { CELL, HINT_COLOR } from './constants.js';
 // Rules referenced, by the exact same underlying function, in both the
 // single-star and multi-star rule lists: error/already-solved checks,
 // onlyEmpty/excludeAdjacency/excludeSolvedUnit, hintRegionSubsetSync (used
-// at different K by each family), hintFromSolution, and hintLookahead (used
-// at different stage counts by each family). See solver-rules-single.js /
-// solver-rules-multi.js for the rules unique to each star-count family.
+// at different K by each family), hintRowColLineSync (used at different N by
+// each family), hintFromSolution, and hintLookahead (used at different stage
+// counts by each family). See solver-rules-single.js / solver-rules-multi.js
+// for the rules unique to each star-count family.
 export function applyCommonSolverRules(PuzzleSolver) {
   const p = PuzzleSolver.prototype;
 
@@ -203,6 +204,117 @@ export function applyCommonSolverRules(PuzzleSolver) {
       marks: [{ idx, color: HINT_COLOR.TARGET }],
       boardIdx: undefined
     }));
+  };
+
+  // Check "N rows/cols whose empties are confined to units of the other axis whose
+  // combined remaining room exactly matches what's still needed" deduction. This is the
+  // cross-axis analogue of _hintRegionsTrappedInUnits: instead of trapping N rows/cols
+  // inside N regions, it traps N rows inside columns directly, with no region
+  // information involved at all -- works identically on regular and irregular boards
+  // (moved here from solver-rules-single.js: originally 1★-only, now generalized to any
+  // starsPerGroup so both star-count families share the exact same function).
+  //
+  // For starsPerGroup === 1, every other-axis unit a window's empty cells touch always
+  // has exactly 1 cell of remaining room (a unit already at quota has no empty cell left
+  // to touch in the first place) -- so requiredCount ends up equal to the touched-unit
+  // COUNT, which is what this checked before generalizing. For starsPerGroup > 1 that
+  // stops being guaranteed (a touched column might still have room for 2+ stars), so the
+  // real invariant is the touched units' TOTAL remaining room, not just how many there are.
+  p._hintAxisLineTrapped = function (unitCombo, axisLabel) {
+    const n = this.n;
+    const quota = this.starsPerGroup;
+    const otherAxisLabel = axisLabel === "Row" ? "Column" : "Row";
+    const otherAxisIndices = this.axisIndices[otherAxisLabel];
+
+    const windowIndices = unitCombo.flat();
+    const windowSet = new Set(windowIndices);
+
+    const starsInWindow = windowIndices.filter(i => this.vState(i) === CELL.STAR).length;
+    const requiredCount = unitCombo.length * quota - starsInWindow;
+    if (requiredCount <= 0) return null;
+
+    const availInUnits = windowIndices.filter(i => this.vState(i) === CELL.NONE);
+    if (availInUnits.length === 0) return null;
+
+    // Which units of the OTHER axis do these empty cells actually touch?
+    const touchedOther = new Set(
+      availInUnits.map(i => axisLabel === "Row" ? i % n : Math.floor(i / n))
+    );
+
+    let otherRemaining = 0;
+    for (const otherIdx of touchedOther) {
+      const otherStars = otherAxisIndices[otherIdx].filter(i => this.vState(i) === CELL.STAR).length;
+      otherRemaining += quota - otherStars;
+    }
+    if (otherRemaining !== requiredCount) return null;
+
+    // Every other-axis unit touched is now "used up" by this window — any of its empty
+    // cells outside the window can no longer hold a star.
+    const targets = [];
+    for (const otherIdx of touchedOther) {
+      for (const idx of otherAxisIndices[otherIdx]) {
+        if (!windowSet.has(idx) && this.vState(idx) === CELL.NONE) targets.push(idx);
+      }
+    }
+    if (targets.length === 0) return null;
+
+    const targetSet = new Set(targets);
+    const N = unitCombo.length;
+    const axisWord = axisLabel.toLowerCase();
+    const otherWord = otherAxisLabel.toLowerCase();
+    const unitsPhrase = N === 1 ? `this ${axisWord}` : `these ${N} ${axisWord}s`;
+    const otherCount = touchedOther.size;
+    const otherPhrase = otherCount === 1 ? otherWord : `${otherWord}s`;
+    const thoseWord = otherCount === 1 ? 'that' : 'those';
+
+    // Identical wording to before this generalized (requiredCount === otherCount is the
+    // starsPerGroup === 1 case, and still the common case at higher quotas too) -- only
+    // reaches for the more explicit "combined room" phrasing when that's no longer exact
+    // enough to describe accurately (a touched unit whose own remaining need is > 1).
+    const description = requiredCount === otherCount
+      ? `All empty cells in ${unitsPhrase} fall within ${otherCount} ${otherPhrase}, so the rest of ${thoseWord} ${otherPhrase} must be dots.`
+      : `All empty cells in ${unitsPhrase} fall within ${otherCount} ${otherPhrase}, whose remaining room adds up to exactly ${requiredCount} star${requiredCount === 1 ? '' : 's'} -- so the rest of ${thoseWord} ${otherPhrase} must be dots.`;
+
+    return {
+      boardIdx: undefined,
+      description,
+      highlights: availInUnits.filter(i => !targetSet.has(i)).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+    };
+  };
+
+  // Find all row<->column line-sync hints for a window size of N.
+  p._hintAxisLineSyncAll = function (N, axis) {
+    const n = this.n;
+    const quota = this.starsPerGroup;
+    const axisIndices = this.axisIndices[axis];
+
+    // Units still short of quota -- for starsPerGroup === 1 that's exactly "no star yet"
+    // (the previous, 1★-only condition this generalizes).
+    const unsaturatedUnitIndices = Array.from({ length: n }, (_, i) => i)
+      .filter(u => axisIndices[u].filter(i => this.vState(i) === CELL.STAR).length < quota);
+
+    const candidates = [];
+    for (const combo of this.getCombinations(unsaturatedUnitIndices, N)) {
+      const unitCombo = combo.map(u => axisIndices[u]);
+      const hint = this._hintAxisLineTrapped(unitCombo, axis);
+      if (hint) candidates.push(hint);
+    }
+    return candidates;
+  };
+
+  // Rule: N rows (or N columns) whose empty cells are confined to units of the other axis
+  // with just enough combined room for what's needed — no region information needed,
+  // works identically on regular and irregular (including regionless) boards, at any
+  // starsPerGroup. Used at different N by each star-count family's rule list.
+  p.hintRowColLineSync = function (N) {
+    const candidates = [];
+    for (const axis of ["Row", "Column"]) {
+      candidates.push(...this._hintAxisLineSyncAll(N, axis));
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.highlights[0]?.idx ?? a.marks[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? b.marks[0]?.idx ?? 0));
+    return candidates;
   };
 
   // Rule: Multi-stage lookahead for contradiction checking.

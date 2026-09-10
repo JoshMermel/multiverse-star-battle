@@ -1,5 +1,5 @@
 import { CELL } from './constants.js';
-import { getNeighbors8, rowIndices, colIndices } from './geometry.js';
+import { getNeighbors8, rowIndices, colIndices, isRegionlessBoard } from './geometry.js';
 
 export function applyRules(GameClass) {
   const p = GameClass.prototype;
@@ -47,6 +47,7 @@ export function applyRules(GameClass) {
     }
 
     this.regions.forEach((regionString, boardIdx) => {
+      if (isRegionlessBoard(regionString)) return;
       const regionId = regionString[idx];
       if (regionId === '*') return;
       const regionIndices = [];
@@ -198,6 +199,7 @@ export function applyRules(GameClass) {
     this._reconcileGroupQuota(colIndices(n, col), `col:${col}`);
 
     this.regions.forEach((regionString, boardIdx) => {
+      if (isRegionlessBoard(regionString)) return;
       const regionId = regionString[starIdx];
       if (regionId === '*') return;
       const regionIndices = [];
@@ -250,6 +252,7 @@ export function applyRules(GameClass) {
     }
 
     this.regions.forEach(regionString => {
+      if (isRegionlessBoard(regionString)) return;
       const regionIds = [...new Set(regionString.split(''))].filter(id => id !== '*');
       regionIds.forEach(id => {
         const indices = [];

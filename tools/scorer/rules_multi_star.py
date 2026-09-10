@@ -1478,6 +1478,12 @@ class MultiStarRules:
             if remaining <= 1:
                 return True
         for b_idx in range(p.n_boards):
+            # A regionless board (see is_regionless_board) contributes no
+            # region here -- a and b sharing that board's single non-void
+            # id would only mean "both are non-void cells somewhere on the
+            # board", not "share a real quota-bearing region".
+            if p.regionless_boards[b_idx]:
+                continue
             reg_char = p.cell_to_region[b_idx][a]
             if reg_char != VOID_CHAR and p.cell_to_region[b_idx][b] == reg_char:
                 reg_indices = p.regions[b_idx][reg_char]
@@ -2051,11 +2057,18 @@ class MultiStarRules:
 
             for b_idx in board_scopes:
                 if single_board:
-                    reg_char = p.cell_to_region[b_idx][test_idx]
-                    reg_indices = p.regions[b_idx][reg_char]
-                    # Skip if this board's region has already reached quota (solved).
-                    if sum(1 for i in reg_indices if p.grid[i] == "x") >= quota:
-                        continue
+                    # A regionless board (see is_regionless_board) has no
+                    # region to complete here -- this board contributes
+                    # nothing beyond the row/col/adjacency reasoning below,
+                    # so skip straight to that (there's no "already reached
+                    # quota" region check to make, and p.regions[b_idx] is
+                    # empty, so looking reg_char up in it would KeyError).
+                    if not p.regionless_boards[b_idx]:
+                        reg_char = p.cell_to_region[b_idx][test_idx]
+                        reg_indices = p.regions[b_idx][reg_char]
+                        # Skip if this board's region has already reached quota (solved).
+                        if sum(1 for i in reg_indices if p.grid[i] == "x") >= quota:
+                            continue
 
                 saved = p.copy_grid()
                 p.grid[test_idx] = "x"
@@ -2073,8 +2086,12 @@ class MultiStarRules:
                                 p.grid[i] = "."
 
                 # Region dots: this board only in single-board mode, every
-                # board the cell belongs to otherwise.
+                # board the cell belongs to otherwise. Regionless boards
+                # (see is_regionless_board) contribute none -- there's no
+                # region there for the placement to complete.
                 for b in ([b_idx] if single_board else range(p.n_boards)):
+                    if p.regionless_boards[b]:
+                        continue
                     reg_char = p.cell_to_region[b][test_idx]
                     reg_indices = p.regions[b][reg_char]
                     if sum(1 for i in reg_indices if p.grid[i] == "x") == quota:

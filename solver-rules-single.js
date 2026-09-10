@@ -287,84 +287,11 @@ export function applySingleStarRules(PuzzleSolver) {
     return candidates;
   };
 
-  // Check "N rows/cols whose empties are confined to N cells of the other axis" deduction.
-  // This is the cross-axis analogue of _hintRegionsTrappedInUnits: instead of trapping N
-  // rows/cols inside N regions, it traps N rows inside N columns (or vice versa) directly,
-  // with no region information involved at all.
-  p._hintAxisLineTrapped = function (unitCombo, axisLabel) {
-    const n = this.n;
-    const otherAxisLabel = axisLabel === "Row" ? "Column" : "Row";
-    const otherAxisIndices = this.axisIndices[otherAxisLabel];
-
-    const windowIndices = unitCombo.flat();
-    const windowSet = new Set(windowIndices);
-
-    const starsInWindow = windowIndices.filter(i => this.vState(i) === CELL.STAR).length;
-    const requiredCount = unitCombo.length - starsInWindow;
-    if (requiredCount <= 0) return null;
-
-    const availInUnits = windowIndices.filter(i => this.vState(i) === CELL.NONE);
-    if (availInUnits.length === 0) return null;
-
-    // Which units of the OTHER axis do these empty cells actually touch?
-    const touchedOther = new Set(
-      availInUnits.map(i => axisLabel === "Row" ? i % n : Math.floor(i / n))
-    );
-    if (touchedOther.size !== requiredCount) return null;
-
-    // Every other-axis unit touched is now "used up" by this window — any of its empty
-    // cells outside the window can no longer hold a star.
-    const targets = [];
-    for (const otherIdx of touchedOther) {
-      for (const idx of otherAxisIndices[otherIdx]) {
-        if (!windowSet.has(idx) && this.vState(idx) === CELL.NONE) targets.push(idx);
-      }
-    }
-    if (targets.length === 0) return null;
-
-    const targetSet = new Set(targets);
-    const N = unitCombo.length;
-    const axisWord = axisLabel.toLowerCase();
-    const otherWord = otherAxisLabel.toLowerCase();
-    const unitsPhrase = N === 1 ? `this ${axisWord}` : `these ${N} ${axisWord}s`;
-    const otherPhrase = requiredCount === 1 ? `${otherWord}` : `${otherWord}s`;
-
-    return {
-      boardIdx: undefined,
-      description: `All empty cells in ${unitsPhrase} fall within ${requiredCount} ${otherPhrase}, so the rest of ${requiredCount === 1 ? 'that' : 'those'} ${otherPhrase} must be dots.`,
-      highlights: availInUnits.filter(i => !targetSet.has(i)).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-    };
-  };
-
-  // Find all row<->column line-sync hints for a window size of N.
-  p._hintAxisLineSyncAll = function (N, axis) {
-    const n = this.n;
-    const axisIndices = this.axisIndices[axis];
-
-    const starlessUnitIndices = Array.from({ length: n }, (_, i) => i)
-      .filter(u => !axisIndices[u].some(i => this.vState(i) === CELL.STAR));
-
-    const candidates = [];
-    for (const combo of this.getCombinations(starlessUnitIndices, N)) {
-      const unitCombo = combo.map(u => axisIndices[u]);
-      const hint = this._hintAxisLineTrapped(unitCombo, axis);
-      if (hint) candidates.push(hint);
-    }
-    return candidates;
-  };
-
-  // Rule: N rows (or N columns) whose empty cells are confined to N columns (or N rows) —
-  // no region information needed, works identically on regular and irregular boards.
-  p.hintRowColLineSync = function (N) {
-    const candidates = [];
-    for (const axis of ["Row", "Column"]) {
-      candidates.push(...this._hintAxisLineSyncAll(N, axis));
-    }
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => (a.highlights[0]?.idx ?? a.marks[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? b.marks[0]?.idx ?? 0));
-    return candidates;
-  };
+  // _hintAxisLineTrapped / _hintAxisLineSyncAll / hintRowColLineSync (the
+  // row<->column-only "swordfish" deduction -- no region information
+  // needed) moved to solver-rules-common.js: generalized to any
+  // starsPerGroup, it's now shared verbatim by both star-count families
+  // (see hintRowColLineSync's own comment there).
 
   // Rule: Check cross-board pinned regions.
   p.hintCrossBoardRegionPinned = function (N, axis = "Row") {

@@ -2,13 +2,14 @@
   "groups": {
     "__ungrouped__":    { "icon": "📅" },
     "One Star":         { "icon": "1️⃣",       "blurb": "One star in each row, column, and region",      "desc": "One star puzzles by size and difficulty" },
-    "Two Star":         { "icon": "2️⃣",     "blurb": "Two stars in each row, column, and region",     "desc": "Two star puzzles by size and difficulty" },
-    "Three Star":       { "icon": "3️⃣",   "blurb": "Three stars in each row, column, and region",   "desc": "Three star puzzles by size and difficulty" },
+    "Two Star":         { "icon": "2️⃣",       "blurb": "Two stars in each row, column, and region",     "desc": "Two star puzzles by size and difficulty" },
+    "Three Star":       { "icon": "3️⃣",       "blurb": "Three stars in each row, column, and region",   "desc": "Three star puzzles by size and difficulty" },
     "Rectangles":       { "icon": "⊞",        "blurb": "Rectangles and squares"},
     "Playground":       { "icon": "🛝",       "blurb": "Other puzzle ideas"},
     "Curiosities":      { "icon": "🤔",       "blurb": "Interesting to look at, less fun to solve"},
     "Giants":           { "icon": "🐋",       "blurb": "Huge puzzles with assorted star counts (desktop only)"},
     "Symmetry":         { "icon": "🔀",       "blurb": "Puzzles with symmetry"},
+    "Regionless":       { "icon": "🕳️",       "blurb": "No shapes -- just rows, columns, and voids", "desc": "Regionless puzzles by size and difficulty" },
     "Signoff":          { "icon": "💌",       "blurb": "A puzzle-y message from the creator"},
     "Experimental":     { "icon": "🧪",       "blurb": "Work in progress"}
   },
@@ -86,6 +87,10 @@
     {"id": "20x20",                 "label": "20x20",                  "group": "Giants", "stars": 1},
     {"id": "20x20_mono",            "label": "20x20 1-board",           "group": "Giants", "stars": 1},
     {"id": "21x21_mono",            "label": "21x21 1-Board",           "group": "Giants", "stars": 5},
-    {"id": "signoff",               "label": "Signoff",                 "group": "Signoff", "stars": 1}
+    {"id": "signoff",               "label": "Signoff",                 "group": "Signoff", "stars": 1},
+    {"id": "6x6_regionless",   "label": "6x6",   "group": "Regionless", "stars": 1},
+    {"id": "8x8_regionless",   "label": "8x8",   "group": "Regionless", "stars": 1},
+    {"id": "9x9_regionless",   "label": "9x9",   "group": "Regionless", "stars": 2},
+    {"id": "13x13_regionless", "label": "13x13", "group": "Regionless", "stars": 3}
   ]
 }

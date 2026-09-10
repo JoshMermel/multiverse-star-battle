@@ -23,6 +23,22 @@ ALPHABET = string.ascii_uppercase + string.ascii_lowercase
 # never hold a star.  Must not appear in ALPHABET.
 VOID_CHAR = "*"
 
+
+def is_regionless_board(board_str):
+    """
+    True when a board string carries no real region partition -- i.e. every
+    non-void cell shares a single region id ("regionless"/"shapeless" star
+    battle: just rows, columns, adjacency, and voids, with no shape
+    constraint). A real region layout always uses more than one id (one per
+    row's worth of stars), so this is a safe, format-free way to detect the
+    variant: no separate flag needed anywhere upstream, a board string with
+    <= 1 distinct non-void id just IS regionless. Mirrors geometry.js's
+    isRegionlessBoard on the JS side -- keep both in sync.
+    """
+    ids = set(board_str)
+    ids.discard(VOID_CHAR)
+    return len(ids) <= 1
+
 TRANSFORM_NAMES = [
     "identity", "rot90", "rot180", "rot270",
     "flip_h", "flip_v", "flip_diag", "flip_antidiag",

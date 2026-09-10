@@ -1,5 +1,5 @@
 import { CELL, HINT_COLOR } from './constants.js';
-import { getNeighbors8, cellsAdjacent, rowIndices, colIndices } from './geometry.js';
+import { getNeighbors8, cellsAdjacent, rowIndices, colIndices, isRegionlessBoard } from './geometry.js';
 
 // _enumerateUnitCompletions bails out (returns null, same as "already at
 // quota" -- every caller already treats that as "this unit contributes
@@ -174,6 +174,12 @@ export class PuzzleSolver {
 
     // Regions (board-specific indices)
     this.game.regions.forEach((regionString, boardIdx) => {
+      // A regionless ("shapeless") board has no real region partition to
+      // add units for -- see isRegionlessBoard's comment. Skipping it here
+      // (rather than emitting one board-spanning region) is what keeps
+      // that board's stars constrained by rows/columns/adjacency only.
+      if (isRegionlessBoard(regionString)) return;
+
       // '*' marks void cells, which belong to no region.
       const regionIds = [...new Set(regionString.split(''))].filter(id => id !== '*');
       regionIds.forEach(id => {

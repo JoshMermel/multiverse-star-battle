@@ -15,6 +15,7 @@ Generation usage:
     python3 gen_puzzles.py generate --mode solution_first_pair --n 8 --count 100 --board-count 3
     python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100 --score-after
     python3 gen_puzzles.py generate --mode square_free_pair --n 9 --count 100 --stars 2
+    python3 gen_puzzles.py generate --mode regionless_ladder --n 10 --count 100 --stars 2
 
 Scoring usage:
     python3 gen_puzzles.py score --input puzzles.csv
@@ -64,6 +65,8 @@ from voting_district_generator import VotingDistrictGenerator
 # Comparators for pairing puzzles
 from asymmetric_pool_comparator import AsymmetricPoolComparator
 from mono_comparator import MonoComparator
+from regionless_generator import RegionlessGenerator
+from regionless_ladder_comparator import RegionlessLadderComparator
 from self_comparator import SelfComparator
 from solution_first_generator import SolutionFirstGenerator
 from solution_first_pair_comparator import SolutionFirstPairComparator
@@ -147,6 +150,11 @@ def _build_mono(args, n, output_rows):
     return MonoComparator(gen, n, output_rows)
 
 
+def _build_regionless_ladder(args, n, output_rows):
+    gen = RegionlessGenerator(n, stars_per_unit=args.stars)
+    return RegionlessLadderComparator(gen, n, output_rows)
+
+
 def _build_solution_first_pair(args, n, output_rows):
     return SolutionFirstPairComparator(
         n, output_rows, board_count=args.board_count, stars_per_unit=args.stars,
@@ -184,6 +192,7 @@ MODES = {
     'mono':                 lambda a, n, r: _build_mono(a, n, r),
     'solution_first_pair':  lambda a, n, r: _build_solution_first_pair(a, n, r),
     'square_free_pair':     lambda a, n, r: SymmetricPoolComparator(SquareFreeDeboxGenerator(n, stars_per_unit=a.stars), n, r),
+    'regionless_ladder':    lambda a, n, r: _build_regionless_ladder(a, n, r),
 }
 
 # Modes whose underlying generator/comparator actually varies its region
@@ -194,7 +203,7 @@ MODES = {
 STARS_CAPABLE_MODES = {
     'random_pair', 'symmetric_pair', 'self_entangled', 'super_symmetric',
     'letter_pair', 'voting_district_pair', 'sudoku_pair', 'mono',
-    'tmp', 'solution_first_pair', 'square_free_pair',
+    'tmp', 'solution_first_pair', 'square_free_pair', 'regionless_ladder',
 }
 
 # Smallest board size that can plausibly fit a given star count. Non-touching
@@ -475,6 +484,10 @@ Modes:
   mono                   Single-board puzzles with a unique solution (SolutionFirstGenerator)
   solution_first_pair    board_count boards, each individually ambiguous, jointly unique
   square_free_pair       Two boards with 'square-free' regions (no 2x2 same-region block)
+  regionless_ladder      Single-board REGIONLESS ("shapeless") puzzles, unique via voids only;
+                         one attempt can emit several rows spanning multiple difficulty tiers
+                         (see regionless_generator.py) -- --count may be reached well before
+                         --count attempts run
 
 --stars (default 1) sets how many stars each row/column/region must
 contain. Every mode above supports it except tmp (scratch/dev boilerplate,
@@ -507,6 +520,7 @@ Examples:
   python3 gen_puzzles.py generate --mode solution_first_pair --n 8 --count 50 --board-count 3
   python3 gen_puzzles.py generate --mode random_pair --n 8 --count 100 --seed 12345
   python3 gen_puzzles.py generate --mode square_free_pair --n 9 --count 50 --stars 2
+  python3 gen_puzzles.py generate --mode regionless_ladder --n 10 --count 100 --stars 2
         """,
     )
     gen_p.add_argument("--mode", choices=list(MODES.keys()), required=True,

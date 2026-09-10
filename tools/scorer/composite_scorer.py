@@ -163,6 +163,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_placement_forced_intermediate_any,    35, "Hard"),
             (self.rule_unit_placement_forced_intermediate_dots,   35, "Hard"),
             (self.rule_unit_region_sync_multi_3,                  45, "Hard"),
+            # Row<->column line sync (rules_common.py): the 1★ family's
+            # _rule_axis_line_sync generalized to any stars_per_unit, only
+            # just added here -- no region information needed, so it's
+            # exactly as sound on a regionless board as a regular one.
+            # Slotted at the same N/tier as the 1★ table's row_col_line_sync
+            # rules (see rules_1star above).
+            (self.rule_2_row_col_line_sync_rows,                  46, "Hard"),
+            (self.rule_2_row_col_line_sync_cols,                  46, "Hard"),
             (self.rule_tile_two_empty_dot,                        50, "Hard"),
             # Tile-quota-fill's K=1 special case: a single confirmed tile
             # already covers a unit's whole remaining need. See
@@ -177,6 +185,8 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # Restored from pre-experiment -- see rules_multi_star.py's
             # "Restored from pre-experiment" section comment.
             (self.rule_unit_completion_satisfies_other_unit_intermediate, 82, "Hard"),
+            (self.rule_3_row_col_line_sync_rows,                  83, "Hard"),
+            (self.rule_3_row_col_line_sync_cols,                  83, "Hard"),
 
             # -- Symmetry - requires insight but not hard to apply -----------
             (self.rule_rotation_180_multi,                        5, "Symmetry"),

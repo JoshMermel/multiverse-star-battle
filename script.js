@@ -1,6 +1,7 @@
 import { PuzzleSolver } from './solver.js';
 import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS } from './constants.js';
 import { storageManager } from './storage.js';
+import { isRegionlessBoard } from './geometry.js';
 import { applyRenderer } from './renderer.js';
 import { applyInput } from './input.js';
 import { applyPuzzleLoader } from './puzzle-loader.js';
@@ -166,15 +167,28 @@ class StarBattleGame {
   }
 
   // Update the small star-count badges (book picker button, help modal)
-  // to match this puzzle's starsPerGroup.
+  // to match this puzzle's starsPerGroup. The help modal's rule paragraph
+  // also swaps wording entirely for a regionless ("shapeless") puzzle --
+  // there's no region to mention, and voids (if any) are worth calling out
+  // in their place -- rebuilt via innerHTML each time rather than just
+  // updating a nested <strong>, since the two versions' surrounding text
+  // differs, not just the star count.
   _updateStarsBadges() {
     const starsBadge = document.getElementById('bpb-current-stars');
     if (starsBadge) {
       starsBadge.textContent = `${'★'.repeat(this.starsPerGroup)}`;
     }
-    const helpStars = document.getElementById('help-stars-count');
-    if (helpStars) {
-      helpStars.textContent = this.starsPerGroup === 1 ? '1 star' : `${this.starsPerGroup} stars`;
+    const starsText = this.starsPerGroup === 1 ? '1 star' : `${this.starsPerGroup} stars`;
+    const ruleText = document.getElementById('help-rule-text');
+    if (ruleText) {
+      const isRegionless = this.regions?.every(r => isRegionlessBoard(r));
+      // Void cells render as --text-primary (style.css) -- near-black in
+      // light mode, near-white in dark mode -- so which word is accurate
+      // depends on the current theme, tracked as data-theme on <html>.
+      const voidColor = document.documentElement.getAttribute('data-theme') === 'dark' ? 'White' : 'Black';
+      ruleText.innerHTML = isRegionless
+        ? `Place exactly <strong>${starsText}</strong> per row and column on each board. ${voidColor} cells cannot hold a star. Stars cannot touch each other, even diagonally.`
+        : `Place exactly <strong>${starsText}</strong> per row, column, and bold region on each board. Stars cannot touch each other, even diagonally.`;
     }
   }
 

@@ -2177,6 +2177,12 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'unitPlacementForcedIntermediateAny',  fn: () => this.hintUnitPlacementForced('intermediate', 'any_star') },
       { key: 'unitPlacementForcedIntermediateDots', fn: () => this.hintUnitPlacementForced('intermediate', 'dots') },
       { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
+      // Row<->column line sync (see solver-rules-common.js): the 1★ family's
+      // hintRowColLineSync generalized to any starsPerGroup, only just added
+      // here -- no region information needed, so it's exactly as sound on a
+      // regionless board as a regular one. Slotted at the same N/tier as the
+      // 1★ list's rowColLineSync2/3.
+      { key: 'rowColLineSync2',                fn: () => this.hintRowColLineSync(2) },
       // Tiles rule 2.
       { key: 'tileTwoEmptyDot',                fn: () => this.hintTileTwoEmptyDot() },
       // Tile-quota-fill's K=1 special case: a single confirmed tile already
@@ -2201,6 +2207,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Restored from pre-experiment (see the section comment above
       // hintUnitCompletionSatisfiesOtherUnit).
       { key: 'unitCompletionSatisfiesOtherUnitIntermediate', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('intermediate') },
+      { key: 'rowColLineSync3',                fn: () => this.hintRowColLineSync(3) },
       // Symmetry - requires insight but not hard to apply
       { key: 'symmetryDeductionMulti',         fn: () => this.hintSymmetryDeductionMulti() },
       // Expert

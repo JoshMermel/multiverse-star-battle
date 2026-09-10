@@ -40,6 +40,11 @@ class SingleStarRules:
                 star_changes += self._internal_set(p, i, ".", "Row/Col Limit", silent)
 
             for b_idx in range(p.n_boards):
+                # A regionless board (see is_regionless_board) has no region
+                # for this star to fill -- only the row/col/adjacency
+                # consequences above apply there.
+                if p.regionless_boards[b_idx]:
+                    continue
                 reg_char = p.cell_to_region[b_idx][s_idx]
                 for i in p.regions[b_idx][reg_char]:
                     star_changes += self._internal_set(
@@ -346,71 +351,11 @@ class SingleStarRules:
 
         return 0
 
-    def rule_2_row_col_line_sync_rows(self, p):
-        return self._rule_axis_line_sync(p, n=2, axis="row")
-
-    def rule_2_row_col_line_sync_cols(self, p):
-        return self._rule_axis_line_sync(p, n=2, axis="col")
-
-    def rule_3_row_col_line_sync_rows(self, p):
-        return self._rule_axis_line_sync(p, n=3, axis="row")
-
-    def rule_3_row_col_line_sync_cols(self, p):
-        return self._rule_axis_line_sync(p, n=3, axis="col")
-
-    def _rule_axis_line_sync(self, p, n, axis):
-        """
-        MATCH: N rows (or N columns) whose empty cells are confined to
-        exactly N columns (or N rows) — the pure row<->column analogue of
-        _apply_pin_rule, with no region information involved at all. Works
-        identically on regular and irregular boards.
-
-        This is the general "N rows subset of N cols, so the rest of those
-        N cols must be dots" deduction (and symmetrically for N cols subset
-        of N rows). Python port of hintRowColLineSync / _hintAxisLineTrapped
-        in solver.js.
-
-        ACTION: Marks the remaining empty cells in those N other-axis units
-        as dots.
-        """
-        units = p.row_indices if axis == "row" else p.col_indices
-        other_units = p.col_indices if axis == "row" else p.row_indices
-        starless_units = [u for u in range(p.n)
-                          if not any(p.grid[i] == "x" for i in units[u])]
-
-        for combo in combinations(starless_units, n):
-            unit_idxs = set().union(*(units[u] for u in combo))
-
-            stars_in_window = sum(1 for i in unit_idxs if p.grid[i] == "x")
-            required_count = n - stars_in_window
-            if required_count <= 0:
-                continue
-
-            avail_in_units = [i for i in unit_idxs if p.grid[i] is None]
-            if not avail_in_units:
-                continue
-
-            # Which units of the OTHER axis do these empty cells touch?
-            if axis == "row":
-                touched_other = {i % p.n for i in avail_in_units}
-            else:
-                touched_other = {i // p.n for i in avail_in_units}
-
-            if len(touched_other) != required_count:
-                continue
-
-            other_union = set().union(*(other_units[u] for u in touched_other))
-            changes = sum(
-                p.validate_and_set(
-                    idx, ".",
-                    f"AxisLineSync({n}-{axis} combo {combo})",
-                    self.verbose)
-                for idx in other_union
-                if idx not in unit_idxs and p.grid[idx] is None
-            )
-            if changes > 0:
-                return changes
-        return 0
+    # rule_2/3_row_col_line_sync_rows/cols and _rule_axis_line_sync (the
+    # row<->column-only "swordfish" deduction -- no region information
+    # needed) moved to rules_common.py: generalized to any stars_per_unit,
+    # they're now shared verbatim by both star-count families (see
+    # _rule_axis_line_sync's own comment there).
 
     def rule_2_region_pinned_crossboard_rows(self, p):
         return self._rule_crossboard_n_region_pinned(p, n=2, axis="row")
@@ -555,6 +500,13 @@ class SingleStarRules:
         """
         for test_idx in (i for i, val in enumerate(p.grid) if val is None):
             for b_idx in range(p.n_boards):
+                # A regionless board (see is_regionless_board) has no region
+                # to eliminate against here -- nothing this board-scoped
+                # pass could contribute beyond the board-agnostic row/col/
+                # adjacency elimination every OTHER rule already covers.
+                if p.regionless_boards[b_idx]:
+                    continue
+
                 # Find the region this cell belongs to on b_idx.
                 reg_char = p.cell_to_region[b_idx][test_idx]
                 reg_indices = p.regions[b_idx][reg_char]
@@ -750,8 +702,12 @@ class SingleStarRules:
             return True
         if mirror in p._neighbor_map[i]:
             return True
+        # Skip regionless boards (see is_regionless_board): every non-void
+        # cell there shares the same raw region character by construction,
+        # which would make this comparison spuriously true for ANY two
+        # non-void cells rather than only cells genuinely sharing a region.
         return any(p.cell_to_region[b][i] == p.cell_to_region[b][mirror]
-                   for b in range(p.n_boards))
+                   for b in range(p.n_boards) if not p.regionless_boards[b])
 
     def rule_diagonal_symmetry(self, p):
         if not p.diagonal_symmetries:
@@ -801,6 +757,12 @@ class SingleStarRules:
                     if abs(ra - rb) <= 1 and abs(ca - cb) <= 1:
                         return True
                     for b_idx in range(p.n_boards):
+                        # Regionless boards (see is_regionless_board) would
+                        # otherwise make this spuriously true for any two
+                        # non-void cells -- they all share the same raw
+                        # region character there, not a real shared region.
+                        if p.regionless_boards[b_idx]:
+                            continue
                         ca_reg = p.cell_to_region[b_idx][a]
                         cb_reg = p.cell_to_region[b_idx][b]
                         if ca_reg != VOID_CHAR and ca_reg == cb_reg:
