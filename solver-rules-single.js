@@ -686,7 +686,7 @@ export function applySingleStarRules(PuzzleSolver) {
     };
   };
 
-  // --- Tiles for 1★ (Expert) ---
+  // --- Tiles for 1★ (Hard) ---
   //
   // The multi-star "Tiles" family (solver-rules-multi.js's _confirmedTiles:
   // a row-pair or column-pair whose empty cells can be exactly partitioned
@@ -709,8 +709,11 @@ export function applySingleStarRules(PuzzleSolver) {
   //
   // Recognizing the 2-line tiling structure at all is a genuinely harder
   // pattern than spotting an already-grouped region's own domino/sees-too-
-  // much/subset relationship, so all three sit at Expert, not alongside
-  // their same-logic Beginner/Hard counterparts.
+  // much/subset relationship, so all three sit at the END of Hard --
+  // originally placed at Expert, but moved down (2026-09-10) once real
+  // generation showed they fire often enough on their own that, without
+  // anything genuinely Expert-only behind them, they were absorbing
+  // puzzles that should have stayed Hard.
   //
   // All three outline BOTH tiles of the matched tile's own tiling (the
   // row/col pair's full K-tiles-for-K-stars covering, shown for context --
@@ -844,16 +847,21 @@ export function applySingleStarRules(PuzzleSolver) {
       { key: 'manyRegionsSync',          fn: () => this.hintManyRegionsSync() },
       { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
       { key: 'symmetryDeduction',        fn: () => this.hintSymmetryDeduction() },
-      // Expert
+      // Moved here from Expert: with nothing genuinely Expert-only behind
+      // them, these three were absorbing puzzles that should have stayed
+      // Hard (see the "Tiles for 1★" section comment above hintTileDomino).
       { key: 'tileDomino',               fn: () => this.hintTileDomino() },
       { key: 'tileSeesTooMuch',          fn: () => this.hintTileSeesTooMuch() },
       { key: 'tileRegionSubset',         fn: () => this.hintTileRegionSubset() },
+      // Expert
       { key: 'disjointUnitRegionSync3',  fn: () => this.hintDisjointUnitRegionSync(3) },
+      // 3-region cross-board pin -- moved to the start of Expert (was
+      // after rowColLineSync3/crossBoardPinned2Row/2Col).
+      { key: 'crossBoardPinned3Row',     fn: () => this.hintCrossBoardRegionPinned(3, "Row") },
+      { key: 'crossBoardPinned3Col',     fn: () => this.hintCrossBoardRegionPinned(3, "Column") },
       { key: 'rowColLineSync3',          fn: () => this.hintRowColLineSync(3) },
       { key: 'crossBoardPinned2Row',     fn: () => this.hintCrossBoardRegionPinned(2, "Row") },
       { key: 'crossBoardPinned2Col',     fn: () => this.hintCrossBoardRegionPinned(2, "Column") },
-      { key: 'crossBoardPinned3Row',     fn: () => this.hintCrossBoardRegionPinned(3, "Row") },
-      { key: 'crossBoardPinned3Col',     fn: () => this.hintCrossBoardRegionPinned(3, "Column") },
       { key: 'partialOverlap',           fn: () => this.hintPartialOverlap() },
       { key: 'lookaheadHalfSingleBoard', fn: () => this.hintLookaheadHalfSingleBoard() },
       { key: 'lookaheadHalf',            fn: () => this.hintLookaheadHalf() },

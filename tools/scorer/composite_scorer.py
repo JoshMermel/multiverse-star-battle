@@ -71,6 +71,16 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_many_adjacent_rows,                  35, "Hard"),
             (self.rule_many_adjacent_cols,                  35, "Hard"),
             (self.rule_region_contains_region,              40, "Hard"),
+            # Tiles for 1★ (rules_single_star.py's own "Tiles for 1★"
+            # section comment) -- moved here from Expert (2026-09-10,
+            # weight unchanged) once real generation showed these fire
+            # often enough on their own that, without anything genuinely
+            # Expert-only behind them, they were absorbing puzzles that
+            # should have stayed Hard. Matches solver-rules-single.js's
+            # identical reorder.
+            (self.rule_tile_domino,                         42, "Hard"),
+            (self.rule_tile_sees_too_much,                  43, "Hard"),
+            (self.rule_tile_region_subset,                  44, "Hard"),
 
             # -- Symmetry - requires insight but not hard to apply -----------
             (self.rule_rotation_180,                        5, "Symmetry"),
@@ -78,20 +88,18 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_diagonal_parity,                      15, "Symmetry"),
 
             # -- Expert -------------------------------------------------------
-            # Tiles for 1★ (rules_single_star.py's own "Tiles for 1★"
-            # section comment) -- ported from solver-rules-single.js,
-            # matching that file's tier placement.
-            (self.rule_tile_domino,                         42, "Expert"),
-            (self.rule_tile_sees_too_much,                  43, "Expert"),
-            (self.rule_tile_region_subset,                  44, "Expert"),
             (self.rule_3_disjoint_rows,                     45, "Expert"),
             (self.rule_3_disjoint_cols,                     45, "Expert"),
+            # 3-region cross-board pin -- moved to the start of Expert
+            # (was after rule_3_row_col_line_sync_*/
+            # rule_2_region_pinned_crossboard_*, weight unchanged); matches
+            # solver-rules-single.js's identical reorder.
+            (self.rule_3_region_pinned_crossboard_rows,     60, "Expert"),
+            (self.rule_3_region_pinned_crossboard_cols,     60, "Expert"),
             (self.rule_3_row_col_line_sync_rows,            45, "Expert"),
             (self.rule_3_row_col_line_sync_cols,            45, "Expert"),
             (self.rule_2_region_pinned_crossboard_rows,     50, "Expert"),
             (self.rule_2_region_pinned_crossboard_cols,     50, "Expert"),
-            (self.rule_3_region_pinned_crossboard_rows,     60, "Expert"),
-            (self.rule_3_region_pinned_crossboard_cols,     60, "Expert"),
             (self.rule_crossboard_partial_overlap,          75, "Expert"),
             (self.rule_lookahead_half_stage_single_board,   78, "Expert"),
             (self.rule_lookahead_half_stage,                80, "Expert"),
@@ -200,6 +208,12 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_diagonal_parity_multi,                     15, "Symmetry"),
 
             # -- Expert -------------------------------------------------------
+            # Cross-board N-regions-pin-N-rows/cols (3-region case): moved
+            # to the start of Expert (was after
+            # rule_crossboard_n_region_pinned_multi_2_*, weight unchanged);
+            # matches solver-rules-multi.js's identical reorder.
+            (self.rule_crossboard_n_region_pinned_multi_3_rows,   112, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_3_cols,   113, "Expert"),
             # The full (cross-board) strong variants: a deduction here may
             # require combining BOTH boards' region layouts, unlike the
             # Medium/Hard intermediate variants above, which only ever need
@@ -225,10 +239,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # Restored from pre-experiment.
             (self.rule_unit_completion_satisfies_other_unit_strong, 108, "Expert"),
             (self.rule_unit_region_sync_multi_2_disjoint,         109, "Expert"),
+            # 3-region case (rows/cols) moved to the start of Expert -- see
+            # above.
             (self.rule_crossboard_n_region_pinned_multi_2_rows,   110, "Expert"),
             (self.rule_crossboard_n_region_pinned_multi_2_cols,   111, "Expert"),
-            (self.rule_crossboard_n_region_pinned_multi_3_rows,   112, "Expert"),
-            (self.rule_crossboard_n_region_pinned_multi_3_cols,   113, "Expert"),
             (self.rule_region_subset_sync_3,                      120, "Expert"),
             (self.rule_region_subset_sync_4,                      150, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),

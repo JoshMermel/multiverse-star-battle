@@ -2215,6 +2215,13 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Symmetry - requires insight but not hard to apply
       { key: 'symmetryDeductionMulti',         fn: () => this.hintSymmetryDeductionMulti() },
       // Expert
+      // Cross-board N-regions-pin-N-rows/cols (3-region case): moved to
+      // the start of Expert (was after crossBoardPinnedMulti2Row/2Col,
+      // near the end of Expert) -- see the section comment a few lines
+      // down, above crossBoardPinnedMulti2Row, for the mechanism. 1★'s
+      // matching reorder sits at the same spot in its own list.
+      { key: 'crossBoardPinnedMulti3Row',      fn: () => this.hintCrossBoardRegionPinnedMulti(3, "Row") },
+      { key: 'crossBoardPinnedMulti3Col',      fn: () => this.hintCrossBoardRegionPinnedMulti(3, "Column") },
       // The full (cross-board) strong variants: a deduction here may
       // require combining BOTH boards' region layouts, unlike the
       // Medium/Hard intermediate variants above, which only ever need one
@@ -2242,11 +2249,11 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
       // Cross-board N-regions-pin-N-rows/cols: generalizes the 1★-only
       // hintCrossBoardRegionPinned to any starsPerGroup. Always genuinely
-      // cross-board (see hintCrossBoardRegionPinnedMulti's comment).
+      // cross-board (see hintCrossBoardRegionPinnedMulti's comment). The
+      // 3-region case (crossBoardPinnedMulti3Row/3Col) moved to the start
+      // of Expert -- see above.
       { key: 'crossBoardPinnedMulti2Row',      fn: () => this.hintCrossBoardRegionPinnedMulti(2, "Row") },
       { key: 'crossBoardPinnedMulti2Col',      fn: () => this.hintCrossBoardRegionPinnedMulti(2, "Column") },
-      { key: 'crossBoardPinnedMulti3Row',      fn: () => this.hintCrossBoardRegionPinnedMulti(3, "Row") },
-      { key: 'crossBoardPinnedMulti3Col',      fn: () => this.hintCrossBoardRegionPinnedMulti(3, "Column") },
       { key: 'regionSubsetSync3',              fn: () => this.hintRegionSubsetSync(3) },
       { key: 'regionSubsetSync4',              fn: () => this.hintRegionSubsetSync(4) },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
