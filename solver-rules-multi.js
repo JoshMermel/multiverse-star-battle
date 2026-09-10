@@ -229,8 +229,15 @@ export function applyMultiStarRules(PuzzleSolver) {
       if (forcedStars.length > 0) {
         hints.push({
           description: `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it's a star.`,
+          // Every other cell of the unit -- dots, any star it already
+          // has, and other still-empty cells alike -- not just the empty
+          // ones. This outlines the unit's own shape/boundary for the
+          // player; forcedStars is excluded since those get the
+          // TARGET_STAR mark instead (forcedStars is always a subset of
+          // unit.indices, so this alone is enough to avoid a double-color
+          // conflict).
           highlights: unit.indices
-            .filter(i => this.vState(i) === CELL.NONE && !forcedStars.includes(i))
+            .filter(i => !forcedStars.includes(i))
             .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
           marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
           boardIdx: unit.boardIdx
@@ -243,8 +250,14 @@ export function applyMultiStarRules(PuzzleSolver) {
       if (forcedDots.length > 0) {
         hints.push({
           description: `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cell(s), so they're dots.`,
+          // Same reasoning as the forced-star branch above: show every
+          // other cell of the unit regardless of state. forcedDots can
+          // include cells OUTSIDE the unit too (the "touching" case) --
+          // those were never part of unit.indices to begin with, so
+          // filtering unit.indices alone already excludes exactly the
+          // in-unit forced-dot cells without needing a vState check.
           highlights: unit.indices
-            .filter(i => this.vState(i) === CELL.NONE && !forcedDots.includes(i))
+            .filter(i => !forcedDots.includes(i))
             .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
           marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
           boardIdx: unit.boardIdx

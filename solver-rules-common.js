@@ -107,11 +107,17 @@ export function applyCommonSolverRules(PuzzleSolver) {
     candidates.sort((a, b) => a.indices[0] - b.indices[0]);
     return candidates.map(unit => {
       const key = this._unitKind(unit);
-      const stars = unit.indices.filter(idx => this.vState(idx) === CELL.STAR);
       const empty = unit.indices.filter(idx => this.vState(idx) === CELL.NONE);
       return {
         description: typeDescs[key],
-        highlights: stars.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        // Every already-resolved cell of the unit (its placed stars AND
+        // any pre-existing dots), not just the stars -- same reasoning as
+        // hintOnlyEmpty: this outlines the unit's own shape/boundary for
+        // the player, and a dot belongs to that outline exactly as much
+        // as a star does.
+        highlights: unit.indices
+          .filter(idx => !empty.includes(idx))
+          .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
         marks: empty.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         boardIdx: unit.boardIdx ?? undefined
       };
