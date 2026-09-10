@@ -78,6 +78,12 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_diagonal_parity,                      15, "Symmetry"),
 
             # -- Expert -------------------------------------------------------
+            # Tiles for 1★ (rules_single_star.py's own "Tiles for 1★"
+            # section comment) -- ported from solver-rules-single.js,
+            # matching that file's tier placement.
+            (self.rule_tile_domino,                         42, "Expert"),
+            (self.rule_tile_sees_too_much,                  43, "Expert"),
+            (self.rule_tile_region_subset,                  44, "Expert"),
             (self.rule_3_disjoint_rows,                     45, "Expert"),
             (self.rule_3_disjoint_cols,                     45, "Expert"),
             (self.rule_3_row_col_line_sync_rows,            45, "Expert"),

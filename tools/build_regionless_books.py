@@ -53,9 +53,25 @@ TIER_ORDER = ["Beginner", "Medium", "Hard", "Symmetry", "Expert", "Grandmaster"]
 # estimated run count, so a legitimate slow patch doesn't trip it, but a
 # truly wrong yield-rate assumption still fails loudly instead of hanging
 # forever).
+#
+# 6x6_1star/8x8_1star's bonus_tier is None here -- the built-in bonus
+# mechanism above only keeps ONE (random- or "hardest"-sampled) candidate
+# per carve run, which turned out to barely beat what's already in a
+# large main-tier bucket (see this session's 9x9 bonus investigation:
+# [657,813]/[717,795] either way vs [756,895] once actually pooling every
+# candidate a run passes through). Their Grandmaster finale is mined
+# separately after the fact via mine_extreme_bonus (below), which does
+# that full-history pooling properly.
 BOOKS = [
-    ("6x6_1star",  6, 1, {"Beginner": 200, "Hard": 800}, "Grandmaster", 5, 40000),
-    ("8x8_1star",  8, 1, {"Beginner": 200, "Hard": 800}, "Grandmaster", 5, 25000),
+    # Regenerated with real Expert-tier content once rule_tile_domino/
+    # rule_tile_sees_too_much/rule_tile_region_subset (rules_single_star.py)
+    # existed to populate it -- previously Expert was ~0% reachable for 1★
+    # regionless at any size (see this session's original 6x6/8x8 books and
+    # the "1★ rule-ladder gap" memory note). Hard dropped from ~65-70% to
+    # ~7-9% per run once Expert-tier reasoning could absorb what used to
+    # dead-end there -- now the bottleneck tier, not Beginner or Expert.
+    ("6x6_1star",  6, 1, {"Beginner": 150, "Hard": 700, "Expert": 150}, None, 0, 30000),
+    ("8x8_1star",  8, 1, {"Beginner": 150, "Hard": 700, "Expert": 150}, None, 0, 35000),
     ("9x9_2star",  9, 2, {"Beginner": 100, "Medium": 400, "Hard": 400, "Expert": 100}, None, 0, 4000),
     # Grown from the original 10/40/40/10 demo to match 9x9_2star's counts.
     # Calibration (21-run sample + the original demo run's own behavior):
@@ -167,12 +183,15 @@ def main():
         # One combined book per size: every target tier in ascending
         # difficulty order, then any bonus_tier puzzles last (the "N very
         # very hard" finale) -- never interleaved with the tier they were
-        # drawn from, even if bonus_tier also appears in targets.
+        # drawn from, even if bonus_tier also appears in targets. Within
+        # each of those blocks (tier bucket, and the bonus block), sort by
+        # score ascending too, so difficulty ramps up smoothly as you page
+        # through the whole book, not just in coarse tier-sized jumps.
         entries = []
         for tier in TIER_ORDER:
             if tier in buckets:
-                entries.extend((b, s, sc, tier) for b, s, sc in buckets[tier])
-        entries.extend((b, s, sc, bonus_tier) for sc, b, s in bonus)
+                entries.extend((b, s, sc, tier) for b, s, sc in sorted(buckets[tier], key=lambda e: e[2]))
+        entries.extend((b, s, sc, bonus_tier) for sc, b, s in sorted(bonus, key=lambda e: e[0]))
 
         path = f"{DATA_DIR}/{n}x{n}_regionless.csv"
         write_book_csv(path, n, entries)
@@ -249,6 +268,7 @@ def mine_extreme_bonus(book_name, n, stars_per_unit, mine_tier, count, pool_targ
     picked = pool[:count]
     print(f"[{book_name} bonus] picked top {len(picked)} of {len(pool)} by score, "
           f"range [{picked[-1][0] if picked else '-'}, {picked[0][0] if picked else '-'}]", flush=True)
+    picked.sort(key=lambda x: x[0])  # write ascending, so the single hardest lands last in the book
 
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=existing_rows[0].keys())

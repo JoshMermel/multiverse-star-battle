@@ -70,6 +70,30 @@ class SingleStarRules:
                     return res
         return 0
 
+    def _domino_elimination_changes(self, p, i1, i2, label):
+        """
+        Shared by rule_domino and rule_tile_domino: given two orthogonally-
+        adjacent empty cells known to be a domino (a unit/tile with no star
+        yet and exactly these 2 candidates, so exactly one of them holds
+        the unit's single star), dots every other empty cell that "sees"
+        BOTH domino cells (same row/col/region, or 8-adjacent -- see
+        _cells_see_each_other) -- whichever domino cell ends up the star,
+        such a cell is excluded either way. A cell seeing both this way
+        already covers the whole shared row/col the domino lies along (any
+        cell in that row/col sees every cell in it, domino included) as
+        well as any cell adjacent to both, in one check -- mirrors
+        solver-rules-single.js's _dominoEliminationTargets, which computes
+        the same two cases explicitly instead.
+        """
+        exclusion = {i1, i2}
+        changes = 0
+        for i in range(p.n * p.n):
+            if p.grid[i] is not None or i in exclusion:
+                continue
+            if self._cells_see_each_other(p, i, i1) and self._cells_see_each_other(p, i, i2):
+                changes += p.validate_and_set(i, ".", label, self.verbose)
+        return changes
+
     def rule_domino(self, p):
         """
         MATCH: A unit/region with no star and exactly two orthogonally adjacent empty cells.
@@ -93,14 +117,7 @@ class SingleStarRules:
             if not ((abs(r1-r2) == 1 and c1 == c2) or (abs(c1-c2) == 1 and r1 == r2)):
                 continue
 
-            exclusion = {i1, i2}
-            local_changes = 0
-            for i in range(p.n * p.n):
-                if p.grid[i] is not None or i in exclusion:
-                    continue
-                if self._cells_see_each_other(p, i, i1) and self._cells_see_each_other(p, i, i2):
-                    local_changes += p.validate_and_set(
-                        i, ".", f"{label} domino shadow", self.verbose)
+            local_changes = self._domino_elimination_changes(p, i1, i2, f"{label} domino shadow")
             if local_changes > 0:
                 return local_changes
         return 0
@@ -803,3 +820,85 @@ class SingleStarRules:
             if self._cell_sees_own_mirror(p, i, mirror_fn):
                 changes += p.validate_and_set(i, ".", "Rotation180", self.verbose)
         return changes
+
+    # -- Tiles for 1★ (Expert) -------------------------------------------
+    #
+    # The multi-star "Tiles" family (rules_multi_star.py's _confirmed_tiles:
+    # a row-pair or column-pair whose empty cells can be exactly
+    # partitioned into 2x2 boxes, one star guaranteed per box) is already
+    # stars_per_unit-agnostic -- _confirmed_tiles_impl's quota is
+    # p.stars_per_unit, so it already produces the correct k=2 (2*1 -
+    # stars_in_band) tiling for 1★ boards, it just never had any 1★-
+    # specific rules built on top of it. These three reuse existing 1★
+    # elimination logic against a TILE instead of a row/column/region --
+    # see solver-rules-single.js's mirror-image comment (same three rules,
+    # ported here for parity) for the full reasoning. Recognizing the
+    # 2-line tiling structure at all is a harder pattern than spotting an
+    # already-grouped region's own domino/sees-too-much/subset
+    # relationship, so all three sit at Expert, not alongside their same-
+    # logic Beginner/Hard counterparts.
+
+    def rule_tile_domino(self, p):
+        """Rule: a confirmed tile whose empty cells are themselves a domino."""
+        for tile in self._confirmed_tiles(p):
+            if len(tile) != 2:
+                continue
+            i1, i2 = tile
+            r1, c1 = p.get_rc(i1)
+            r2, c2 = p.get_rc(i2)
+            if not ((abs(r1 - r2) == 1 and c1 == c2) or (abs(c1 - c2) == 1 and r1 == r2)):
+                continue
+            changes = self._domino_elimination_changes(p, i1, i2, "TileDomino")
+            if changes > 0:
+                return changes
+        return 0
+
+    def rule_tile_sees_too_much(self, p):
+        """Rule: a confirmed tile with exactly 3 empty cells, all seen by some external cell."""
+        for tile in self._confirmed_tiles(p):
+            if len(tile) != 3:
+                continue
+            candidates = list(tile)
+            changes = 0
+            for i in range(p.n * p.n):
+                if p.grid[i] is not None or i in tile:
+                    continue
+                if all(self._cells_see_each_other(p, i, c) for c in candidates):
+                    changes += p.validate_and_set(i, ".", "TileSeesTooMuch", self.verbose)
+            if changes > 0:
+                return changes
+        return 0
+
+    def rule_tile_region_subset(self, p):
+        """
+        Rule: a confirmed tile entirely inside one unsolved region -- the
+        tile's guaranteed star satisfies that region too, so the rest of
+        the region (outside the tile) must be dots. Inert on a regionless
+        board (p.regionless_boards), same as every other region-based rule.
+        """
+        for tile in self._confirmed_tiles(p):
+            if not tile:
+                continue
+            for b_idx in range(p.n_boards):
+                if p.regionless_boards[b_idx]:
+                    continue
+                labels = {p.cell_to_region[b_idx][i] for i in tile}
+                if len(labels) != 1:
+                    continue
+                (label,) = labels
+                if label == VOID_CHAR:
+                    continue
+                region_indices = p.regions[b_idx].get(label)
+                if not region_indices or any(p.grid[i] == "x" for i in region_indices):
+                    continue  # unmapped label, or region already solved
+
+                targets = [i for i in region_indices if i not in tile and p.grid[i] is None]
+                if not targets:
+                    continue
+                changes = sum(
+                    p.validate_and_set(i, ".", "TileRegionSubset", self.verbose)
+                    for i in targets
+                )
+                if changes > 0:
+                    return changes
+        return 0
