@@ -84,13 +84,13 @@
     {"id": "half_dozen",            "label": "6 Boards",                "group": "Curiosities",      "desc": "Is more better?", "stars": 1},
     {"id": "not_for_humans",        "label": "Not For Humans",          "group": "Curiosities",      "desc": "The absolute hardest puzzles - too hard for human solvers.", "stars": 1},
     {"id": "17x17_mono",            "label": "17x17 1-Board",           "group": "Giants", "stars": 4},
-    {"id": "20x20",                 "label": "20x20",                  "group": "Giants", "stars": 1},
+    {"id": "20x20",                 "label": "20x20",                   "group": "Giants", "stars": 1},
     {"id": "20x20_mono",            "label": "20x20 1-board",           "group": "Giants", "stars": 1},
     {"id": "21x21_mono",            "label": "21x21 1-Board",           "group": "Giants", "stars": 5},
+    {"id": "6x6_regionless",        "label": "6x6",                     "group": "Regionless", "stars": 1},
+    {"id": "8x8_regionless",        "label": "8x8",                     "group": "Regionless", "stars": 1},
+    {"id": "9x9_regionless",        "label": "9x9",                     "group": "Regionless", "stars": 2},
+    {"id": "13x13_regionless",      "label": "13x13",                   "group": "Regionless", "stars": 3}
     {"id": "signoff",               "label": "Signoff",                 "group": "Signoff", "stars": 1},
-    {"id": "6x6_regionless",   "label": "6x6",   "group": "Regionless", "stars": 1},
-    {"id": "8x8_regionless",   "label": "8x8",   "group": "Regionless", "stars": 1},
-    {"id": "9x9_regionless",   "label": "9x9",   "group": "Regionless", "stars": 2},
-    {"id": "13x13_regionless", "label": "13x13", "group": "Regionless", "stars": 3}
   ]
 }
