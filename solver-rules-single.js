@@ -242,23 +242,31 @@ export function applySingleStarRules(PuzzleSolver) {
     return candidates;
   };
 
+  // Helper: indices of every empty cell OUTSIDE `excludeIndices` that sees
+  // every one of `candidateIndices`. Shared by the row/col/region
+  // "sees too much" rule below and hintTileSeesTooMuch, which needs the
+  // same search but builds its own hint (tile outlines) around the result.
+  p._externalCellsSeeingAll = function (candidateIndices, excludeIndices) {
+    const n = this.n;
+    const exclude = new Set(excludeIndices);
+    const targets = [];
+    for (let i = 0; i < n * n; i++) {
+      if (this.vState(i) !== CELL.NONE || exclude.has(i)) continue;
+      if (candidateIndices.every(c => cellsSee(i, c, n))) targets.push(i);
+    }
+    return targets;
+  };
+
   // Helper to find external cells that see all options in a unit.
   p._hintSeesTooMuchForUnits = function (units) {
-    const n = this.n;
     const hintCandidates = [];
     for (const unit of units) {
       const candidates = unit.indices.filter(i => this.vState(i) === CELL.NONE);
       if (candidates.length === 0) continue;
 
-      const targets = [];
-
-      for (let i = 0; i < n * n; i++) {
-        if (this.vState(i) !== CELL.NONE || unit.indices.includes(i)) continue;
-        const canSeeAll = candidates.every(c => cellsSee(i, c, n));
-        if (canSeeAll) targets.push({ idx: i, color: HINT_COLOR.TARGET });
-      }
-
-      if (targets.length > 0) hintCandidates.push({ unit, candidates, targets });
+      const targetIdxs = this._externalCellsSeeingAll(candidates, unit.indices);
+      if (targetIdxs.length === 0) continue;
+      hintCandidates.push({ unit, candidates, targets: targetIdxs.map(idx => ({ idx, color: HINT_COLOR.TARGET })) });
     }
     if (hintCandidates.length === 0) return null;
     hintCandidates.sort((a, b) => a.candidates[0] - b.candidates[0]);
@@ -692,7 +700,7 @@ export function applySingleStarRules(PuzzleSolver) {
   //   - hintTileDomino: a tile whose empty cells ARE a domino -- feeds
   //     _dominoEliminationTargets exactly like hintDomino does.
   //   - hintTileSeesTooMuch: a tile with exactly 3 empty cells -- feeds
-  //     _hintSeesTooMuchForUnits exactly like hintUnitSeesTooMuch does.
+  //     _externalCellsSeeingAll exactly like hintUnitSeesTooMuch does.
   //   - hintTileRegionSubset: a tile entirely inside one unsolved region --
   //     that region's own star is satisfied by the tile, so the rest of
   //     the region (outside the tile) must be dots. Structurally inert on
@@ -703,6 +711,14 @@ export function applySingleStarRules(PuzzleSolver) {
   // pattern than spotting an already-grouped region's own domino/sees-too-
   // much/subset relationship, so all three sit at Expert, not alongside
   // their same-logic Beginner/Hard counterparts.
+  //
+  // All three outline BOTH tiles of the matched tile's own tiling (the
+  // row/col pair's full K-tiles-for-K-stars covering, shown for context --
+  // same reasoning as the multi-star Tiles family's
+  // _tileOutlinesAndHighlights), but only tint the cells actually driving
+  // THIS hint's deduction: the one matched tile, minus any cell about to
+  // get a `marks` color (so a cell never ends up with two conflicting
+  // highlight classes).
 
   // Rule: a confirmed tile (this._confirmedTiles()) whose empty cells are
   // themselves a domino.
@@ -714,34 +730,47 @@ export function applySingleStarRules(PuzzleSolver) {
         const [idxA, idxB] = tile.cells;
         const targets = this._dominoEliminationTargets(idxA, idxB);
         if (!targets) continue;
-        candidates.push({ idxA, idxB, targets });
+        candidates.push({ tiling, tile, targets });
       }
     }
     if (candidates.length === 0) return null;
-    candidates.sort((a, b) => a.idxA - b.idxA || a.idxB - b.idxB);
-    return candidates.map(({ idxA, idxB, targets }) => ({
-      description: "This tile's empty cells are a domino -- a star must be in the blue domino.",
-      highlights: [
-        { idx: idxA, color: HINT_COLOR.SOURCE },
-        { idx: idxB, color: HINT_COLOR.SOURCE }
-      ],
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-      boardIdx: undefined
-    }));
+    candidates.sort((a, b) => a.tile.cells[0] - b.tile.cells[0] || a.tile.cells[1] - b.tile.cells[1]);
+    return candidates.map(({ tiling, tile, targets }) => {
+      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, [tile], targets);
+      return {
+        description: "This tile's empty cells are a domino -- a star must be in the blue domino.",
+        highlights,
+        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+        tileOutlines,
+        boardIdx: undefined
+      };
+    });
   };
 
   // Rule: a confirmed tile with exactly 3 empty cells, all seen by some
   // external cell.
   p.hintTileSeesTooMuch = function () {
-    const tileUnits = [];
+    const candidates = [];
     for (const tiling of this._confirmedTiles()) {
       for (const tile of tiling.tiles) {
-        if (tile.cells.length === 3) tileUnits.push({ indices: tile.cells, boardIdx: undefined });
+        if (tile.cells.length !== 3) continue;
+        const targetIdxs = this._externalCellsSeeingAll(tile.cells, tile.cells);
+        if (targetIdxs.length === 0) continue;
+        candidates.push({ tiling, tile, targetIdxs });
       }
     }
-    if (tileUnits.length === 0) return null;
-    const hints = this._hintSeesTooMuchForUnits(tileUnits);
-    return hints?.map(hint => ({ ...hint, description: `This tile's empty cells must contain a star.` })) ?? null;
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.tile.cells[0] - b.tile.cells[0]);
+    return candidates.map(({ tiling, tile, targetIdxs }) => {
+      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, [tile], targetIdxs);
+      return {
+        description: `This tile's empty cells must contain a star.`,
+        highlights,
+        marks: targetIdxs.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+        tileOutlines,
+        boardIdx: undefined
+      };
+    });
   };
 
   // Rule: a confirmed tile entirely inside one unsolved region -- the
@@ -767,18 +796,22 @@ export function applySingleStarRules(PuzzleSolver) {
           const targets = region.indices.filter(i => !tileSet.has(i) && this.vState(i) === CELL.NONE);
           if (targets.length === 0) continue;
 
-          candidates.push({ tile, region, targets, boardIdx: bIdx });
+          candidates.push({ tiling, tile, region, targets, boardIdx: bIdx });
         }
       }
     }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.tile.cells[0] - b.tile.cells[0]);
-    return candidates.map(({ tile, region, targets, boardIdx }) => ({
-      description: `This tile sits entirely inside ${region.label} -- its guaranteed star satisfies that region too, so the rest of ${region.label} must be dots.`,
-      highlights: tile.cells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-      boardIdx
-    }));
+    return candidates.map(({ tiling, tile, region, targets, boardIdx }) => {
+      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, [tile], targets);
+      return {
+        description: `This tile sits entirely inside ${region.label} -- its guaranteed star satisfies that region too, so the rest of ${region.label} must be dots.`,
+        highlights,
+        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+        tileOutlines,
+        boardIdx
+      };
+    });
   };
 
   // --- Rule list for starsPerGroup === 1 ---
