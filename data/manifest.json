@@ -90,7 +90,7 @@
     {"id": "6x6_regionless",        "label": "6x6",                     "group": "Regionless", "stars": 1},
     {"id": "8x8_regionless",        "label": "8x8",                     "group": "Regionless", "stars": 1},
     {"id": "9x9_regionless",        "label": "9x9",                     "group": "Regionless", "stars": 2},
-    {"id": "13x13_regionless",      "label": "13x13",                   "group": "Regionless", "stars": 3}
-    {"id": "signoff",               "label": "Signoff",                 "group": "Signoff", "stars": 1},
+    {"id": "13x13_regionless",      "label": "13x13",                   "group": "Regionless", "stars": 3},
+    {"id": "signoff",               "label": "Signoff",                 "group": "Signoff", "stars": 1}
   ]
 }
