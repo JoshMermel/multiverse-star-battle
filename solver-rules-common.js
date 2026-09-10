@@ -60,20 +60,28 @@ export function applyCommonSolverRules(PuzzleSolver) {
       const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
       const needed = starsPerGroup - stars.length;
       if (needed > 0 && empty.length === needed) {
-        candidates.push({ unit, empty, stars });
+        candidates.push({ unit, empty });
       }
     }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
-    return candidates.map(({ unit, empty, stars }) => {
+    return candidates.map(({ unit, empty }) => {
       const unitType = this._unitKind(unit);
       const description = starsPerGroup === 1
         ? `Only one spot is left for a star in this ${unitType}.`
         : `Exactly ${empty.length} spots are left for the remaining stars in this ${unitType}.`;
       return {
         description,
+        // Every already-resolved cell of the unit (dots AND any stars it
+        // already has), not just the dots -- this is meant to outline the
+        // unit's own shape/boundary for the player, and a star belongs to
+        // that outline exactly as much as a dot does. Excluding stars was
+        // invisible for 1★ (a unit can only reach this rule with 0 stars
+        // already placed there -- any star would already satisfy its
+        // 1-star quota, making `needed` 0), only showing up for 2★+ once
+        // a unit can have a star AND still need more.
         highlights: unit.indices
-          .filter(i => !empty.includes(i) && !stars.includes(i))
+          .filter(i => !empty.includes(i))
           .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
          marks: empty.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
          boardIdx: unit.boardIdx
