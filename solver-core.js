@@ -596,7 +596,13 @@ export class PuzzleSolver {
     const boardsInvolved = this._describeBoards(combo.map(r => r.original.boardIdx));
     return {
       boardIdx: undefined,
-      description: `Cross-board (${boardsInvolved}): These ${combo.length} regions must place their stars in the same ${combo.length} ${axis.toLowerCase()}s.`,
+      // combo.length (trapped REGIONS) and uList.length (the ROW/COL
+      // window size) only coincide for 1★ (every region needs exactly 1
+      // star, so N regions always pin exactly N rows/cols by
+      // construction) -- for 2★+, a region can need more than 1 star, so
+      // fewer regions than the window size can still supply its entire
+      // need. Use each count where it actually belongs.
+      description: `Cross-board (${boardsInvolved}): These ${combo.length} region${combo.length === 1 ? '' : 's'} must place their stars in the same ${uList.length} ${axis.toLowerCase()}${uList.length === 1 ? '' : 's'}.`,
       highlights: sourceHighlights,
       // Target cells are a row/column consequence -- board-agnostic by
       // construction (rows/columns are shared across every board), so no
