@@ -490,13 +490,15 @@ input[type="number"]::-webkit-inner-spin-button {
 .cell-drag-highlight { background-color: var(--highlight-drag-bg); }
 
 /* Same look as .cell-drag-highlight, but a separate class: the auto-fill-
-   dots flash (rules.js's _autoFillDots) is applied and removed on its own
-   timer that must survive clearDragHighlights()' unconditional wipe on
-   pointerup (input.js) -- that wipe runs in the very same synchronous
-   flow that can trigger this flash (a star placement, committed on
-   pointerup, auto-dots other cells before that same handler's cleanup
-   step runs), so sharing .cell-drag-highlight would get the flash removed
-   before the browser ever paints it. */
+   dots flash -- rules.js's _autoFillDots (placing a star adds dots) and
+   _removeStarAsReason (removing a star retracts dots it alone justified)
+   -- is applied and removed on its own timer that must survive
+   clearDragHighlights()' unconditional wipe on pointerup (input.js) --
+   that wipe runs in the very same synchronous flow that can trigger this
+   flash (a star placement/removal, committed on pointerup, changes other
+   cells before that same handler's cleanup step runs), so sharing
+   .cell-drag-highlight would get the flash removed before the browser
+   ever paints it. */
 .cell-autodot-flash { background-color: var(--highlight-drag-bg); }
 
 /* Cross-board hover sync — only applied via JS on pointer:fine (desktop)

@@ -209,6 +209,13 @@ export function applyRules(GameClass) {
     const row = Math.floor(starIdx / n);
     const col = starIdx % n;
 
+    // Snapshot which cells are dots BEFORE retracting anything, so the
+    // cells that revert to empty as a result of THIS star's removal can be
+    // flashed afterward -- same "something changed as a side effect of
+    // your one click" cue _autoFillDots gives when placing a star adds
+    // dots, mirrored here for the removal direction.
+    const dotsBefore = this.dotReasons ? new Set(this.dotReasons.keys()) : new Set();
+
     if (this.dotReasons) {
       // Snapshot the keys first -- _removeDotReason mutates the map as it goes.
       for (const idx of [...this.dotReasons.keys()]) {
@@ -229,6 +236,17 @@ export function applyRules(GameClass) {
       }
       this._reconcileGroupQuota(regionIndices, `region:${boardIdx}:${regionId}`);
     });
+
+    // Same cell-autodot-flash cue as _autoFillDots (see its own comment for
+    // why a dedicated class, not cell-drag-highlight, is needed here).
+    const newlyCleared = [...dotsBefore].filter(i => this.state[i] === CELL.NONE);
+    if (newlyCleared.length > 0) {
+      const flashedCells = newlyCleared.flatMap(i => this._getCellsByIndex(i));
+      flashedCells.forEach(cell => cell.classList.add('cell-autodot-flash'));
+      setTimeout(() => {
+        flashedCells.forEach(cell => cell.classList.remove('cell-autodot-flash'));
+      }, 80);
+    }
   };
 
   // Check if all solution stars are placed and no extra stars exist.
