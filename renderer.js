@@ -27,15 +27,16 @@ export function applyRenderer(GameClass) {
   // the cap -- hence the redesign to two options that differ ONLY in
   // reserve, not in cap.
   const MAX_CELL = 90;
-  // Comfortably covers even a long, 3-line hint description (max-width
-  // 500px) at the toast's own font/padding -- measured ~141px live for
-  // the longest hint text in this app. Rounded up well past that (not
-  // just to 150) since the measurement was taken against the WRAPPER's
-  // rendered bottom edge, which sits a bit below what this function's own
-  // cellSize*unitsPerBoard arithmetic predicts (axis-label-row height,
-  // board-container border/padding) -- 150 alone left a live ~18px
-  // overlap in testing; 190 clears it with margin to spare.
-  const COMPACT_TOAST_RESERVE = 190;
+  // Sized for a TYPICAL (1-2 line) hint, not the rare longest one -- a
+  // reserve that guarantees zero overlap even for the longest 3-line hint
+  // text in this app measured ~159-172px, which was confirmed (real
+  // hardware feedback) to shrink the board more than it's worth for how
+  // rarely that longest case comes up. 140px covers every ordinary hint
+  // with a few px to spare; only the handful of longest-text hints (long
+  // region-line-partition/cross-board descriptions) may overlap the
+  // board's bottom row by ~15-20px, which was judged an acceptable trade
+  // for a visibly bigger board the rest of the time.
+  const COMPACT_TOAST_RESERVE = 140;
   const isCompactCellSize = () => localStorage.getItem('setting-cell-size') === 'compact';
 
   // --- Cell index cache ---
