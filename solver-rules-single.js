@@ -805,10 +805,10 @@ export function applySingleStarRules(PuzzleSolver) {
     }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.tile.cells[0] - b.tile.cells[0]);
-    return candidates.map(({ tiling, tile, region, targets, boardIdx }) => {
+    return candidates.map(({ tiling, tile, targets, boardIdx }) => {
       const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, [tile], targets);
       return {
-        description: `This tile sits entirely inside ${region.label} -- its guaranteed star satisfies that region too, so the rest of ${region.label} must be dots.`,
+        description: `This tile sits entirely inside a region, so the rest of that region must be dots.`,
         highlights,
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
