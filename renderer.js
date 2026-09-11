@@ -11,14 +11,32 @@ export function applyRenderer(GameClass) {
   const DESKTOP_BREAKPOINT = 900;
 
   // "Board size" setting (index.html's #setting-cell-size segmented
-  // control) -- caps how big _recomputeBoardLayout lets a cell grow on a
-  // spacious screen. Large matches the fixed 90px this app always used
-  // before the setting existed, so anyone who's never touched the
-  // setting sees no change. Purely a ceiling: on a cramped window where
-  // the width/height-fit size is already below the chosen cap, this does
-  // nothing -- see _recomputeBoardLayout's own MIN_CELL/MAX_CELL comment.
-  const CELL_SIZE_CAPS = { small: 60, medium: 75, large: 90 };
-  const getCellSizeCap = () => CELL_SIZE_CAPS[localStorage.getItem('setting-cell-size')] || CELL_SIZE_CAPS.large;
+  // control) -- a 2-way choice between "Large" (this app's original,
+  // unconfigurable behavior: cells grow up to 90px, with no allowance for
+  // a hint toast) and "Compact" (same 90px cap, but _recomputeBoardLayout
+  // also reserves extra room at the bottom -- see COMPACT_TOAST_RESERVE
+  // below -- so a hint toast never overlaps the board).
+  //
+  // Originally a 3-way Small/Medium/Large cap-only choice, but a smaller
+  // CAP only ever helps a short (few-row) puzzle, where the cap is
+  // actually what's limiting cell size -- for anything from ~11 rows up
+  // at a normal window height, the height-fit calculation already comes
+  // in below every one of those caps, so all three produced an identical
+  // board and an identical toast overlap. The real fix is reserving
+  // toast-sized room in the height budget, which has nothing to do with
+  // the cap -- hence the redesign to two options that differ ONLY in
+  // reserve, not in cap.
+  const MAX_CELL = 90;
+  // Comfortably covers even a long, 3-line hint description (max-width
+  // 500px) at the toast's own font/padding -- measured ~141px live for
+  // the longest hint text in this app. Rounded up well past that (not
+  // just to 150) since the measurement was taken against the WRAPPER's
+  // rendered bottom edge, which sits a bit below what this function's own
+  // cellSize*unitsPerBoard arithmetic predicts (axis-label-row height,
+  // board-container border/padding) -- 150 alone left a live ~18px
+  // overlap in testing; 190 clears it with margin to spare.
+  const COMPACT_TOAST_RESERVE = 190;
+  const isCompactCellSize = () => localStorage.getItem('setting-cell-size') === 'compact';
 
   // --- Cell index cache ---
   //
@@ -664,10 +682,14 @@ export function applyRenderer(GameClass) {
     const bottomControls = document.getElementById('controls-bottom');
     const bottomVisible = bottomControls && getComputedStyle(bottomControls).display !== 'none';
     // 20px covers #controls-bottom's own margin-block; 24px is just
-    // breathing room at the bottom of the page when it's hidden.
-    const bottomReserve = bottomVisible
+    // breathing room at the bottom of the page when it's hidden. Neither
+    // of these accounts for the hint toast (a `position: fixed` overlay,
+    // so it never affects the controls bar's own layout) -- that's what
+    // COMPACT_TOAST_RESERVE is for, added only under the "Compact" board
+    // size setting (see its own comment above).
+    const bottomReserve = (bottomVisible
       ? bottomControls.getBoundingClientRect().height + 20
-      : 24;
+      : 24) + (isCompactCellSize() ? COMPACT_TOAST_RESERVE : 0);
     // getBoundingClientRect().top is relative to the current SCROLL
     // POSITION, not the page -- adding window.scrollY converts it to the
     // wrapper's fixed distance from the top of the document, so this comes
@@ -684,7 +706,10 @@ export function applyRenderer(GameClass) {
     // setting is actually on, so toggling it doesn't reflow every board.
     const unitsPerBoard = this.n + 1;
     const MIN_CELL = 28;
-    const MAX_CELL = getCellSizeCap(); // sanity cap -- purely aesthetic/usability past this, not a space constraint; see the "Board size" setting above
+    // MAX_CELL (module-level, above) is a sanity cap -- purely
+    // aesthetic/usability past this, not a space constraint. Same 90px
+    // regardless of the "Board size" setting; see its own comment above
+    // for why that setting affects bottomReserve instead.
     const cellFromWidth = (perRow) => (availableWidth - (perRow - 1) * colGap) / perRow / unitsPerBoard;
 
     // Width alone decides perRow: the most boards that fit per row

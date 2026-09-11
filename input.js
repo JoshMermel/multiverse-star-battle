@@ -155,7 +155,7 @@ export function applyInput(GameClass) {
 
     // --- Board size ---
     //
-    // A 3-way choice (Small/Medium/Large), not a boolean, so it's wired
+    // A 2-way choice (Compact/Large), not a boolean, so it's wired
     // separately from settingsToggles above instead of shoehorned into
     // that boolean-only loop. See _recomputeBoardLayout/
     // _updateCellSizeSettingVisibility (renderer.js) for what the value
