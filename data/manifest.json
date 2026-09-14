@@ -87,6 +87,7 @@
     {"id": "20x20",                 "label": "20x20",                   "group": "Giants", "stars": 1},
     {"id": "20x20_mono",            "label": "20x20 1-board",           "group": "Giants", "stars": 1},
     {"id": "21x21_mono",            "label": "21x21 1-Board",           "group": "Giants", "stars": 5},
+    {"id": "25x25_mono",            "label": "25x25 1-Board",           "group": "Giants", "stars": 6},
     {"id": "6x6_regionless",        "label": "6x6",                     "group": "Regionless", "stars": 1},
     {"id": "8x8_regionless",        "label": "8x8",                     "group": "Regionless", "stars": 1},
     {"id": "9x9_regionless",        "label": "9x9",                     "group": "Regionless", "stars": 2},
