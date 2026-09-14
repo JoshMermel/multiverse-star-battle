@@ -228,7 +228,9 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       if (forcedStars.length > 0) {
         hints.push({
-          description: `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it's a star.`,
+          description: forcedStars.length === 1
+            ? `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it's a star.`
+            : `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cells, so they're stars.`,
           // Every other cell of the unit -- dots, any star it already
           // has, and other still-empty cells alike -- not just the empty
           // ones. This outlines the unit's own shape/boundary for the
