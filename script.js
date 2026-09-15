@@ -194,7 +194,7 @@ class StarBattleGame {
 
   // The "boards always match" help paragraph only makes sense once there's
   // more than one board to match -- omit it entirely for single-board
-  // (mono) puzzles, say "both boards" for the common 2-board case, and
+  // (mono) puzzles, say "the other board" for the common 2-board case, and
   // "all N boards" for anything larger (triplets, quadruplets, ...).
   _updateBoardsMatchHelpText() {
     const para = document.getElementById('help-boards-match-text');
@@ -204,7 +204,7 @@ class StarBattleGame {
     const numBoards = this.regions.length;
     para.hidden = numBoards <= 1;
     if (numBoards === 2) {
-      countSpan.textContent = 'both boards';
+      countSpan.textContent = 'the other board';
     } else if (numBoards > 2) {
       countSpan.textContent = `all ${numBoards} boards`;
     }
