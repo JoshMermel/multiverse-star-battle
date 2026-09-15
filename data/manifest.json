@@ -92,6 +92,7 @@
     {"id": "8x8_regionless",        "label": "8x8",                     "group": "Regionless", "stars": 1},
     {"id": "9x9_regionless",        "label": "9x9",                     "group": "Regionless", "stars": 2},
     {"id": "13x13_regionless",      "label": "13x13",                   "group": "Regionless", "stars": 3},
+    {"id": "17x17_regionless",      "label": "17x17",                   "group": "Regionless", "stars": 4},
     {"id": "signoff",               "label": "Signoff",                 "group": "Signoff", "stars": 1}
   ]
 }
