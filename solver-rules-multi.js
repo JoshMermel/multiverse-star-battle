@@ -57,27 +57,26 @@ export function applyMultiStarRules(PuzzleSolver) {
     };
 
     if (this.internalRotation180 || this.crossboardRotation180) {
-      const description = this.internalRotation180 && this.crossboardRotation180
-        ? `Each board has 180° symmetry, both on its own and paired with another board. A cell that "sees" its own rotation (shares a row/column, or a region with no room for both) can't be a star.`
-        : this.internalRotation180
+      // internalRotation180 (every board individually symmetric) always makes
+      // crossboardRotation180 trivially true too -- a self-symmetric board
+      // always satisfies its own "does a valid pairing exist" check -- so
+      // there's no genuinely-mixed "both" case to call out separately; it's
+      // internal-only, or a real cross-board pairing, never distinguishably both.
+      const description = this.internalRotation180
         ? `Each board has 180° rotational symmetry. A cell that "sees" its own rotation (shares a row/column, or a region with no room for both) can't be a star.`
         : `Each board is paired with its 180° rotation. A cell that "sees" its counterpart (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (n * n - 1) - i, description);
     }
 
     if (this.isMainDiagonalSymmetric) {
-      const description = this.mainDiagCrossBoard && this.mainDiagInternal
-        ? `Each board is paired with its reflection across the main diagonal (↘), and also has that symmetry internally. A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
-        : this.mainDiagInternal
+      const description = this.mainDiagInternal
         ? `Each board has diagonal symmetry across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
         : `Each board is paired with its reflection across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (i % n) * n + Math.floor(i / n), description);
     }
 
     if (this.isAntiDiagonalSymmetric) {
-      const description = this.antiDiagCrossBoard && this.antiDiagInternal
-        ? `Each board is paired with its reflection across the anti-diagonal (↙), and also has that symmetry internally. A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
-        : this.antiDiagInternal
+      const description = this.antiDiagInternal
         ? `Each board has diagonal symmetry across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
         : `Each board is paired with its reflection across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)), description);
@@ -91,11 +90,9 @@ export function applyMultiStarRules(PuzzleSolver) {
     // incompatible (_cellsIncompatible), which is what's checked below
     // instead of plain adjacency-or-shared-region.
     const totalStars = n * this.starsPerGroup;
-    const tryDiagParity = (diagIndices, dirLabel, crossBoard, internal) => {
+    const tryDiagParity = (diagIndices, dirLabel, internal) => {
       const parity = totalStars % 2 === 0 ? 'even' : 'odd';
-      const reason = crossBoard && internal
-        ? `Each board pairs with its ${dirLabel} reflection, and also has that symmetry internally`
-        : internal
+      const reason = internal
         ? `Each board independently has ${dirLabel} diagonal symmetry`
         : `Each board is paired with its ${dirLabel} reflection`;
 
@@ -130,10 +127,10 @@ export function applyMultiStarRules(PuzzleSolver) {
     };
 
     if (this.isMainDiagonalSymmetric) {
-      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + k), '↘', this.mainDiagCrossBoard, this.mainDiagInternal);
+      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + k), '↘', this.mainDiagInternal);
     }
     if (this.isAntiDiagonalSymmetric) {
-      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + (n - 1 - k)), '↙', this.antiDiagCrossBoard, this.antiDiagInternal);
+      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + (n - 1 - k)), '↙', this.antiDiagInternal);
     }
 
     return results.length > 0 ? results : null;

@@ -105,11 +105,13 @@ export class PuzzleSolver {
     const antiDiagFn = i => (this.n-1 - i%this.n) * this.n + (this.n-1 - Math.floor(i/this.n));
     this.isMainDiagonalSymmetric = this._isBoardSymmetric(mainDiagFn) || this._computeInternalDiagonalSymmetry(mainDiagFn);
     this.isAntiDiagonalSymmetric = this._isBoardSymmetric(antiDiagFn) || this._computeInternalDiagonalSymmetry(antiDiagFn);
-    // Track specific symmetry types for hint descriptions.
-    this.mainDiagCrossBoard   = this._isBoardSymmetric(mainDiagFn);
-    this.mainDiagInternal     = this._computeInternalDiagonalSymmetry(mainDiagFn);
-    this.antiDiagCrossBoard   = this._isBoardSymmetric(antiDiagFn);
-    this.antiDiagInternal     = this._computeInternalDiagonalSymmetry(antiDiagFn);
+    // Track specific symmetry types for hint descriptions. (No separate
+    // "cross-board" flag here: a board that's internally symmetric always
+    // trivially satisfies _isBoardSymmetric too via self-pairing, so
+    // "internal" vs "not internal" is the only distinction hint text can
+    // actually draw -- see hintSymmetryDeduction's comment.)
+    this.mainDiagInternal = this._computeInternalDiagonalSymmetry(mainDiagFn);
+    this.antiDiagInternal = this._computeInternalDiagonalSymmetry(antiDiagFn);
     this.internalRotation180   = this._computeInternalRotation180();
     this.crossboardRotation180 = this._computeCrossboardRotation180();
 
