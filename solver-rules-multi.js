@@ -1890,15 +1890,43 @@ export function applyMultiStarRules(PuzzleSolver) {
   // grouped by which row-pair they occupy, and vice versa) -- exactly the
   // window this rule tries to fill. Returns a Map: window start index ->
   // [tile, ...].
+  //
+  // Deliberately does NOT source from _allConfirmedTilesFlat(): that
+  // dedupes purely by cell-set, which silently drops window information a
+  // tile can genuinely have more than one of. When a box's "extra"
+  // column/row is already fully decided, two different box positions --
+  // e.g. columns A/B and columns B/C -- can both collapse to the exact
+  // same surviving empty cells (say, just {B6, B7}) once column A (or C)
+  // has nothing left empty to contribute. Those two box positions belong
+  // to DIFFERENT windows (0/1 vs 1/2) of the OTHER axis, and both are
+  // legitimately confirmed -- but a cells-only dedup keeps only whichever
+  // one _confirmedTilesImpl happened to enumerate first, discarding the
+  // other window's registration entirely. That's exactly the parity gap
+  // found against Python's rule_tile_pair_quota_fill (which recomputes
+  // fresh per band_axis and dedupes on (cells, window), not cells alone --
+  // see _confirmed_tiles_with_window in rules_multi_star.py) on a real
+  // stuck 9x9/2★ board: the missing window meant this rule couldn't find
+  // enough disjoint tiles to fill the quota, even though Python's
+  // equivalent did. Iterating _confirmedTiles() directly (one entry per
+  // TILING, not deduped across tilings) and keying the dedup on
+  // `${windowStart}|${cells}` instead preserves every window a tile is
+  // legitimately confirmed for, while still collapsing literal repeats of
+  // the same (cells, window) pair from different tilings.
   p._tilesByPairWindow = function (bandAxis) {
     const n = this.n;
     const byWindow = new Map();
-    for (const tile of this._allConfirmedTilesFlat()) {
-      if (tile.axis !== bandAxis) continue;
-      const topRow = Math.floor(tile.topLeftIdx / n), leftCol = tile.topLeftIdx % n;
-      const windowStart = bandAxis === 'col' ? topRow : leftCol;
-      if (!byWindow.has(windowStart)) byWindow.set(windowStart, []);
-      byWindow.get(windowStart).push(tile);
+    const seen = new Set();
+    for (const { tiles, axis } of this._confirmedTiles()) {
+      if (axis !== bandAxis) continue;
+      for (const tile of tiles) {
+        const topRow = Math.floor(tile.topLeftIdx / n), leftCol = tile.topLeftIdx % n;
+        const windowStart = bandAxis === 'col' ? topRow : leftCol;
+        const key = `${windowStart}|${this._groupKey(tile.cells)}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (!byWindow.has(windowStart)) byWindow.set(windowStart, []);
+        byWindow.get(windowStart).push(tile);
+      }
     }
     return byWindow;
   };
