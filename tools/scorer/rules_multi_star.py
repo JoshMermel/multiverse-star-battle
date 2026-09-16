@@ -1684,7 +1684,7 @@ class MultiStarRules:
 
     def rule_tile_single_empty(self, p):
         """
-        Rule 1 (Medium): a confirmed tile (guaranteed exactly 1 star) with
+        Rule 1 (Hard): a confirmed tile (guaranteed exactly 1 star) with
         only 1 empty cell means that cell IS the star.
         """
         for tile in self._confirmed_tiles(p):
@@ -1719,6 +1719,54 @@ class MultiStarRules:
                 p.validate_and_set(idx, ".", "TileTwoEmptyDot", self.verbose)
                 for idx in targets
             )
+            if changes > 0:
+                return changes
+        return 0
+
+    def _would_finish_line(self, p, idx, axis):
+        """Whether placing a star at `idx` would leave its row (or column)
+        with 0 stars still needed -- i.e. this is that line's LAST
+        remaining star."""
+        line = p.row_indices[p.get_rc(idx)[0]] if axis == "row" else p.col_indices[p.get_rc(idx)[1]]
+        stars = sum(1 for i in line if p.grid[i] == "x")
+        return stars == p.stars_per_unit - 1
+
+    def _external_conflicts_with_candidate(self, p, t, c):
+        """Whether external cell `t` is ruled out by candidate `c`
+        specifically: touches it outright (unconditional), or shares c's
+        row/column AND c's placement would complete that line -- see
+        rule_tile_sees_too_much_multi's section comment."""
+        if self._cells_adjacent(p, t, c):
+            return True
+        tr, tc = p.get_rc(t)
+        cr, cc = p.get_rc(c)
+        if tr == cr and self._would_finish_line(p, c, "row"):
+            return True
+        if tc == cc and self._would_finish_line(p, c, "col"):
+            return True
+        return False
+
+    def rule_tile_sees_too_much_multi(self, p):
+        """
+        2★+ generalization of rule_tile_sees_too_much (1★,
+        rules_single_star.py) -- see solver-rules-multi.js's matching
+        section comment above hintTileSeesTooMuchMulti for the full
+        reasoning. In short: for 1★, sharing a row/column with a candidate
+        always conflicts (a 1★ line only ever needs 1 star). For 2★+, that
+        only holds if this specific candidate's placement would exhaust
+        the line's remaining quota -- otherwise only direct adjacency
+        conflicts, quota-independent.
+        """
+        for tile in self._confirmed_tiles(p):
+            if len(tile) != 3 and not self._is_diagonal_tile_pair(p, tile):
+                continue
+            candidates = list(tile)
+            changes = 0
+            for i in range(p.n * p.n):
+                if p.grid[i] is not None or i in tile:
+                    continue
+                if all(self._external_conflicts_with_candidate(p, i, c) for c in candidates):
+                    changes += p.validate_and_set(i, ".", "TileSeesTooMuchMulti", self.verbose)
             if changes > 0:
                 return changes
         return 0
@@ -1792,6 +1840,119 @@ class MultiStarRules:
     def rule_tile_disjoint_quota_fill(self, p):
         """Rule 3b (Expert): the general K>1 case -- see _tile_quota_fill."""
         return self._tile_quota_fill(p, want_single=False)
+
+    # -- Tile pair quota fill (1★ AND 2★+, Expert) -------------------------------
+    #
+    # Rule 4 -- shared by both star-count families, unlike the rest of the
+    # Tiles rules (see solver-rules-multi.js's matching section comment
+    # above hintTilePairQuotaFill for the full reasoning). A confirmed tile
+    # is normally combined with OTHER tiles from the SAME band
+    # (_tile_quota_fill above). This rule instead combines tiles from
+    # DIFFERENT column-pair bands that happen to land in the same row-pair
+    # window (or symmetrically, different row-pair bands landing in the
+    # same column-pair window): each tile still guarantees exactly 1 star
+    # independently, but if enough of them from UNRELATED bands add up to
+    # that window's own remaining need, every other empty cell in the
+    # window must be a dot.
+
+    def _confirmed_tiles_with_window(self, p, band_axis):
+        """
+        Confirmed tiles from `band_axis` ('row' or 'col') bands only, each
+        paired with the window (of the OTHER axis) it lands in -- e.g. a
+        'col' band's tiles are each tagged with the row-pair (window,
+        window+1) they occupy. _confirmed_tiles's plain-frozenset-set
+        return type doesn't keep this, since it dedupes purely on cell
+        identity; this rule needs to group tiles from DIFFERENT bands by
+        the window they share, so it recomputes with that tag attached.
+        Deduped on (cells, window) for the same reason _confirmed_tiles
+        dedupes on cells alone.
+        """
+        n = p.n
+        quota = p.stars_per_unit
+        seen = set()
+        tiles = []
+
+        for u in range(n - 1):
+            if band_axis == "row":
+                line_a = [u * n + c for c in range(n)]
+                line_b = [(u + 1) * n + c for c in range(n)]
+            else:
+                line_a = [c * n + u for c in range(n)]
+                line_b = [c * n + (u + 1) for c in range(n)]
+
+            band_indices = [i for i in line_a + line_b if i not in p.void_cells]
+            stars_in_band = sum(1 for i in band_indices if p.grid[i] == "x")
+            k = 2 * quota - stars_in_band
+            if k <= 0:
+                continue
+
+            def is_empty(i):
+                return i not in p.void_cells and p.grid[i] is None
+
+            has_empty = [is_empty(line_a[c]) or is_empty(line_b[c]) for c in range(n)]
+
+            for tiling in self._find_tilings(has_empty):
+                if len(tiling) != k:
+                    continue
+                for box_start in tiling:
+                    a1, b1 = line_a[box_start], line_b[box_start]
+                    a2, b2 = line_a[box_start + 1], line_b[box_start + 1]
+                    cells = frozenset(i for i in (a1, b1, a2, b2) if is_empty(i))
+                    if not cells:
+                        continue
+                    key = (cells, box_start)  # box_start IS the other axis's window start
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    tiles.append((cells, box_start))
+        return tiles
+
+    def _tile_pair_quota_fill(self, p, band_axis):
+        """
+        band_axis: 'col' looks for column-pair tiles filling a ROW-pair's
+        quota; 'row' looks for row-pair tiles filling a COLUMN-pair's quota
+        (the symmetric case) -- see the section comment above.
+        """
+        n = p.n
+        quota = p.stars_per_unit
+        by_window = {}
+        for cells, window in self._confirmed_tiles_with_window(p, band_axis):
+            by_window.setdefault(window, []).append(cells)
+
+        target_line_indices = p.row_indices if band_axis == "col" else p.col_indices
+
+        for window_start, tiles in by_window.items():
+            window_indices = target_line_indices[window_start] + target_line_indices[window_start + 1]
+            stars_in_window = sum(1 for i in window_indices if p.grid[i] == "x")
+            needed = 2 * quota - stars_in_window
+            if needed <= 0:
+                continue
+
+            combo = self._find_disjoint_tile_combo(tiles, needed)
+            if combo is None:
+                continue
+
+            covered = set().union(*combo)
+            targets = [i for i in window_indices if p.grid[i] is None and i not in covered]
+            if not targets:
+                continue
+
+            target_word = "row" if band_axis == "col" else "column"
+            source_word = "column" if band_axis == "col" else "row"
+            label = f"TilePairQuotaFill({source_word}-pair tiles -> {target_word} {window_start}/{window_start + 1})"
+            changes = sum(
+                p.validate_and_set(idx, ".", label, self.verbose) for idx in targets
+            )
+            if changes > 0:
+                return changes
+        return 0
+
+    def rule_tile_pair_quota_fill(self, p):
+        """Rule 4 (Expert, 1★ and 2★+): see the section comment above."""
+        changes = self._tile_pair_quota_fill(p, band_axis="col")
+        if changes > 0:
+            return changes
+        return self._tile_pair_quota_fill(p, band_axis="row")
 
     # -- Tiles: partial tiling + trapped "bar" (2★+) -----------------------------
     #

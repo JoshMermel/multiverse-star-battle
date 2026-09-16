@@ -853,10 +853,32 @@ class SingleStarRules:
                 return changes
         return 0
 
+    def _is_diagonal_tile_pair(self, p, tile):
+        """Whether a 2-cell tile's cells are diagonal to each other (distinct
+        row AND column) rather than sharing a row or column -- the latter is
+        the domino case (rule_tile_domino), which eliminates along the whole
+        shared line instead of via adjacency. A diagonal pair has no such
+        shared-line elimination, but still guarantees its 1 star lands at
+        one of the two cells, so it's eligible for the same "external cell
+        sees both" reasoning as a 3-empty tile below."""
+        if len(tile) != 2:
+            return False
+        a, b = tile
+        ra, ca = p.get_rc(a)
+        rb, cb = p.get_rc(b)
+        return ra != rb and ca != cb
+
     def rule_tile_sees_too_much(self, p):
-        """Rule: a confirmed tile with exactly 3 empty cells, all seen by some external cell."""
+        """
+        Rule: a confirmed tile whose empty cells are either exactly 3 cells,
+        or 2 diagonally-opposite cells -- either way, some external cell
+        sees (touches, or shares a row/column with) every one of them, so
+        it can't be a star no matter which of the tile's cells turns out to
+        hold it. (The 2-adjacent-empties case is rule_tile_domino, and the
+        1-empty case is rule_tile_single_empty's 1★ counterpart.)
+        """
         for tile in self._confirmed_tiles(p):
-            if len(tile) != 3:
+            if len(tile) != 3 and not self._is_diagonal_tile_pair(p, tile):
                 continue
             candidates = list(tile)
             changes = 0

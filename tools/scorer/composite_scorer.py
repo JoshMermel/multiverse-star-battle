@@ -88,6 +88,9 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_diagonal_parity,                      15, "Symmetry"),
 
             # -- Expert -------------------------------------------------------
+            # Tiles rule 4 -- shared with 2★+, see rules_multi_star.py's
+            # section comment above rule_tile_pair_quota_fill.
+            (self.rule_tile_pair_quota_fill,                 40, "Expert"),
             (self.rule_3_disjoint_rows,                     45, "Expert"),
             (self.rule_3_disjoint_cols,                     45, "Expert"),
             # 3-region cross-board pin -- moved to the start of Expert
@@ -139,7 +142,6 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_region_sync_multi_1,                  15, "Beginner"),
 
             # -- Medium -------------------------------------------------------
-            (self.rule_unit_placement_forced_intermediate_all,    20, "Medium"),
             (self.rule_unit_region_sync_multi_2,                  25, "Medium"),
             # Reused directly from SingleStarRules -- copying a known
             # star/dot to its symmetric counterpart doesn't depend on
@@ -147,10 +149,6 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_main_diagonal_fill,                        20, "Medium"),
             (self.rule_anti_diagonal_fill,                        20, "Medium"),
             (self.rule_rotation_180_fill,                         20, "Medium"),
-            # Tiles (multi-star-rules-experiment) -- see rules_multi_star.py's
-            # "Tiles" section comment for the shared _confirmed_tiles() concept
-            # all three rule_tile_* rules build on.
-            (self.rule_tile_single_empty,                         30, "Medium"),
             # Region/line quota fill (multi-star-rules-experiment) -- see
             # rules_multi_star.py's "Region/line quota fill" section comment.
             # weak/intermediate/strong track the same tier bump as
@@ -174,6 +172,27 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_region_line_partition_trapped_weak,        34, "Medium"),
 
             # -- Hard ---------------------------------------------------------
+            # Tiles (multi-star-rules-experiment) -- see rules_multi_star.py's
+            # "Tiles" section comment for the shared _confirmed_tiles() concept
+            # all three rule_tile_* rules build on. Moved here from the start
+            # of Medium: a confirmed tile down to its last empty cell is a
+            # simple, mechanical deduction, but still needs spotting a tiling
+            # in the first place, which belongs a tier above the plain
+            # unit/region reasoning that makes up Medium.
+            (self.rule_tile_single_empty,                         30, "Hard"),
+            # The 'intermediate' triple, reunited: this generation's own
+            # weak/strong triples both stay together (all three of a
+            # level's all/any/dots variants in the same tier), so
+            # intermediate's all_stars variant belongs here with its
+            # any_star/dots siblings too -- not a tier down in Medium,
+            # which it was splitting off from for no documented reason.
+            # The real cost of this rule is the enumeration itself (every
+            # valid completion, aware of every other unit's remaining
+            # capacity on this board); once that's done, reading off
+            # "always included" vs "always excluded" are equally easy
+            # conclusions, so there's no basis for putting one a tier
+            # below the other two.
+            (self.rule_unit_placement_forced_intermediate_all,    33, "Hard"),
             (self.rule_unit_placement_forced_intermediate_any,    35, "Hard"),
             (self.rule_unit_placement_forced_intermediate_dots,   35, "Hard"),
             (self.rule_unit_region_sync_multi_3,                  45, "Hard"),
@@ -201,6 +220,12 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_completion_satisfies_other_unit_intermediate, 82, "Hard"),
             (self.rule_3_row_col_line_sync_rows,                  83, "Hard"),
             (self.rule_3_row_col_line_sync_cols,                  83, "Hard"),
+            # 2★+ generalization of rule_tile_sees_too_much -- see
+            # rules_multi_star.py's section comment above
+            # rule_tile_sees_too_much_multi. Toward the end of Hard: same
+            # tile-spotting as rule_tile_single_empty/two_empty_dot (start
+            # of Hard) PLUS a per-candidate line-completion check on top.
+            (self.rule_tile_sees_too_much_multi,                  84, "Hard"),
 
             # -- Symmetry - requires insight but not hard to apply -----------
             (self.rule_rotation_180_multi,                        5, "Symmetry"),
@@ -208,6 +233,9 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_diagonal_parity_multi,                     15, "Symmetry"),
 
             # -- Expert -------------------------------------------------------
+            # Tiles rule 4 -- see rules_multi_star.py's section comment
+            # above rule_tile_pair_quota_fill.
+            (self.rule_tile_pair_quota_fill,                      90, "Expert"),
             # Cross-board N-regions-pin-N-rows/cols (3-region case): moved
             # to the start of Expert (was after
             # rule_crossboard_n_region_pinned_multi_2_*, weight unchanged);

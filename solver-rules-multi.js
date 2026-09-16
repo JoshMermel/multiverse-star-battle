@@ -1569,7 +1569,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     return axis === 'row' ? 'row pair' : 'column pair';
   };
 
-  // Rule 1 (2★+, Medium): a confirmed tile with only 1 empty cell means
+  // Rule 1 (2★+, Hard): a confirmed tile with only 1 empty cell means
   // that cell IS the star. Shows the tile's whole originating tiling (not
   // just the one tile), so the player can see the covering argument that
   // makes it trustworthy -- see _confirmedTilesImpl's comment.
@@ -1765,10 +1765,211 @@ export function applyMultiStarRules(PuzzleSolver) {
     return this._formatTileQuotaFillHints(this._tileQuotaFillCandidates(true));
   };
 
+  // -- Tile sees too much, multi-star (2★+, Hard, toward the end) -------------
+  //
+  // The 2★+ generalization of hintTileSeesTooMuch (1★, solver-rules-
+  // single.js): a confirmed tile with exactly 3 empty cells, or 2
+  // diagonally-opposite ones, guarantees its 1 star lands at one of those
+  // candidates. For 1★, "sees" (_externalCellsSeeingAll: touching, OR
+  // sharing a row/column) always means "conflicts", since a 1★ row/column
+  // only ever needs 1 star -- any other cell in that same line can never
+  // ALSO be a star. For 2★+, sharing a row/column does NOT automatically
+  // conflict (that line may still have room for more than one star) --
+  // UNLESS this specific candidate's placement would exhaust the line's
+  // remaining quota (its last needed star), in which case every other
+  // cell in that line becomes a dot too, same as always.
+  //
+  // So an external cell is forced to be a dot only if, for EVERY one of
+  // the tile's candidates, EITHER the external cell touches it
+  // (unconditional, quota-independent -- ordinary adjacency), OR the
+  // external cell shares that candidate's row (or column) AND placing a
+  // star there would complete that row (or column) -- which then dots
+  // the rest of it, external cell included.
+  p._wouldFinishLine = function (idx, axis) {
+    const n = this.n, quota = this.starsPerGroup;
+    const lineIndices = axis === 'row' ? this.axisIndices.Row[Math.floor(idx / n)] : this.axisIndices.Column[idx % n];
+    const stars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
+    return stars === quota - 1;
+  };
+
+  // Whether external cell `t` is ruled out by candidate `c` specifically
+  // (touches it outright, or shares c's row/column and c's placement
+  // would complete that line) -- see the section comment above.
+  p._externalConflictsWithCandidate = function (t, c) {
+    if (this._cellsAdjacent(t, c)) return true;
+    const n = this.n;
+    if (Math.floor(t / n) === Math.floor(c / n) && this._wouldFinishLine(c, 'row')) return true;
+    if ((t % n) === (c % n) && this._wouldFinishLine(c, 'col')) return true;
+    return false;
+  };
+
+  p.hintTileSeesTooMuchMulti = function () {
+    const seenKeys = new Set(); // "targets|tile cells" already claimed by an earlier tiling
+    const hints = [];
+    for (const tiling of this._confirmedTiles()) {
+      const matchingTiles = [];
+      const targetSet = new Set();
+      for (const tile of tiling.tiles) {
+        if (tile.cells.length !== 3 && !this._isDiagonalTilePair(tile.cells)) continue;
+
+        const targets = [];
+        for (let i = 0; i < this.n * this.n; i++) {
+          if (this.vState(i) !== CELL.NONE || tile.cells.includes(i)) continue;
+          if (tile.cells.every(c => this._externalConflictsWithCandidate(i, c))) targets.push(i);
+        }
+        if (targets.length === 0) continue;
+
+        const key = this._groupKey(targets) + '|' + this._groupKey(tile.cells);
+        if (seenKeys.has(key)) continue;
+        seenKeys.add(key);
+        matchingTiles.push(tile);
+        targets.forEach(t => targetSet.add(t));
+      }
+      if (matchingTiles.length === 0) continue;
+
+      const targetList = [...targetSet].sort((a, b) => a - b);
+      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, matchingTiles, targetList);
+      const tileWord = matchingTiles.length === 1 ? 'this tile' : 'each of these tiles';
+      const cellWord = targetList.length === 1 ? 'cell' : 'cells';
+      const isAre = targetList.length === 1 ? 'is' : 'are';
+      const itsTheyre = targetList.length === 1 ? "it's" : "they're";
+      hints.push({
+        description: `No matter which cell in ${tileWord} ends up with the star, the marked ${cellWord} `
+          + `${isAre} ruled out too -- either by touching it, or because that placement `
+          + `would complete a row or column, leaving no room left. So ${itsTheyre} dot${targetList.length === 1 ? '' : 's'}.`,
+        highlights,
+        marks: targetList.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+        tileOutlines,
+        boardIdx: undefined
+      });
+    }
+    if (hints.length === 0) return null;
+    hints.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
+    return hints;
+  };
+
   // Rule 3b (2★+, Expert): the general K>1 case -- K mutually disjoint
   // confirmed tiles together account for all K stars a unit still needs.
   p.hintTileDisjointQuotaFill = function () {
     return this._formatTileQuotaFillHints(this._tileQuotaFillCandidates(false));
+  };
+
+  // -- Tile pair quota fill (1★ AND 2★+, Expert) -------------------------------
+  //
+  // Rule 4 (see the "Tiles" section comment above hintTileSingleEmpty; this
+  // one is shared by both star-count families, unlike the rest of the
+  // Tiles rules, which each got their own 1★/2★+ variant). A confirmed
+  // tile is normally used within its OWN row-pair/column-pair band (e.g.
+  // hintTileQuotaFillSingle/hintTileDisjointQuotaFill combine tiles from
+  // the SAME band to fill one row/column/region's quota). This rule
+  // instead combines tiles from DIFFERENT column-pair bands that happen to
+  // land in the SAME row-pair window (or symmetrically, different row-pair
+  // bands landing in the same column-pair window): each such tile still
+  // guarantees exactly 1 star, computed independently of the others, but
+  // if enough of them (from unrelated bands) land in the same 2-row (or
+  // 2-column) window to add up to that window's own remaining need, every
+  // other empty cell in that window must be a dot -- the window's whole
+  // quota is already spoken for.
+  //
+  // E.g. columns B+C's own tiling puts one of its tiles at rows 5-6, and
+  // (unrelated) columns E+F's own tiling ALSO puts one of its tiles at
+  // rows 5-6. Neither band's tiling has anything to do with the other, but
+  // together their rows-5-6 tiles account for both stars rows 5-6 need
+  // (1★: one each) -- so every other empty cell in rows 5-6 (outside
+  // either tile) is a dot.
+  //
+  // Slotted at the start of Expert for both families: spotting a single
+  // band's own tiles is Hard-tier work, but noticing that SEVERAL
+  // unrelated bands' tiles happen to converge on the same row/column-pair
+  // window is a step up -- there's no shared tiling to visually anchor the
+  // observation the way hintTileQuotaFillSingle/Disjoint have.
+
+  // Every confirmed tile whose ORIGINATING band ran along `bandAxis`
+  // ('col' for a column-pair band, 'row' for a row-pair band), grouped by
+  // the OTHER axis's window it lands in (a column-pair band's tiles are
+  // grouped by which row-pair they occupy, and vice versa) -- exactly the
+  // window this rule tries to fill. Returns a Map: window start index ->
+  // [tile, ...].
+  p._tilesByPairWindow = function (bandAxis) {
+    const n = this.n;
+    const byWindow = new Map();
+    for (const tile of this._allConfirmedTilesFlat()) {
+      if (tile.axis !== bandAxis) continue;
+      const topRow = Math.floor(tile.topLeftIdx / n), leftCol = tile.topLeftIdx % n;
+      const windowStart = bandAxis === 'col' ? topRow : leftCol;
+      if (!byWindow.has(windowStart)) byWindow.set(windowStart, []);
+      byWindow.get(windowStart).push(tile);
+    }
+    return byWindow;
+  };
+
+  // bandAxis: 'col' looks for column-pair tiles filling a ROW-pair's
+  // quota; 'row' looks for row-pair tiles filling a COLUMN-pair's quota
+  // (the symmetric case) -- see the section comment above.
+  p._tilePairQuotaFillCandidates = function (bandAxis) {
+    const quota = this.starsPerGroup;
+    const byWindow = this._tilesByPairWindow(bandAxis);
+    const targetAxisIndices = bandAxis === 'col' ? this.axisIndices.Row : this.axisIndices.Column;
+
+    const candidates = [];
+    for (const [windowStart, tiles] of byWindow) {
+      const windowIndices = [...targetAxisIndices[windowStart], ...targetAxisIndices[windowStart + 1]];
+      const starsInWindow = windowIndices.filter(i => this.vState(i) === CELL.STAR).length;
+      const needed = 2 * quota - starsInWindow;
+      if (needed <= 0) continue;
+
+      const combo = this._findDisjointTileCombo(tiles, needed);
+      if (!combo) continue;
+
+      const covered = new Set(combo.flatMap(t => t.cells));
+      const targets = windowIndices.filter(i => this.vState(i) === CELL.NONE && !covered.has(i));
+      if (targets.length === 0) continue;
+
+      candidates.push({ bandAxis, combo, targets });
+    }
+    return candidates;
+  };
+
+  p.hintTilePairQuotaFill = function () {
+    const candidates = [
+      ...this._tilePairQuotaFillCandidates('col'),
+      ...this._tilePairQuotaFillCandidates('row'),
+    ];
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
+
+    // Same "show each combo tile's whole originating tiling for context"
+    // approach as _formatTileQuotaFillHints, since these combo tiles can
+    // come from several DIFFERENT tilings here even more often than that
+    // rule (that's the whole point -- unrelated bands converging on one
+    // window).
+    const tilesByTilingId = new Map();
+    for (const { tiles } of this._confirmedTiles()) {
+      for (const t of tiles) {
+        if (!tilesByTilingId.has(t.tilingId)) tilesByTilingId.set(t.tilingId, tiles);
+      }
+    }
+
+    return candidates.map(({ bandAxis, combo, targets }) => {
+      const tilingIds = [...new Set(combo.map(t => t.tilingId))];
+      const displayTiles = tilingIds.flatMap(id => tilesByTilingId.get(id));
+      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(displayTiles, combo, targets);
+
+      const targetWord = bandAxis === 'col' ? 'row' : 'column'; // the pair being filled
+      const sourceWord = bandAxis === 'col' ? 'column' : 'row'; // the pairs the tiles came from
+      const leadIn = combo.length === 1
+        ? `This ${sourceWord}-pair tile holds exactly one star`
+        : `These ${sourceWord}-pair tiles each hold exactly one star`;
+
+      return {
+        description: `${leadIn}, covering everything this ${targetWord} pair still needs -- `
+          + `so every other empty cell in the pair is a dot.`,
+        highlights,
+        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+        tileOutlines,
+        boardIdx: undefined
+      };
+    });
   };
 
   // -- Lookahead-dots (2★+, restored from pre-experiment) ---------------------
@@ -2163,14 +2364,11 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Moved here from Medium (multi-star-rules-experiment).
       { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },
       // Medium
-      { key: 'unitPlacementForcedIntermediateAll', fn: () => this.hintUnitPlacementForced('intermediate', 'all_stars') },
       { key: 'unitRegionSyncMulti2',           fn: () => this.hintUnitRegionSyncMulti(2) },
       // Reused directly from applySingleStarRules -- copying a known
       // star/dot to its symmetric counterpart doesn't depend on
       // starsPerGroup, so no multi-star variant is needed.
       { key: 'symmetryFillMulti',              fn: () => this.hintSymmetryFill() },
-      // Tiles rule 1 (see the "Tiles" section comment above hintTileSingleEmpty).
-      { key: 'tileSingleEmpty',                fn: () => this.hintTileSingleEmpty() },
       // Region/line quota fill (see the section comment above
       // hintRegionLineQuotaFill). weak/intermediate/strong track one tier
       // above the matching unitPlacementForced level, since this rule needs
@@ -2190,6 +2388,24 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'regionLinePartitionForcedWeak',      fn: () => this.hintRegionLinePartitionForced('weak') },
       { key: 'regionLinePartitionTrappedWeak',     fn: () => this.hintRegionLinePartitionTrapped('weak') },
       // Hard
+      // Tiles rule 1 (see the "Tiles" section comment above hintTileSingleEmpty)
+      // -- moved here from the start of Medium: a confirmed tile down to its
+      // last empty cell is a simple, mechanical deduction, but still needs
+      // spotting a tiling in the first place, which belongs a tier above the
+      // plain unit/region reasoning that makes up Medium.
+      { key: 'tileSingleEmpty',                fn: () => this.hintTileSingleEmpty() },
+      // The 'intermediate' triple, reunited: this generation's own weak/
+      // strong triples both stay together (all three of a level's
+      // all/any/dots variants in the same tier), so intermediate's
+      // all_stars variant belongs here with its any_star/dots siblings too
+      // -- not a tier down in Medium, which it was splitting off from for
+      // no documented reason. The real cost of this rule is the
+      // enumeration itself (every valid completion, aware of every other
+      // unit's remaining capacity on this board); once that's done,
+      // reading off "always included" vs "always excluded" are equally
+      // easy conclusions, so there's no basis for putting one a tier
+      // below the other two.
+      { key: 'unitPlacementForcedIntermediateAll',  fn: () => this.hintUnitPlacementForced('intermediate', 'all_stars') },
       { key: 'unitPlacementForcedIntermediateAny',  fn: () => this.hintUnitPlacementForced('intermediate', 'any_star') },
       { key: 'unitPlacementForcedIntermediateDots', fn: () => this.hintUnitPlacementForced('intermediate', 'dots') },
       { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
@@ -2224,9 +2440,16 @@ export function applyMultiStarRules(PuzzleSolver) {
       // hintUnitCompletionSatisfiesOtherUnit).
       { key: 'unitCompletionSatisfiesOtherUnitIntermediate', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('intermediate') },
       { key: 'rowColLineSync3',                fn: () => this.hintRowColLineSync(3) },
+      // 2★+ generalization of tileSeesTooMuch -- see the section comment
+      // above hintTileSeesTooMuchMulti. Toward the end of Hard: it needs
+      // the same tile-spotting as tileSingleEmpty/tileTwoEmptyDot (start
+      // of Hard) PLUS a per-candidate line-completion check on top.
+      { key: 'tileSeesTooMuchMulti',           fn: () => this.hintTileSeesTooMuchMulti() },
       // Symmetry - requires insight but not hard to apply
       { key: 'symmetryDeductionMulti',         fn: () => this.hintSymmetryDeductionMulti() },
       // Expert
+      // Tiles rule 4 -- see the section comment above hintTilePairQuotaFill.
+      { key: 'tilePairQuotaFill',              fn: () => this.hintTilePairQuotaFill() },
       // Cross-board N-regions-pin-N-rows/cols (3-region case): moved to
       // the start of Expert (was after crossBoardPinnedMulti2Row/2Col,
       // near the end of Expert) -- see the section comment a few lines
