@@ -113,7 +113,7 @@ class RegionlessGenerator(Generator):
         """
         return self._carve_once(sampling=sampling)
 
-    def generate_full_history(self):
+    def generate_full_history(self, include_unsolved=False):
         """
         Public single-attempt entry point, like generate_tier_ladder, but
         returns the UNCOLLAPSED history instead: {tier: [(board_str,
@@ -131,10 +131,22 @@ class RegionlessGenerator(Generator):
         history across many runs -- see build_regionless_books.py's
         mine_extreme_bonus -- gets a much larger, richer candidate pool
         per unit of carve time than one-pick-per-run ever could.
-        """
-        return self._carve_once(raw=True)
 
-    def _carve_once(self, sampling="random", raw=False):
+        include_unsolved: when True, boards the rule-based scorer couldn't
+        fully crack are ALSO kept, bucketed under the synthetic tier key
+        "UNSOLVED" (never a real TIER_ORDER entry, so this only affects
+        callers that explicitly opt in and look for it -- generate_tier_
+        ladder/_try_generate never pass this, so their "pick the hardest
+        SOLVED tier" behavior is unaffected). Off by default because
+        generate_tier_ladder's own hardest-tier selection in _try_generate
+        would otherwise start preferring an unsolved board over a genuinely
+        solvable one (UNSOLVED sorts last in _TIER_RANK) -- see
+        tools/build_regionless_library.py, the one caller that wants
+        genuine "this ruleset gave up here" examples for its corpus.
+        """
+        return self._carve_once(raw=True, include_unsolved=include_unsolved)
+
+    def _carve_once(self, sampling="random", raw=False, include_unsolved=False):
         n = self.n
         stars_per_unit = self.stars_per_unit
 
@@ -185,6 +197,16 @@ class RegionlessGenerator(Generator):
                                        name="carve", stars_per_unit=stars_per_unit)
             solved, score, tier = scorer.solve(puzzle)
             if solved:
+                seen_by_tier.setdefault(tier, []).append((board_str, solution, score))
+            elif include_unsolved and score != -999:
+                # tier here is "UNSOLVED" (see engine.py's solve()) -- kept
+                # under that same literal key, distinct from every real
+                # TIER_ORDER entry. score == -999 specifically means a rule
+                # raised ValueError -- a deduction that contradicted the
+                # puzzle's own canonical solution, i.e. a real solver-rule
+                # bug, not a legitimately hard board -- so that case is
+                # skipped rather than silently smuggled into the corpus as
+                # an "UNSOLVED" example.
                 seen_by_tier.setdefault(tier, []).append((board_str, solution, score))
 
         if not seen_by_tier:
