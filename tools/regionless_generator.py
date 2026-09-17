@@ -60,8 +60,13 @@ from solution_first_core import random_star_placement, stars_to_solution_string
 class RegionlessGenerator(Generator):
     """Maximal-void-carve generator for regionless (shapeless) puzzles."""
 
-    def __init__(self, n, stars_per_unit=1):
+    def __init__(self, n, stars_per_unit=1, uncap_grandmaster=False):
         super().__init__(n, stars_per_unit=stars_per_unit)
+        # Threaded straight into every CompositeScorer this carve creates
+        # (see _carve_once) -- see CompositeScorer's own docstring
+        # (composite_scorer.py) for what this does and why it's safe
+        # (measured cost-neutral) for regionless boards specifically.
+        self.uncap_grandmaster = uncap_grandmaster
 
     def _try_generate(self):
         """
@@ -166,7 +171,7 @@ class RegionlessGenerator(Generator):
         candidates = [i for i in range(n * n) if i not in star_set]
         random.shuffle(candidates)
 
-        scorer = CompositeScorer(verbose=False)
+        scorer = CompositeScorer(verbose=False, uncap_grandmaster=self.uncap_grandmaster)
         # tier -> every (board_str, solution, score) seen at that tier along
         # the way, in acceptance order. Every entry here is independently a
         # valid, already-verified-unique board -- see the "why sampling
