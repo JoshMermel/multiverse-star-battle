@@ -544,7 +544,7 @@ export function applySingleStarRules(PuzzleSolver) {
       // mainDiagCrossBoard trivially true too, so checking the latter here
       // never excludes anything -- see hintSymmetryDeduction above.
       const desc = this.mainDiagInternal
-        ? `Each board has diagonal symmetry across the main diagonal (↘).`
+        ? `${this._eachBoardWord()} has diagonal symmetry across the main diagonal (↘).`
         : `The solution is symmetric across the main diagonal (↘).`;
       const hint = this._hintSymmetryFill(i => (i % n) * n + Math.floor(i / n), desc);
       if (hint) results.push(hint);
@@ -552,7 +552,7 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (this.isAntiDiagonalSymmetric) {
       const desc = this.antiDiagInternal
-        ? `Each board has diagonal symmetry across the anti-diagonal (↙).`
+        ? `${this._eachBoardWord()} has diagonal symmetry across the anti-diagonal (↙).`
         : `The solution is symmetric across the anti-diagonal (↙).`;
       const hint = this._hintSymmetryFill(
         i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
@@ -570,6 +570,12 @@ export function applySingleStarRules(PuzzleSolver) {
   p.hintSymmetryDeduction = function () {
     const n = this.n;
     const results = [];
+    // Built once, shared by tryDiagParity's "mutual visibility" check below
+    // (same pattern _hintSymmetry uses) -- an empty map for any regionless
+    // board (see isRegionlessBoard/solver-core.js's unit-building, which
+    // skips region units entirely there), so map[a] is always undefined
+    // and the same-region branch never spuriously fires for one.
+    const cellToRegionMaps = this.game.regions.map((_, bIdx) => this.buildCellToRegionMap(bIdx));
 
     if (this.internalRotation180 || this.crossboardRotation180) {
       // internalRotation180 (every board individually symmetric) always makes
@@ -578,7 +584,7 @@ export function applySingleStarRules(PuzzleSolver) {
       // there's no genuinely-mixed "both" case to call out separately; it's
       // internal-only, or a real cross-board pairing, never distinguishably both.
       const description = this.internalRotation180
-        ? `Each board has 180° rotational symmetry. A cell that "sees" its own rotation can't be a star.`
+        ? `${this._eachBoardWord()} has 180° rotational symmetry. A cell that "sees" its own rotation can't be a star.`
         : `Each board is paired with its 180° rotation. A cell that "sees" its counterpart can't be a star.`;
       const hint = this._hintSymmetry(i => (n * n - 1) - i, description);
       if (hint) results.push(hint);
@@ -586,7 +592,7 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (this.isMainDiagonalSymmetric) {
       const description = this.mainDiagInternal
-        ? `Each board has diagonal symmetry across the main diagonal (↘). A cell that "sees" its own reflection can't be a star.`
+        ? `${this._eachBoardWord()} has diagonal symmetry across the main diagonal (↘). A cell that "sees" its own reflection can't be a star.`
         : `Each board is paired with its reflection across the main diagonal (↘). A cell that "sees" its own reflection can't be a star.`;
       const hint = this._hintSymmetry(i => (i % n) * n + Math.floor(i / n), description);
       if (hint) results.push(hint);
@@ -594,7 +600,7 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (this.isAntiDiagonalSymmetric) {
       const description = this.antiDiagInternal
-        ? `Each board has diagonal symmetry across the anti-diagonal (↙). A cell that "sees" its own reflection can't be a star.`
+        ? `${this._eachBoardWord()} has diagonal symmetry across the anti-diagonal (↙). A cell that "sees" its own reflection can't be a star.`
         : `Each board is paired with its reflection across the anti-diagonal (↙). A cell that "sees" its own reflection can't be a star.`;
       const hint = this._hintSymmetry(
         i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
@@ -607,7 +613,9 @@ export function applySingleStarRules(PuzzleSolver) {
     const tryDiagParity = (diagIndices, dirLabel, internal) => {
       const parity = n % 2 === 0 ? 'even' : 'odd';
       const reason = internal
-        ? `Each board independently has ${dirLabel} diagonal symmetry`
+        ? (this.game.regions.length === 1
+          ? `The board has ${dirLabel} diagonal symmetry`
+          : `Each board independently has ${dirLabel} diagonal symmetry`)
         : `Each board is paired with its ${dirLabel} reflection`;
 
       const diagStars  = diagIndices.filter(i => this.vState(i) === CELL.STAR).length;
@@ -626,13 +634,25 @@ export function applySingleStarRules(PuzzleSolver) {
         });
       } else if (diagEmpties.length >= 2) {
         if ((diagStars % 2) !== (n % 2)) return;
-        // All empties must mutually see each other (adjacency or same region on any board).
+        // All empties must mutually see each other (adjacency or same region
+        // on any board) -- via cellToRegionMaps (built above), NOT a raw
+        // this.game.regions[boardIdx][cell] comparison: a regionless board's
+        // raw string gives every non-void cell the SAME character by
+        // construction (see isRegionlessBoard), which would make this
+        // spuriously true for ANY two non-void cells on one, not just cells
+        // genuinely sharing a region. Found via a real 6x6/1★ regionless
+        // puzzle where this wrongly dotted two diagonal cells the solution
+        // actually needed as stars -- Python's rule_diagonal_parity already
+        // guards this correctly (rules_single_star.py's `see` helper skips
+        // regionless_boards explicitly); this mirrors that fix using JS's
+        // own existing "empty map for a regionless board" mechanism instead
+        // (same one _hintSymmetry above already relies on).
         const allSeeEachOther = diagEmpties.every((a, ai) => diagEmpties.every((b, bi) => {
           if (ai === bi) return true;
           const ra = Math.floor(a / n), ca = a % n;
           const rb = Math.floor(b / n), cb = b % n;
           return (Math.abs(ra - rb) <= 1 && Math.abs(ca - cb) <= 1)
-            || this.game.regions.some(r => r[a] === r[b] && r[a] !== '*');
+            || cellToRegionMaps.some(map => map[a] !== undefined && map[a] === map[b]);
         }));
         if (!allSeeEachOther) return;
         results.push({

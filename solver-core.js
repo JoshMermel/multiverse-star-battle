@@ -556,6 +556,15 @@ export class PuzzleSolver {
     return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
   }
 
+  // "Each board" reads oddly when there's only one -- used by the
+  // internal-symmetry hint text in solver-rules-single.js/-multi.js
+  // (hintSymmetryFill/hintSymmetryDeduction(Multi)), which otherwise
+  // hardcoded "Each board" regardless of how many boards this puzzle
+  // actually has.
+  _eachBoardWord() {
+    return this.game.regions.length === 1 ? 'The board' : 'Each board';
+  }
+
   formatSubsetHint(sourceRegs, targetRegs, targets, sourceBoardIdx, targetBoardIdx) {
     const targetSet = new Set(targets);
     // Both the source group and target group are physical grid cells that

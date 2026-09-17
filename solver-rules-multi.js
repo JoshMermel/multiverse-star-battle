@@ -63,21 +63,21 @@ export function applyMultiStarRules(PuzzleSolver) {
       // there's no genuinely-mixed "both" case to call out separately; it's
       // internal-only, or a real cross-board pairing, never distinguishably both.
       const description = this.internalRotation180
-        ? `Each board has 180° rotational symmetry. A cell that "sees" its own rotation (shares a row/column, or a region with no room for both) can't be a star.`
+        ? `${this._eachBoardWord()} has 180° rotational symmetry. A cell that "sees" its own rotation (shares a row/column, or a region with no room for both) can't be a star.`
         : `Each board is paired with its 180° rotation. A cell that "sees" its counterpart (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (n * n - 1) - i, description);
     }
 
     if (this.isMainDiagonalSymmetric) {
       const description = this.mainDiagInternal
-        ? `Each board has diagonal symmetry across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
+        ? `${this._eachBoardWord()} has diagonal symmetry across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
         : `Each board is paired with its reflection across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (i % n) * n + Math.floor(i / n), description);
     }
 
     if (this.isAntiDiagonalSymmetric) {
       const description = this.antiDiagInternal
-        ? `Each board has diagonal symmetry across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
+        ? `${this._eachBoardWord()} has diagonal symmetry across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
         : `Each board is paired with its reflection across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)), description);
     }
@@ -93,7 +93,9 @@ export function applyMultiStarRules(PuzzleSolver) {
     const tryDiagParity = (diagIndices, dirLabel, internal) => {
       const parity = totalStars % 2 === 0 ? 'even' : 'odd';
       const reason = internal
-        ? `Each board independently has ${dirLabel} diagonal symmetry`
+        ? (this.game.regions.length === 1
+          ? `The board has ${dirLabel} diagonal symmetry`
+          : `Each board independently has ${dirLabel} diagonal symmetry`)
         : `Each board is paired with its ${dirLabel} reflection`;
 
       const diagStars = diagIndices.filter(i => this.vState(i) === CELL.STAR).length;
