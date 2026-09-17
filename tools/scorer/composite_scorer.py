@@ -18,12 +18,30 @@ from .rules_multi_star import MultiStarRules
 
 
 # 3+ star puzzles get every multi-star rule up through Expert; only
-# Grandmaster (the N-stage lookahead rules) is capped off, since those are
-# the ones with a real, measured runtime cost at 3★+ (confirmed via
-# recon: the Hard-only cutoff previously used here produced zero
-# incorrect deductions once tried up through Expert -- this is a
-# performance-motivated cutoff, not a correctness one).
+# Grandmaster (the N-stage lookahead rules, plus the cross-board region/
+# line rules) is capped off, since those are the ones with a real,
+# measured runtime cost at 3★+ (confirmed via recon: the Hard-only cutoff
+# previously used here produced zero incorrect deductions once tried up
+# through Expert -- this is a performance-motivated cutoff, not a
+# correctness one).
+#
+# rule_tile_pair_quota_fill_grandmaster is exempted from this cutoff even
+# though it's tagged Grandmaster: its cost profile is identical to the
+# already-included Expert-tier rule_tile_pair_quota_fill right above it
+# (same confirmed-tile lookup, same bounded _find_disjoint_tile_combo
+# backtracking search) -- it's just gated to a rarer combo size (3+
+# independent tiles vs. exactly 2), not a more expensive search. The tier
+# cutoff is a proxy for "skip genuinely expensive full-board sweeps and
+# crossboard searches," not a blanket rule that nothing above Expert may
+# ever apply to a 3★+ puzzle -- excluding a cheap, already-computed
+# deduction here would be a pure capability regression (real puzzles that
+# used to solve via this exact combinatorics before the 2-vs-3+ split
+# would become UNSOLVED) for zero performance benefit. JS's
+# _getMultiStarRuleList has no equivalent per-star-count cap at all, so
+# leaving this excluded would also open a fresh JS/Python parity gap on
+# top of the regression.
 MULTI_STAR_TIER_CUTOFF = "Expert"
+MULTI_STAR_CUTOFF_EXEMPT = {"rule_tile_pair_quota_fill_grandmaster"}
 
 
 class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
@@ -36,10 +54,30 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
     helpers every rule family builds on, and rules_common.py /
     rules_single_star.py / rules_multi_star.py for the rule_* methods
     themselves.
+
+    uncap_grandmaster: when True, rules_multi_capped (used for every
+    stars_per_unit >= 3) gets the FULL multi_star_rules table instead of
+    the MULTI_STAR_TIER_CUTOFF-filtered one -- i.e. every stars_per_unit
+    gets access to every Grandmaster-tier rule, not just the exempted
+    ones. Off by default (existing callers, and any real multi-board
+    multiverse 3★+/4★+ puzzle, keep today's performance-motivated cap
+    unchanged). Verified cost-neutral specifically for single-board
+    REGIONLESS puzzles (tools/regionless_generator.py and friends): the
+    two cross-board Grandmaster rules resolve to near-instant no-ops on a
+    single board (rule_crossboard_region_line_partition_forced/
+    _quota_fill both key off per-board region layouts, and a regionless
+    board has none -- see is_regionless_board), and the N-stage lookahead
+    Grandmaster rules are already commented out of multi_star_rules
+    entirely regardless of this flag. Measured 2.3ms/puzzle either way on
+    a 60-puzzle 17x17/4★ regionless sample -- pass True there with
+    confidence. NOT verified for real multi-board multiverse puzzles,
+    where actual cross-board region analysis is real work -- leave False
+    for those until similarly measured.
     """
 
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, uncap_grandmaster=False):
         super().__init__(verbose=verbose)
+        self._uncap_grandmaster = uncap_grandmaster
 
         # Each entry: (rule_func, weight, tier)
         self.rules_1star = [
@@ -89,7 +127,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
 
             # -- Expert -------------------------------------------------------
             # Tiles rule 4 -- shared with 2★+, see rules_multi_star.py's
-            # section comment above rule_tile_pair_quota_fill.
+            # section comment above rule_tile_pair_quota_fill. Restricted
+            # to the 2-tile case; the 3-or-more-tile generalization
+            # (rule_tile_pair_quota_fill_grandmaster) is Grandmaster-tier,
+            # below.
             (self.rule_tile_pair_quota_fill,                 40, "Expert"),
             (self.rule_3_disjoint_rows,                     45, "Expert"),
             (self.rule_3_disjoint_cols,                     45, "Expert"),
@@ -109,6 +150,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_region_pair_contains_pair,           90, "Expert"),
 
             # -- Grandmaster --------------------------------------------------
+            # Tiles rule 4b -- shared with 2★+, see rules_multi_star.py's
+            # rule_tile_pair_quota_fill_grandmaster. The 3-or-more-tile
+            # generalization of rule_tile_pair_quota_fill (Expert, above).
+            (self.rule_tile_pair_quota_fill_grandmaster,    115, "Grandmaster"),
             (self.rule_lookahead_1_stage,                   120, "Grandmaster"),
             (self.rule_lookahead_2_stages,                  250, "Grandmaster"),
             # _lookahead_n_stages with a high stage count runs until the
@@ -234,7 +279,9 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
 
             # -- Expert -------------------------------------------------------
             # Tiles rule 4 -- see rules_multi_star.py's section comment
-            # above rule_tile_pair_quota_fill.
+            # above rule_tile_pair_quota_fill. Restricted to the 2-tile
+            # case; the 3-or-more-tile generalization (rule_tile_pair_
+            # quota_fill_grandmaster) is Grandmaster-tier, below.
             (self.rule_tile_pair_quota_fill,                      90, "Expert"),
             # Cross-board N-regions-pin-N-rows/cols (3-region case): moved
             # to the start of Expert (was after
@@ -287,6 +334,13 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # every other weak/any/dots-style pairing in this table.
             (self.rule_crossboard_region_line_partition_forced,   200, "Grandmaster"),
             (self.rule_crossboard_region_line_quota_fill,         210, "Grandmaster"),
+            # Tiles rule 4b -- see rules_multi_star.py's rule_tile_pair_
+            # quota_fill_grandmaster. The 3-or-more-tile generalization of
+            # rule_tile_pair_quota_fill (Expert, above). Not cross-board --
+            # slotted after the two cross-board rules above purely by
+            # convention (every other Grandmaster entry here is
+            # cross-board-only), not because it depends on them.
+            (self.rule_tile_pair_quota_fill_grandmaster,          215, "Grandmaster"),
 
             # All three N-stage multi-star lookahead rules are commented out
             # for performance: each is a full board-wide speculative sweep
@@ -305,7 +359,11 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
         self.rules_2_star = multi_star_rules
 
         # Every stars_per_unit >= 3 gets the same table with everything
-        # above MULTI_STAR_TIER_CUTOFF dropped.
-        self.rules_multi_capped = [
-            r for r in multi_star_rules if _TIER_RANK[r[2]] <= _TIER_RANK[MULTI_STAR_TIER_CUTOFF]
+        # above MULTI_STAR_TIER_CUTOFF dropped, except MULTI_STAR_CUTOFF_EXEMPT
+        # (see its own comment above) -- unless uncap_grandmaster requests
+        # the full table outright (see this class's own docstring).
+        self.rules_multi_capped = multi_star_rules if self._uncap_grandmaster else [
+            r for r in multi_star_rules
+            if _TIER_RANK[r[2]] <= _TIER_RANK[MULTI_STAR_TIER_CUTOFF]
+            or r[0].__name__ in MULTI_STAR_CUTOFF_EXEMPT
         ]

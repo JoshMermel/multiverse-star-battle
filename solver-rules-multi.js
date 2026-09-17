@@ -1854,7 +1854,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     return this._formatTileQuotaFillHints(this._tileQuotaFillCandidates(false));
   };
 
-  // -- Tile pair quota fill (1★ AND 2★+, Expert) -------------------------------
+  // -- Tile pair quota fill (1★ AND 2★+, Expert/Grandmaster) -------------------
   //
   // Rule 4 (see the "Tiles" section comment above hintTileSingleEmpty; this
   // one is shared by both star-count families, unlike the rest of the
@@ -1883,6 +1883,12 @@ export function applyMultiStarRules(PuzzleSolver) {
   // unrelated bands' tiles happen to converge on the same row/column-pair
   // window is a step up -- there's no shared tiling to visually anchor the
   // observation the way hintTileQuotaFillSingle/Disjoint have.
+  //
+  // Split by combo size: exactly 2 independent tiles converging stays
+  // Expert (hintTilePairQuotaFill), but 3-OR-MORE independent tiles
+  // converging on the same window is a bigger inferential leap again --
+  // that case is Grandmaster (hintTilePairQuotaFillGrandmaster, in the
+  // Grandmaster section of _getMultiStarRuleList below).
 
   // Every confirmed tile whose ORIGINATING band ran along `bandAxis`
   // ('col' for a column-pair band, 'row' for a row-pair band), grouped by
@@ -1934,7 +1940,14 @@ export function applyMultiStarRules(PuzzleSolver) {
   // bandAxis: 'col' looks for column-pair tiles filling a ROW-pair's
   // quota; 'row' looks for row-pair tiles filling a COLUMN-pair's quota
   // (the symmetric case) -- see the section comment above.
-  p._tilePairQuotaFillCandidates = function (bandAxis) {
+  // minTiles/maxTiles restricts to windows whose combo needs exactly this
+  // many disjoint tiles (`needed` below IS the combo size, since
+  // _findDisjointTileCombo only ever returns a combo of exactly `needed`
+  // tiles). Combining exactly 2 independent tiles into one argument
+  // (hintTilePairQuotaFill, Expert) is a materially smaller leap than
+  // combining 3 or more (hintTilePairQuotaFillGrandmaster) -- see both
+  // functions below.
+  p._tilePairQuotaFillCandidates = function (bandAxis, minTiles = 2, maxTiles = Infinity) {
     const quota = this.starsPerGroup;
     const byWindow = this._tilesByPairWindow(bandAxis);
     const targetAxisIndices = bandAxis === 'col' ? this.axisIndices.Row : this.axisIndices.Column;
@@ -1945,6 +1958,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       const starsInWindow = windowIndices.filter(i => this.vState(i) === CELL.STAR).length;
       const needed = 2 * quota - starsInWindow;
       if (needed <= 0) continue;
+      if (needed < minTiles || needed > maxTiles) continue;
 
       const combo = this._findDisjointTileCombo(tiles, needed);
       if (!combo) continue;
@@ -1958,11 +1972,10 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates;
   };
 
-  p.hintTilePairQuotaFill = function () {
-    const candidates = [
-      ...this._tilePairQuotaFillCandidates('col'),
-      ...this._tilePairQuotaFillCandidates('row'),
-    ];
+  // Shared by hintTilePairQuotaFill/hintTilePairQuotaFillGrandmaster: turns
+  // a list of candidates (already filtered to the desired tile-count range)
+  // into hints.
+  p._formatTilePairQuotaFillHints = function (candidates) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
 
@@ -1998,6 +2011,32 @@ export function applyMultiStarRules(PuzzleSolver) {
         boardIdx: undefined
       };
     });
+  };
+
+  // Rule 4 (Expert, 1★ and 2★+): exactly 2 disjoint tiles from unrelated
+  // bands filling one pair-window's quota. See hintTilePairQuotaFillGrandmaster
+  // for 3-or-more.
+  p.hintTilePairQuotaFill = function () {
+    const candidates = [
+      ...this._tilePairQuotaFillCandidates('col', 2, 2),
+      ...this._tilePairQuotaFillCandidates('row', 2, 2),
+    ];
+    return this._formatTilePairQuotaFillHints(candidates);
+  };
+
+  // Rule 4b (Grandmaster, 1★ and 2★+): the same argument as
+  // hintTilePairQuotaFill, but combining THREE OR MORE independent tiles
+  // (each from its own unrelated band) into one pair-window's quota,
+  // rather than just two. Two independent tiles happening to land in the
+  // same window is already a step up from a band's own (same-tiling) tile
+  // rules -- three or more compounds that same leap again, so this is
+  // gated to Grandmaster instead of sharing Expert with the 2-tile case.
+  p.hintTilePairQuotaFillGrandmaster = function () {
+    const candidates = [
+      ...this._tilePairQuotaFillCandidates('col', 3),
+      ...this._tilePairQuotaFillCandidates('row', 3),
+    ];
+    return this._formatTilePairQuotaFillHints(candidates);
   };
 
   // -- Lookahead-dots (2★+, restored from pre-experiment) ---------------------
@@ -2536,6 +2575,14 @@ export function applyMultiStarRules(PuzzleSolver) {
       // sweep, so they stay enabled here.
       { key: 'crossBoardRegionLinePartitionForced', fn: () => this.hintCrossBoardRegionLinePartitionForced() },
       { key: 'crossBoardRegionLineQuotaFill',        fn: () => this.hintCrossBoardRegionLineQuotaFill() },
+      // Tiles rule 4b -- see the section comment above hintTilePairQuotaFill.
+      // The 3-or-more-tile generalization of hintTilePairQuotaFill
+      // (Expert, above). Not cross-board -- slotted after the two
+      // cross-board rules above purely by convention (every other
+      // Grandmaster entry here is cross-board-only), not because it
+      // depends on them. Matches Python's rule_tile_pair_quota_fill_
+      // grandmaster in rules_multi_star.py.
+      { key: 'tilePairQuotaFillGrandmaster',   fn: () => this.hintTilePairQuotaFillGrandmaster() },
       // lookaheadLoop1/2/3/8 all commented out for performance: hintLookahead
       // does a full board-wide speculative sweep per empty cell per stage,
       // and that's gotten noticeably slow at 3★+ scale -- even 1 stage.

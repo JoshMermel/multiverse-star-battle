@@ -1907,11 +1907,19 @@ class MultiStarRules:
                     tiles.append((cells, box_start))
         return tiles
 
-    def _tile_pair_quota_fill(self, p, band_axis):
+    def _tile_pair_quota_fill(self, p, band_axis, min_tiles=2, max_tiles=None):
         """
         band_axis: 'col' looks for column-pair tiles filling a ROW-pair's
         quota; 'row' looks for row-pair tiles filling a COLUMN-pair's quota
         (the symmetric case) -- see the section comment above.
+
+        min_tiles/max_tiles: restricts to windows whose combo needs exactly
+        this many disjoint tiles (`needed` below IS the combo size, since
+        _find_disjoint_tile_combo only ever returns a combo of exactly
+        `needed` tiles). Combining exactly 2 independent tiles into one
+        argument (rule_tile_pair_quota_fill, Expert) is a materially
+        smaller leap than combining 3 or more (rule_tile_pair_quota_fill_
+        grandmaster) -- see both rules' own docstrings below.
         """
         n = p.n
         quota = p.stars_per_unit
@@ -1926,6 +1934,8 @@ class MultiStarRules:
             stars_in_window = sum(1 for i in window_indices if p.grid[i] == "x")
             needed = 2 * quota - stars_in_window
             if needed <= 0:
+                continue
+            if needed < min_tiles or (max_tiles is not None and needed > max_tiles):
                 continue
 
             combo = self._find_disjoint_tile_combo(tiles, needed)
@@ -1948,11 +1958,28 @@ class MultiStarRules:
         return 0
 
     def rule_tile_pair_quota_fill(self, p):
-        """Rule 4 (Expert, 1★ and 2★+): see the section comment above."""
-        changes = self._tile_pair_quota_fill(p, band_axis="col")
+        """Rule 4 (Expert, 1★ and 2★+): exactly 2 disjoint tiles from
+        unrelated bands filling one pair-window's quota -- see the section
+        comment above. Restricted to the 2-tile case; see rule_tile_pair_
+        quota_fill_grandmaster for 3-or-more."""
+        changes = self._tile_pair_quota_fill(p, band_axis="col", min_tiles=2, max_tiles=2)
         if changes > 0:
             return changes
-        return self._tile_pair_quota_fill(p, band_axis="row")
+        return self._tile_pair_quota_fill(p, band_axis="row", min_tiles=2, max_tiles=2)
+
+    def rule_tile_pair_quota_fill_grandmaster(self, p):
+        """Rule 4b (Grandmaster, 1★ and 2★+): the same argument as rule_
+        tile_pair_quota_fill, but combining THREE OR MORE independent
+        tiles (each from its own unrelated band) into one pair-window's
+        quota, rather than just two. Two independent tiles happening to
+        land in the same window is already a step up from a band's own
+        (same-tiling) tile rules -- three or more compounds that same leap
+        again, so this is gated to Grandmaster instead of sharing Expert
+        with the 2-tile case."""
+        changes = self._tile_pair_quota_fill(p, band_axis="col", min_tiles=3)
+        if changes > 0:
+            return changes
+        return self._tile_pair_quota_fill(p, band_axis="row", min_tiles=3)
 
     # -- Tiles: partial tiling + trapped "bar" (2★+) -----------------------------
     #

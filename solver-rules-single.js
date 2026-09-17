@@ -926,6 +926,10 @@ export function applySingleStarRules(PuzzleSolver) {
       { key: 'lookaheadHalf',            fn: () => this.hintLookaheadHalf() },
       { key: 'regionSubsetSync2',        fn: () => this.hintRegionSubsetSync(2) },
       // Grandmaster
+      // Tiles rule 4b -- see the section comment above hintTilePairQuotaFill
+      // in solver-rules-multi.js. The 3-or-more-tile generalization of
+      // hintTilePairQuotaFill (Expert, above).
+      { key: 'tilePairQuotaFillGrandmaster', fn: () => this.hintTilePairQuotaFillGrandmaster() },
       { key: 'lookahead1',              fn: () => this.hintLookahead(1) },
       { key: 'lookahead2',              fn: () => this.hintLookahead(2) },
       { key: 'lookahead3',              fn: () => this.hintLookahead(3) },
