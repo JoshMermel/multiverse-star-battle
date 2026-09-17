@@ -8,3 +8,9 @@ tools/library/
 # Local-only imports of third-party puzzles (never commit someone else's
 # puzzle content) -- see data/_local_psb_import.csv.
 data/_local_*.csv
+
+# Personal research corpus of scored puzzles (see tools/build_regionless_
+# library.py) -- for the user's own offline experimentation, never meant
+# to be committed at all (unlike tools/library/ above, which is a staging
+# area for puzzles ON THEIR WAY to being published).
+library/
