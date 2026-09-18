@@ -176,3 +176,62 @@ class CommonRules:
                 if changes > 0:
                     return changes
         return 0
+
+    def rule_fixed_tile_grid_parity(self, p):
+        """
+        EXPERIMENTAL -- prototype, not yet placed at a final tier (see
+        tools/measure_fixed_tile_grid_parity.py, which tests this at both
+        Hard and Expert against a real corpus before deciding).
+
+        MATCH: n == 4 * stars_per_unit + 2 only (e.g. 6x6/1★, 10x10/2★,
+        14x14/3★) -- see below for why only this exact board size works.
+        Divide the board into a FIXED m x m grid of 2x2 tiles (m = n/2,
+        independent of solving state -- tile (tr, tc) always covers rows
+        {2*tr, 2*tr+1} and columns {2*tc, 2*tc+1}). Any 2x2 block can hold
+        at most 1 star (all 4 cells mutually touch), so each tile-row/
+        tile-column -- 2 real rows/columns, needing 2*stars_per_unit stars
+        total -- gets that many stars from its m tiles, each contributing
+        0 or 1. m = 2*stars_per_unit + 1 is exactly one MORE than needed,
+        so at most one tile per tile-row/tile-column can have zero stars
+        ("empty"); and since total stars == total non-empty tiles (a tile
+        has either 0 or exactly 1, never 2+), total empty tiles across the
+        whole grid is EXACTLY m too -- so the empty tiles form a genuine
+        permutation: exactly one per tile-row, exactly one per tile-column.
+        If m-1 of the m empty tiles are already independently confirmed
+        (every one of that tile's 4 cells decided, none a star), the last
+        tile's (row, col) is forced by elimination (the one row and one
+        column not yet used) -- so ITS cells, wherever still undecided,
+        must be dots too, even though neither its own tile-row nor its own
+        tile-column individually shows a met quota yet on its own.
+        ACTION: dots any undecided cell in that forced-empty tile.
+        """
+        n = p.n
+        stars = p.stars_per_unit
+        if n != 4 * stars + 2:
+            return 0
+        m = n // 2
+
+        def tile_cells(tr, tc):
+            return [(2 * tr + dr) * n + (2 * tc + dc) for dr in (0, 1) for dc in (0, 1)]
+
+        def is_confirmed_empty(tr, tc):
+            return all(p.grid[c] is not None and p.grid[c] != "x" for c in tile_cells(tr, tc))
+
+        empties = [(tr, tc) for tr in range(m) for tc in range(m) if is_confirmed_empty(tr, tc)]
+        if len(empties) != m - 1:
+            return 0
+
+        rows_used = {tr for tr, _tc in empties}
+        cols_used = {tc for _tr, tc in empties}
+        missing_rows = set(range(m)) - rows_used
+        missing_cols = set(range(m)) - cols_used
+        if len(missing_rows) != 1 or len(missing_cols) != 1:
+            return 0  # Shouldn't happen on a consistent board -- defensive only.
+
+        tr, tc = missing_rows.pop(), missing_cols.pop()
+        targets = [c for c in tile_cells(tr, tc) if p.grid[c] is None]
+        if not targets:
+            return 0
+
+        label = f"FixedTileGridParity(tile {tr},{tc})"
+        return sum(p.validate_and_set(c, ".", label, self.verbose) for c in targets)

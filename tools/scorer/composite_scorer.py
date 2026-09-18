@@ -119,6 +119,19 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_tile_domino,                         42, "Hard"),
             (self.rule_tile_sees_too_much,                  43, "Hard"),
             (self.rule_tile_region_subset,                  44, "Hard"),
+            # Shared (rules_common.py) -- no-ops unless n == 4*stars_per_unit+2
+            # (6x6/1★, 10x10/2★, 14x14/3★...). Measured at Hard vs Expert
+            # against the full 6x6/1★ regionless library corpus (1.93M
+            # puzzles): fires on 932 (0.05%), 324 of those genuinely
+            # dropping from Expert to Hard tier, and NEVER fires at all when
+            # tried at Expert priority instead (everything it would catch
+            # is already resolved by the time Expert-tier rules run) --
+            # confirms Hard is its real tier, not just an arbitrary choice.
+            # Zero UNSOLVED -> solved transitions either way. Cost-neutral
+            # (0.081ms/puzzle, same as baseline). Only empirically validated
+            # at 6x6/1★ so far; 10x10/2★ and 14x14/3★ get it for free (same
+            # guard, same cheap no-op elsewhere) but haven't been measured.
+            (self.rule_fixed_tile_grid_parity,              45, "Hard"),
 
             # -- Symmetry - requires insight but not hard to apply -----------
             (self.rule_rotation_180,                        5, "Symmetry"),
@@ -271,6 +284,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # tile-spotting as rule_tile_single_empty/two_empty_dot (start
             # of Hard) PLUS a per-candidate line-completion check on top.
             (self.rule_tile_sees_too_much_multi,                  84, "Hard"),
+            # Shared (rules_common.py) -- no-ops unless n == 4*stars_per_unit+2
+            # (10x10/2★, 14x14/3★...). See rules_1star's own entry above for
+            # the full measurement writeup (done against 6x6/1★ specifically);
+            # registered here too since the guard/cost profile is identical
+            # and there's no reason to withhold it from 2★+/3★+ boards of the
+            # right size, but 10x10/2★ and 14x14/3★ haven't been separately
+            # measured yet.
+            (self.rule_fixed_tile_grid_parity,                    85, "Hard"),
 
             # -- Symmetry - requires insight but not hard to apply -----------
             (self.rule_rotation_180_multi,                        5, "Symmetry"),
