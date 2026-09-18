@@ -929,9 +929,6 @@ export function applySingleStarRules(PuzzleSolver) {
       { key: 'tileDomino',               fn: () => this.hintTileDomino() },
       { key: 'tileSeesTooMuch',          fn: () => this.hintTileSeesTooMuch() },
       { key: 'tileRegionSubset',         fn: () => this.hintTileRegionSubset() },
-      // Shared with 2★+ -- see the section comment above
-      // hintFixedTileGridParity in solver-rules-multi.js.
-      { key: 'fixedTileGridParity',      fn: () => this.hintFixedTileGridParity() },
       // Expert
       // Tiles rule 4 (shared with 2★+ -- see the section comment above
       // hintTilePairQuotaFill in solver-rules-multi.js).

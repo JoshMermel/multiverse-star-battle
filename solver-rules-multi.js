@@ -1805,94 +1805,6 @@ export function applyMultiStarRules(PuzzleSolver) {
     return false;
   };
 
-  // -- Fixed tile-grid parity (1★/2★+, Hard) ----------------------------------
-  //
-  // Only applies when n == 4*starsPerGroup + 2 (6x6/1★, 10x10/2★,
-  // 14x14/3★...). Divide the board into a FIXED m x m grid of 2x2 tiles
-  // (m = n/2, independent of solving state -- tile (tr, tc) always
-  // covers rows {2*tr, 2*tr+1} and columns {2*tc, 2*tc+1}). Any 2x2
-  // block can hold at most 1 star (all 4 cells mutually touch), so each
-  // tile-row/tile-column -- 2 real rows/columns, needing 2*starsPerGroup
-  // stars total -- gets that many stars from its m tiles, each
-  // contributing 0 or 1. m = 2*starsPerGroup + 1 is exactly one MORE
-  // than needed, so at most one tile per tile-row/tile-column can have
-  // zero stars ("empty"); and since total stars == total non-empty tiles
-  // (a tile has either 0 or exactly 1, never 2+), total empty tiles
-  // across the whole grid is EXACTLY m too -- so the empty tiles form a
-  // genuine permutation: exactly one per tile-row, exactly one per
-  // tile-column. If m-1 of the m empty tiles are already independently
-  // confirmed (every one of that tile's 4 cells decided, none a star),
-  // the last tile's (row, col) is forced by elimination (the one row and
-  // one column not yet used) -- so ITS cells, wherever still undecided,
-  // must be dots too, even though neither its own tile-row nor its own
-  // tile-column individually shows a met quota yet on its own.
-  //
-  // Registered at Hard tier for both 1★ and 2★+ (shared, like
-  // hintTilePairQuotaFill) -- measured against the full 6x6/1★ regionless
-  // library corpus (1.93M puzzles): fires on 932 (0.05%), 324 of those
-  // genuinely dropping from Expert to Hard tier, and NEVER fires at all
-  // when tried at Expert priority instead (everything it would catch is
-  // already resolved by the time Expert-tier rules run) -- confirms Hard
-  // is its real tier. Zero UNSOLVED -> solved transitions either way.
-  // 10x10/2★ and 14x14/3★ get this for free (same guard, same cheap
-  // no-op elsewhere) but haven't been separately measured. Python port:
-  // rules_common.py's rule_fixed_tile_grid_parity.
-  p.hintFixedTileGridParity = function () {
-    const n = this.n;
-    const stars = this.starsPerGroup;
-    if (n !== 4 * stars + 2) return null;
-    const m = n / 2;
-
-    const tileCells = (tr, tc) => [
-      (2 * tr) * n + (2 * tc), (2 * tr) * n + (2 * tc + 1),
-      (2 * tr + 1) * n + (2 * tc), (2 * tr + 1) * n + (2 * tc + 1)
-    ];
-    const isConfirmedEmpty = (tr, tc) => tileCells(tr, tc).every(c => this.vState(c) === CELL.DOT);
-
-    const empties = [];
-    for (let tr = 0; tr < m; tr++) {
-      for (let tc = 0; tc < m; tc++) {
-        if (isConfirmedEmpty(tr, tc)) empties.push([tr, tc]);
-      }
-    }
-    if (empties.length !== m - 1) return null;
-
-    const rowsUsed = new Set(empties.map(([tr]) => tr));
-    const colsUsed = new Set(empties.map(([, tc]) => tc));
-    const missingRow = [...Array(m).keys()].find(r => !rowsUsed.has(r));
-    const missingCol = [...Array(m).keys()].find(c => !colsUsed.has(c));
-    if (missingRow === undefined || missingCol === undefined) return null;
-
-    const targets = tileCells(missingRow, missingCol).filter(c => this.vState(c) === CELL.NONE);
-    if (targets.length === 0) return null;
-
-    // Every other empty tile is shown as source justification, cycling
-    // colors the same way the Tiles family does for multi-tile hints.
-    const highlights = empties.flatMap(([tr, tc], i) =>
-      tileCells(tr, tc).map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[i % HINT_SOURCE_VARIANTS.length] }))
-    );
-    const tileOutlines = [
-      ...empties.map(([tr, tc], i) => ({
-        topLeftIdx: (2 * tr) * n + (2 * tc),
-        color: TILE_OUTLINE_COLORS[i % TILE_OUTLINE_COLORS.length]
-      })),
-      {
-        topLeftIdx: (2 * missingRow) * n + (2 * missingCol),
-        color: TILE_OUTLINE_COLORS[empties.length % TILE_OUTLINE_COLORS.length]
-      }
-    ];
-
-    return [{
-      description: `This board's fixed 2x2 tile grid has exactly one empty (starless) tile in `
-        + `every tile-row and tile-column. With the other ${empties.length} empty tiles already `
-        + `known, this tile must be the last one -- so its remaining cells are dots.`,
-      highlights,
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-      tileOutlines,
-      boardIdx: undefined
-    }];
-  };
-
   p.hintTileSeesTooMuchMulti = function () {
     const seenKeys = new Set(); // "targets|tile cells" already claimed by an earlier tiling
     const hints = [];
@@ -2602,8 +2514,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       // the same tile-spotting as tileSingleEmpty/tileTwoEmptyDot (start
       // of Hard) PLUS a per-candidate line-completion check on top.
       { key: 'tileSeesTooMuchMulti',           fn: () => this.hintTileSeesTooMuchMulti() },
-      // Shared with 1★ -- see the section comment above hintFixedTileGridParity.
-      { key: 'fixedTileGridParity',            fn: () => this.hintFixedTileGridParity() },
       // Symmetry - requires insight but not hard to apply
       { key: 'symmetryDeductionMulti',         fn: () => this.hintSymmetryDeductionMulti() },
       // Expert
