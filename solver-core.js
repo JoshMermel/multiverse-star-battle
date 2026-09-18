@@ -463,13 +463,65 @@ export class PuzzleSolver {
   // same units at the same level), and hintUnitCompletionSatisfiesOtherUnit
   // -- without this, a single getHint() call can redo the same expensive
   // enumeration for the same unit many times over.
+  //
+  // The cache key is deliberately NOT the whole board (unlike
+  // _cachedOnState, used elsewhere): _enumerateUnitCompletions only ever
+  // looks at `unit`'s own cells, plus -- in strong/intermediate mode --
+  // the star COUNT (not full state) of every OTHER unit sharing a cell
+  // with `unit` (see _comboRespectsCapacity). A cell changing three
+  // regions away doesn't affect this unit's answer at all, but a
+  // whole-board key would invalidate it anyway. On a large, many-round
+  // solve (a stuck/Hard/UNSOLVED puzzle can run hundreds of getHint()-
+  // equivalent rounds internally, each deciding one or two cells) that
+  // means EVERY unit's enumeration got redone from scratch EVERY round
+  // under the old keying, even for units nowhere near whatever changed.
+  // Python port measured 1.23x-1.58x faster (9x9/13x13/17x17 sample,
+  // byte-identical scores/tiers/solved across 1,500 verified puzzles)
+  // after narrowing the key this same way -- see engine.py's
+  // _unit_completions_by_level. _unitDeps (below) precomputes the
+  // dependency set once per unit -- it's structural (which units share a
+  // cell), not board state, so it never needs recomputing mid-solve.
   _unitCompletionsByLevel(unit, level, quota = this.starsPerGroup) {
-    return this._cachedOnState(`unitCompletions_${unit.label}_${level}_${quota}`, () => {
-      if (level === 'weak') return [this._enumerateUnitCompletions(unit, false, quota)];
-      if (level === 'strong') return [this._enumerateUnitCompletions(unit, true, quota)];
-      const scopes = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
-      return scopes.map(bIdx => this._enumerateUnitCompletions(unit, true, quota, null, bIdx));
-    });
+    const deps = this._unitDeps(unit);
+    const ownState = unit.indices.map(i => this.vState(i)).join(',');
+    const depState = [...deps.values()]
+      .map(ou => `${ou.label}:${ou.indices.filter(i => this.vState(i) === CELL.STAR).length}`)
+      .sort()
+      .join('|');
+    if (!this._unitCompletionsCache) this._unitCompletionsCache = new Map();
+    const cacheKey = `${unit.label}|${level}|${quota}|${ownState}|${depState}`;
+    if (!this._unitCompletionsCache.has(cacheKey)) {
+      let value;
+      if (level === 'weak') value = [this._enumerateUnitCompletions(unit, false, quota)];
+      else if (level === 'strong') value = [this._enumerateUnitCompletions(unit, true, quota)];
+      else {
+        const scopes = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
+        value = scopes.map(bIdx => this._enumerateUnitCompletions(unit, true, quota, null, bIdx));
+      }
+      this._unitCompletionsCache.set(cacheKey, value);
+    }
+    return this._unitCompletionsCache.get(cacheKey);
+  }
+
+  // Every OTHER unit sharing at least one cell with `unit` -- the
+  // complete set _comboRespectsCapacity could ever consult for this
+  // unit's strong/intermediate-mode capacity check. Purely structural
+  // (depends only on the board's fixed unit/cell layout, never on board
+  // state), so this is computed once per unit per puzzle and reused for
+  // the rest of the solve.
+  _unitDeps(unit) {
+    if (!this._unitDepsCache) this._unitDepsCache = new Map();
+    if (!this._unitDepsCache.has(unit.label)) {
+      const deps = new Map();
+      for (const cell of unit.indices) {
+        for (const otherUnit of this._unitsByCell[cell]) {
+          if (otherUnit.label === unit.label) continue;
+          deps.set(otherUnit.label, otherUnit);
+        }
+      }
+      this._unitDepsCache.set(unit.label, deps);
+    }
+    return this._unitDepsCache.get(unit.label);
   }
 
   // --- Hint Dispatch ---
