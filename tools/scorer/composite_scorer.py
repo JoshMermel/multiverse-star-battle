@@ -140,10 +140,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # solver-rules-single.js's identical reorder.
             (self.rule_3_region_pinned_crossboard_rows,     60, "Expert"),
             (self.rule_3_region_pinned_crossboard_cols,     60, "Expert"),
-            (self.rule_3_row_col_line_sync_rows,            45, "Expert"),
-            (self.rule_3_row_col_line_sync_cols,            45, "Expert"),
-            (self.rule_2_region_pinned_crossboard_rows,     50, "Expert"),
-            (self.rule_2_region_pinned_crossboard_cols,     50, "Expert"),
+            (self.rule_3_row_col_line_sync_rows,            65, "Expert"),
+            (self.rule_3_row_col_line_sync_cols,            65, "Expert"),
+            (self.rule_2_region_pinned_crossboard_rows,     70, "Expert"),
+            (self.rule_2_region_pinned_crossboard_cols,     70, "Expert"),
             (self.rule_crossboard_partial_overlap,          75, "Expert"),
             (self.rule_lookahead_half_stage_single_board,   78, "Expert"),
             (self.rule_lookahead_half_stage,                80, "Expert"),
@@ -278,11 +278,7 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_diagonal_parity_multi,                     15, "Symmetry"),
 
             # -- Expert -------------------------------------------------------
-            # Tiles rule 4 -- see rules_multi_star.py's section comment
-            # above rule_tile_pair_quota_fill. Restricted to the 2-tile
-            # case; the 3-or-more-tile generalization (rule_tile_pair_
-            # quota_fill_grandmaster) is Grandmaster-tier, below.
-            (self.rule_tile_pair_quota_fill,                      90, "Expert"),
+            
             # Cross-board N-regions-pin-N-rows/cols (3-region case): moved
             # to the start of Expert (was after
             # rule_crossboard_n_region_pinned_multi_2_*, weight unchanged);
@@ -296,29 +292,30 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_placement_forced_strong_all,          95, "Expert"),
             (self.rule_unit_placement_forced_strong_any,          96, "Expert"),
             (self.rule_unit_placement_forced_strong_dots,         97, "Expert"),
+            (self.rule_tile_bar_trapped,                          100, "Expert"),
             # 1★ counterpart (rule_crossboard_partial_overlap, rules_single_star.py)
             # sits early in Expert there too; see rules_multi_star.py's
             # "Cross-board partial overlap" section comment for the
             # stars_per_unit-agnostic algebra behind it.
-            (self.rule_crossboard_partial_overlap_multi,          98, "Expert"),
-            (self.rule_tile_disjoint_quota_fill,                  100, "Expert"),
+            (self.rule_crossboard_partial_overlap_multi,          105, "Expert"),
+            (self.rule_tile_disjoint_quota_fill,                  110, "Expert"),
             # Tile rule 4 -- needs a genuinely incomplete tiling (a band
             # rule_tile_single_empty/two_empty_dot/quota_fill give up on
             # entirely) to have anything to say, so it's slotted after
             # every rule built on complete tilings. See its own section
             # comment (rules_multi_star.py, above rule_tile_bar_trapped).
-            (self.rule_tile_bar_trapped,                          102, "Expert"),
-            (self.rule_region_line_quota_fill_strong,             105, "Expert"),
-            (self.rule_region_line_partition_forced_strong,       106, "Expert"),
-            (self.rule_region_line_partition_trapped_strong,      107, "Expert"),
+            (self.rule_region_line_quota_fill_strong,             115, "Expert"),
+            (self.rule_region_line_partition_forced_strong,       116, "Expert"),
+            (self.rule_region_line_partition_trapped_strong,      117, "Expert"),
             # Restored from pre-experiment.
-            (self.rule_unit_completion_satisfies_other_unit_strong, 108, "Expert"),
-            (self.rule_unit_region_sync_multi_2_disjoint,         109, "Expert"),
+            (self.rule_unit_completion_satisfies_other_unit_strong, 118, "Expert"),
+            (self.rule_unit_region_sync_multi_2_disjoint,         119, "Expert"),
             # 3-region case (rows/cols) moved to the start of Expert -- see
             # above.
-            (self.rule_crossboard_n_region_pinned_multi_2_rows,   110, "Expert"),
-            (self.rule_crossboard_n_region_pinned_multi_2_cols,   111, "Expert"),
-            (self.rule_region_subset_sync_3,                      120, "Expert"),
+            (self.rule_tile_pair_quota_fill,                      120, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_2_rows,   125, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_2_cols,   125, "Expert"),
+            (self.rule_region_subset_sync_3,                      130, "Expert"),
             (self.rule_region_subset_sync_4,                      150, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),
             (self.rule_lookahead_dots,                            180, "Expert"),

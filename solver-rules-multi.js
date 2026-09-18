@@ -2517,8 +2517,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Symmetry - requires insight but not hard to apply
       { key: 'symmetryDeductionMulti',         fn: () => this.hintSymmetryDeductionMulti() },
       // Expert
-      // Tiles rule 4 -- see the section comment above hintTilePairQuotaFill.
-      { key: 'tilePairQuotaFill',              fn: () => this.hintTilePairQuotaFill() },
       // Cross-board N-regions-pin-N-rows/cols (3-region case): moved to
       // the start of Expert (was after crossBoardPinnedMulti2Row/2Col,
       // near the end of Expert) -- see the section comment a few lines
@@ -2533,6 +2531,12 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'unitPlacementForcedStrongAll',   fn: () => this.hintUnitPlacementForced('strong', 'all_stars') },
       { key: 'unitPlacementForcedStrongAny',   fn: () => this.hintUnitPlacementForced('strong', 'any_star') },
       { key: 'unitPlacementForcedStrongDots',  fn: () => this.hintUnitPlacementForced('strong', 'dots') },
+      // Tiles rule 4 (see the section comment above hintTileBarTrapped) --
+      // needs a genuinely incomplete tiling (a band _confirmedTilesImpl
+      // gives up on entirely) to have anything to say. Moved earlier in
+      // Expert (was after tileDisjointQuotaFill) per a manual scoring
+      // reorder -- matches Python's composite_scorer.py.
+      { key: 'tileBarTrapped',                 fn: () => this.hintTileBarTrapped() },
       // 1★ counterpart (hintPartialOverlap, solver-rules-single.js) sits
       // early in Expert there too; see the section comment above
       // hintCrossBoardPartialOverlapMulti for the starsPerGroup-agnostic
@@ -2540,17 +2544,16 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'crossBoardPartialOverlapMulti',  fn: () => this.hintCrossBoardPartialOverlapMulti() },
       // Tiles rule 3.
       { key: 'tileDisjointQuotaFill',          fn: () => this.hintTileDisjointQuotaFill() },
-      // Tiles rule 4 (see the section comment above hintTileBarTrapped) --
-      // needs a genuinely incomplete tiling (a band _confirmedTilesImpl
-      // gives up on entirely) to have anything to say, so it's slotted
-      // after every rule built on complete tilings.
-      { key: 'tileBarTrapped',                 fn: () => this.hintTileBarTrapped() },
       { key: 'regionLineQuotaFillStrong',      fn: () => this.hintRegionLineQuotaFill('strong') },
       { key: 'regionLinePartitionForcedStrong',    fn: () => this.hintRegionLinePartitionForced('strong') },
       { key: 'regionLinePartitionTrappedStrong',   fn: () => this.hintRegionLinePartitionTrapped('strong') },
       // Restored from pre-experiment.
       { key: 'unitCompletionSatisfiesOtherUnitStrong', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('strong') },
       { key: 'disjointUnitRegionSyncMulti2',   fn: () => this.hintDisjointUnitRegionSyncMulti(2) },
+      // Tiles rule 4 -- see the section comment above hintTilePairQuotaFill.
+      // Moved here (was the very start of Expert) per a manual scoring
+      // reorder -- matches Python's composite_scorer.py.
+      { key: 'tilePairQuotaFill',              fn: () => this.hintTilePairQuotaFill() },
       // Cross-board N-regions-pin-N-rows/cols: generalizes the 1★-only
       // hintCrossBoardRegionPinned to any starsPerGroup. Always genuinely
       // cross-board (see hintCrossBoardRegionPinnedMulti's comment). The
