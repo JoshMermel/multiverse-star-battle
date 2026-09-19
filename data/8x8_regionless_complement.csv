@@ -999,11 +999,9 @@ puzzle_997,8,AAA******AA**A*****AAAA*A*A*A***AAA*A*A*A****AAAAA*AA**AAAAAA***,x.
 puzzle_998,8,AAAAA****AAA**A**AAA***A*AAAAAAAA*******A***AAA*A***AA*A*****AAA,..x...........x..x.........x....x...........x..........x.....x..,217.0,Hard,True,lr
 puzzle_999,8,*AAAAAAAA*AAAAA****A*AAAA*A**A*A*A*AA*A****A*AAAA*****A********A,.x.........x.........x....x.........x.........x.x..............x,282.0,Hard,True,180
 puzzle_1000,8,***A****AAAA*AAAA**A***A*A*A**A*A*A*AA*A*AA*AAA*****A***AAA*AAAA,...x....x..............x.x...........x....x.........x.........x.,228.0,Hard,True,lr
-puzzle_1649,8,AAAA****A***AAA*A*A*A*A*AAA*A***A*A*A*A*****AAAAA*A*A*A**A*A*A*A,...x....x.............x..x..........x..........x..x..........x..,2879.0,Grandmaster,True,lr
 puzzle_1650,8,**AA**A*AAAA*AA***AA*A**A***A*A*A*A*AAA*AA*A**AAA**A****A*AA**AA,......x...x..........x..x...........x....x.........x...........x,2272.0,Grandmaster,True,180
 puzzle_1651,8,AA**AA**A***AAA*AA*A*A***AA*A**AAA*A*A******AAAA*A*A*A*A**A*A*AA,.x..........x...x.........x..........x.........x...x..........x.,3044.0,Grandmaster,True,lr
 puzzle_1652,8,*AAAAAA*A*A*AA**AA*A*A*AAAA*AAA*A***A****A*A*A**AA**A*A*A******A,...x.........x.........x..x.........x....x............x.x.......,2462.0,Grandmaster,True,180
 puzzle_1653,8,A***AAA**A*A*A*A****AAAA****AAAA**AA**AA*AAA***A**A*A*AAAAAA****,.....x...x..........x.........x....x...........x..x.....x.......,3151.0,Grandmaster,True,lr
 puzzle_1654,8,AA*AA*A*AAA***A*AA*****AAAA**AAA***AA*****AAAAA****AAA*A**A**A*A,x.........x............x.x..........x.........x....x.........x..,5.0,UNSOLVED,True,lr
 puzzle_1655,8,***AA**AA*A**AAA*A*A***AA*AA**A**A**AA*AA*A*AAA**A*AA***AAA**AA*,...x....x..............x..x.........x.........x..x...........x..,550,UNSOLVED,True,lr
-
