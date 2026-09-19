@@ -252,13 +252,26 @@ class ScorerCore:
         off whole branches of the search tree before they're ever built,
         rather than paying to build them and then throwing them away -- a
         real cost on wide rows/columns/regions, where adjacent-cell
-        rejections are common. The capacity check (which needs a complete
-        combo to evaluate) still only runs once per surviving leaf, same
-        as before. Mirrors solver-core.js's _enumerateUnitCompletions.
+        rejections are common.
+
+        In strong mode, the capacity check is ALSO applied incrementally
+        during construction, not just once a complete combo reaches the
+        leaf: each other unit's remaining capacity is precomputed once up
+        front, and a running per-other-unit tally of the combo-in-progress
+        is checked before a candidate cell is added, pruning the instant a
+        choice would exceed some touched unit's capacity. This is safe
+        because that tally only grows within a branch (cells are only
+        added, never swapped out for a smaller count) -- so any combo
+        completed past that point would have failed the old leaf-only
+        check anyway, and skipping it just avoids exploring branches that
+        were already guaranteed to be discarded, without changing which
+        combos end up in `valid` or the order they're found in. Mirrors
+        solver-core.js's _enumerateUnitCompletions.
         """
         if quota is None:
             quota = p.stars_per_unit
         indices = unit["indices"]
+        label = unit["label"]
         stars = [i for i in indices if p.grid[i] == "x"]
         needed = quota - len(stars)
         if needed <= 0:
@@ -273,10 +286,54 @@ class ScorerCore:
         valid = []
         chosen = []
 
+        if not strong:
+            def try_from(start):
+                if len(chosen) == needed:
+                    valid.append(tuple(chosen))
+                    return
+                # Not enough cells left in `avail` to reach `needed`: prune.
+                if len(avail) - start < needed - len(chosen):
+                    return
+                for i in range(start, len(avail)):
+                    cell = avail[i]
+                    if any(self._cells_adjacent(p, s, cell) for s in stars):
+                        continue
+                    if any(self._cells_adjacent(p, c, cell) for c in chosen):
+                        continue
+                    chosen.append(cell)
+                    try_from(i + 1)
+                    chosen.pop()
+
+            try_from(0)
+            return valid
+
+        # Strong mode: precompute each relevant OTHER unit's remaining
+        # capacity once, and which other units each avail cell touches, so
+        # the search below can prune a doomed partial combo incrementally
+        # instead of only at the leaf.
+        remaining_capacity = {}
+        cell_other_labels = {}
+        for cell in avail:
+            labels = []
+            for other_unit in p.units_by_cell[cell]:
+                olabel = other_unit["label"]
+                if olabel == label:
+                    continue
+                if (visible_board_idx is not None
+                        and other_unit["board_idx"] is not None
+                        and other_unit["board_idx"] != visible_board_idx):
+                    continue
+                labels.append(olabel)
+                if olabel not in remaining_capacity:
+                    existing = sum(1 for i in other_unit["indices"] if p.grid[i] == "x")
+                    remaining_capacity[olabel] = p.stars_per_unit - existing
+            cell_other_labels[cell] = labels
+
+        added_count = {}
+
         def try_from(start):
             if len(chosen) == needed:
-                if not strong or self._combo_respects_capacity(p, chosen, unit, visible_board_idx):
-                    valid.append(tuple(chosen))
+                valid.append(tuple(chosen))
                 return
             # Not enough cells left in `avail` to reach `needed`: prune.
             if len(avail) - start < needed - len(chosen):
@@ -287,9 +344,23 @@ class ScorerCore:
                     continue
                 if any(self._cells_adjacent(p, c, cell) for c in chosen):
                     continue
+
+                touched = cell_other_labels[cell]
+                over_capacity = False
+                for olabel in touched:
+                    if added_count.get(olabel, 0) + 1 > remaining_capacity[olabel]:
+                        over_capacity = True
+                        break
+                if over_capacity:
+                    continue
+
+                for olabel in touched:
+                    added_count[olabel] = added_count.get(olabel, 0) + 1
                 chosen.append(cell)
                 try_from(i + 1)
                 chosen.pop()
+                for olabel in touched:
+                    added_count[olabel] -= 1
 
         try_from(0)
         return valid

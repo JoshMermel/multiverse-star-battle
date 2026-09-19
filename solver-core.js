@@ -331,9 +331,20 @@ export class PuzzleSolver {
   // construction cuts off whole branches of the search tree before they're
   // ever built, rather than paying to build them and then throwing them
   // away -- a real cost on wide rows/columns/regions, where adjacent-cell
-  // rejections are common. The capacity check (which needs a complete
-  // combo to evaluate) still only runs once per surviving leaf, same as
-  // before.
+  // rejections are common.
+  //
+  // In strong mode, the capacity check is ALSO applied incrementally
+  // during construction, not just once a complete combo reaches the leaf:
+  // each other unit's remaining capacity is precomputed once up front, and
+  // a running per-other-unit tally of the combo-in-progress is checked
+  // before a candidate cell is added, pruning the instant a choice would
+  // exceed some touched unit's capacity. This is safe because that tally
+  // only grows within a branch (cells are only added, never swapped out
+  // for a smaller count) -- so any combo completed past that point would
+  // have failed the old leaf-only check anyway, and skipping it just
+  // avoids exploring branches that were already guaranteed to be
+  // discarded, without changing which combos end up in `results` or the
+  // order they're found in.
   _enumerateUnitCompletions(unit, strong = true, quota = this.starsPerGroup, state = null, visibleBoardIdx = null) {
     const readState = state ? (i => state[i]) : (i => this.vState(i));
     const stars = unit.indices.filter(i => readState(i) === CELL.STAR);
@@ -345,11 +356,52 @@ export class PuzzleSolver {
     if (estimateCombos(avail.length, needed, ENUMERATION_COMBO_CAP) > ENUMERATION_COMBO_CAP) return null;
 
     const results = [];
+
+    if (!strong) {
+      const tryFrom = (start, chosen) => {
+        if (chosen.length === needed) {
+          results.push(chosen.slice());
+          return;
+        }
+        // Not enough cells left in `avail` to reach `needed`: prune.
+        if (avail.length - start < needed - chosen.length) return;
+        for (let i = start; i < avail.length; i++) {
+          const cell = avail[i];
+          if (stars.some(s => this._cellsAdjacent(s, cell))) continue;
+          if (chosen.some(c => this._cellsAdjacent(c, cell))) continue;
+          chosen.push(cell);
+          tryFrom(i + 1, chosen);
+          chosen.pop();
+        }
+      };
+      tryFrom(0, []);
+      return results;
+    }
+
+    // Strong mode: precompute each relevant OTHER unit's remaining
+    // capacity once, and which other units each avail cell touches, so
+    // the search below can prune a doomed partial combo incrementally
+    // instead of only at the leaf.
+    const remainingCapacity = new Map();
+    const cellOtherUnits = new Map();
+    for (const cell of avail) {
+      const touched = [];
+      for (const otherUnit of this._unitsByCell[cell]) {
+        if (otherUnit.label === unit.label) continue;
+        if (visibleBoardIdx !== null && otherUnit.boardIdx !== undefined && otherUnit.boardIdx !== visibleBoardIdx) continue;
+        touched.push(otherUnit);
+        if (!remainingCapacity.has(otherUnit)) {
+          const existing = otherUnit.indices.filter(i => readState(i) === CELL.STAR).length;
+          remainingCapacity.set(otherUnit, this.starsPerGroup - existing);
+        }
+      }
+      cellOtherUnits.set(cell, touched);
+    }
+
+    const addedCount = new Map();
     const tryFrom = (start, chosen) => {
       if (chosen.length === needed) {
-        if (!strong || this._comboRespectsCapacity(chosen, unit, readState, visibleBoardIdx)) {
-          results.push(chosen.slice());
-        }
+        results.push(chosen.slice());
         return;
       }
       // Not enough cells left in `avail` to reach `needed`: prune.
@@ -358,9 +410,20 @@ export class PuzzleSolver {
         const cell = avail[i];
         if (stars.some(s => this._cellsAdjacent(s, cell))) continue;
         if (chosen.some(c => this._cellsAdjacent(c, cell))) continue;
+
+        const touched = cellOtherUnits.get(cell);
+        let overCapacity = false;
+        for (const otherUnit of touched) {
+          const next = (addedCount.get(otherUnit) || 0) + 1;
+          if (next > remainingCapacity.get(otherUnit)) { overCapacity = true; break; }
+        }
+        if (overCapacity) continue;
+
+        for (const otherUnit of touched) addedCount.set(otherUnit, (addedCount.get(otherUnit) || 0) + 1);
         chosen.push(cell);
         tryFrom(i + 1, chosen);
         chosen.pop();
+        for (const otherUnit of touched) addedCount.set(otherUnit, addedCount.get(otherUnit) - 1);
       }
     };
     tryFrom(0, []);
