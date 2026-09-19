@@ -79,6 +79,8 @@
     {"id": "8x8_twin",              "label": "Twin",                    "group": "Symmetry",         "desc": "Both boards are the same, one flipped or rotated", "stars": 1},
     {"id": "9x9_twin",              "label": "Twin",                    "group": "Symmetry",         "desc": "Both boards are the same, one flipped or rotated", "stars": 2},
     {"id": "8x8_symmetric_twin",    "label": "Symmetric Twin",          "group": "Symmetry",         "desc": "Both Symmetric and Twin at once", "stars": 1},
+    {"id": "8x8_regionless_complement",   "label": "8x8 regionless complement",    "group": "Symmetry",         "desc": "Regionless puzzles where the black and white squares have the same shape", "stars": 1},
+    {"id": "10x10_regionless_complement", "label": "10x10 regionless complement",    "group": "Symmetry",         "desc": "Regionless puzzles where the black and white squares have the same shape", "stars": 2},
     {"id": "venn",                  "label": "Venn",                    "group": "Rectangles",       "desc": "Boards inspired by venn diagrams", "stars": 1},
     {"id": "not_sudoku",            "label": "Not Sudoku",              "group": "Rectangles",       "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply", "stars": 1},
     {"id": "not_sudoku_2star",      "label": "Not Sudoku",              "group": "Rectangles",       "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply", "stars": 2},
