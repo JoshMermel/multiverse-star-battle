@@ -1631,10 +1631,31 @@ class MultiStarRules:
                 results.append([offset] + rest)
         return results
 
-    def _confirmed_tiles(self, p):
-        return self._cached_on_grid(p, '_confirmed_tiles_cache', lambda: self._confirmed_tiles_impl(p))
+    def _tile_band_lines(self, p, axis, u):
+        """
+        Structural (grid-state-independent) geometry for band `u` on
+        `axis`: the two line index-lists and the subset of their union
+        that isn't void. Computed once per (axis, u) per puzzle and cached
+        forever, since it never depends on which cells are filled.
+        """
+        cache = getattr(p, '_tile_band_lines_cache', None)
+        if cache is None:
+            cache = {}
+            p._tile_band_lines_cache = cache
+        key = (axis, u)
+        if key not in cache:
+            n = p.n
+            if axis == "row":
+                line_a = [u * n + c for c in range(n)]
+                line_b = [(u + 1) * n + c for c in range(n)]
+            else:
+                line_a = [c * n + u for c in range(n)]
+                line_b = [c * n + (u + 1) for c in range(n)]
+            band_indices = [i for i in line_a + line_b if i not in p.void_cells]
+            cache[key] = (line_a, line_b, band_indices)
+        return cache[key]
 
-    def _confirmed_tiles_impl(self, p):
+    def _confirmed_tiles(self, p):
         """
         Every confirmed (guaranteed exactly 1 star) tile on the board, as a
         set of frozensets of cell indices. Deduped: the same physical 2x2
@@ -1642,45 +1663,73 @@ class MultiStarRules:
         row-band and a column-band view of it -- callers only care about
         the distinct cell-sets, not how many ways each was found.
 
-        Coordinates are computed directly (r*n+c / c*n+r), NOT via
-        p.row_indices/col_indices -- those exclude void cells, which would
-        silently shift column positions out of alignment with the band's
-        other line.
+        Cached per band rather than on the whole grid: which tiles a given
+        row/column band confirms depends only on the grid values of THAT
+        band's own cells (via stars_in_band and has_empty below), never on
+        cells elsewhere on the board. A single-cell change anywhere only
+        invalidates the (at most two row-axis and two col-axis) bands that
+        cell actually belongs to, instead of every band on the board.
+        Per-band results are cached as an ORDER-preserving list (not a
+        bare set) and merged into the overall `tiles` set via sequential
+        .add() in the original nested loop order -- both matter for
+        determinism: which physically-equivalent tile a "first match wins"
+        caller (e.g. rule_tile_single_empty) picks can depend on set
+        iteration order, and Python set iteration order depends on
+        insertion HISTORY, not just final contents.
         """
+        cache = getattr(p, '_confirmed_tiles_band_cache', None)
+        if cache is None:
+            cache = {}
+            p._confirmed_tiles_band_cache = cache
+
         n = p.n
         quota = p.stars_per_unit
         tiles = set()
 
         for axis in ("row", "col"):
             for u in range(n - 1):
-                if axis == "row":
-                    line_a = [u * n + c for c in range(n)]
-                    line_b = [(u + 1) * n + c for c in range(n)]
-                else:
-                    line_a = [c * n + u for c in range(n)]
-                    line_b = [c * n + (u + 1) for c in range(n)]
-
-                band_indices = [i for i in line_a + line_b if i not in p.void_cells]
-                stars_in_band = sum(1 for i in band_indices if p.grid[i] == "x")
-                k = 2 * quota - stars_in_band
-                if k <= 0:
-                    continue
-
-                def is_empty(i):
-                    return i not in p.void_cells and p.grid[i] is None
-
-                has_empty = [is_empty(line_a[c]) or is_empty(line_b[c]) for c in range(n)]
-
-                for tiling in self._find_tilings(has_empty):
-                    if len(tiling) != k:
-                        continue
-                    for box_start in tiling:
-                        a1, b1 = line_a[box_start], line_b[box_start]
-                        a2, b2 = line_a[box_start + 1], line_b[box_start + 1]
-                        cells = frozenset(i for i in (a1, b1, a2, b2) if is_empty(i))
-                        if cells:
-                            tiles.add(cells)
+                line_a, line_b, band_indices = self._tile_band_lines(p, axis, u)
+                state_key = tuple(p.grid[i] for i in band_indices)
+                cache_key = (axis, u, state_key)
+                if cache_key not in cache:
+                    cache[cache_key] = self._confirmed_tiles_band(p, quota, line_a, line_b)
+                for cells in cache[cache_key]:
+                    tiles.add(cells)
         return tiles
+
+    def _confirmed_tiles_band(self, p, quota, line_a, line_b):
+        """
+        The confirmed tiles for a single row/column band (see
+        _confirmed_tiles), as an order-preserving, intra-band-deduped
+        list. Coordinates are computed directly (r*n+c / c*n+r) by the
+        caller, NOT via p.row_indices/col_indices -- those exclude void
+        cells, which would silently shift column positions out of
+        alignment with the band's other line.
+        """
+        n = len(line_a)
+        stars_in_band = sum(1 for i in line_a + line_b if i not in p.void_cells and p.grid[i] == "x")
+        k = 2 * quota - stars_in_band
+        if k <= 0:
+            return []
+
+        def is_empty(i):
+            return i not in p.void_cells and p.grid[i] is None
+
+        has_empty = [is_empty(line_a[c]) or is_empty(line_b[c]) for c in range(n)]
+
+        result = []
+        seen = set()
+        for tiling in self._find_tilings(has_empty):
+            if len(tiling) != k:
+                continue
+            for box_start in tiling:
+                a1, b1 = line_a[box_start], line_b[box_start]
+                a2, b2 = line_a[box_start + 1], line_b[box_start + 1]
+                cells = frozenset(i for i in (a1, b1, a2, b2) if is_empty(i))
+                if cells and cells not in seen:
+                    seen.add(cells)
+                    result.append(cells)
+        return result
 
     def rule_tile_single_empty(self, p):
         """
@@ -2068,28 +2117,6 @@ class MultiStarRules:
             offset, c = prev_offset, prev_count
         return boxes
 
-    def _max_non_touching_along_path(self, p, path_cells, blocked):
-        """
-        Maximum number of mutually non-touching cells choosable from
-        `path_cells`, given IN ORDER along the bar. A "bar" is always a
-        simple path when read in that order -- exactly one cell per
-        row/column of a straight 2-line band, so only consecutive entries
-        can ever touch -- which makes this a plain O(length)
-        max-independent-set-on-a-path scan instead of the general
-        (exponential) search _forced_cells_in_group needs for an
-        unordered cell set. `blocked` are cells (existing stars, or a
-        candidate being tested) whose neighbors should count as unusable.
-        """
-        blocked_neighbors = set()
-        for b in blocked:
-            blocked_neighbors.update(p._neighbor_map[b])
-        prev2, prev1 = 0, 0
-        for cell in path_cells:
-            usable = 0 if cell in blocked_neighbors else 1
-            cur = max(prev1, prev2 + usable)
-            prev2, prev1 = prev1, cur
-        return prev1
-
     def _tile_bar_facts(self, p):
         return self._cached_on_grid(p, '_tile_bar_facts_cache', lambda: self._tile_bar_facts_impl(p))
 
@@ -2183,6 +2210,46 @@ class MultiStarRules:
                         })
         return facts
 
+    def _tile_bar_prefix_suffix(self, p, path_cells, blocked):
+        """
+        Prefix/suffix max-non-touching-along-path DP arrays for
+        path_cells, given a FIXED blocked set (existing stars only --
+        NOT a candidate). P[i] = best achievable using only
+        path_cells[0:i]; S[i] = best achievable using only
+        path_cells[i:]. Since path_cells is always a straight physical
+        line -- exactly one cell per row/column of a straight 2-line
+        band, so only consecutive entries can ever touch -- a single
+        outside candidate's neighbors among them are always a contiguous
+        index range [lo, hi] -- so "what's the max with existing stars
+        AND this one candidate both blocked" is just P[lo] + S[hi + 1] (the two
+        halves are independent: excluding at least one position between
+        them means they can never be adjacent to each other). That turns
+        rule_tile_bar_trapped's per-candidate check from an O(len(path))
+        rescan into an O(1) lookup after this O(len(path)) setup, done
+        once per bar rather than once per candidate.
+        """
+        blocked_neighbors = set()
+        for b in blocked:
+            blocked_neighbors.update(p._neighbor_map[b])
+        usable = [0 if c in blocked_neighbors else 1 for c in path_cells]
+        n = len(path_cells)
+
+        prefix = [0] * (n + 1)
+        prev2 = prev1 = 0
+        for i in range(n):
+            cur = max(prev1, prev2 + usable[i])
+            prefix[i + 1] = cur
+            prev2, prev1 = prev1, cur
+
+        suffix = [0] * (n + 1)
+        prev2 = prev1 = 0
+        for i in range(n - 1, -1, -1):
+            cur = max(prev1, prev2 + usable[i])
+            suffix[i] = cur
+            prev2, prev1 = prev1, cur
+
+        return prefix, suffix
+
     def rule_tile_bar_trapped(self, p):
         """Rule 4 (Expert): see the section comment above for the reasoning."""
         existing_stars = [i for i in range(p.n * p.n) if p.grid[i] == "x"]
@@ -2190,20 +2257,32 @@ class MultiStarRules:
         for fact in self._tile_bar_facts(p):
             bar_cells = fact["bar_cells"]
             need = fact["need"]
-            base_max = self._max_non_touching_along_path(p, bar_cells, existing_stars)
+            prefix, suffix = self._tile_bar_prefix_suffix(p, bar_cells, existing_stars)
+            base_max = prefix[len(bar_cells)]
             if base_max < need:
                 continue  # shouldn't happen on a consistent grid; guard anyway
 
             bar_set = set(bar_cells)
-            outside_candidates = set()
-            for cell in bar_cells:
+            # For each outside candidate, the contiguous [lo, hi] range of
+            # bar_cells indices it touches (a candidate not on the bar can
+            # only neighbor a contiguous run of it -- see this function's
+            # own docstring above).
+            candidate_range = {}
+            for i, cell in enumerate(bar_cells):
                 for nb in p._neighbor_map[cell]:
                     if p.grid[nb] is None and nb not in bar_set:
-                        outside_candidates.add(nb)
+                        r = candidate_range.get(nb)
+                        if r is None:
+                            candidate_range[nb] = [i, i]
+                        else:
+                            if i < r[0]:
+                                r[0] = i
+                            if i > r[1]:
+                                r[1] = i
 
             targets = [
-                cand for cand in outside_candidates
-                if self._max_non_touching_along_path(p, bar_cells, existing_stars + [cand]) < need
+                cand for cand, (lo, hi) in candidate_range.items()
+                if prefix[lo] + suffix[hi + 1] < need
             ]
             if not targets:
                 continue

@@ -1440,65 +1440,104 @@ export function applyMultiStarRules(PuzzleSolver) {
   // rule 3 needs instead. topLeftIdx is the box's own top-left grid cell
   // (which may not itself be one of `cells`, if that particular corner
   // is already decided) -- used only for positioning the outline overlay.
-  p._confirmedTiles = function () {
-    return this._cachedOnState('confirmedTiles', () => this._confirmedTilesImpl());
+  // Structural (board-state-independent) geometry for band `u` on `axis`:
+  // the two line index-lists and the subset of their union that isn't
+  // void. Computed once per (axis, u) per puzzle and cached forever,
+  // since it never depends on which cells are filled.
+  p._tileBandLines = function (axis, u) {
+    if (!this._tileBandLinesCache) this._tileBandLinesCache = new Map();
+    const key = axis + ':' + u;
+    if (!this._tileBandLinesCache.has(key)) {
+      const n = this.n;
+      const lineA = [], lineB = [];
+      for (let c = 0; c < n; c++) {
+        if (axis === 'row') {
+          lineA.push(u * n + c);
+          lineB.push((u + 1) * n + c);
+        } else {
+          lineA.push(c * n + u);
+          lineB.push(c * n + (u + 1));
+        }
+      }
+      const bandIndices = [...lineA, ...lineB].filter(i => !this.voidCells?.has(i));
+      this._tileBandLinesCache.set(key, { lineA, lineB, bandIndices });
+    }
+    return this._tileBandLinesCache.get(key);
   };
 
-  p._confirmedTilesImpl = function () {
+  // Cached per band rather than on the whole board state: which tilings a
+  // given row/column band produces depends only on the state of THAT
+  // band's own cells (via starsInBand and hasEmpty below), never on cells
+  // elsewhere on the board. A single-cell change anywhere only
+  // invalidates the (at most two row-axis and two col-axis) bands that
+  // cell actually belongs to, instead of every band on the board.
+  p._confirmedTiles = function () {
+    if (!this._confirmedTilesBandCache) this._confirmedTilesBandCache = new Map();
+    const cache = this._confirmedTilesBandCache;
     const n = this.n;
     const quota = this.starsPerGroup;
     const tilings = [];
-    const isEmpty = (i) => !this.voidCells?.has(i) && this.vState(i) === CELL.NONE;
-    let nextTilingId = 0;
 
     for (const axis of ['row', 'col']) {
       for (let u = 0; u < n - 1; u++) {
-        const lineA = [], lineB = [];
-        for (let c = 0; c < n; c++) {
-          if (axis === 'row') {
-            lineA.push(u * n + c);
-            lineB.push((u + 1) * n + c);
-          } else {
-            lineA.push(c * n + u);
-            lineB.push(c * n + (u + 1));
-          }
+        const { lineA, lineB, bandIndices } = this._tileBandLines(axis, u);
+        const stateKey = bandIndices.map(i => this.vState(i)).join(',');
+        const cacheKey = axis + ':' + u + ':' + stateKey;
+        if (!cache.has(cacheKey)) {
+          cache.set(cacheKey, this._confirmedTilesBand(axis, u, quota, lineA, lineB));
         }
-
-        const starsInBand = [...lineA, ...lineB].filter(i => this.vState(i) === CELL.STAR).length;
-        const k = 2 * quota - starsInBand;
-        if (k <= 0) continue;
-
-        const hasEmpty = [];
-        for (let c = 0; c < n; c++) {
-          hasEmpty.push(isEmpty(lineA[c]) || isEmpty(lineB[c]));
-        }
-
-        for (const tiling of this._findTilings(hasEmpty)) {
-          if (tiling.length !== k) continue;
-          // Every tile below shares this same id -- see the color-grouping
-          // comment on _colorSlotsForTiles: all tiles from one row-pair/
-          // col-pair covering are meant to render as the SAME color, since
-          // together they're a single argument ("these K tiles partition
-          // this band's empties"), not K separate ones.
-          const tilingId = nextTilingId++;
-          const tiles = [];
-          for (const boxStart of tiling) {
-            const cells = [lineA[boxStart], lineB[boxStart], lineA[boxStart + 1], lineB[boxStart + 1]]
-              .filter(isEmpty);
-            if (cells.length === 0) continue;
-            const topRow = axis === 'row' ? u : boxStart;
-            const leftCol = axis === 'row' ? boxStart : u;
-            // axis is carried on both the tiling and each tile (the latter
-            // so it survives _allConfirmedTilesFlat's flattening) purely
-            // for hint wording -- "row pair" vs "column pair" -- not used
-            // in any geometry/matching logic.
-            tiles.push({ cells, topLeftIdx: topRow * n + leftCol, tilingId, axis });
-          }
-          if (tiles.length > 0) tilings.push({ tiles, axis });
-        }
+        for (const tiling of cache.get(cacheKey)) tilings.push(tiling);
       }
     }
     return tilings;
+  };
+
+  // The confirmed tilings for a single row/column band (see
+  // _confirmedTiles). tilingId is derived from (axis, u, local index)
+  // instead of a global incrementing counter -- every consumer only ever
+  // uses it as an opaque Map/Set key to group tiles that came from the
+  // SAME tiling (see _colorSlotsForTiles), never its numeric value, and
+  // this form stays unique across bands without needing shared mutable
+  // state, which a plain per-band counter reset to 0 would not.
+  p._confirmedTilesBand = function (axis, u, quota, lineA, lineB) {
+    const n = lineA.length;
+    const isEmpty = (i) => !this.voidCells?.has(i) && this.vState(i) === CELL.NONE;
+
+    const starsInBand = [...lineA, ...lineB].filter(i => this.vState(i) === CELL.STAR).length;
+    const k = 2 * quota - starsInBand;
+    if (k <= 0) return [];
+
+    const hasEmpty = [];
+    for (let c = 0; c < n; c++) {
+      hasEmpty.push(isEmpty(lineA[c]) || isEmpty(lineB[c]));
+    }
+
+    const result = [];
+    let localTilingIndex = 0;
+    for (const tiling of this._findTilings(hasEmpty)) {
+      if (tiling.length !== k) continue;
+      // Every tile below shares this same id -- see the color-grouping
+      // comment on _colorSlotsForTiles: all tiles from one row-pair/
+      // col-pair covering are meant to render as the SAME color, since
+      // together they're a single argument ("these K tiles partition
+      // this band's empties"), not K separate ones.
+      const tilingId = `${axis}:${u}:${localTilingIndex++}`;
+      const tiles = [];
+      for (const boxStart of tiling) {
+        const cells = [lineA[boxStart], lineB[boxStart], lineA[boxStart + 1], lineB[boxStart + 1]]
+          .filter(isEmpty);
+        if (cells.length === 0) continue;
+        const topRow = axis === 'row' ? u : boxStart;
+        const leftCol = axis === 'row' ? boxStart : u;
+        // axis is carried on both the tiling and each tile (the latter so
+        // it survives _allConfirmedTilesFlat's flattening) purely for
+        // hint wording -- "row pair" vs "column pair" -- not used in any
+        // geometry/matching logic.
+        tiles.push({ cells, topLeftIdx: topRow * n + leftCol, tilingId, axis });
+      }
+      if (tiles.length > 0) result.push({ tiles, axis });
+    }
+    return result;
   };
 
   // Flattened, deduped view of every confirmed tile across every tiling
@@ -2219,25 +2258,46 @@ export function applyMultiStarRules(PuzzleSolver) {
     return boxes;
   };
 
-  // Maximum number of mutually non-touching cells choosable from
-  // `pathCells`, given IN ORDER along the bar. A "bar" is always a simple
-  // path when read in that order -- exactly one cell per row/column of a
+  // Prefix/suffix max-non-touching-along-path arrays for pathCells, given
+  // a FIXED blocked set (existing stars only -- NOT a candidate).
+  // prefix[i] = best achievable using only pathCells[0:i]; suffix[i] =
+  // best achievable using only pathCells[i:]. pathCells is always a
+  // straight physical line -- exactly one cell per row/column of a
   // straight 2-line band, so only consecutive entries can ever touch --
-  // which makes this a plain O(length) max-independent-set-on-a-path scan
-  // instead of the general (exponential) search _forcedCellsInGroup needs
-  // for an unordered cell set. `blocked` are cells (existing stars, or a
-  // candidate being tested) whose neighbors should count as unusable.
-  p._maxNonTouchingAlongPath = function (pathCells, blocked) {
+  // a single outside candidate's neighbors among them are always a
+  // contiguous index range [lo, hi] -- so "what's the max with existing
+  // stars AND this one candidate both blocked" is just
+  // prefix[lo] + suffix[hi + 1] (the two halves are independent:
+  // excluding at least one position between them means they can never be
+  // adjacent to each other). Turns hintTileBarTrapped's per-candidate
+  // check from an O(barLen) rescan into an O(1) lookup after this
+  // O(barLen) setup, done once per bar rather than once per candidate.
+  // Python port: rules_multi_star.py's _tile_bar_prefix_suffix.
+  p._tileBarPrefixSuffix = function (pathCells, blocked) {
     const blockedNeighbors = new Set();
     for (const b of blocked) for (const nb of this.getNeighbors(b)) blockedNeighbors.add(nb);
+    const usable = pathCells.map(c => blockedNeighbors.has(c) ? 0 : 1);
+    const n = pathCells.length;
+
+    const prefix = new Array(n + 1).fill(0);
     let prev2 = 0, prev1 = 0;
-    for (const cell of pathCells) {
-      const usable = blockedNeighbors.has(cell) ? 0 : 1;
-      const cur = Math.max(prev1, prev2 + usable);
+    for (let i = 0; i < n; i++) {
+      const cur = Math.max(prev1, prev2 + usable[i]);
+      prefix[i + 1] = cur;
       prev2 = prev1;
       prev1 = cur;
     }
-    return prev1;
+
+    const suffix = new Array(n + 1).fill(0);
+    prev2 = 0; prev1 = 0;
+    for (let i = n - 1; i >= 0; i--) {
+      const cur = Math.max(prev1, prev2 + usable[i]);
+      suffix[i] = cur;
+      prev2 = prev1;
+      prev1 = cur;
+    }
+
+    return { prefix, suffix };
   };
 
   p._tileBarFacts = function () {
@@ -2357,20 +2417,32 @@ export function applyMultiStarRules(PuzzleSolver) {
     // widest bar per band gets kept, below.
     const candidates = [];
     for (const { axis, lineIdx, tiles, barCells, need } of this._tileBarFacts()) {
-      const baseMax = this._maxNonTouchingAlongPath(barCells, existingStars);
+      const { prefix, suffix } = this._tileBarPrefixSuffix(barCells, existingStars);
+      const baseMax = prefix[barCells.length];
       if (baseMax < need) continue; // shouldn't happen on a consistent board; guard anyway
 
       const barSet = new Set(barCells);
-      const outsideCandidates = new Set();
-      for (const cell of barCells) {
+      // For each outside candidate, the contiguous [lo, hi] range of
+      // barCells indices it touches (a candidate not on the bar can only
+      // neighbor a contiguous run of it -- see _tileBarPrefixSuffix's
+      // own comment above).
+      const candidateRange = new Map();
+      barCells.forEach((cell, i) => {
         for (const nb of this.getNeighbors(cell)) {
-          if (this.vState(nb) === CELL.NONE && !barSet.has(nb)) outsideCandidates.add(nb);
+          if (this.vState(nb) === CELL.NONE && !barSet.has(nb)) {
+            const r = candidateRange.get(nb);
+            if (!r) candidateRange.set(nb, [i, i]);
+            else {
+              if (i < r[0]) r[0] = i;
+              if (i > r[1]) r[1] = i;
+            }
+          }
         }
-      }
+      });
 
-      const targets = [...outsideCandidates].filter(cand =>
-        this._maxNonTouchingAlongPath(barCells, [...existingStars, cand]) < need
-      );
+      const targets = [...candidateRange.entries()]
+        .filter(([, [lo, hi]]) => prefix[lo] + suffix[hi + 1] < need)
+        .map(([cand]) => cand);
       if (targets.length === 0) continue;
 
       targets.sort((a, b) => a - b);
