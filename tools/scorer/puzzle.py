@@ -208,12 +208,27 @@ class StarBattlePuzzle:
         Set src_board == dst_board to test a single board's internal symmetry.
         Set src_board=0, dst_board=1 (or vice versa) to test cross-board symmetry.
 
-        Void cells are treated as just another region label (VOID_CHAR
-        compares equal to itself like any other label, no special-casing
-        needed) -- there's no puzzle with symmetric-but-voided boards today
-        and none planned, so this doesn't need to handle a void mask that's
-        itself asymmetric under mirror_fn. Matches solver-core.js's
-        _regionsAreTransformPartners, which never special-cased voids either.
+        Void cells must map to void cells specifically -- not just "some
+        single label consistently," which is the weaker property the
+        label-map loop below actually verifies. That distinction is
+        invisible for a regioned board (three or more distinct labels make
+        an accidental consistent-but-wrong swap astronomically unlikely),
+        but a REGIONLESS board has only ever TWO labels in play (VOID_CHAR
+        and its one region id), so a mask that's the COMPLEMENT of its own
+        mirror image (void(mirror(i)) == NOT void(i) for every i, e.g. a
+        180-degree-rotation complement) maps VOID_CHAR->region and
+        region->VOID_CHAR just as consistently as a genuinely symmetric
+        board maps each label to itself -- the label-map check alone can't
+        tell "swapped" from "identical" apart. Complement symmetry does NOT
+        imply the solution is transform-invariant (unlike true symmetry,
+        which does -- see this puzzle's own use sites), so treating it as
+        such is a real soundness bug, not just a missed optimization: it
+        was firing rule_rotation_180_fill/rule_main_diagonal_fill/
+        rule_anti_diagonal_fill on these boards and copying a star to its
+        transformed counterpart based on a symmetry that isn't really
+        there, producing deductions that contradict the board's actual
+        (non-symmetric) unique solution. Matches solver-core.js's
+        _regionsAreTransformPartners, which needed the identical fix.
 
         Implemented as a single O(n^2) pass building a src-label -> dst-label
         map, rather than an O(n^4) scan over every cell PAIR: each cell i
@@ -235,6 +250,8 @@ class StarBattlePuzzle:
         for i in range(self.n * self.n):
             src_label = src[i]
             dst_label = dst[mirror_fn(i)]
+            if (src_label == VOID_CHAR) != (dst_label == VOID_CHAR):
+                return False
             existing = label_map.get(src_label)
             if existing is None:
                 label_map[src_label] = dst_label

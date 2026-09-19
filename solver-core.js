@@ -927,11 +927,10 @@ export class PuzzleSolver {
   //
   // Single O(n^2) pass building a labelA -> labelB map, rather than an
   // O(n^4) scan over every cell PAIR: each cell i contributes one mapping,
-  // regionsA[i] -> regionsB[transformFn(i)] (void cells included -- '*' is
-  // just another label here, no special-casing needed), and a conflict
-  // (the same A-label already mapped to a different B-label) is exactly
-  // the old pairwise check's failure, for the pair (i, that earlier cell).
-  // The reverse failure mode -- two different A-labels both mapping to the
+  // regionsA[i] -> regionsB[transformFn(i)], and a conflict (the same
+  // A-label already mapped to a different B-label) is exactly the old
+  // pairwise check's failure, for the pair (i, that earlier cell). The
+  // reverse failure mode -- two different A-labels both mapping to the
   // same B-label -- can't happen without also tripping a conflict:
   // transformFn is a bijection on the full n*n grid (an involution here),
   // so a well-defined (conflict-free) function built this way is
@@ -939,12 +938,30 @@ export class PuzzleSolver {
   // between finite sets of equal size is injective iff it's onto
   // (pigeonhole; both boards always have the same number of distinct
   // labels, since they're both full partitions of the same n*n grid).
+  //
+  // Void cells ('*') must map to void cells specifically, checked
+  // separately from the general label-map consistency above -- a
+  // REGIONLESS board only ever has TWO labels ('*' and its one region
+  // id), so a mask that's the COMPLEMENT of its own mirror image
+  // (void(mirror(i)) === !void(i) for every i) maps '*'->region and
+  // region->'*' just as consistently as a genuinely symmetric board maps
+  // each label to itself; the label-map check alone can't tell "swapped"
+  // from "identical" apart. Complement symmetry does NOT imply the
+  // solution is transform-invariant (unlike true symmetry, which does --
+  // see this function's callers), so without this check a complement-
+  // symmetric regionless board would be wrongly treated as symmetric,
+  // and hintRotation180Fill/hintMainDiagonalFill/hintAntiDiagonalFill
+  // would copy a star to its transformed counterpart based on a symmetry
+  // that isn't really there -- a soundness bug, not just a missed
+  // optimization. Matches engine.py's _check_pairwise_symmetry, which
+  // needed the identical fix.
   _regionsAreTransformPartners(regionsA, regionsB, transformFn) {
     const total = this.n * this.n;
     const labelMap = new Map();
     for (let i = 0; i < total; i++) {
       const srcLabel = regionsA[i];
       const dstLabel = regionsB[transformFn(i)];
+      if ((srcLabel === '*') !== (dstLabel === '*')) return false;
       const existing = labelMap.get(srcLabel);
       if (existing === undefined) {
         labelMap.set(srcLabel, dstLabel);
@@ -1029,6 +1046,9 @@ export class PuzzleSolver {
 
   // Same O(n^2) label-map approach as _regionsAreTransformPartners, applied
   // to one board against itself (src and dst are the same region string).
+  // Needs the identical void-must-map-to-void check that function has --
+  // see its own comment for why a regionless board's complement-symmetric
+  // mask would otherwise be wrongly detected as truly symmetric here too.
   _computeInternalDiagonalSymmetry(mirrorFn) {
     const total = this.n * this.n;
     for (const r of this.game.regions) {
@@ -1036,6 +1056,7 @@ export class PuzzleSolver {
       for (let i = 0; i < total; i++) {
         const srcLabel = r[i];
         const dstLabel = r[mirrorFn(i)];
+        if ((srcLabel === '*') !== (dstLabel === '*')) return false;
         const existing = labelMap.get(srcLabel);
         if (existing === undefined) {
           labelMap.set(srcLabel, dstLabel);
