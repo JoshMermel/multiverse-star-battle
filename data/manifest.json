@@ -82,6 +82,7 @@
     {"id": "8x8_symmetric_mono",    "label": "Symmetric 1-board",     "group": "Symmetry",    "desc": "One board with rotational, mirror, or translation symmetry", "stars": 1, "size": "8x8 one star"},
     {"id": "9x9_twin",              "label": "Twin",                  "group": "Symmetry",    "desc": "Both boards are the same, one flipped or rotated", "stars": 2, "size": "9x9 two stars"},
     {"id": "8x8_regionless_symmetric",   "label": "8x8 regionless symmetric",     "group": "Symmetry",     "desc": "Regionless puzzles with internal symmetry", "stars": 1, "size": "regionless"},
+    {"id": "10x10_regionless_symmetric", "label": "10x10 regionless symmetric",   "group": "Symmetry",     "desc": "Regionless puzzles with internal symmetry", "stars": 2, "size": "regionless"},
     {"id": "8x8_regionless_complement",   "label": "8x8 regionless complement",   "group": "Symmetry",     "desc": "Regionless puzzles where the black and white squares have the same shape", "stars": 1, "size": "regionless"},
     {"id": "10x10_regionless_complement", "label": "10x10 regionless complement", "group": "Symmetry",     "desc": "Regionless puzzles where the black and white squares have the same shape", "stars": 2, "size": "regionless"},
     {"id": "venn",                  "label": "Venn",                    "group": "Rectangles",       "desc": "Boards inspired by venn diagrams", "stars": 1},
