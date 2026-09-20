@@ -469,7 +469,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .hint-target-green::before {
   content: '';
   position: absolute;
-  inset: 12%;
+  inset: 6%;
   background-color: var(--highlight-hint-green-bg);
   clip-path: polygon(
     50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%,
