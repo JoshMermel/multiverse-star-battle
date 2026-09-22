@@ -922,13 +922,26 @@ export function applySingleStarRules(PuzzleSolver) {
       { key: 'rowColLineSync2',          fn: () => this.hintRowColLineSync(2) },
       { key: 'manyRegionsSync',          fn: () => this.hintManyRegionsSync() },
       { key: 'regionSubsetSync1',        fn: () => this.hintRegionSubsetSync(1) },
-      { key: 'symmetryDeduction',        fn: () => this.hintSymmetryDeduction() },
       // Moved here from Expert: with nothing genuinely Expert-only behind
       // them, these three were absorbing puzzles that should have stayed
       // Hard (see the "Tiles for 1★" section comment above hintTileDomino).
       { key: 'tileDomino',               fn: () => this.hintTileDomino() },
       { key: 'tileSeesTooMuch',          fn: () => this.hintTileSeesTooMuch() },
       { key: 'tileRegionSubset',         fn: () => this.hintTileRegionSubset() },
+      // Symmetry - requires insight but not hard to apply. Was mis-slotted
+      // mid-Hard (before the tile rules above); moved to the end of Hard,
+      // matching composite_scorer.py's rules_1star ordering and
+      // solver-rules-multi.js's symmetryDeductionMulti placement -- this
+      // rule's "sees its own mirror" check is a static geometric fact,
+      // true from move zero for a symmetric board, so its LIST POSITION
+      // (not just its tier label) determines whether an easier Hard-tier
+      // tile deduction gets tried first. Puzzle 757 in
+      // 8x8_regionless_symmetric surfaced this: composite_scorer.py's
+      // canonical solve never needs rule_diagonal_symmetry (uses
+      // TileSeesTooMuch instead), so the puzzle is tier="Hard" -- but the
+      // old ordering here made getHint() reach symmetryDeduction before
+      // ever trying the tile rules.
+      { key: 'symmetryDeduction',        fn: () => this.hintSymmetryDeduction() },
       // Expert
       // Tiles rule 4 (shared with 2★+ -- see the section comment above
       // hintTilePairQuotaFill in solver-rules-multi.js).
