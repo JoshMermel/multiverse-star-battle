@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiverse Star Battle - How to Solve</title>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Applied before paint, same key script.js/input.js uses for the game
+    // itself -- keeps this standalone page's theme in sync with the
+    // player's chosen setting without pulling in the whole game engine.
+    if (localStorage.getItem('setting-dark-mode') === 'true') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
+  <style>
+    body.doc-page {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+      background: var(--bg-white);
+      color: var(--text-primary);
+      line-height: 1.55;
+    }
+    .doc-nav {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      font-size: 0.95em;
+    }
+    .doc-nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+    }
+    .doc-nav a:hover {
+      border-bottom-color: currentColor;
+    }
+    #doc-content h1 {
+      font-size: 1.9em;
+      margin-bottom: 0.3em;
+    }
+    #doc-content h2 {
+      font-size: 1.4em;
+      margin-top: 1.6em;
+      border-bottom: 1px solid var(--bg-light);
+      padding-bottom: 0.2em;
+    }
+    #doc-content h3 {
+      font-size: 1.15em;
+      margin-top: 1.4em;
+    }
+    #doc-content h4 {
+      font-size: 1em;
+      margin-top: 1.2em;
+    }
+    #doc-content p, #doc-content li {
+      color: var(--text-primary);
+    }
+    #doc-content a {
+      color: #3b6ea5;
+    }
+    [data-theme="dark"] #doc-content a {
+      color: #6fa8dc;
+    }
+    #doc-content img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--bg-light);
+      border-radius: 4px;
+      display: block;
+      margin: 8px 0;
+    }
+    #doc-content code {
+      background: var(--bg-light);
+      padding: 0.1em 0.35em;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    #doc-content hr {
+      border: none;
+      border-top: 1px solid var(--bg-light);
+      margin: 2em 0;
+    }
+    #doc-content blockquote {
+      margin: 0;
+      padding-left: 1em;
+      border-left: 3px solid var(--bg-light);
+      color: var(--text-secondary);
+    }
+    #doc-loading, #doc-error {
+      color: var(--text-secondary);
+    }
+    #doc-error {
+      display: none;
+    }
+  </style>
+</head>
+<body class="doc-page">
+  <nav class="doc-nav">
+    <a href="index.html">&larr; Back to the game</a>
+    <a href="how_to_solve.md">View raw</a>
+    <a href="https://github.com/JoshMermel/multiverse-star-battle/tree/gh-pages" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+  </nav>
+  <div id="doc-loading">Loading&hellip;</div>
+  <div id="doc-error">Couldn't load that document. <a href="how_to_solve.md">Try the raw file</a> instead.</div>
+  <div id="doc-content"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    (function () {
+      const ALLOWED_FILES = ['how_to_solve.md', 'how_to_solve2.md'];
+      const params = new URLSearchParams(window.location.search);
+      let file = params.get('file') || 'how_to_solve.md';
+      if (!ALLOWED_FILES.includes(file)) file = 'how_to_solve.md';
+
+      // Keep the "View raw" link and the browser tab title pointed at
+      // whichever doc actually loaded.
+      document.querySelector('.doc-nav a[href="how_to_solve.md"]').href = file;
+
+      fetch(file)
+        .then(r => {
+          if (!r.ok) throw new Error('fetch failed: ' + r.status);
+          return r.text();
+        })
+        .then(markdown => {
+          const html = marked.parse(markdown);
+          const content = document.getElementById('doc-content');
+          content.innerHTML = html;
+          document.getElementById('doc-loading').style.display = 'none';
+
+          // Rewrite same-repo .md links (e.g. "how_to_solve2.md") to route
+          // back through this viewer instead of falling through to a raw
+          // download/plain-text view.
+          content.querySelectorAll('a[href$=".md"]').forEach(a => {
+            const href = a.getAttribute('href');
+            if (/^https?:\/\//.test(href)) return; // external, leave alone
+            a.href = 'doc.html?file=' + encodeURIComponent(href);
+          });
+
+          const title = content.querySelector('h1');
+          if (title) document.title = 'Multiverse Star Battle - ' + title.textContent;
+        })
+        .catch(() => {
+          document.getElementById('doc-loading').style.display = 'none';
+          document.getElementById('doc-error').style.display = 'block';
+        });
+    })();
+  </script>
+</body>
+</html>
