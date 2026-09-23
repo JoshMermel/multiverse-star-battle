@@ -98,7 +98,7 @@
 </head>
 <body class="doc-page">
   <nav class="doc-nav">
-    <a href="index.html">&larr; Back to the game</a>
+    <a id="back-to-game" href="index.html">&larr; Back to the game</a>
     <a href="how_to_solve.md">View raw</a>
     <a href="https://github.com/JoshMermel/multiverse-star-battle/tree/gh-pages" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
   </nav>
@@ -117,6 +117,18 @@
       // Keep the "View raw" link and the browser tab title pointed at
       // whichever doc actually loaded.
       document.querySelector('.doc-nav a[href="how_to_solve.md"]').href = file;
+
+      // If we arrived here from a specific puzzle (script.js stamps these
+      // onto the help modal's links before they're clicked), send "Back
+      // to the game" to that exact puzzle instead of the game's default.
+      const backBook = params.get('book');
+      const backPuzzle = params.get('puzzle');
+      if (backBook && backPuzzle) {
+        const backParams = new URLSearchParams();
+        backParams.set('book', backBook);
+        backParams.set('puzzle', backPuzzle);
+        document.getElementById('back-to-game').href = `index.html?${backParams.toString()}`;
+      }
 
       fetch(file)
         .then(r => {

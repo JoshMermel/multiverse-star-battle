@@ -194,6 +194,27 @@ class StarBattleGame {
     if (solve2Link) {
       solve2Link.hidden = this.starsPerGroup <= 1;
     }
+
+    // Thread the current book+puzzle through to the How-to-Solve docs so
+    // their "Back to the game" link can return here instead of the game's
+    // default puzzle -- read straight from the URL's own book/puzzle
+    // params (kept in sync by updateUrlParams) rather than any parsed/
+    // normalized form, so daily's label-based puzzle param (e.g.
+    // "beginner") round-trips correctly too, not just numeric puzzles.
+    const currentParams = new URLSearchParams(window.location.search);
+    const backBook = currentParams.get('book');
+    const backPuzzle = currentParams.get('puzzle');
+    const backQuery = (backBook && backPuzzle)
+      ? `&book=${encodeURIComponent(backBook)}&puzzle=${encodeURIComponent(backPuzzle)}`
+      : '';
+    const solve1Anchor = document.getElementById('help-solve1-link');
+    if (solve1Anchor) {
+      solve1Anchor.href = `doc.html?file=how_to_solve.md${backQuery}`;
+    }
+    const solve2Anchor = document.getElementById('help-solve2-anchor');
+    if (solve2Anchor) {
+      solve2Anchor.href = `doc.html?file=how_to_solve2.md${backQuery}`;
+    }
   }
 
   // The "boards always match" help paragraph only makes sense once there's
