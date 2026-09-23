@@ -190,6 +190,10 @@ class StarBattleGame {
         ? `Place exactly <strong>${starsText}</strong> per row and column on each board. ${voidColor} cells cannot hold a star. Stars cannot touch each other, even diagonally.`
         : `Place exactly <strong>${starsText}</strong> per row, column, and bold region on each board. Stars cannot touch each other, even diagonally.`;
     }
+    const solve2Link = document.getElementById('help-solve2-link');
+    if (solve2Link) {
+      solve2Link.hidden = this.starsPerGroup <= 1;
+    }
   }
 
   // The "boards always match" help paragraph only makes sense once there's

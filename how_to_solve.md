@@ -251,9 +251,95 @@ href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=12">
 Three regions are fully contained in columns {C, E, H}, so the rest of those
 columns must contain dots.
 
-TODO(jmerm) explain new rule that was expose by
-puzzle_3415,6,ABCDEFABCDEFABCDEFABCDEFABCDEFABCDEF,AABCCDABBBCDEBBBBDEEBBBDEFBBBBEFFBBB,...x..x..........x.x........x...x...,117,Hard,True
+### Row/col line sync
 
+Here's a variant that doesn't use regions at all — just rows against columns.
+
+<a
+href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=28">
+<img src="images/row_col_line_sync.png" width="600"></img> </a>
+
+Look at rows 1 and 4. They aren't adjacent, and I'm not using any region
+information here. Their only empty cells are E1, F1, E4, and F4 — all four fall
+inside just two columns, E and F. Rows 1 and 4 need two stars between them, and
+columns E and F also need exactly two stars between them. Since rows 1 and 4's
+stars have nowhere else to go but columns E and F, those two rows must be
+supplying columns E and F's entire quota. So every other empty cell in columns E
+and F — here, that's E6, F6, E7, F7, E8, and F8 — must be dots.
+
+More generally: if N rows' empty cells all fall within some set of columns, and
+those columns' combined remaining room exactly matches what the N rows still
+need, the rest of those columns must be dots (and the same argument works with
+rows and columns swapped). Unlike "adjacent rows/cols," the N rows don't need to
+be next to each other, and unlike "disjoint rows/cols," no region has to be doing
+the pinning — just the columns themselves.
+
+### Tiles
+
+This is my formalization of an idea I used to call "implied region": sometimes a
+group of cells behaves exactly like a region, holding exactly one star, even
+though it isn't drawn as one — and once you notice that, you can reuse every
+region trick (domino, sees-too-much, subsets) against it.
+
+Specifically: take any pair of adjacent rows or columns. Every cell in that pair
+touches every other cell in the *same 2x2 block* of the pair, even diagonally —
+so a 2x2 block can never hold more than one star. If the pair's empty cells
+happen to split cleanly into some number of non-overlapping 2x2 blocks, and that
+number matches exactly how many stars the pair still needs, then — since no
+block can hold more than one star, and there are exactly enough blocks for the
+stars needed — every single block is guaranteed exactly one star. I call a block
+like this a "confirmed tile."
+
+<a
+href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=29">
+<img src="images/tile_domino.png" width="600"></img> </a>
+
+Here, E3 and F3 form a confirmed tile (their row-pair has no other empty cells
+left to tile, and one star is still needed). A confirmed tile with exactly two
+empty cells in the same row or column is a domino, just like the "Notable
+shapes" section — so it eliminates the rest of that row exactly the way an
+ordinary domino would. C3 is in the same row, so it becomes a dot.
+
+---
+
+<a
+href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=30">
+<img src="images/tile_sees_too_much.png" width="600"></img> </a>
+
+A confirmed tile can have more than two empty cells, too. Here the tile
+{C5, C6, D5} is guaranteed exactly one star, and C4 "sees" all three of them —
+by column for C5 and C6, by adjacency for D5. So no matter which of the three
+ends up with the tile's star, C4 can't be it: C4 must be a dot. Same "sees too
+much" logic as before, just applied to a tile instead of a drawn region.
+
+---
+
+<a
+href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=31">
+<img src="images/tile_region_subset.png" width="600"></img> </a>
+
+A confirmed tile can also fall entirely inside a real, drawn region. Here the
+tile {C5, D5, D6} sits completely inside one region on board 2. The tile's
+guaranteed star already satisfies that region's whole quota, so the rest of the
+region — B7 and B8 — must be dots. This is exactly "region contains region," just
+with a tile standing in for one of the regions.
+
+---
+
+<a
+href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=32">
+<img src="images/tile_pair_quota_fill.png" width="600"></img> </a>
+
+Confirmed tiles from *different, unrelated* row-pairs can still add up. Here, a
+tile from rows 2-3 and another tile from rows 6-7 both happen to land in the
+same two columns, F and G. Independently, each is guaranteed one star — and
+together, that's exactly as many stars as columns F and G still need. So every
+other empty cell in those two columns must be a dot.
+
+I haven't figured out how to write the solver logic for spotting a confirmed
+tile from a *partial*, not-quite-complete tiling (where most of a row-pair
+tiles cleanly but one leftover strip doesn't) — I suspect there's a sound
+argument there too, but I haven't chased it down for 1★ boards.
 
 ### Symmetry
 
@@ -302,12 +388,44 @@ diagonal reflection must be a dot.
 I find this technique frustratingly powerful. It's easy to spot, and trivializes
 many puzzles that would otherwise be very difficult.
 
-TODO(jmerm): diagonal parity, e.g. 
+#### Diagonal parity
 
-one-empty: puzzle_47315_flip_antidiag,8,ABBBBBCCAAABBCCCAAABDCECAABBDDEEAFFDDDGGFFFFDGGGHFFFDGGGHHFDDGGG,AAAAABCCDAAABBBCDAADBBBBDDDDEBBEDDEEEEEEDFFEEGGGFFHHGGGGFFFHGGGG,......x.....x.....x............x.x...........x..x..........x....,484,Grandmaster,True
-two-empties: puzzle_13930_flip_diag,8,AABBBCCCAABBBCCCAABBBCCCABBBDDCCEBBBBDCFEEGGGGFFEEGGGHFFHHHHHHFF,AAAABBBBAAABBBBBCCDEEBBBCDDFEFFFCDDFFFFFCDDFFFFFCGGFFHHHCGGGHHHH,.x............x...x.........x...x............x.........x...x....,463,Grandmaster,True
+Symmetry gives us one more trick, specific to the diagonal a board is symmetric
+across. Since the reflection of a star is always a star, the diagonal's own
+cells pair up with each other (any cell off the diagonal shares the diagonal
+with its own reflection), except for however many cells sit exactly *on* the
+diagonal. That means the number of stars on the diagonal has to share the same
+parity (even/odd) as the board size — if it didn't, the rest of the board
+couldn't make up the difference.
 
-this is Grandmaster without parity arguments, but Symmetry with them.
+<a
+href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=33">
+<img src="images/diagonal_parity_one_empty.png" width="600"></img> </a>
+
+This board is 8x8 and symmetric across its main diagonal (↘). The diagonal
+already has one star, and every other diagonal cell is decided except C3. Since
+8 is even, the diagonal needs an even number of stars overall — so with one star
+already placed, C3 must be a star too, bringing the diagonal's total to two.
+
+---
+
+<a
+href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=34">
+<img src="images/diagonal_parity_two_empty.png" width="600"></img> </a>
+
+This one is symmetric across the *anti*-diagonal (↙) instead, and already has
+two stars on it — already an even number, satisfying parity. Two cells remain
+empty on the diagonal, C6 and B7, and they happen to touch each other
+diagonally. If parity is already satisfied, at most one more diagonal star is
+allowed without breaking it — but C6 and B7 can't both be dots and one be a star,
+because touching means at most one of them could ever hold a star in the first
+place, and adding exactly one star would break parity. So neither can be a star:
+both must be dots.
+
+I found this a lot harder to spot than plain symmetry copying — you have to
+notice the diagonal's own parity, not just mirror moves across it. It used to
+take a full lookahead search to crack puzzles like these; now it only takes this
+one observation.
 
 #### Rot180
 
@@ -454,14 +572,9 @@ used in specialized cases.
 
 ## Unimplemented Techniques
 
-### Implied region
-
-There are lots of ways to notice an implied region, here's one. Maybe I'll find
-examples later. The idea is that you can sometimes say "this group of cells
-holds exactly one star". That means it behaves like a region, and you can use
-all your normal region tools with it, like "sees to much", subsets, etc.
-
-I haven't figured out how to write this technique for the solver yet.
+(The "implied region" idea that used to be here — noticing that a group of cells
+must hold exactly one star, even though it isn't drawn as a region, and reusing
+region tools against it — is implemented now. See "Tiles" above.)
 
 ### Both-or-Neither
 
