@@ -456,19 +456,12 @@ used in specialized cases.
 
 ### Implied region
 
-There are lots of ways to notice an implied region, here's one. Maybe I'll add
-more later
+There are lots of ways to notice an implied region, here's one. Maybe I'll find
+examples later. The idea is that you can sometimes say "this group of cells
+holds exactly one star". That means it behaves like a region, and you can use
+all your normal region tools with it, like "sees to much", subsets, etc.
 
-<img src="images/implied_region.png" width="600"></img>
-
-TODO(jmerm): add to armory
-
-Check out columns E+F of board 1. There is a trio of empty cells (F4, E5, F5),
-and a pair of empty cells in (E7, F7). Each cluster must contain one star. So we
-can treat the E7+F7 pair like a region, and eliminate H7.
-
-I haven't figured out how to write this technique for the solver yet. All my
-techniques for pointing out implied regions are too vague.
+I haven't figured out how to write this technique for the solver yet.
 
 ### Both-or-Neither
 
