@@ -10,7 +10,7 @@ Everything from the original document still applies once boards need more than o
 star. Rows, columns, and regions still hold a fixed number of stars, stars still
 can't touch, and puzzles are still ranked by simulating a human solver working down
 a list of techniques from easiest to hardest. What's new is the combinatorics: once
-a row can hold two or three stars instead of one, "this cell must be empty" and
+a row can hold two or more stars instead of one, "this cell must be empty" and
 "this cell must be a star" both get harder to spot, and a whole family of techniques
 opens up that has no 1★ equivalent at all.
 
@@ -25,20 +25,29 @@ the score-hacking I did for the original armory.)
 
 ## The rules of the puzzle, revisited
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=1">
+<a href="index.html?book=armory2&puzzle=1">
 <img src="images/multi_only_empty.png" width="600"></img> </a>
 
 The core rule generalizes directly: every row, column, and region must contain
 exactly `stars_per_unit` stars. So if a unit is still missing some stars, and has
 *exactly* that many empty cells left, every one of those cells must be a star —
-there's no other way to fit them in. Here, board 1's E-region already has one star
-(F3) and needs one more, and E5 is the only cell left in that region that isn't
-already a dot — so E5 must be the star. This is the direct 2★+ generalization of
-"only empty" from the first volume, which was really just this rule's `N=1` case.
+there's no other way to fit them in. Here, look at board 1's region made of H8, H9,
+I7, I8, and I9, tucked into the corner: it needs one more star, H9 already has one,
+H8/I8/I9 are already dots, and I7 is the only cell left — so I7 must be the star.
+This is the direct 2★+ generalization of "only empty" from the first volume, which
+was really just this rule's `N=1` case.
+
+(Getting to this exact moment took one earlier move I haven't explained yet: on
+board 2, those same physical cells sit along the bottom edge as a different, smaller
+region — just F9, G9, and H9 — which needs 2 stars of its own. Since the middle cell
+touches both of its neighbors, the only way to fit 2 non-touching stars in three
+cells in a row is to skip the middle one, so F9 and H9 are forced to be stars
+together. That's a preview of Unit Placement Forced, up next — trust it for now.
+Ordinary adjacency then turns their neighbors, including H8, I8, and I9, into dots.)
 
 ---
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=2">
+<a href="index.html?book=armory2&puzzle=2">
 <img src="images/multi_adjacency.png" width="600"></img> </a>
 
 Stars still can't touch, even diagonally, regardless of how many stars share a
@@ -63,7 +72,7 @@ stars can't be adjacent, so not every combination of cells works). Then ask:
 - Is there a cell that's a star in **no** valid completion, or that would touch a
   star in every valid completion? If so, it must be a dot.
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=3">
+<a href="index.html?book=armory2&puzzle=3">
 <img src="images/multi_placement_forced_all.png" width="600"></img> </a>
 
 Look at board 2's rightmost region: just three cells, I6, I7, and I8, stacked
@@ -74,14 +83,19 @@ move, once ordinary adjacency catches up to it — but this rule got there first
 
 ---
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=4">
+<a href="index.html?book=armory2&puzzle=4">
 <img src="images/multi_placement_forced_dots.png" width="600"></img> </a>
 
 The same reasoning finds dots, too — both inside the unit in question, and in cells
-just outside it that every valid completion's stars would touch. Here, no matter how
-the highlighted region's remaining 2 stars get placed among its open cells, H3 (one
-of the region's own cells) and H4 (a neighboring cell outside the region entirely)
-are never compatible with any of those arrangements — so both must be dots.
+just outside it that every valid completion's stars would touch. Here, the
+highlighted region's five cells form a diamond around H5: H4, G5, I5, and H6 surround
+it, and every one of them touches H5. The region needs 2 non-touching stars, and the
+only two non-touching pairs available are {H4, H6} and {G5, I5} — so H5, which
+touches all four of the others, can never be one of the two stars, and must be a dot.
+The same logic reaches outside the region too: G4 and I4 each touch H4 (one candidate
+pair) as well as G5 or I5 respectively (the other candidate pair), and G6 and I6
+similarly each touch H6 and their nearer side-cell — so no matter which pair turns
+out to be the real one, all four are touching a star, and all four must be dots.
 
 ---
 
@@ -96,7 +110,7 @@ expensive:
 - **Strong**: also accounts for regions on *other* boards — the full, most
   expensive check.
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=5">
+<a href="index.html?book=armory2&puzzle=5">
 <img src="images/multi_placement_forced_strong.png" width="600"></img> </a>
 
 This example specifically needs the "strong" level: G3 only turns out to be forced
@@ -105,8 +119,10 @@ are already boxed in — the "weak" and "intermediate" passes alone can't see it
 
 ## Tiles
 
-Here's a genuinely new idea for 2★+ puzzles. Take any 2×2 block of cells. No matter
-which of its cells are still empty, that block can **never** hold more than one
+Tiles aren't actually new to 2★+ — they're covered in
+[the first volume](how_to_solve.md) too — but they get more mileage here, since a
+unit needing several stars gives them more room to work with. Take any 2×2 block of
+cells. No matter which of its cells are still empty, that block can **never** hold more than one
 star — every cell in a 2×2 block touches every other cell, even diagonally.
 
 Now look at a pair of adjacent rows (or columns) that's still missing, say, 3 stars.
@@ -115,7 +131,7 @@ If the empty cells in that pair can be cleanly split into exactly 3 non-overlapp
 stars from exactly 3 tiles — pigeonhole tells us **every single tile** must hold
 *exactly* one star, not just "at most" one.
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=6">
+<a href="index.html?book=armory2&puzzle=6">
 <img src="images/multi_tile_single_empty.png" width="600"></img> </a>
 
 Here, a row-pair still needs 3 stars, and splits cleanly into exactly 3 tiles — one
@@ -124,7 +140,7 @@ exactly one star, and it only has room for one candidate, C3 must be the star.
 
 ---
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=7">
+<a href="index.html?book=armory2&puzzle=7">
 <img src="images/multi_tile_two_empty.png" width="600"></img> </a>
 
 A confirmed tile with exactly two empty cells holds exactly one star, but we don't
@@ -134,7 +150,7 @@ cell either way. That's what rules out F5 here.
 
 ---
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=8">
+<a href="index.html?book=armory2&puzzle=8">
 <img src="images/multi_tile_quota_fill.png" width="600"></img> </a>
 
 Confirmed tiles don't have to come from the same band to be useful. If a row,
@@ -147,7 +163,7 @@ tile — must be a dot.
 
 ---
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=9">
+<a href="index.html?book=armory2&puzzle=9">
 <img src="images/multi_tile_sees_too_much.png" width="600"></img> </a>
 
 Just like the 1★ "sees too much" technique, if every cell of a confirmed tile
@@ -170,7 +186,7 @@ directly, with one wrinkle: instead of comparing a *count* of regions to a *coun
 of rows/columns, you have to compare their *summed remaining star need*, since a
 region or a row can need more than one star now.
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=10">
+<a href="index.html?book=armory2&puzzle=10">
 <img src="images/multi_adjacent_rows.png" width="600"></img> </a>
 
 Here, two adjacent rows still need 4 stars between them, and the highlighted
@@ -191,7 +207,7 @@ to one row or column, but every one of its valid completions still puts *at leas
 some number of stars in a particular row or column anyway. That's a "guarantee" —
 something you can bank on regardless of which completion is real.
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=11">
+<a href="index.html?book=armory2&puzzle=11">
 <img src="images/multi_region_line_quota_fill.png" width="600"></img> </a>
 
 The amber-outlined column here needs exactly 1 more star. The highlighted region
@@ -203,7 +219,7 @@ hit the line's quota — this example just happens to need only one.)
 
 ---
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=12">
+<a href="index.html?book=armory2&puzzle=12">
 <img src="images/multi_region_line_partition.png" width="600"></img> </a>
 
 Two siblings of this idea are worth a mention. Once a region's contribution to a
@@ -244,7 +260,7 @@ in my test puzzles.
 
 ## Crossboard, revisited
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=13">
+<a href="index.html?book=armory2&puzzle=13">
 <img src="images/multi_region_subset.png" width="600"></img> </a>
 
 "Region contains region" generalizes the same way adjacent-rows did: instead of
@@ -260,7 +276,7 @@ this document yet.
 
 ## Lookahead
 
-<a href="https://joshmermelstein.com/multiverse-star-battle?book=armory2&puzzle=14">
+<a href="index.html?book=armory2&puzzle=14">
 <img src="images/multi_lookahead_dots.png" width="600"></img> </a>
 
 Same idea as the first volume's half-stage lookahead: hypothesize a star at some
