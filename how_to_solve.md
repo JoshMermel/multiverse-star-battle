@@ -45,7 +45,7 @@ solver in javascript, and integrated it into the gui. This turned into the
 ### The rules of the puzzle
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=1">
+href="index.html?book=armory&puzzle=1">
 <img src="images/only_empty.png" width="600"></img> </a>
 
 The rules of the puzzle say that very region must contain a star. So, if a
@@ -55,7 +55,7 @@ star.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=1">
+href="index.html?book=armory&puzzle=1">
 <img src="images/sees_star.png" width="600"></img> </a>
 
 TODO(jmerm): better image here.
@@ -78,7 +78,7 @@ by scanning for them.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=2">
+href="index.html?book=armory&puzzle=2">
 <img src="images/domino.png" width="600"></img> </a>
 
 In this case, A6 and A7 form a domino, so there cannot be a star in the rest of
@@ -87,7 +87,7 @@ the A column, or in B6/B7.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=3">
+href="index.html?book=armory&puzzle=3">
 <img src="images/triomino.png" width="600"></img> </a>
 
 There must be a star in {A3, B3, C3}, because they are the only empty cells in
@@ -95,7 +95,7 @@ board 1's top-left region. A star at B4 would make this region unsolvable, so B4
 must be a dot.
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=3">
+href="index.html?book=armory&puzzle=3">
 <img src="images/triomino_middle_dot.png" width="600"></img> </a>
 
 On the same puzzle, there must also be a star in {D6, D8}, since they are the
@@ -105,7 +105,7 @@ impossible, so both C7 and E7 must be dots.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=4">
+href="index.html?book=armory&puzzle=4">
 <img src="images/sees_too_much.png" width="600"></img> </a>
 
 There must be a star in  {D2, F1, G1}, since they form a region on board 1. Each
@@ -137,7 +137,7 @@ starting with N=1.
 #### One row/col
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=5">
+href="index.html?book=armory&puzzle=5">
 <img src="images/1_col_A.png" width="600"></img> </a>
 
 In this case, the leftmost region on board 1 is fully contained in column A.
@@ -147,7 +147,7 @@ unsolvable.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=5">
+href="index.html?book=armory&puzzle=5">
 <img src="images/1_row_B.png" width="600"></img> </a>
 
 On the same puzzle, we can also look at the top-left region on board 2. This
@@ -157,7 +157,7 @@ it did, the top-left region would be unsolvable.
 #### More than one row/col
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=6">
+href="index.html?book=armory&puzzle=6">
 <img src="images/2_rows_A.png" width="600"></img> </a>
 
 Now let's consider a case where N=2. In this case, the bottom-right and
@@ -168,7 +168,7 @@ regions.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=6">
+href="index.html?book=armory&puzzle=6">
 <img src="images/2_cols_B.png" width="600"></img> </a>
 
 On the same puzzle, we can also focus on columns C and D of board 2. The two
@@ -178,7 +178,7 @@ star, so the rest of columns C and D must contain dots.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=7">
+href="index.html?book=armory&puzzle=7">
 <img src="images/3_cols_A.png" width="600"></img> </a>
 
 Moving on to N=3, the story is the same. Columns {F,G,H} on board 2 are filled
@@ -187,7 +187,7 @@ by 3 regions, so the remainder of those regions cannot have stars.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=7">
+href="index.html?book=armory&puzzle=7">
 <img src="images/3_cols_B.png" width="600"></img> </a>
 
 The same board contains an example of case B for N=3. The leftmost 3 regions on
@@ -198,11 +198,11 @@ rest of those columns must have dots.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=8">
+href="index.html?book=armory&puzzle=8">
 <img src="images/many_adjacent_A.png" width="600"></img> </a>
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=8">
+href="index.html?book=armory&puzzle=8">
 <img src="images/many_adjacent_B.png" width="600"></img> </a>
 
 One last example for N=4. In this case, we can make the same observation using a
@@ -217,7 +217,7 @@ some examples:
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=9">
+href="index.html?book=armory&puzzle=9">
 <img src="images/2_disjoint_A.png" width="600"></img> </a>
 
 Look at rows 1 and 3. Together, they must contain two stars. No matter how we
@@ -227,7 +227,7 @@ those regions must be dots.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=10">
+href="index.html?book=armory&puzzle=10">
 <img src="images/2_disjoint_B.png" width="600"></img> </a>
 
 Look at the regions containing blue squares. Together, they must place stars in
@@ -236,7 +236,7 @@ rows 2 and 4. Therefore the rest of those rows must contain dots.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=11">
+href="index.html?book=armory&puzzle=11">
 <img src="images/3_disjoint_cols_B.png" width="600"></img> </a>
 
 We can also make this type of observation with N=3 disjoint rows/cols.  Rows
@@ -245,7 +245,7 @@ We can also make this type of observation with N=3 disjoint rows/cols.  Rows
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=12">
+href="index.html?book=armory&puzzle=12">
 <img src="images/3_disjoint_rows_A.png" width="600"></img> </a>
 
 Three regions are fully contained in columns {C, E, H}, so the rest of those
@@ -256,7 +256,7 @@ columns must contain dots.
 Here's a variant that doesn't use regions at all — just rows against columns.
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=28">
+href="index.html?book=armory&puzzle=28">
 <img src="images/row_col_line_sync.png" width="600"></img> </a>
 
 Look at rows 1 and 4. They aren't adjacent, and I'm not using any region
@@ -291,7 +291,7 @@ stars needed — every single block is guaranteed exactly one star. I call a blo
 like this a "confirmed tile."
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=29">
+href="index.html?book=armory&puzzle=29">
 <img src="images/tile_domino.png" width="600"></img> </a>
 
 Here, E3 and F3 form a confirmed tile (their row-pair has no other empty cells
@@ -303,7 +303,7 @@ ordinary domino would. C3 is in the same row, so it becomes a dot.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=30">
+href="index.html?book=armory&puzzle=30">
 <img src="images/tile_sees_too_much.png" width="600"></img> </a>
 
 A confirmed tile can have more than two empty cells, too. Here the tile
@@ -315,7 +315,7 @@ much" logic as before, just applied to a tile instead of a drawn region.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=31">
+href="index.html?book=armory&puzzle=31">
 <img src="images/tile_region_subset.png" width="600"></img> </a>
 
 A confirmed tile can also fall entirely inside a real, drawn region. Here the
@@ -327,7 +327,7 @@ with a tile standing in for one of the regions.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=32">
+href="index.html?book=armory&puzzle=32">
 <img src="images/tile_pair_quota_fill.png" width="600"></img> </a>
 
 Confirmed tiles from *different, unrelated* row-pairs can still add up. Here, a
@@ -349,7 +349,7 @@ has some symmetry. We can use this to to our advantage.
 #### Diagonal
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=13">
+href="index.html?book=armory&puzzle=13">
 <img src="images/self_diag_2.png" width="600"></img> </a>
 
 In this case, the two boards are diagonal reflections of one another. If the
@@ -362,7 +362,7 @@ tells us that there must also be a dot at A4.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=13">
+href="index.html?book=armory&puzzle=13">
 <img src="images/self_diag_1.png" width="600"></img> </a>
 
 Let's keep looking at this puzzle, and take this line of thinking one step
@@ -376,7 +376,7 @@ they cannot be stars, and must be dots.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=14">
+href="index.html?book=armory&puzzle=14">
 <img src="images/both_diag.png" width="600"></img> </a>
 
 Here, both boards have diagonal self-symmetry. By the same logic above, this
@@ -399,7 +399,7 @@ parity (even/odd) as the board size — if it didn't, the rest of the board
 couldn't make up the difference.
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=33">
+href="index.html?book=armory&puzzle=33">
 <img src="images/diagonal_parity_one_empty.png" width="600"></img> </a>
 
 This board is 8x8 and symmetric across its main diagonal (↘). The diagonal
@@ -410,7 +410,7 @@ already placed, C3 must be a star too, bringing the diagonal's total to two.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=34">
+href="index.html?book=armory&puzzle=34">
 <img src="images/diagonal_parity_two_empty.png" width="600"></img> </a>
 
 This one is symmetric across the *anti*-diagonal (↙) instead, and already has
@@ -430,7 +430,7 @@ one observation.
 #### Rot180
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=15">
+href="index.html?book=armory&puzzle=15">
 <img src="images/self_rot180_1.png" width="600"></img> </a>
 
 This puzzle has two boards that are 180 degree rotations of one another. The
@@ -441,7 +441,7 @@ dot or star, we can also rotate that mark 180 degrees.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=15">
+href="index.html?book=armory&puzzle=15">
 <img src="images/self_rot180_2.png" width="600"></img> </a>
 
 Again, we can take this further and consider every cell alongside its image
@@ -451,7 +451,7 @@ the same region, then they cannot be stars.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=16">
+href="index.html?book=armory&puzzle=16">
 <img src="images/both_rot180.png" width="600"></img> </a>
 
 In this case, both boards have 180 degree self-symmetry, so the solution must
@@ -470,7 +470,7 @@ spot one, please let me know.
 ### Crossboard
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=17">
+href="index.html?book=armory&puzzle=17">
 <img src="images/region_contains_region.png" width="600"></img> </a>
 
 In this case, the top-right region of board 1 is a subset of the top-right
@@ -482,7 +482,7 @@ which are not in the smaller region. This is my favorite technique.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=18">
+href="index.html?book=armory&puzzle=18">
 <img src="images/double_subset.png" width="600"></img> </a>
 
 We can apply the same logic when one pair of regions is a subset of another
@@ -492,7 +492,7 @@ there's a second place you can apply double-subset in this image.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=19">
+href="index.html?book=armory&puzzle=19">
 <img src="images/2_regions_crossboard.png" width="600"></img> </a>
 
 In this case, the bottom-left region of board 1 and the bottom-right region of
@@ -503,7 +503,7 @@ of those rows with dots.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=20">
+href="index.html?book=armory&puzzle=20">
 <img src="images/3_regions_crossboard.png" width="600"></img> </a>
 
 The same reasoning applies with >2 crossboard regions. In this case, the empty
@@ -513,7 +513,7 @@ columns {D, E, F}.  So the rest of those columns must contain only dots.
 ---
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=21">
+href="index.html?book=armory&puzzle=21">
 <img src="images/partial_overlap.png" width="600"></img> </a>
 
 Focus on the regions containing blue cells on each board. They share 3 cells
@@ -528,7 +528,7 @@ other, then we can put dots in all of them.
 ### Lookahead
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=22">
+href="index.html?book=armory&puzzle=22">
 <img src="images/half_lookahead.png" width="600"></img> </a>
 
 In this case, a star at B1 would see B4 (by column), and A3 (by region on board
@@ -537,7 +537,7 @@ contain a star. This is sorta like a generalized version of "sees too much", but
 taking into account the region on the other board.
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=23">
+href="index.html?book=armory&puzzle=23">
 <img src="images/half_lookahead_2.png" width="600"></img> </a>
 
 In this case, a star at D7 would force a dot at C5 (because of board 1 regions),
@@ -554,13 +554,13 @@ only allow it in "expert" tier puzzles.
 This is the technique of last resort, sort like a guess-and-test.
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=24">
+href="index.html?book=armory&puzzle=24">
 <img src="images/1_lookahead_1.png" width="600"></img> </a>
 
 Consider a star at C3:
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=24">
+href="index.html?book=armory&puzzle=24">
 <img src="images/1_lookahead_2.png" width="600"></img> </a>
 
 This forces the following dots. There are now two regions with one empty cell
@@ -579,7 +579,7 @@ region tools against it — is implemented now. See "Tiles" above.)
 ### Both-or-Neither
 
 <a
-href="https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=25">
+href="index.html?book=armory&puzzle=25">
 <img src="images/both_or_neither.png" width="600"></img> </a>
 
 This is a technique I see a teammate use sometimes. He'll point out two cells
@@ -628,9 +628,9 @@ difficulty puzzles range from 25-311, "hard" ranges from 39-367, "expert" ranges
 from 92-1236, and "grandmaster" ranges from 145-3548.
 
 Notice how the [hardest
-beginner](https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=26)
+beginner](index.html?book=armory&puzzle=26)
 puzzle has a score higher than the [easiest
-grandmaster](https://joshmermelstein.com/multiverse-star-battle?book=armory&puzzle=27)
+grandmaster](index.html?book=armory&puzzle=27)
 puzzle - what's up with that?! That beginner puzzle reqires a ton of
 applications of beginner tier techniques, each one only placing a few dots at a
 time. That grandmaster puzzle is trivial, except a crux which requires a
