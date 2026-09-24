@@ -109,7 +109,7 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     (function () {
-      const ALLOWED_FILES = ['how_to_solve.md', 'how_to_solve2.md'];
+      const ALLOWED_FILES = ['how_to_solve.md', 'how_to_solve2.md', 'how_to_solve_regionless.md', 'how_to_solve2_regionless.md'];
       const params = new URLSearchParams(window.location.search);
       let file = params.get('file') || 'how_to_solve.md';
       if (!ALLOWED_FILES.includes(file)) file = 'how_to_solve.md';

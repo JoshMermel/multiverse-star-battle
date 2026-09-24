@@ -179,9 +179,9 @@ class StarBattleGame {
       starsBadge.textContent = `${'★'.repeat(this.starsPerGroup)}`;
     }
     const starsText = this.starsPerGroup === 1 ? '1 star' : `${this.starsPerGroup} stars`;
+    const isRegionless = this.regions?.every(r => isRegionlessBoard(r));
     const ruleText = document.getElementById('help-rule-text');
     if (ruleText) {
-      const isRegionless = this.regions?.every(r => isRegionlessBoard(r));
       // Void cells render as --text-primary (style.css) -- near-black in
       // light mode, near-white in dark mode -- so which word is accurate
       // depends on the current theme, tracked as data-theme on <html>.
@@ -209,11 +209,13 @@ class StarBattleGame {
       : '';
     const solve1Anchor = document.getElementById('help-solve1-link');
     if (solve1Anchor) {
-      solve1Anchor.href = `doc.html?file=how_to_solve.md${backQuery}`;
+      const solve1File = isRegionless ? 'how_to_solve_regionless.md' : 'how_to_solve.md';
+      solve1Anchor.href = `doc.html?file=${solve1File}${backQuery}`;
     }
     const solve2Anchor = document.getElementById('help-solve2-anchor');
     if (solve2Anchor) {
-      solve2Anchor.href = `doc.html?file=how_to_solve2.md${backQuery}`;
+      const solve2File = isRegionless ? 'how_to_solve2_regionless.md' : 'how_to_solve2.md';
+      solve2Anchor.href = `doc.html?file=${solve2File}${backQuery}`;
     }
   }
 

@@ -1,0 +1,6 @@
+name,N,board_1,solution,score,tier,is_solved
+puzzle_only_empty_multi,9,*AA**A***A******A***A*A*AA*A*AA**AAA*A*AAAA*AAAA**A**AAA*A*AAAAAA*A****A*A*AAAA*A,..x..x...x......x...x.x....x......x....x.x....x......x...x..x...x......x....x.x..,65,rule_only_empty_multi,True
+puzzle_adjacency,9,*AA**A***A******A***A*A*AA*A*AA**AAA*A*AAAA*AAAA**A**AAA*A*AAAAAA*A****A*A*AAAA*A,..x..x...x......x...x.x....x......x....x.x....x......x...x..x...x......x....x.x..,65,rule_exclude_adjacency,True
+puzzle_unit_placement_forced,9,***A*A*AAAAA*A**A***A*A***AAAA*A*AAA**AAA******A*A*AAAAAAAAAA**A****A*A**A*AA****,.....x.x.x.x..........x...xx.....x....x.x..........x.x.x.x..........x.x..x.x.....,75,rule_unit_placement_forced_weak_all,True
+puzzle_tile_single_empty,9,AAAAA***AAAAAA*AA*A*A**A**AA***AA*AA*AAA*A*A*A***AAA*A**AAA***AAAA****A*A**A*AA**,.x......x....x.x..x.x...........x.x..x.x...........x.x..x.x....x......x....x.x...,57,rule_tile_single_empty,True
+puzzle_rotation_180,10,*A*AA***AA*AAA*AAA**A**AA**A*AA*A**AA***A*A*A*A*A**A*A*A*A*A***AA**A*AA*A**AA**A**AAA*AAA*AA***AA*A*,....x...x...x...x.......x....xx.x.............x.x..x.x.............x.xx....x.......x...x...x...x....,75,rule_rotation_180_multi,True

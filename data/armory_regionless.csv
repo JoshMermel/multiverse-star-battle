@@ -1,0 +1,11 @@
+name,N,board_1,solution,score,tier,is_solved
+puzzle_only_empty,6,****AA**A***A*********A**A*******A**,.....x..x...x.........x..x.......x..,7,rule_only_empty,True
+puzzle_sees_star,8,*AAA***AA***A********A*A**AA***A*A***AA*A***A***A*A*A****AAAAA**,.x..........x..........x...x..........x.x.........x..........x..,42,rule_sees_star,True
+puzzle_domino,8,*A****AAAA**A*AA**AA***A**A****A*A****A*A**AA*****A*AAA**A**AAAA,......x.x..........x...........x.x..........x.....x..........x..,48,rule_domino,True
+puzzle_triomino,8,*A**A******AAAAAA***A*AA****A*A**A**A***AAAAA*AA*AAAA*A*A*A**A**,.x.........x....x.............x.....x..........x..x..........x..,50,rule_triomino,True
+puzzle_row_col_line_sync,8,AA**A*A**AA**A*A*****A*A*A**A******A***A**AA*AA*A****A*****A***A,....x.....x..........x...x.........x..........x.x..............x,44,rule_2_row_col_line_sync_rows,True
+puzzle_tile_domino,8,A*******AA**AA***AAA********A*A**A****AA*A***A***AA*A*A***AAA*AA,x............x....x.........x..........x.x............x....x....,102,rule_tile_domino,True
+puzzle_diagonal_symmetry,8,**A***AA*A*****AA****A******AAAA***AA*A***AA***AA**AA*A*AA*A*A*A,......x..x...........x.........x....x.....x.....x..........x....,67,rule_diagonal_symmetry,True
+puzzle_rotation_180,8,AAAAA*A****A**A*AA*AAAA**A*A********A*A**AAAA*AA*A**A****A*AAAAA,x..........x.........x...x............x...x.........x..........x,19,rule_rotation_180,True
+puzzle_diagonal_parity,8,AA*AA*A*A**A***A**A**A**AA***A**A*****A***AA*A*AA***A****A***A**,...x...........x.....x..x.............x...x.........x....x......,118,rule_diagonal_parity,True
+puzzle_lookahead,8,A*****AA*A*AA*****A**A**A***A***AAA*A**AAA**A*AAA*AAA*A*A****A**,......x.....x.....x.....x..............x.x.........x.........x..,133,rule_lookahead_1_stage,True
