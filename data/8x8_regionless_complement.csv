@@ -1005,3 +1005,6 @@ puzzle_1003_180,8,**AA**A*AAAA*AA***AA*A**A***A*A*A*A*AAA*AA*A**AAA**A****A*AA**
 puzzle_1004_180,8,*AAAAAA*A*A*AA**AA*A*A*AAAA*AAA*A***A****A*A*A**AA**A*A*A******A,...x.........x.........x..x.........x....x............x.x.......,2462.0,Grandmaster,True,180
 puzzle_1005_lr,8,AA**AA**A***AAA*AA*A*A***AA*A**AAA*A*A******AAAA*A*A*A*A**A*A*AA,.x..........x...x.........x..........x.........x...x..........x.,3044.0,Grandmaster,True,lr
 puzzle_1006_lr,8,A***AAA**A*A*A*A****AAAA****AAAA**AA**AA*AAA***A**A*A*AAAAAA****,.....x...x..........x.........x....x...........x..x.....x.......,3151.0,Grandmaster,True,lr
+hunt_puzzle_3489_lr,8,***AA**AA*A**AAA*A*A***AA*AA**A**A**AA*AA*A*AAA**A*AA***AAA**AA*,...x....x..............x..x.........x.........x..x...........x..,550.0,UNSOLVED,True,lr
+hunt_puzzle_3488_lr,8,AA*AA*A*AAA***A*AA*****AAAA**AAA***AA*****AAAAA****AAA*A**A**A*A,x.........x............x.x..........x.........x....x.........x..,5.0,UNSOLVED,True,lr
+hunt_puzzle_3490_t,8,A***AA*****AAAA*A**A*A*****A***A*AAA**AAAAA****A*AA*A*AAAAA*AAA*,....x.........x.x..........x.....x.............x..x..........x..,1470,UNSOLVED,True,translate
