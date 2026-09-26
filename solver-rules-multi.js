@@ -2562,11 +2562,11 @@ export function applyMultiStarRules(PuzzleSolver) {
       // covers a unit's whole remaining need. See tileDisjointQuotaFill
       // (Expert) for K>1.
       { key: 'tileQuotaFillSingle',            fn: () => this.hintTileQuotaFillSingle() },
+      { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
+      { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
       { key: 'regionLineQuotaFillIntermediate', fn: () => this.hintRegionLineQuotaFill('intermediate') },
       { key: 'regionLinePartitionForcedIntermediate', fn: () => this.hintRegionLinePartitionForced('intermediate') },
       { key: 'regionLinePartitionTrappedIntermediate', fn: () => this.hintRegionLinePartitionTrapped('intermediate') },
-      { key: 'regionSubsetSync1',              fn: () => this.hintRegionSubsetSync(1) },
-      { key: 'regionSyncSubset2',              fn: () => this.hintRegionSubsetSync(2) },
       { key: 'unitRegionSyncMulti4Plus',       fn: () => {
           const candidates = [];
           for (let n = 4; n < this.n; n++) {
