@@ -164,6 +164,17 @@ tile — must be a dot.
 ---
 
 <a href="index.html?book=armory2&puzzle=9">
+<img src="images/multi_tile_disjoint_quota_fill.png" width="600"></img> </a>
+
+The general K>1 case: a region on board 2 still needs 2 stars, and its remaining
+empty cells — A5, B5, C6, C7, and C8 — split cleanly into two disjoint confirmed
+tiles, {A5, B5} and {C6, C7}. Together those two tiles already account for both of
+the region's remaining stars, so C8 — inside the region but outside both tiles —
+must be a dot.
+
+---
+
+<a href="index.html?book=armory2&puzzle=10">
 <img src="images/multi_tile_sees_too_much.png" width="600"></img> </a>
 
 Just like the 1★ "sees too much" technique, if every cell of a confirmed tile
@@ -174,7 +185,7 @@ tile's cells ends up holding the star, D6 is ruled out either way.
 
 ---
 
-<a href="index.html?book=armory2&puzzle=10">
+<a href="index.html?book=armory2&puzzle=11">
 <img src="images/multi_tile_bar_trapped.png" width="600"></img> </a>
 
 A subtler tiling trick: this row-pair still needs 4 stars, and columns D through I
@@ -185,11 +196,17 @@ though we don't know which of the three. B4 touches all three of them (A5 and C5
 diagonally, B5 directly), so if B4 were a star, none of A5/B5/C5 could be — leaving
 that guaranteed star with nowhere to go. B4 must be a dot.
 
-There's one more advanced tile technique I haven't found a small, clean example of
-yet: combining confirmed tiles from two *unrelated* bands that happen to overlap the
-same row-pair or column-pair window ("tile pair quota fill"). I've verified it's
-sound, but it's rare enough, and subtle enough to explain, that I don't have a
-dedicated example for it here.
+---
+
+<a href="index.html?book=armory2&puzzle=12">
+<img src="images/multi_tile_pair_quota_fill.png" width="600"></img> </a>
+
+Confirmed tiles from two *unrelated* bands can still add up if they happen to
+overlap the same window. Here, a column-pair tile at D9/D10 and another,
+unrelated column-pair tile at J9/J10 both land inside the same row-pair (rows 9
+and 10) — and that row-pair needs exactly 2 stars. Independently, each tile is
+guaranteed one star; together, that's the row-pair's entire remaining quota. So
+every other empty cell in rows 9 and 10 — A9, A10, B9, and B10 — must be dots.
 
 ## Adjacent and disjoint rows/cols, revisited
 
@@ -198,7 +215,7 @@ directly, with one wrinkle: instead of comparing a *count* of regions to a *coun
 of rows/columns, you have to compare their *summed remaining star need*, since a
 region or a row can need more than one star now.
 
-<a href="index.html?book=armory2&puzzle=11">
+<a href="index.html?book=armory2&puzzle=13">
 <img src="images/multi_adjacent_rows.png" width="600"></img> </a>
 
 Here, two adjacent rows still need 4 stars between them, and the highlighted
@@ -206,10 +223,16 @@ region(s) confined to those rows need exactly 4 stars themselves — so those re
 must be supplying the rows' entire quota, and the rest of those rows' cells (C7 and
 I7, outside the highlighted regions) must be dots.
 
-I don't have a small, clean example of the *disjoint* (non-adjacent) version handy
-right now — it's the exact same idea, just applied to rows or columns that aren't
-next to each other, the same way the original document's disjoint-rows section
-followed its adjacent-rows section.
+---
+
+<a href="index.html?book=armory2&puzzle=14">
+<img src="images/multi_disjoint_rows.png" width="600"></img> </a>
+
+Same idea, but the two columns don't have to be next to each other. Columns L and
+N are both still starless, needing 4 stars between them — and two regions on
+board 2, confined entirely to those two columns, need exactly 2 stars each. Their
+combined need already covers the columns' entire quota, so the rest of columns L
+and N — here, L4 and L11 — must be dots.
 
 ## Region/Line Quota Fill
 
@@ -219,7 +242,7 @@ to one row or column, but every one of its valid completions still puts *at leas
 some number of stars in a particular row or column anyway. That's a "guarantee" —
 something you can bank on regardless of which completion is real.
 
-<a href="index.html?book=armory2&puzzle=12">
+<a href="index.html?book=armory2&puzzle=15">
 <img src="images/multi_region_line_quota_fill.png" width="600"></img> </a>
 
 The amber-outlined column here needs exactly 1 more star. The highlighted region
@@ -231,7 +254,7 @@ hit the line's quota — this example just happens to need only one.)
 
 ---
 
-<a href="index.html?book=armory2&puzzle=13">
+<a href="index.html?book=armory2&puzzle=16">
 <img src="images/multi_region_line_partition.png" width="600"></img> </a>
 
 Two siblings of this idea are worth a mention. Once a region's contribution to a
@@ -272,7 +295,7 @@ in my test puzzles.
 
 ## Crossboard, revisited
 
-<a href="index.html?book=armory2&puzzle=14">
+<a href="index.html?book=armory2&puzzle=17">
 <img src="images/multi_region_subset.png" width="600"></img> </a>
 
 "Region contains region" generalizes the same way adjacent-rows did: instead of
@@ -281,14 +304,23 @@ board 2 needs exactly as many stars as a region on board 1, and every one of its
 open cells is also open in board 1's region — so the extra cells in board 1's
 region (H5 and I5) must be dots.
 
-Crossboard region-pinning and crossboard partial-overlap both generalize the same
-way (summed need instead of raw counts, and adjacency instead of "sees" for partial
-overlap specifically) — I just don't have small, clean examples of either handy for
-this document yet.
+---
+
+<a href="index.html?book=armory2&puzzle=18">
+<img src="images/multi_crossboard_partial_overlap.png" width="600"></img> </a>
+
+Crossboard partial-overlap generalizes the same way (adjacency instead of "sees",
+summed need instead of a raw count): a region on board 1 is adjacent to a region
+on board 2, and their combined remaining need already accounts for the touching
+cells' whole neighborhood — so C7, D7, C8, and D8 must all be dots.
+
+Crossboard region-pinning generalizes the same way too (summed need instead of raw
+counts) — I just don't have a small, clean example of that one handy for this
+document yet.
 
 ## Lookahead
 
-<a href="index.html?book=armory2&puzzle=15">
+<a href="index.html?book=armory2&puzzle=19">
 <img src="images/multi_lookahead_dots.png" width="600"></img> </a>
 
 Same idea as the first volume's half-stage lookahead: hypothesize a star at some

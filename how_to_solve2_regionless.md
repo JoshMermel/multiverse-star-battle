@@ -58,6 +58,47 @@ exactly one star, G2 must be it.
 ---
 
 <a href="index.html?book=armory2_regionless&puzzle=5">
+<img src="images/regionless/tile_two_empty_dot.png" width="600"></img> </a>
+
+A confirmed tile with exactly two empty cells (G5, H5 here) is guaranteed exactly
+one star — but voids or not, this rule never needs to know *which* one. Any other
+cell touching both G5 and H5 would be dotted whichever cell wins, and here that's
+already every one of this puzzle's very first round: no prior deduction was even
+needed to spot it.
+
+---
+
+<a href="index.html?book=armory2_regionless&puzzle=6">
+<img src="images/regionless/tile_quota_fill_single.png" width="600"></img> </a>
+
+Column A still needs exactly 1 star, and its remaining empty cells — A2, A6, A7,
+and A8 — include a confirmed tile, {A7, A8}, that's guaranteed exactly one star
+all by itself. That already covers the column's whole remaining need, so A2 and
+A6 — inside the column but outside the tile — must be dots.
+
+---
+
+<a href="index.html?book=armory2_regionless&puzzle=7">
+<img src="images/regionless/tile_disjoint_quota_fill.png" width="600"></img> </a>
+
+Row 1 still needs 2 stars, and its remaining empty cells split into two disjoint
+confirmed tiles, {C1, D1} and {G1, H1} — together already accounting for the
+row's entire quota. So every other empty cell in row 1 — B1, E1, F1, and I1 —
+must be dots.
+
+---
+
+<a href="index.html?book=armory2_regionless&puzzle=8">
+<img src="images/regionless/tile_sees_too_much_multi.png" width="600"></img> </a>
+
+A confirmed tile doesn't need three cells to trigger this — two cells that are
+diagonally opposite each other work too, since whichever one holds the star, an
+outside cell touching both is still ruled out. Here A8 and B9 form such a tile,
+and B7 touches both of them, so B7 must be a dot.
+
+---
+
+<a href="index.html?book=armory2_regionless&puzzle=9">
 <img src="images/regionless/tile_bar_trapped.png" width="600"></img> </a>
 
 Bar-trapped works the same way voids or not — voids just tend to shrink the tiles
@@ -67,6 +108,16 @@ meaning the three cells left over, D5/D6/D7 (a void in column E leaves this stre
 only one cell wide), must supply at least 1 star between them. C6 touches all three
 of them, so if C6 were a star, none of D5/D6/D7 could be — leaving that guaranteed
 star nowhere to go. C6 must be a dot.
+
+---
+
+<a href="index.html?book=armory2_regionless&puzzle=10">
+<img src="images/regionless/tile_pair_quota_fill.png" width="600"></img> </a>
+
+Two confirmed tiles from unrelated column-pairs — C4/C5 and E4/E5 — both happen
+to land inside the same row-pair, rows 4 and 5. That row-pair needs exactly 2
+stars, and these two independent tiles already guarantee one each — so every
+other empty cell in rows 4 and 5, including G5, must be a dot.
 
 ## Adjacent and disjoint rows/cols, revisited
 
@@ -89,7 +140,7 @@ other hand, didn't turn up at all in my regionless testing — not even in puzzl
 pools specifically generated to be diagonally symmetric — so I'm not confident they
 meaningfully apply at 2★+; I've left them out rather than force an example.
 
-<a href="index.html?book=armory2_regionless&puzzle=6">
+<a href="index.html?book=armory2_regionless&puzzle=11">
 <img src="images/regionless/rotation_180_multi.png" width="600"></img> </a>
 
 This board has 180-degree symmetry. E5 and F6 are each other's rotation and touch,

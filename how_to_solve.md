@@ -259,13 +259,13 @@ Here's a variant that doesn't use regions at all — just rows against columns.
 href="index.html?book=armory&puzzle=13">
 <img src="images/row_col_line_sync.png" width="600"></img> </a>
 
-Look at rows 1 and 4. They aren't adjacent, and I'm not using any region
-information here. Their only empty cells are E1, F1, E4, and F4 — all four fall
-inside just two columns, E and F. Rows 1 and 4 need two stars between them, and
-columns E and F also need exactly two stars between them. Since rows 1 and 4's
-stars have nowhere else to go but columns E and F, those two rows must be
-supplying columns E and F's entire quota. So every other empty cell in columns E
-and F — here, that's E6, F6, E7, F7, E8, and F8 — must be dots.
+Look at columns D and G. They aren't adjacent, and I'm not using any region
+information here. Their only empty cells are D3, D4, G3, and G4 — all four fall
+inside just two rows, 3 and 4. Columns D and G need two stars between them, and
+rows 3 and 4 also need exactly two stars between them. Since columns D and G's
+stars have nowhere else to go but rows 3 and 4, those two columns must be
+supplying rows 3 and 4's entire quota. So every other empty cell in rows 3 and 4
+— here, that's B3, A4, and B4 — must be dots.
 
 More generally: if N rows' empty cells all fall within some set of columns, and
 those columns' combined remaining room exactly matches what the N rows still
@@ -350,6 +350,19 @@ has some symmetry. We can use this to to our advantage.
 
 <a
 href="index.html?book=armory&puzzle=18">
+<img src="images/main_diagonal_fill.png" width="600"></img> </a>
+
+This board is symmetric across its main diagonal (↘), so the solution has to be
+too — otherwise reflecting it would give a second valid solution. That means the
+simplest possible move is available: whenever a cell's reflection is already
+decided, copy it over. Here several cells were already dots (worked out from
+ordinary rules elsewhere on the board), so their reflections — F1, F3, F4, F5,
+G5, and H5 — all become dots too, all at once.
+
+---
+
+<a
+href="index.html?book=armory&puzzle=19">
 <img src="images/self_diag_2.png" width="600"></img> </a>
 
 In this case, the two boards are diagonal reflections of one another. If the
@@ -362,7 +375,7 @@ tells us that there must also be a dot at A4.
 ---
 
 <a
-href="index.html?book=armory&puzzle=18">
+href="index.html?book=armory&puzzle=19">
 <img src="images/self_diag_1.png" width="600"></img> </a>
 
 Let's keep looking at this puzzle, and take this line of thinking one step
@@ -376,7 +389,7 @@ they cannot be stars, and must be dots.
 ---
 
 <a
-href="index.html?book=armory&puzzle=19">
+href="index.html?book=armory&puzzle=20">
 <img src="images/both_diag.png" width="600"></img> </a>
 
 Here, both boards have diagonal self-symmetry. By the same logic above, this
@@ -399,7 +412,7 @@ parity (even/odd) as the board size — if it didn't, the rest of the board
 couldn't make up the difference.
 
 <a
-href="index.html?book=armory&puzzle=20">
+href="index.html?book=armory&puzzle=21">
 <img src="images/diagonal_parity_one_empty.png" width="600"></img> </a>
 
 This board is 8x8 and symmetric across its main diagonal (↘). The diagonal
@@ -410,7 +423,7 @@ already placed, C3 must be a star too, bringing the diagonal's total to two.
 ---
 
 <a
-href="index.html?book=armory&puzzle=21">
+href="index.html?book=armory&puzzle=22">
 <img src="images/diagonal_parity_two_empty.png" width="600"></img> </a>
 
 This one is symmetric across the *anti*-diagonal (↙) instead, and already has
@@ -430,7 +443,20 @@ one observation.
 #### Rot180
 
 <a
-href="index.html?book=armory&puzzle=22">
+href="index.html?book=armory&puzzle=23">
+<img src="images/rotation_180_fill.png" width="600"></img> </a>
+
+This puzzle has two boards that are 180-degree rotations of one another, so the
+solution must be too. A Hard-tier deduction elsewhere on the board had already
+placed some dots before this point; copying every one of them to its 180-degree
+rotation fills in E2, F2, B3, C3, D3, E3, F3, and G3 all at once — the simplest
+possible move once you know the symmetry holds, and it doesn't need to wait for
+a single specific cell, it applies to everything already known simultaneously.
+
+---
+
+<a
+href="index.html?book=armory&puzzle=24">
 <img src="images/self_rot180_1.png" width="600"></img> </a>
 
 This puzzle has two boards that are 180 degree rotations of one another. The
@@ -441,7 +467,7 @@ dot or star, we can also rotate that mark 180 degrees.
 ---
 
 <a
-href="index.html?book=armory&puzzle=22">
+href="index.html?book=armory&puzzle=24">
 <img src="images/self_rot180_2.png" width="600"></img> </a>
 
 Again, we can take this further and consider every cell alongside its image
@@ -451,7 +477,7 @@ the same region, then they cannot be stars.
 ---
 
 <a
-href="index.html?book=armory&puzzle=23">
+href="index.html?book=armory&puzzle=25">
 <img src="images/both_rot180.png" width="600"></img> </a>
 
 In this case, both boards have 180 degree self-symmetry, so the solution must
@@ -470,7 +496,7 @@ spot one, please let me know.
 ### Crossboard
 
 <a
-href="index.html?book=armory&puzzle=24">
+href="index.html?book=armory&puzzle=26">
 <img src="images/region_contains_region.png" width="600"></img> </a>
 
 In this case, the top-right region of board 1 is a subset of the top-right
@@ -482,7 +508,7 @@ which are not in the smaller region. This is my favorite technique.
 ---
 
 <a
-href="index.html?book=armory&puzzle=25">
+href="index.html?book=armory&puzzle=27">
 <img src="images/double_subset.png" width="600"></img> </a>
 
 We can apply the same logic when one pair of regions is a subset of another
@@ -491,7 +517,7 @@ pair. This technique is quite rare, but I think it's really cool.
 ---
 
 <a
-href="index.html?book=armory&puzzle=26">
+href="index.html?book=armory&puzzle=28">
 <img src="images/2_regions_crossboard.png" width="600"></img> </a>
 
 In this case, the bottom-left region of board 1 and the bottom-right region of
@@ -502,7 +528,7 @@ of those rows with dots.
 ---
 
 <a
-href="index.html?book=armory&puzzle=27">
+href="index.html?book=armory&puzzle=29">
 <img src="images/3_regions_crossboard.png" width="600"></img> </a>
 
 The same reasoning applies with >2 crossboard regions. In this case, the empty
@@ -512,7 +538,7 @@ columns {D, E, F}.  So the rest of those columns must contain only dots.
 ---
 
 <a
-href="index.html?book=armory&puzzle=28">
+href="index.html?book=armory&puzzle=30">
 <img src="images/partial_overlap.png" width="600"></img> </a>
 
 Focus on the regions containing blue cells on each board. They share 3 cells
@@ -527,7 +553,7 @@ other, then we can put dots in all of them.
 ### Lookahead
 
 <a
-href="index.html?book=armory&puzzle=29">
+href="index.html?book=armory&puzzle=31">
 <img src="images/half_lookahead.png" width="600"></img> </a>
 
 In this case, a star at B1 would see B4 (by column), and A3 (by region on board
@@ -536,7 +562,7 @@ contain a star. This is sorta like a generalized version of "sees too much", but
 taking into account the region on the other board.
 
 <a
-href="index.html?book=armory&puzzle=30">
+href="index.html?book=armory&puzzle=32">
 <img src="images/half_lookahead_2.png" width="600"></img> </a>
 
 In this case, a star at F4 would force dots down the rest of column F, and at
@@ -556,13 +582,13 @@ only allow it in "expert" tier puzzles.
 This is the technique of last resort, sort like a guess-and-test.
 
 <a
-href="index.html?book=armory&puzzle=31">
+href="index.html?book=armory&puzzle=33">
 <img src="images/1_lookahead_1.png" width="600"></img> </a>
 
 Consider a star at C3:
 
 <a
-href="index.html?book=armory&puzzle=31">
+href="index.html?book=armory&puzzle=33">
 <img src="images/1_lookahead_2.png" width="600"></img> </a>
 
 This forces the following dots. There are now two regions with one empty cell
@@ -581,7 +607,7 @@ region tools against it — is implemented now. See "Tiles" above.)
 ### Both-or-Neither
 
 <a
-href="index.html?book=armory&puzzle=32">
+href="index.html?book=armory&puzzle=34">
 <img src="images/both_or_neither.png" width="600"></img> </a>
 
 This is a technique I see a teammate use sometimes. He'll point out two cells
@@ -630,9 +656,9 @@ difficulty puzzles range from 25-311, "hard" ranges from 39-367, "expert" ranges
 from 92-1236, and "grandmaster" ranges from 145-3548.
 
 Notice how the [hardest
-beginner](index.html?book=armory&puzzle=33)
+beginner](index.html?book=armory&puzzle=35)
 puzzle has a score higher than the [easiest
-grandmaster](index.html?book=armory&puzzle=34)
+grandmaster](index.html?book=armory&puzzle=36)
 puzzle - what's up with that?! That beginner puzzle reqires a ton of
 applications of beginner tier techniques, each one only placing a few dots at a
 time. That grandmaster puzzle is trivial, except a crux which requires a
