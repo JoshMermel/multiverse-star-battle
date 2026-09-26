@@ -254,11 +254,11 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # already covers a unit's whole remaining need. See
             # rule_tile_disjoint_quota_fill (Expert) for K>1.
             (self.rule_tile_quota_fill_single,                    52, "Hard"),
-            (self.rule_region_subset_sync_1,                      60, "Hard"),
-            (self.rule_region_subset_sync_2,                      65, "Hard"),
-            (self.rule_region_line_quota_fill_intermediate,       55, "Hard"),
-            (self.rule_region_line_partition_forced_intermediate, 56, "Hard"),
-            (self.rule_region_line_partition_trapped_intermediate, 57, "Hard"),
+            (self.rule_region_subset_sync_1,                      55, "Hard"),
+            (self.rule_region_subset_sync_2,                      60, "Hard"),
+            (self.rule_region_line_quota_fill_intermediate,       60, "Hard"),
+            (self.rule_region_line_partition_forced_intermediate, 65, "Hard"),
+            (self.rule_region_line_partition_trapped_intermediate, 65, "Hard"),
             (self.rule_unit_region_sync_multi_4_plus,             80, "Hard"),
             # Restored from pre-experiment -- see rules_multi_star.py's
             # "Restored from pre-experiment" section comment.
