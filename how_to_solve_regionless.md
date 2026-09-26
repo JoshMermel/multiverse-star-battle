@@ -72,6 +72,16 @@ Rows 5 and 8's only non-void cells are D5, H5, D8, and H8 — all inside columns
 H, and rows 5/8 need exactly as many stars as columns D/H do. So the rest of those
 columns — H2, H3, and D6 — must be dots.
 
+---
+
+<a href="index.html?book=armory_regionless&puzzle=6">
+<img src="images/regionless/row_col_line_sync_3.png" width="600"></img> </a>
+
+The same idea scales past two rows. Rows 3, 5, and 6 each have only two non-void
+cells, and all six of them fall inside just three columns — A, C, and H. Those three
+rows need exactly as many stars as columns A/C/H do, so every other cell in those
+columns — A1, C1, H1, A7, C7, A8, and H8 — must be dots.
+
 ## Tiles
 
 Tiles never needed regions in the first place — a 2x2 block is a 2x2 block whether
@@ -80,7 +90,7 @@ carries over: domino-style, sees-too-much-style, and pair-quota-fill. The one
 exception is "tile falls inside a real drawn region" specifically, which obviously
 has no regionless equivalent.
 
-<a href="index.html?book=armory_regionless&puzzle=6">
+<a href="index.html?book=armory_regionless&puzzle=7">
 <img src="images/regionless/tile_domino.png" width="600"></img> </a>
 
 The row-pair here still needs 1 star, and its only two empty cells (C3, D4) form a
@@ -94,7 +104,7 @@ underlying idea — and the code path — is identical either way, so every symm
 technique from the original document applies unchanged: diagonal self-symmetry,
 diagonal parity, and 180-degree rotation all still work.
 
-<a href="index.html?book=armory_regionless&puzzle=7">
+<a href="index.html?book=armory_regionless&puzzle=8">
 <img src="images/regionless/diagonal_symmetry.png" width="600"></img> </a>
 
 This board is symmetric across its main diagonal (↘). E4 and D5 are reflections of
@@ -103,7 +113,7 @@ be one, and both must be dots.
 
 ---
 
-<a href="index.html?book=armory_regionless&puzzle=8">
+<a href="index.html?book=armory_regionless&puzzle=9">
 <img src="images/regionless/rotation_180.png" width="600"></img> </a>
 
 Same idea, 180-degree rotation this time: D4 and E5 are each other's rotation and
@@ -111,7 +121,7 @@ touch, so both must be dots.
 
 ---
 
-<a href="index.html?book=armory_regionless&puzzle=9">
+<a href="index.html?book=armory_regionless&puzzle=10">
 <img src="images/regionless/diagonal_parity.png" width="600"></img> </a>
 
 This board is also diagonally symmetric, so the same parity argument as the original
@@ -132,7 +142,7 @@ writing this — it may simply be too rare to matter for boards this sparse. Ful
 multi-stage lookahead, on the other hand, works exactly as before: hypothesize a
 star, propagate the consequences, and see if some row or column runs out of room.
 
-<a href="index.html?book=armory_regionless&puzzle=10">
+<a href="index.html?book=armory_regionless&puzzle=11">
 <img src="images/regionless/lookahead.png" width="600"></img> </a>
 
 Here, a star at F3 eventually forces a contradiction elsewhere on the board once its

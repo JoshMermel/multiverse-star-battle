@@ -172,12 +172,24 @@ particular placement would complete a row or column and leave no room for anythi
 else — that other cell must be a dot. That's D6's fate here: no matter which of the
 tile's cells ends up holding the star, D6 is ruled out either way.
 
-There are a couple of even more advanced tile techniques — combining confirmed
-tiles from two *unrelated* bands that happen to overlap the same row-pair or
-column-pair window ("tile pair quota fill"), and finding a partial, not-quite-
-complete tiling with one leftover strip that still guarantees something ("tile bar
-trapped"). I've verified both are sound, but they're rare enough, and subtle
-enough to explain, that I don't have dedicated examples for them here.
+---
+
+<a href="index.html?book=armory2&puzzle=10">
+<img src="images/multi_tile_bar_trapped.png" width="600"></img> </a>
+
+A subtler tiling trick: this row-pair still needs 4 stars, and columns D through I
+tile cleanly into three confirmed tiles — so those six columns can supply at most 3
+of the 4 needed stars. That means the remaining three cells of the pair, A5/B5/C5 (a
+straight run along row 5), must supply at least 1 star themselves — a guarantee even
+though we don't know which of the three. B4 touches all three of them (A5 and C5
+diagonally, B5 directly), so if B4 were a star, none of A5/B5/C5 could be — leaving
+that guaranteed star with nowhere to go. B4 must be a dot.
+
+There's one more advanced tile technique I haven't found a small, clean example of
+yet: combining confirmed tiles from two *unrelated* bands that happen to overlap the
+same row-pair or column-pair window ("tile pair quota fill"). I've verified it's
+sound, but it's rare enough, and subtle enough to explain, that I don't have a
+dedicated example for it here.
 
 ## Adjacent and disjoint rows/cols, revisited
 
@@ -186,7 +198,7 @@ directly, with one wrinkle: instead of comparing a *count* of regions to a *coun
 of rows/columns, you have to compare their *summed remaining star need*, since a
 region or a row can need more than one star now.
 
-<a href="index.html?book=armory2&puzzle=10">
+<a href="index.html?book=armory2&puzzle=11">
 <img src="images/multi_adjacent_rows.png" width="600"></img> </a>
 
 Here, two adjacent rows still need 4 stars between them, and the highlighted
@@ -207,7 +219,7 @@ to one row or column, but every one of its valid completions still puts *at leas
 some number of stars in a particular row or column anyway. That's a "guarantee" —
 something you can bank on regardless of which completion is real.
 
-<a href="index.html?book=armory2&puzzle=11">
+<a href="index.html?book=armory2&puzzle=12">
 <img src="images/multi_region_line_quota_fill.png" width="600"></img> </a>
 
 The amber-outlined column here needs exactly 1 more star. The highlighted region
@@ -219,7 +231,7 @@ hit the line's quota — this example just happens to need only one.)
 
 ---
 
-<a href="index.html?book=armory2&puzzle=12">
+<a href="index.html?book=armory2&puzzle=13">
 <img src="images/multi_region_line_partition.png" width="600"></img> </a>
 
 Two siblings of this idea are worth a mention. Once a region's contribution to a
@@ -260,7 +272,7 @@ in my test puzzles.
 
 ## Crossboard, revisited
 
-<a href="index.html?book=armory2&puzzle=13">
+<a href="index.html?book=armory2&puzzle=14">
 <img src="images/multi_region_subset.png" width="600"></img> </a>
 
 "Region contains region" generalizes the same way adjacent-rows did: instead of
@@ -276,7 +288,7 @@ this document yet.
 
 ## Lookahead
 
-<a href="index.html?book=armory2&puzzle=14">
+<a href="index.html?book=armory2&puzzle=15">
 <img src="images/multi_lookahead_dots.png" width="600"></img> </a>
 
 Same idea as the first volume's half-stage lookahead: hypothesize a star at some

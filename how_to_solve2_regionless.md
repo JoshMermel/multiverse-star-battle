@@ -55,6 +55,19 @@ This column-pair still needs 4 stars, and splits cleanly into 4 confirmed tiles 
 one of which has only a single empty cell left, G2. Since that tile is guaranteed
 exactly one star, G2 must be it.
 
+---
+
+<a href="index.html?book=armory2_regionless&puzzle=5">
+<img src="images/regionless/tile_bar_trapped.png" width="600"></img> </a>
+
+Bar-trapped works the same way voids or not — voids just tend to shrink the tiles
+involved. This column-pair (D and E) also needs 4 stars. Columns D/E split into
+three confirmed tiles, so those tiles can supply at most 3 of the 4 needed stars —
+meaning the three cells left over, D5/D6/D7 (a void in column E leaves this stretch
+only one cell wide), must supply at least 1 star between them. C6 touches all three
+of them, so if C6 were a star, none of D5/D6/D7 could be — leaving that guaranteed
+star nowhere to go. C6 must be a dot.
+
 ## Adjacent and disjoint rows/cols, revisited
 
 Same as in part 1: both of these compare a *count of regions* to a *count of
@@ -76,7 +89,7 @@ other hand, didn't turn up at all in my regionless testing — not even in puzzl
 pools specifically generated to be diagonally symmetric — so I'm not confident they
 meaningfully apply at 2★+; I've left them out rather than force an example.
 
-<a href="index.html?book=armory2_regionless&puzzle=5">
+<a href="index.html?book=armory2_regionless&puzzle=6">
 <img src="images/regionless/rotation_180_multi.png" width="600"></img> </a>
 
 This board has 180-degree symmetry. E5 and F6 are each other's rotation and touch,
