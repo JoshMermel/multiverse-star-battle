@@ -318,9 +318,32 @@ Crossboard region-pinning generalizes the same way too (summed need instead of r
 counts) — I just don't have a small, clean example of that one handy for this
 document yet.
 
-## Lookahead
+## Region pairs
 
 <a href="index.html?book=armory2&puzzle=19">
+<img src="images/multi_region_pair.png" width="600"></img> </a>
+
+The first volume's region-pair trick generalizes the same way adjacent-rows and
+crossboard did: instead of a single combined star count, enumerate every way to
+place the *combined remaining need* of two touching regions across their union.
+Here, two touching regions on board 2 jointly need 4 more stars among 10 open
+cells; every one of the 15 valid placements puts a star at C7 or D7, both of
+which touch D6 — so D6 must be a dot.
+
+---
+
+<a href="index.html?book=armory2&puzzle=20">
+<img src="images/multi_region_algebra.png" width="600"></img> </a>
+
+Region algebra generalizes the same way: two regions jointly hold 4 stars, and
+another region — this time on a *different* board, the crossboard case — has
+all of its open cells inside them and needs 2 stars of its own. That leaves
+exactly 2 stars for the rest of the pair. Every one of the 6 ways to place
+those 2 remaining stars puts one next to the circled cell, so it must be a dot.
+
+## Lookahead
+
+<a href="index.html?book=armory2&puzzle=21">
 <img src="images/multi_lookahead_dots.png" width="600"></img> </a>
 
 Same idea as the first volume's half-stage lookahead: hypothesize a star at some

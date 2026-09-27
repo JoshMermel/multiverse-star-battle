@@ -550,10 +550,41 @@ case, D3 and D7 see each other, so we aren't allowed to put stars in both.
 More generally, if the non-shared cells of two regions all mutually see each
 other, then we can put dots in all of them.
 
-### Lookahead
+### Region pairs
 
 <a
 href="index.html?book=armory&puzzle=31">
+<img src="images/region_pair.png" width="600"></img> </a>
+
+Two regions on the same board that touch along an edge can be treated as one
+combined region: enumerate every way to place their *combined* remaining
+stars anywhere in the union, ignoring which side of the boundary each star
+ends up on (a placement is fine even if both stars land in the same region).
+Here, the two touching regions shown in blue each still need one star, and
+between them there are only 4 open cells. All 4 ways to place those 2 stars
+happen to put one at F4, so E4 — just outside the union, next to F4 — would
+always see a star. It must be a dot.
+
+---
+
+<a
+href="index.html?book=armory&puzzle=32">
+<img src="images/region_algebra.png" width="600"></img> </a>
+
+A different way to combine two regions. If two regions jointly hold 2 stars,
+and some *other* row, column, or region already has all of its open cells
+inside that pair (and reaches into both of them), then that other unit's star
+must come from there — leaving exactly 1 star for the rest of the pair. Here,
+Row 3's only two open cells already sit inside the blue pair, and Row 3 needs
+its 1 star from somewhere — so the rest of the pair (outside Row 3) holds
+exactly 1 star too. That leaves only F1 and B6 open. B1 sees both of them (F1
+by row, B6 by column), so a star at B1 would leave neither available. B1 must
+be a dot.
+
+### Lookahead
+
+<a
+href="index.html?book=armory&puzzle=33">
 <img src="images/half_lookahead.png" width="600"></img> </a>
 
 In this case, a star at B1 would see B4 (by column), and A3 (by region on board
@@ -562,7 +593,7 @@ contain a star. This is sorta like a generalized version of "sees too much", but
 taking into account the region on the other board.
 
 <a
-href="index.html?book=armory&puzzle=32">
+href="index.html?book=armory&puzzle=34">
 <img src="images/half_lookahead_2.png" width="600"></img> </a>
 
 In this case, a star at F4 would force dots down the rest of column F, and at
@@ -582,18 +613,18 @@ only allow it in "expert" tier puzzles.
 This is the technique of last resort, sort like a guess-and-test.
 
 <a
-href="index.html?book=armory&puzzle=33">
+href="index.html?book=armory&puzzle=35">
 <img src="images/1_lookahead_1.png" width="600"></img> </a>
 
-Consider a star at C3:
+Consider a star at E3:
 
 <a
-href="index.html?book=armory&puzzle=33">
+href="index.html?book=armory&puzzle=35">
 <img src="images/1_lookahead_2.png" width="600"></img> </a>
 
-This forces the following dots. There are now two regions with one empty cell
-apiece, so we need to place stars in A4 and A6. But those two are in the same
-column, so C3 must contain a dot.
+This forces the following dots: D2, F3, H3, F4, and E6. There are now two rows
+with one empty cell apiece, so we need to place stars in C2 and C4. But those
+two are in the same column, so E3 must contain a dot.
 
 I think this technique is not viable for humans in the typical case, but can be
 used in specialized cases.
@@ -607,7 +638,7 @@ region tools against it — is implemented now. See "Tiles" above.)
 ### Both-or-Neither
 
 <a
-href="index.html?book=armory&puzzle=34">
+href="index.html?book=armory&puzzle=36">
 <img src="images/both_or_neither.png" width="600"></img> </a>
 
 This is a technique I see a teammate use sometimes. He'll point out two cells
@@ -656,13 +687,14 @@ difficulty puzzles range from 25-311, "hard" ranges from 39-367, "expert" ranges
 from 92-1236, and "grandmaster" ranges from 145-3548.
 
 Notice how the [hardest
-beginner](index.html?book=armory&puzzle=35)
-puzzle has a score higher than the [easiest
-grandmaster](index.html?book=armory&puzzle=36)
-puzzle - what's up with that?! That beginner puzzle reqires a ton of
-applications of beginner tier techniques, each one only placing a few dots at a
-time. That grandmaster puzzle is trivial, except a crux which requires a
-grandmaster tier technique.
+beginner](index.html?book=armory&puzzle=37)
+puzzle (score 174) and the [easiest
+grandmaster](index.html?book=armory&puzzle=38)
+puzzle (score 177) end up with almost the same score - what's up with that?!
+That beginner puzzle reqires a ton of applications of beginner tier
+techniques, each one only placing a few dots at a time. That grandmaster
+puzzle is trivial, except a single crux which requires a grandmaster tier
+technique.
 
 Personally, I don't consider either to be suitable for publication. I
 think that a beginner solver doesn't want a beginner puzzle like that, and an
