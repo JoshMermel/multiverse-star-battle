@@ -958,6 +958,11 @@ export function applySingleStarRules(PuzzleSolver) {
       { key: 'lookaheadHalfSingleBoard', fn: () => this.hintLookaheadHalfSingleBoard() },
       { key: 'lookaheadHalf',            fn: () => this.hintLookaheadHalf() },
       { key: 'regionSubsetSync2',        fn: () => this.hintRegionSubsetSync(2) },
+      // Region algebra, then the region-pair hybrid enumeration -- see the
+      // section comments above hintRegionAlgebra/hintRegionPairPlacementForced
+      // in solver-rules-common.js.
+      { key: 'regionAlgebra',             fn: () => this.hintRegionAlgebra() },
+      { key: 'regionPairPlacementForced', fn: () => this.hintRegionPairPlacementForced() },
       // Grandmaster
       // Tiles rule 4b -- see the section comment above hintTilePairQuotaFill
       // in solver-rules-multi.js. The 3-or-more-tile generalization of

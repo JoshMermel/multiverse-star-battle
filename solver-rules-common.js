@@ -1,4 +1,4 @@
-import { CELL, HINT_COLOR } from './constants.js';
+import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS } from './constants.js';
 
 // Rules referenced, by the exact same underlying function, in both the
 // single-star and multi-star rule lists: error/already-solved checks,
@@ -329,6 +329,247 @@ export function applyCommonSolverRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.highlights[0]?.idx ?? a.marks[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? b.marks[0]?.idx ?? 0));
     return candidates;
+  };
+
+  // -- Region-pair placement forced (1★ AND 2★+, Expert) ------------------
+  //
+  // hintUnitPlacementForced's weak (adjacency-only) enumeration applied to a
+  // synthetic "hybrid region": the union of two unfinished regions on the
+  // same board that share at least one orthogonal edge, needing both
+  // regions' combined remaining stars. Pure union -- each region's own quota
+  // is deliberately NOT enforced, so a placement may put all of the pair's
+  // stars in one of the two regions. A cell in no placement, or a cell just
+  // outside the union touching a star of every placement, is a dot; a cell
+  // in every placement is a star. Single-board only, never cross-board.
+  // Pairs whose enumeration would exceed ENUMERATION_COMBO_CAP are skipped.
+  // Python port: rule_region_pair_placement_forced in rules_common.py.
+  p._touchingRegionPairs = function () {
+    if (this._touchingRegionPairsCache) return this._touchingRegionPairsCache;
+    const n = this.n;
+    const pairs = [];
+    const regionsByBoard = new Map();
+    for (const u of this.units) {
+      if (u.boardIdx === undefined) continue;
+      if (!regionsByBoard.has(u.boardIdx)) regionsByBoard.set(u.boardIdx, []);
+      regionsByBoard.get(u.boardIdx).push(u);
+    }
+    for (const [boardIdx, regions] of regionsByBoard) {
+      const owner = new Map();
+      for (const u of regions) for (const i of u.indices) owner.set(i, u);
+      const seen = new Set();
+      for (const [i, ua] of owner) {
+        const r = Math.floor(i / n), c = i % n;
+        const nbs = [];
+        if (r + 1 < n) nbs.push(i + n);
+        if (c + 1 < n) nbs.push(i + 1);
+        for (const j of nbs) {
+          const ub = owner.get(j);
+          if (!ub || ub === ua) continue;
+          const [a, b] = ua.indices[0] < ub.indices[0] ? [ua, ub] : [ub, ua];
+          const key = `${a.label}|${b.label}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          pairs.push({ a, b, boardIdx });
+        }
+      }
+    }
+    this._touchingRegionPairsCache = pairs;
+    return pairs;
+  };
+
+  // Weak enumeration depends only on the union's own cells, so it's cached on
+  // exactly that state and survives across moves elsewhere on the board --
+  // most pairs are untouched by any single move. Cleared wholesale if it
+  // grows large, since each entry can hold many combos.
+  p._regionPairCombos = function (union) {
+    if (!this._regionPairCombosCache || this._regionPairCombosCache.size > 5000) {
+      this._regionPairCombosCache = new Map();
+    }
+    const key = `${union.label}|${union.indices.map(i => this.vState(i)).join(',')}`;
+    let combos = this._regionPairCombosCache.get(key);
+    if (combos === undefined) {
+      combos = this._enumerateUnitCompletions(union, false, 2 * this.starsPerGroup);
+      this._regionPairCombosCache.set(key, combos);
+    }
+    return combos;
+  };
+
+  p.hintRegionPairPlacementForced = function () {
+    const hints = [];
+    const pairs = this._touchingRegionPairs()
+      .slice()
+      .sort((x, y) => (x.a.indices[0] - y.a.indices[0]) || (x.b.indices[0] - y.b.indices[0]));
+    for (const { a, b, boardIdx } of pairs) {
+      const needA = this.starsPerGroup - a.indices.filter(i => this.vState(i) === CELL.STAR).length;
+      const needB = this.starsPerGroup - b.indices.filter(i => this.vState(i) === CELL.STAR).length;
+      if (needA <= 0 || needB <= 0) continue;
+
+      const union = { indices: [...a.indices, ...b.indices], label: `${a.label}+${b.label}`, boardIdx };
+      const combos = this._regionPairCombos(union);
+      if (!combos || combos.length === 0) continue;
+
+      const unionSet = new Set(union.indices);
+      const avail = union.indices.filter(i => this.vState(i) === CELL.NONE);
+      const outside = new Set();
+      for (const cell of union.indices) {
+        for (const nb of this.getNeighbors(cell)) {
+          if (!unionSet.has(nb) && this.vState(nb) === CELL.NONE) outside.add(nb);
+        }
+      }
+      const forcedStars = avail.filter(cell => combos.every(combo => combo.includes(cell)));
+      const forcedDots = [
+        ...avail.filter(cell => !combos.some(combo => combo.includes(cell))),
+        ...[...outside].filter(cell => combos.every(combo => combo.some(s => this._cellsAdjacent(s, cell)))),
+      ];
+      if (forcedStars.length === 0 && forcedDots.length === 0) continue;
+
+      const need = needA + needB;
+      const shape = `these two touching regions as one combined region`;
+      const starsWord = `its ${need} remaining non-touching star${need === 1 ? '' : 's'}`;
+      const note = `(ignoring how they split between the two regions)`;
+      if (forcedStars.length > 0) {
+        hints.push({
+          description: `Treat ${shape}. Every way to place ${starsWord} ${note} includes the marked cell${forcedStars.length === 1 ? ", so it's a star" : "s, so they're stars"}.`,
+          highlights: union.indices
+            .filter(i => !forcedStars.includes(i))
+            .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
+          boardIdx
+        });
+      }
+      if (forcedDots.length > 0) {
+        hints.push({
+          description: `Treat ${shape}. Every way to place ${starsWord} ${note} rules out a star at the marked cell(s), so they're dots.`,
+          highlights: union.indices
+            .filter(i => !forcedDots.includes(i))
+            .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+          boardIdx
+        });
+      }
+    }
+    return hints.length > 0 ? hints : null;
+  };
+
+  // -- Region algebra (1★ AND 2★+, Expert) ---------------------------------
+  //
+  // Two regions A, B on one board jointly hold 2N stars. If some OTHER unit
+  // C -- a row, column, or a region on a different board -- has all of its
+  // non-dot cells inside A∪B (and reaches into both A and B), then all N of
+  // C's stars lie in A∪B, so the remainder R = (A∪B) \ C holds exactly N
+  // stars. R is then reasoned about like a region of its own:
+  //  - R already has its N stars: every other open cell of R is a dot.
+  //  - 1★: a cell outside R that sees (same row/column, or adjacent) every
+  //    open cell of R is a dot; a lone open cell of R is a star.
+  //  - 2★+: hintUnitPlacementForced's weak (adjacency-only) enumeration on R.
+  // Shown as R in blue on A/B's board and C in brown: a whole row/column on
+  // A/B's board, or a region C both where it overlaps A/B and on its own
+  // board.
+  // Python port: rule_region_algebra in rules_common.py.
+  p.hintRegionAlgebra = function () {
+    const n = this.n;
+    const N = this.starsPerGroup;
+    const starsText = N === 1 ? '1 star' : `${N} stars`;
+    const hints = [];
+    const sees = (a, b) => {
+      const ra = Math.floor(a / n), ca = a % n, rb = Math.floor(b / n), cb = b % n;
+      return ra === rb || ca === cb || (Math.abs(ra - rb) <= 1 && Math.abs(ca - cb) <= 1);
+    };
+
+    for (const b of this.boardIndices) {
+      const owner = new Map();
+      for (const u of this.units) {
+        if (u.boardIdx === b) for (const i of u.indices) owner.set(i, u);
+      }
+      if (owner.size === 0) continue; // regionless board
+
+      for (const cUnit of this.units) {
+        if (cUnit.boardIdx === b) continue;
+        const live = cUnit.indices.filter(i => this.vState(i) !== CELL.DOT);
+        const owners = new Set(live.map(i => owner.get(i)));
+        if (owners.size !== 2 || owners.has(undefined)) continue;
+        const [ua, ub] = [...owners];
+
+        const cSet = new Set(cUnit.indices);
+        const rem = [...ua.indices, ...ub.indices].filter(i => !cSet.has(i));
+        const have = rem.filter(i => this.vState(i) === CELL.STAR).length;
+        const avail = rem.filter(i => this.vState(i) === CELL.NONE);
+        if (avail.length === 0) continue;
+        const remSet = new Set(rem);
+
+        let forcedStars = [];
+        let forcedDots = [];
+        let why;
+        if (have >= N) {
+          forcedDots = avail;
+          why = { dots: `The blue cells already have their ${starsText}, so the marked cells are dots.` };
+        } else if (N === 1) {
+          if (avail.length === 1) forcedStars = avail;
+          for (let i = 0; i < n * n; i++) {
+            if (this.vState(i) === CELL.NONE && !remSet.has(i) && avail.every(c => sees(i, c))) forcedDots.push(i);
+          }
+          why = {
+            stars: `Only one blue cell is still open, so it's a star.`,
+            dots: `A star at the marked cell(s) would see every open blue cell, leaving the blue cells without their star, so they're dots.`,
+          };
+        } else {
+          const combos = this._enumerateUnitCompletions({ indices: rem, label: 'regionAlgebra' }, false, N);
+          if (!combos || combos.length === 0) continue;
+          const outside = new Set();
+          for (const cell of rem) {
+            for (const nb of this.getNeighbors(cell)) {
+              if (!remSet.has(nb) && this.vState(nb) === CELL.NONE) outside.add(nb);
+            }
+          }
+          forcedStars = avail.filter(cell => combos.every(combo => combo.includes(cell)));
+          forcedDots = [
+            ...avail.filter(cell => !combos.some(combo => combo.includes(cell))),
+            ...[...outside].filter(cell => combos.every(combo => combo.some(s => this._cellsAdjacent(s, cell)))),
+          ];
+          why = {
+            stars: `Every way to place ${N} non-touching stars in the blue cells includes the marked cell(s), so they're stars.`,
+            dots: `Every way to place ${N} non-touching stars in the blue cells rules out a star at the marked cell(s), so they're dots.`,
+          };
+        }
+        if (forcedStars.length === 0 && forcedDots.length === 0) continue;
+
+        const cIsRegion = cUnit.boardIdx !== undefined;
+        const cName = cIsRegion ? `the brown region on Board ${cUnit.boardIdx + 1}` : `${cUnit.label} (brown)`;
+        const intro = `The two regions on Board ${b + 1} made up of the blue and brown cells hold ${2 * N} stars together. `
+          + `Apart from dotted cells, ${cName} lies entirely inside them and holds ${starsText}, `
+          + `so the blue cells hold exactly ${starsText}. `;
+        const highlights = [
+          ...rem.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[0], boards: [b] })),
+          // A row/column C is shown whole (the player reads it as a line);
+          // a region C is shown on A/B's board only where it overlaps them.
+          ...cUnit.indices.filter(i => !cIsRegion || owner.get(i) === ua || owner.get(i) === ub)
+            .map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[1], boards: [b] })),
+          ...(cIsRegion ? cUnit.indices.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[1], boards: [cUnit.boardIdx] })) : []),
+        ];
+        // Marked cells are board-agnostic facts; show them wherever the hint
+        // is drawn (both boards when C is the other board's region).
+        const boardIdx = cIsRegion ? undefined : b;
+        const marksOn = cIsRegion ? [b, cUnit.boardIdx] : [b];
+        const without = cells => highlights.filter(h => !cells.includes(h.idx));
+        if (forcedStars.length > 0) {
+          hints.push({
+            description: intro + why.stars,
+            highlights: without(forcedStars),
+            marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR, boards: marksOn })),
+            boardIdx
+          });
+        }
+        if (forcedDots.length > 0) {
+          hints.push({
+            description: intro + why.dots,
+            highlights: without(forcedDots),
+            marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: marksOn })),
+            boardIdx
+          });
+        }
+      }
+    }
+    return hints.length > 0 ? hints : null;
   };
 
   // Rule: Multi-stage lookahead for contradiction checking.

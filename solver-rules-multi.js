@@ -2635,6 +2635,11 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'crossBoardPinnedMulti2Col',      fn: () => this.hintCrossBoardRegionPinnedMulti(2, "Column") },
       { key: 'regionSubsetSync3',              fn: () => this.hintRegionSubsetSync(3) },
       { key: 'regionSubsetSync4',              fn: () => this.hintRegionSubsetSync(4) },
+      // Region algebra, then the region-pair hybrid enumeration -- see the
+      // section comments above hintRegionAlgebra/hintRegionPairPlacementForced
+      // in solver-rules-common.js.
+      { key: 'regionAlgebra',                  fn: () => this.hintRegionAlgebra() },
+      { key: 'regionPairPlacementForced',      fn: () => this.hintRegionPairPlacementForced() },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
       { key: 'lookaheadDots',                  fn: () => this.hintLookaheadDots() },
       // Grandmaster
