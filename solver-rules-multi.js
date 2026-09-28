@@ -2131,9 +2131,18 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.testIdx - b.testIdx);
+    // The single-board (Expert) version's contradiction is usually simple
+    // enough to spot by eye (the blue cells just run out of room). The
+    // cross-board (Grandmaster) version's contradiction is subtler -- it
+    // only shows up once you also account for every OTHER row, column, and
+    // region's own remaining capacity (often one on the other board), which
+    // is why it's worth spelling out explicitly here.
+    const description = singleBoard
+      ? `The blue cells can no longer reach their required star count if the circled cell holds a star.`
+      : `The blue cells can no longer reach their required star count if the circled cell holds a star -- every way to place their remaining stars would break some other row, column, or region's own star limit.`;
     return candidates.map(({ testIdx, broken, boardIdx }) => ({
       boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
-      description: `The blue cells can no longer reach their required star count if the circled cell holds a star.`,
+      description,
       highlights: broken.indices.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
       marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }]
     }));
@@ -2641,7 +2650,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'regionAlgebra',                  fn: () => this.hintRegionAlgebra() },
       { key: 'regionPairPlacementForced',      fn: () => this.hintRegionPairPlacementForced() },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
-      { key: 'lookaheadDots',                  fn: () => this.hintLookaheadDots() },
       // Grandmaster
       // Cross-board region/line quota fill + partition forced -- see the
       // section comment above hintCrossBoardRegionLineQuotaFill. Genuinely
@@ -2665,6 +2673,15 @@ export function applyMultiStarRules(PuzzleSolver) {
       // depends on them. Matches Python's rule_tile_pair_quota_fill_
       // grandmaster in rules_multi_star.py.
       { key: 'tilePairQuotaFillGrandmaster',   fn: () => this.hintTilePairQuotaFillGrandmaster() },
+      // Cross-board lookahead-dots: moved here (was Expert, right after
+      // lookaheadDotsSingleBoard) to match Python's identical reorder --
+      // see the comment above rule_lookahead_dots in composite_scorer.py.
+      // Same cheap one-round speculative placement as lookaheadDotsSingleBoard
+      // above, but the contradiction only shows up by combining two
+      // different regions' remaining quotas across BOTH boards after
+      // committing to the hypothetical star -- too much to track by hand
+      // at Expert.
+      { key: 'lookaheadDots',                  fn: () => this.hintLookaheadDots() },
       // lookaheadLoop1/2/3/8 all commented out for performance: hintLookahead
       // does a full board-wide speculative sweep per empty cell per stage,
       // and that's gotten noticeably slow at 3★+ scale -- even 1 stage.

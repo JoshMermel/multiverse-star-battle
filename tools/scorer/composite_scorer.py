@@ -25,23 +25,32 @@ from .rules_multi_star import MultiStarRules
 # through Expert -- this is a performance-motivated cutoff, not a
 # correctness one).
 #
-# rule_tile_pair_quota_fill_grandmaster is exempted from this cutoff even
-# though it's tagged Grandmaster: its cost profile is identical to the
-# already-included Expert-tier rule_tile_pair_quota_fill right above it
-# (same confirmed-tile lookup, same bounded _find_disjoint_tile_combo
-# backtracking search) -- it's just gated to a rarer combo size (3+
-# independent tiles vs. exactly 2), not a more expensive search. The tier
-# cutoff is a proxy for "skip genuinely expensive full-board sweeps and
-# crossboard searches," not a blanket rule that nothing above Expert may
+# rule_tile_pair_quota_fill_grandmaster and rule_lookahead_dots are exempted
+# from this cutoff even though both are tagged Grandmaster: neither is a
+# genuinely expensive full-board sweep or crossboard search, just a
+# human-difficulty reclassification.
+#   - rule_tile_pair_quota_fill_grandmaster's cost profile is identical to
+#     the already-included Expert-tier rule_tile_pair_quota_fill right above
+#     it (same confirmed-tile lookup, same bounded _find_disjoint_tile_combo
+#     backtracking search) -- it's just gated to a rarer combo size (3+
+#     independent tiles vs. exactly 2), not a more expensive search.
+#   - rule_lookahead_dots (the cross-board sibling of the still-Expert
+#     rule_lookahead_dots_single_board) does the same cheap one-round
+#     speculative sweep either way; it was moved to Grandmaster because the
+#     deduction it finds requires combining two DIFFERENT regions' quotas
+#     across boards after a hypothetical placement -- too much to track by
+#     hand for an Expert-tier puzzle -- not because it got more expensive.
+# The tier cutoff is a proxy for "skip genuinely expensive full-board sweeps
+# and crossboard searches," not a blanket rule that nothing above Expert may
 # ever apply to a 3★+ puzzle -- excluding a cheap, already-computed
 # deduction here would be a pure capability regression (real puzzles that
 # used to solve via this exact combinatorics before the 2-vs-3+ split
 # would become UNSOLVED) for zero performance benefit. JS's
 # _getMultiStarRuleList has no equivalent per-star-count cap at all, so
-# leaving this excluded would also open a fresh JS/Python parity gap on
+# leaving either excluded would also open a fresh JS/Python parity gap on
 # top of the regression.
 MULTI_STAR_TIER_CUTOFF = "Expert"
-MULTI_STAR_CUTOFF_EXEMPT = {"rule_tile_pair_quota_fill_grandmaster"}
+MULTI_STAR_CUTOFF_EXEMPT = {"rule_tile_pair_quota_fill_grandmaster", "rule_lookahead_dots"}
 
 
 class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
@@ -326,7 +335,6 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_region_algebra,                            152, "Expert"),
             (self.rule_region_pair_placement_forced,              155, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),
-            (self.rule_lookahead_dots,                            180, "Expert"),
 
             # -- Grandmaster ------------------------------------------------
             # Cross-board region/line quota fill + partition forced -- see
@@ -346,14 +354,25 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # convention (every other Grandmaster entry here is
             # cross-board-only), not because it depends on them.
             (self.rule_tile_pair_quota_fill_grandmaster,          215, "Grandmaster"),
+            # Cross-board lookahead-dots: same one-round speculative
+            # placement as the Expert-tier rule_lookahead_dots_single_board
+            # above, but the contradiction it looks for only shows up by
+            # combining two different regions' remaining quotas across BOTH
+            # boards at once -- spotting that a subset of one board's
+            # region overlaps a too-tight budget on the other board's
+            # region, and only after committing to the hypothetical star,
+            # is a lot to hold in your head. Matches solver-rules-multi.js's
+            # identical reorder (see the comment there).
+            (self.rule_lookahead_dots,                            220, "Grandmaster"),
 
-            # All three N-stage multi-star lookahead rules are commented out
+            # The three N-stage multi-star lookahead rules are commented out
             # for performance: each is a full board-wide speculative sweep
             # per empty cell, repeated per stage, and that's expensive
             # enough at 3★+ scale that even 1-stage measurably slows things
-            # down. rule_lookahead_dots(_single_board) above (Expert tier)
-            # is the cheaper one-round equivalent and stays active. 1★'s
-            # rule_lookahead_1/2/3_stage (rules_single_star.py) are
+            # down. rule_lookahead_dots(_single_board) above -- a cheaper
+            # one-round equivalent -- stays active either way (both are
+            # MULTI_STAR_CUTOFF_EXEMPT-safe / within the Expert cutoff).
+            # 1★'s rule_lookahead_1/2/3_stage (rules_single_star.py) are
             # untouched. Leave commented rather than deleting, matching
             # gh-pages' own convention, in case this gets revisited.
             # (self.rule_lookahead_1_stage_multi,                   220, "Grandmaster"),
