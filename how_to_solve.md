@@ -616,15 +616,15 @@ This is the technique of last resort, sort like a guess-and-test.
 href="index.html?book=armory&puzzle=35">
 <img src="images/1_lookahead_1.png" width="600"></img> </a>
 
-Consider a star at E3:
+Consider a star at D4:
 
 <a
 href="index.html?book=armory&puzzle=35">
 <img src="images/1_lookahead_2.png" width="600"></img> </a>
 
-This forces the following dots: D2, F3, H3, F4, and E6. There are now two rows
-with one empty cell apiece, so we need to place stars in C2 and C4. But those
-two are in the same column, so E3 must contain a dot.
+This forces the following dots: D1, D2, E3, H4, and C6. There are now two
+regions with one empty cell apiece, so we need to place stars in F3 and F6.
+But those two are in the same column, so D4 must contain a dot.
 
 I think this technique is not viable for humans in the typical case, but can be
 used in specialized cases.

@@ -263,11 +263,12 @@ class CommonRules:
 
     # -- Region algebra --------------------------------------------------------
     #
-    # Two regions A, B on one board jointly hold 2N stars. If some OTHER unit
-    # C -- a row, column, or a region on a different board -- has all of its
-    # non-dot cells inside A∪B (and reaches into both A and B), then all N of
-    # C's stars lie in A∪B, so the remainder R = (A∪B) \ C holds exactly N
-    # stars. R is then reasoned about like a region of its own:
+    # Two DISJOINT units A, B -- each a row, a column, or a region (on any
+    # board) -- jointly hold 2N stars. If some OTHER unit C (any row, column,
+    # or region, other than A/B themselves) has all of its non-dot cells
+    # inside A∪B (and reaches into both A and B), then all N of C's stars lie
+    # in A∪B, so the remainder R = (A∪B) \ C holds exactly N stars. R is then
+    # reasoned about like a region of its own:
     #  - R already has its N stars: every other empty cell of R is a dot.
     #  - 1★: "sees too much" on R -- a cell outside R that sees (same
     #    row/column, or adjacent) every candidate of R is a dot; a lone
@@ -275,75 +276,102 @@ class CommonRules:
     #  - 2★+: the weak (adjacency-only) placement enumeration on R as a
     #    synthetic unit with quota N: cells in no placement or touching a
     #    star of every placement are dots, cells in every placement are stars.
+    #
+    # A/B used to be restricted to "two regions on one board" (with C then
+    # required to be a row/column or a region on a DIFFERENT board, so it
+    # wouldn't just be a third region of that same board). Generalized so A
+    # and B can be any disjoint pair of units at all -- e.g. two rows, or a
+    # row and a region -- which also means there's no longer a single "home
+    # board" to exclude C from; C only has to be a different unit than A/B.
+    #
+    # Finding (A, B) by testing every disjoint PAIR of units up front doesn't
+    # scale -- it's O(units^2 * units) and measured at ~90ms/call on a
+    # 25x25/6★ board (vs ~0.06ms for the original one-board-of-regions
+    # search). Instead this iterates C first, exactly like the original did
+    # (which built a single-valued cell->region `owner` map, since regions
+    # partition a board): for C's FIRST live cell, try each unit touching it
+    # as A (a cell's row, column, and one region per board -- a small, fixed
+    # list via p.units_by_cell, not a single owner anymore since a cell can
+    # belong to several candidate units at once); then require every
+    # remaining live cell to share one common OTHER unit, which must be B.
+    # That's the whole candidate set for this C, found in time proportional
+    # to C's own cell count rather than the total unit count -- measured at
+    # ~0.3ms/call on the same 25x25/6★ board, matching the original's cost
+    # profile.
     # Matches hintRegionAlgebra in solver-rules-common.js.
     def rule_region_algebra(self, p):
         N = p.stars_per_unit
-        for b_idx in range(p.n_boards):
-            if p.regionless_boards[b_idx]:
+        for c_unit in p.units:
+            live = [i for i in c_unit["indices"] if p.grid[i] != "."]
+            if len(live) < 2:
                 continue
-            owner = {}
-            regions = {}
-            for u in p.units:
-                if u["board_idx"] == b_idx:
-                    regions[u["label"]] = u
-                    for i in u["indices"]:
-                        owner[i] = u["label"]
-            for c_unit in p.units:
-                if c_unit["board_idx"] == b_idx:
+            first_candidates = [u for u in p.units_by_cell[live[0]] if u is not c_unit]
+            for ua in first_candidates:
+                a_set = set(ua["indices"])
+                remaining = [i for i in live[1:] if i not in a_set]
+                if not remaining:
+                    continue  # B would never be touched
+                b_candidates = None
+                for i in remaining:
+                    cands = {id(u): u for u in p.units_by_cell[i] if u is not c_unit and u is not ua}
+                    b_candidates = cands if b_candidates is None else {
+                        k: v for k, v in b_candidates.items() if k in cands
+                    }
+                    if not b_candidates:
+                        break
+                if not b_candidates:
                     continue
-                live = [i for i in c_unit["indices"] if p.grid[i] != "."]
-                owners = {owner.get(i) for i in live}
-                if len(owners) != 2 or None in owners:
-                    continue
-                la, lb = sorted(owners)
-                ua, ub = regions[la], regions[lb]
-                c_set = set(c_unit["indices"])
-                rem = [i for i in ua["indices"] + ub["indices"] if i not in c_set]
-                label = f"RegionAlgebra({la}+{lb}-{c_unit['label']})"
-                have = sum(1 for i in rem if p.grid[i] == "x")
-                avail = [i for i in rem if p.grid[i] is None]
-                if not avail:
-                    continue
-                if have >= N:
-                    changes = sum(p.validate_and_set(i, ".", label, self.verbose) for i in avail)
-                    if changes:
-                        return changes
-                    continue
-                if N == 1:
-                    # 1★: "sees too much" on R -- a star anywhere that sees
-                    # (same row/column or adjacent) every candidate of R
-                    # would leave R with no star.
+                for ub in b_candidates.values():
+                    b_set = set(ub["indices"])
+                    if a_set & b_set:
+                        continue
+                    c_set = set(c_unit["indices"])
+                    rem = [i for i in ua["indices"] + ub["indices"] if i not in c_set]
+                    label = f"RegionAlgebra({ua['label']}+{ub['label']}-{c_unit['label']})"
+                    have = sum(1 for i in rem if p.grid[i] == "x")
+                    avail = [i for i in rem if p.grid[i] is None]
+                    if not avail:
+                        continue
+                    if have >= N:
+                        changes = sum(p.validate_and_set(i, ".", label, self.verbose) for i in avail)
+                        if changes:
+                            return changes
+                        continue
+                    if N == 1:
+                        # 1★: "sees too much" on R -- a star anywhere that
+                        # sees (same row/column or adjacent) every candidate
+                        # of R would leave R with no star.
+                        rem_set = set(rem)
+                        changes = 0
+                        if len(avail) == 1:
+                            changes += p.validate_and_set(avail[0], "x", label, self.verbose)
+                        for i in range(p.n * p.n):
+                            if p.grid[i] is None and i not in rem_set and all(
+                                    self._cells_see_each_other(p, i, c) for c in avail):
+                                changes += p.validate_and_set(i, ".", label, self.verbose)
+                        if changes:
+                            return changes
+                        continue
+                    r_unit = {"indices": rem, "label": label, "board_idx": None}
+                    combos = self._enumerate_unit_completions(p, r_unit, strong=False, quota=N)
+                    if not combos:
+                        continue
                     rem_set = set(rem)
+                    outside = {
+                        nb for cell in rem for nb in p._neighbor_map[cell]
+                        if nb not in rem_set and p.grid[nb] is None
+                    }
+                    forced_stars = [c for c in avail if all(c in combo for combo in combos)]
+                    forced_dots = [c for c in avail if not any(c in combo for combo in combos)]
+                    forced_dots += [
+                        c for c in outside
+                        if all(any(self._cells_adjacent(p, s, c) for s in combo) for combo in combos)
+                    ]
                     changes = 0
-                    if len(avail) == 1:
-                        changes += p.validate_and_set(avail[0], "x", label, self.verbose)
-                    for i in range(p.n * p.n):
-                        if p.grid[i] is None and i not in rem_set and all(
-                                self._cells_see_each_other(p, i, c) for c in avail):
-                            changes += p.validate_and_set(i, ".", label, self.verbose)
-                    if changes:
+                    for idx in forced_stars:
+                        changes += p.validate_and_set(idx, "x", label, self.verbose)
+                    for idx in forced_dots:
+                        changes += p.validate_and_set(idx, ".", label, self.verbose)
+                    if changes > 0:
                         return changes
-                    continue
-                r_unit = {"indices": rem, "label": label, "board_idx": b_idx}
-                combos = self._enumerate_unit_completions(p, r_unit, strong=False, quota=N)
-                if not combos:
-                    continue
-                rem_set = set(rem)
-                outside = {
-                    nb for cell in rem for nb in p._neighbor_map[cell]
-                    if nb not in rem_set and p.grid[nb] is None
-                }
-                forced_stars = [c for c in avail if all(c in combo for combo in combos)]
-                forced_dots = [c for c in avail if not any(c in combo for combo in combos)]
-                forced_dots += [
-                    c for c in outside
-                    if all(any(self._cells_adjacent(p, s, c) for s in combo) for combo in combos)
-                ]
-                changes = 0
-                for idx in forced_stars:
-                    changes += p.validate_and_set(idx, "x", label, self.verbose)
-                for idx in forced_dots:
-                    changes += p.validate_and_set(idx, ".", label, self.verbose)
-                if changes > 0:
-                    return changes
         return 0
