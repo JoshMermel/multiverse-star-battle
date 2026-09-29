@@ -1,4 +1,4 @@
-import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, TILE_OUTLINE_COLORS, LINE_HIGHLIGHT_COLOR } from './constants.js';
+import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, TILE_OUTLINE_COLORS } from './constants.js';
 
 // 2★+ rule implementations: everything written against an arbitrary
 // this.starsPerGroup rather than assuming exactly 1 star per
@@ -230,18 +230,13 @@ export function applyMultiStarRules(PuzzleSolver) {
           description: forcedStars.length === 1
             ? `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it's a star.`
             : `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cells, so they're stars.`,
-          // Every other cell of the unit -- dots, any star it already
-          // has, and other still-empty cells alike -- not just the empty
-          // ones. This outlines the unit's own shape/boundary for the
-          // player; forcedStars is excluded since those get the
-          // TARGET_STAR mark instead (forcedStars is always a subset of
-          // unit.indices, so this alone is enough to avoid a double-color
-          // conflict).
-          highlights: unit.indices
-            .filter(i => !forcedStars.includes(i))
-            .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          highlights: [],
           marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
-          boardIdx: unit.boardIdx
+          boardIdx: unit.boardIdx,
+          // Outline the unit's own full shape/boundary -- coexists fine
+          // with the forcedStars marks above, which are a separate visual
+          // layer (a cell mark, not a highlight fill).
+          regionOutlines: this._outlineEntriesFor(unit, 'blue'),
         });
       }
       // One combined hint for every forced dot this unit produces, inside or
@@ -251,17 +246,14 @@ export function applyMultiStarRules(PuzzleSolver) {
       if (forcedDots.length > 0) {
         hints.push({
           description: `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cell(s), so they're dots.`,
-          // Same reasoning as the forced-star branch above: show every
-          // other cell of the unit regardless of state. forcedDots can
-          // include cells OUTSIDE the unit too (the "touching" case) --
-          // those were never part of unit.indices to begin with, so
-          // filtering unit.indices alone already excludes exactly the
-          // in-unit forced-dot cells without needing a vState check.
-          highlights: unit.indices
-            .filter(i => !forcedDots.includes(i))
-            .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          highlights: [],
           marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-          boardIdx: unit.boardIdx
+          boardIdx: unit.boardIdx,
+          // Same reasoning as the forced-star branch above -- forcedDots
+          // can additionally include cells OUTSIDE the unit (the
+          // "touching" case), which the outline naturally excludes since
+          // it's only ever built from unit.indices.
+          regionOutlines: this._outlineEntriesFor(unit, 'blue'),
         });
       }
     }
@@ -410,27 +402,32 @@ export function applyMultiStarRules(PuzzleSolver) {
         const targets = avail.filter(i => !covered.has(i));
         if (targets.length === 0) continue;
 
-        const targetSet = new Set(targets);
         // Point at the line by its outline color, not a row number/column
         // letter -- axis labels are an optional setting (see renderer.js's
         // renderBoard), so "Row 5"/"Column C" would be meaningless to a
-        // player with them off. The amber outline band (lineHighlight
-        // below) is drawn either way, so it's the one identifier every
-        // player actually has. Matches LINE_HIGHLIGHT_COLOR/
-        // --line-highlight-amber -- keep this word in sync if that color
-        // ever changes.
+        // player with them off. The amber outline is drawn either way, so
+        // it's the one identifier every player actually has. Matches
+        // --line-highlight-amber (reused by .region-outline-amber) -- keep
+        // this word in sync if that color ever changes.
         const lineWord = kind === 'row' ? 'row' : 'column';
         const regionWord = combo.length === 1 ? 'region' : 'regions';
         const resolveWord = combo.length === 1 ? 'it resolves' : 'they resolve';
 
         candidates.push({
           boardIdx,
-          description: `The amber-outlined ${lineWord} needs ${needed} more star${needed === 1 ? '' : 's'}. The highlighted ${regionWord} always put${combo.length === 1 ? 's' : ''} at least ${needed} there, no matter how ${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
-          highlights: combo.flatMap(({ unit }) =>
-            unit.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-          ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          description: `The amber-outlined ${lineWord} needs ${needed} more star${needed === 1 ? '' : 's'}. The blue-outlined ${regionWord} always put${combo.length === 1 ? 's' : ''} at least ${needed} there, no matter how ${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
+          highlights: [],
           marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-          lineHighlight: { boardIdx, axis: kind, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
+          // Outline the matched regions (blue) instead of filling their
+          // cells -- all on this same boardIdx by construction ("Never
+          // cross-board" above) -- plus the line itself (amber), replacing
+          // the older rectangular lineHighlight band with the same outline
+          // mechanism. Always single-board like the old lineHighlight, not
+          // _outlineEntriesFor's every-board default.
+          regionOutlines: [
+            { indices: combo.flatMap(({ unit }) => unit.indices), color: 'blue', boardIdx },
+            { indices: lineIndices, color: 'amber', boardIdx },
+          ],
         });
       }
     }
@@ -561,13 +558,24 @@ export function applyMultiStarRules(PuzzleSolver) {
       const lineWord = lineKind === 'row' ? 'row' : 'column';
       const cellWord = groupCells.length === 1 ? 'cell' : 'cells';
       const sideWord = side === 'inside' ? 'inside' : 'outside';
+      const lineIndices = lineKind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
 
       return {
         boardIdx,
-        description: `At least ${guarantee} star${guarantee === 1 ? '' : 's'} from the highlighted region falls ${sideWord} the amber-outlined ${lineWord}, among the marked ${cellWord} -- and the circled cell touches every one of them, so it can't be a star.`,
-        highlights: groupCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        description: `At least ${guarantee} star${guarantee === 1 ? '' : 's'} from the blue-outlined cells falls ${sideWord} the amber-outlined ${lineWord}, among the marked ${cellWord} -- and the circled cell touches every one of them, so it can't be a star.`,
+        highlights: [],
         marks: [{ idx: target, color: HINT_COLOR.TARGET }],
-        lineHighlight: { boardIdx, axis: lineKind, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
+        // Outline this region-slice (the part of one region on one side of
+        // the line split) instead of filling its cells -- not a full
+        // region shape, but still a real geometric fact -- plus the line
+        // itself (amber), replacing the older rectangular lineHighlight
+        // band with the same outline mechanism. Always single-board like
+        // the old lineHighlight, not _outlineEntriesFor's every-board
+        // default.
+        regionOutlines: [
+          { indices: groupCells, color: 'blue', boardIdx },
+          { indices: lineIndices, color: 'amber', boardIdx },
+        ],
       };
     });
   };
@@ -695,13 +703,13 @@ export function applyMultiStarRules(PuzzleSolver) {
           if (k >= 1) {
             const forced = this._forcedCellsInGroup(insideCells, k, existingStars);
             if (forced.length > 0) {
-              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'inside', groupCells: insideCells, forcedCells: forced, lineCount: k, restCount: outsideCount });
+              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'inside', regionIndices: unit.indices, forcedCells: forced, lineCount: k, restCount: outsideCount });
             }
           }
           if (outsideCount >= 1) {
             const forced = this._forcedCellsInGroup(outsideCells, outsideCount, existingStars);
             if (forced.length > 0) {
-              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'outside', groupCells: outsideCells, forcedCells: forced, lineCount: k, restCount: outsideCount });
+              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'outside', regionIndices: unit.indices, forcedCells: forced, lineCount: k, restCount: outsideCount });
             }
           }
         }
@@ -725,11 +733,10 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.forcedCells[0] - b.forcedCells[0]);
 
-    return candidates.map(({ boardIdx, lineKind, lineIdx, side, groupCells, forcedCells, lineCount, restCount }) => {
+    return candidates.map(({ boardIdx, lineKind, lineIdx, side, regionIndices, forcedCells, lineCount, restCount }) => {
       const lineWord = lineKind === 'row' ? 'row' : 'column';
       const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
       const itsAStar = forcedCells.length === 1 ? "it's a star" : "they're stars";
-      const forcedSet = new Set(forcedCells);
 
       // Lead with the concrete fact the subset-sum match establishes (see
       // the section comment above): this region places EXACTLY lineCount
@@ -744,14 +751,24 @@ export function applyMultiStarRules(PuzzleSolver) {
         ? `, leaving exactly ${restCount} star${restCount === 1 ? '' : 's'} for the rest of the region`
         : '';
 
+      const lineIndices = lineKind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
+
       return {
         boardIdx,
-        description: `This region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} in the amber-outlined ${lineWord}${restClause}. Every way to do that includes the marked ${cellWord}, so ${itsAStar}.`,
-        highlights: groupCells
-          .filter(i => !forcedSet.has(i))
-          .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        description: `The blue-outlined region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} in the amber-outlined ${lineWord}${restClause}. Every way to do that includes the marked ${cellWord}, so ${itsAStar}.`,
+        highlights: [],
         marks: forcedCells.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
-        lineHighlight: { boardIdx, axis: lineKind, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
+        // Outline the region's full shape (not just the in-line/out-of-line
+        // slice the deduction turns on) so the player can see what region
+        // is being discussed at a glance -- the marked cell(s) above are
+        // the actual, narrower claim. Plus the line itself (amber),
+        // replacing the older rectangular lineHighlight band with the same
+        // outline mechanism. Always single-board like the old
+        // lineHighlight, not _outlineEntriesFor's every-board default.
+        regionOutlines: [
+          { indices: regionIndices, color: 'blue', boardIdx },
+          { indices: lineIndices, color: 'amber', boardIdx },
+        ],
       };
     });
   };
@@ -847,7 +864,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       const targets = avail.filter(i => !covered.has(i));
       if (targets.length === 0) continue;
 
-      const targetSet = new Set(targets);
       const lineWord = kind === 'row' ? 'row' : 'column';
       const regionWord = combo.length === 1 ? 'region' : 'regions';
       const resolveWord = combo.length === 1 ? 'it resolves' : 'they resolve';
@@ -856,15 +872,20 @@ export function applyMultiStarRules(PuzzleSolver) {
       candidates.push({
         boardIdx: undefined,
         description: `Cross-board (${boardsNote}): the amber-outlined ${lineWord} needs ${needed} more `
-          + `star${needed === 1 ? '' : 's'}. The highlighted ${regionWord} on different boards always `
+          + `star${needed === 1 ? '' : 's'}. The blue-outlined ${regionWord} on different boards always `
           + `put${combo.length === 1 ? 's' : ''} at least ${needed} there between them, no matter how `
           + `${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
-        highlights: combo.flatMap(({ unit }) =>
-          unit.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-            .map(idx => ({ idx, color: HINT_COLOR.SOURCE, boards: [unit.boardIdx] }))
-        ),
+        highlights: [],
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-        lineHighlight: { boardIdx: combo[0].unit.boardIdx, axis: kind, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
+        // Outline each matched region on its own board (blue) instead of
+        // filling its cells, plus the line itself (amber) on one
+        // representative board -- same single board the old lineHighlight
+        // used, since the line's own identity doesn't depend on which
+        // board's copy of the matched regions it's shown next to.
+        regionOutlines: [
+          ...combo.map(({ unit }) => ({ indices: unit.indices, color: 'blue', boardIdx: unit.boardIdx })),
+          { indices: lineIndices, color: 'amber', boardIdx: combo[0].unit.boardIdx },
+        ],
       });
     }
 
@@ -913,7 +934,7 @@ export function applyMultiStarRules(PuzzleSolver) {
           if (forced.length > 0) {
             const fkey = this._groupKey(forced);
             if (!seen.has(fkey)) {
-              seen.set(fkey, { unit, side: 'inside', groupCells: insideCells, forcedCells: forced, lineKind: kind, lineIdx, lineCount: k, restCount: outsideCount });
+              seen.set(fkey, { unit, side: 'inside', forcedCells: forced, lineKind: kind, lineIdx, lineCount: k, restCount: outsideCount });
             }
           }
         }
@@ -922,7 +943,7 @@ export function applyMultiStarRules(PuzzleSolver) {
           if (forced.length > 0) {
             const fkey = this._groupKey(forced);
             if (!seen.has(fkey)) {
-              seen.set(fkey, { unit, side: 'outside', groupCells: outsideCells, forcedCells: forced, lineKind: kind, lineIdx, lineCount: k, restCount: outsideCount });
+              seen.set(fkey, { unit, side: 'outside', forcedCells: forced, lineKind: kind, lineIdx, lineCount: k, restCount: outsideCount });
             }
           }
         }
@@ -933,25 +954,33 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.forcedCells[0] - b.forcedCells[0]);
 
-    return candidates.map(({ unit, side, groupCells, forcedCells, lineKind, lineIdx, lineCount, restCount }) => {
+    return candidates.map(({ unit, side, forcedCells, lineKind, lineIdx, lineCount, restCount }) => {
       const lineWord = lineKind === 'row' ? 'row' : 'column';
       const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
       const itsAStar = forcedCells.length === 1 ? "it's a star" : "they're stars";
-      const forcedSet = new Set(forcedCells);
       const restClause = side === 'outside'
         ? `, leaving exactly ${restCount} star${restCount === 1 ? '' : 's'} for the rest of the region`
         : '';
 
       return {
         boardIdx: unit.boardIdx,
-        description: `Cross-board: this region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} `
+        description: `Cross-board: the blue-outlined region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} `
           + `in the amber-outlined ${lineWord}${restClause}, combined with a region on another board to cover `
           + `the line's whole need. Every way to do that includes the marked ${cellWord}, so ${itsAStar}.`,
-        highlights: groupCells
-          .filter(i => !forcedSet.has(i))
-          .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        highlights: [],
         marks: forcedCells.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
-        lineHighlight: { boardIdx: unit.boardIdx, axis: lineKind, index: lineIdx, color: LINE_HIGHLIGHT_COLOR },
+        // Outline the region's full shape (not just the in-line/out-of-line
+        // slice the deduction turns on) -- see the same-board sibling's
+        // identical comment in hintRegionLinePartitionForced. Plus the line
+        // itself (amber), replacing the older rectangular lineHighlight band.
+        regionOutlines: [
+          { indices: unit.indices, color: 'blue', boardIdx: unit.boardIdx },
+          {
+            indices: lineKind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx],
+            color: 'amber',
+            boardIdx: unit.boardIdx,
+          },
+        ],
       };
     });
   };
@@ -991,7 +1020,6 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     if (targets.length === 0) return null;
 
-    const targetSet = new Set(targets);
     const N = unitCombo.length;
     const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
     const starsPhrase = requiredCount === 1 ? "1 star" : `${requiredCount} stars`;
@@ -999,10 +1027,17 @@ export function applyMultiStarRules(PuzzleSolver) {
     return {
       boardIdx: bIdx,
       description: `The blue region(s) still need exactly ${starsPhrase} in total — exactly what's left for ${unitsPhrase} — so all of it lands inside, and the rest of those regions are dots.`,
-      highlights: touchingRegs.flatMap(({ region }) =>
-        region.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-      ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
+      // The window's own empty cells -- each one already known (by
+      // construction, see touchingLabels above) to belong to one of the
+      // outlined regions below. Filled in addition to the outline since the
+      // outlined regions can extend well beyond the window; this pins down
+      // exactly which part of them is the row/column-relevant part.
+      highlights: availInUnits.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+      // Outline the touching regions' own full shape instead of filling
+      // them -- all on this same bIdx by construction. See
+      // _buildRegionOutlineSvg.
+      regionOutlines: [{ indices: touchingRegs.flatMap(({ region }) => region.indices), color: 'blue', boardIdx: bIdx }],
     };
   };
 
@@ -1035,7 +1070,6 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     if (targets.length === 0) return null;
 
-    const targetSet = new Set(targets);
     const N = windowIndices.length;
     const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
     const needVerb = N === 1 ? 'needs' : 'need';
@@ -1045,10 +1079,12 @@ export function applyMultiStarRules(PuzzleSolver) {
     return {
       boardIdx: bIdx,
       description: `${unitsPhrase[0].toUpperCase()}${unitsPhrase.slice(1)} still ${needVerb} exactly ${starsPhrase} in total, which is exactly what's left in the blue region(s) — so the rest of ${unitsPhrase} ${isVerb} dots.`,
-      highlights: pinnedRegs.flatMap(({ region }) =>
-        region.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-      ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
+      highlights: [],
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+      // Prototype: outline the pinned regions instead of filling their
+      // cells -- all on this same bIdx by construction. See
+      // _buildRegionOutlineSvg.
+      regionOutlines: [{ indices: pinnedRegs.flatMap(({ region }) => region.indices), color: 'blue', boardIdx: bIdx }],
     };
   };
 
@@ -1169,12 +1205,17 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     const caveat = level === 'intermediate' ? ' (using only this board\'s regions)' : ' (potentially combining both boards\' regions)';
     return candidates.map(({ unit, other, targets }) => ({
-      description: `Every way to place this ${this._unitKind(unit)}'s remaining star(s)${caveat} completely fills up this ${this._unitKind(other)} too, so the rest of that ${this._unitKind(other)} is dots.`,
-      highlights: unit.indices
-        .filter(i => this.vState(i) === CELL.NONE)
-        .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      description: `Every way to place this ${this._unitKind(unit)} (blue)'s remaining star(s)${caveat} completely fills up this ${this._unitKind(other)} (brown) too, so the rest of that ${this._unitKind(other)} is dots.`,
+      highlights: [],
       marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-      boardIdx: unit.boardIdx ?? other.boardIdx
+      boardIdx: unit.boardIdx ?? other.boardIdx,
+      // Prototype: outline both units instead of filling the source's
+      // cells (the "other" unit previously had no visual treatment at
+      // all). See _outlineEntriesFor/_buildRegionOutlineSvg.
+      regionOutlines: [
+        ...this._outlineEntriesFor(unit, 'blue'),
+        ...this._outlineEntriesFor(other, 'brown'),
+      ],
     }));
   };
 
@@ -1347,7 +1388,7 @@ export function applyMultiStarRules(PuzzleSolver) {
             const targets = disjoint.filter(i => this.vState(i) === CELL.NONE);
             if (targets.length === 0) continue;
 
-            candidates.push({ shared, onlyA, onlyB, boardA, boardB });
+            candidates.push({ shared, onlyA, onlyB, boardA, boardB, regA, regB });
           }
         }
       }
@@ -1355,16 +1396,20 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.onlyA[0] ?? 0) - (b.onlyA[0] ?? 0));
-    return candidates.map(({ shared, onlyA, onlyB, boardA, boardB }) => ({
+    return candidates.map(({ regA, regB, onlyA, onlyB, boardA, boardB }) => ({
       boardIdx: undefined,
-      description: `These two regions (${this._describeBoards([boardA, boardB])}) overlap almost entirely. Their few different cells touch, so they must match -- and matching stars would touch too, so they're all dots.`,
-      highlights: shared
-        .filter(i => this.vState(i) === CELL.NONE)
-        .map(i => ({ idx: i, color: HINT_COLOR.SOURCE, boards: [boardA, boardB] })),
+      description: `These two regions (blue on ${this._describeBoards([boardA])}, brown on ${this._describeBoards([boardB])}) overlap almost entirely. Their few different cells touch, so they must match -- and matching stars would touch too, so they're all dots.`,
+      highlights: [],
       marks: [
         ...onlyA.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardA] })),
         ...onlyB.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardB] })),
-      ]
+      ],
+      // Prototype: outline each region's full shape on its own board --
+      // see hintPartialOverlap's identical comment (solver-rules-single.js).
+      regionOutlines: [
+        { indices: regA.indices, color: 'blue', boardIdx: boardA },
+        { indices: regB.indices, color: 'brown', boardIdx: boardB },
+      ],
     }));
   };
 
@@ -2138,13 +2183,15 @@ export function applyMultiStarRules(PuzzleSolver) {
     // region's own remaining capacity (often one on the other board), which
     // is why it's worth spelling out explicitly here.
     const description = singleBoard
-      ? `The blue cells can no longer reach their required star count if the circled cell holds a star.`
-      : `The blue cells can no longer reach their required star count if the circled cell holds a star -- every way to place their remaining stars would break some other row, column, or region's own star limit.`;
+      ? `The blue-outlined cells can no longer reach their required star count if the circled cell holds a star.`
+      : `The blue-outlined cells can no longer reach their required star count if the circled cell holds a star -- every way to place their remaining stars would break some other row, column, or region's own star limit.`;
     return candidates.map(({ testIdx, broken, boardIdx }) => ({
       boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
       description,
-      highlights: broken.indices.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-      marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }]
+      highlights: [],
+      marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }],
+      // Same treatment as hintLookaheadHalf's identical broken-unit outline.
+      regionOutlines: this._outlineEntriesFor(broken, 'blue'),
     }));
   };
 
@@ -2466,9 +2513,16 @@ export function applyMultiStarRules(PuzzleSolver) {
         axis, lineIdx, barLen: barCells.length,
         hint: {
           boardIdx: undefined,
-          description: `The ${tiles.length} tile${tiles.length === 1 ? '' : 's'} provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} blue ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}.`,
-          highlights: barCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          description: `The ${tiles.length} tile${tiles.length === 1 ? '' : 's'} provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} blue-outlined ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}.`,
+          highlights: [],
           marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+          // barCells is a connected path along the band (see this
+          // section's own comment on _tileBarFactsImpl), not a rectangle
+          // like the confirmed tiles below -- outline its own shape
+          // instead of a flat fill. Board-agnostic like every row/column
+          // shape in this file, hence _outlineEntriesFor rather than a
+          // single raw entry.
+          regionOutlines: this._outlineEntriesFor({ indices: barCells, boardIdx: undefined }, 'blue'),
           // Index 0 (blue), matching every other tile hint's single-
           // covering case -- hints display one at a time, so there's never
           // a second concurrent covering here needing a distinct color the

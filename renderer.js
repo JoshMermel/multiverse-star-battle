@@ -52,11 +52,11 @@ export function applyRenderer(GameClass) {
   p._resetCellCache = function () {
     this._cellsByIndex = new Map();
     this._allCells = [];
-    // The old board's DOM (including any tile-outline/line-highlight
+    // The old board's DOM (including any tile-outline/region-outline
     // overlays) is about to be replaced wholesale -- drop stale references
     // rather than leaving them pointing at detached nodes.
     this._hintTileOutlineEls = [];
-    this._hintLineHighlightEls = [];
+    this._hintRegionOutlineEls = [];
   };
 
   // Registers one cell element under its index. Called once per cell as
@@ -252,6 +252,108 @@ export function applyRenderer(GameClass) {
     return svg;
   };
 
+  // Prototype: colored region-boundary outlines for hints (the KrazyDad-
+  // style "outline the region instead of filling its cells" treatment).
+  // Reuses the same edge-tracing idea as _buildRegionSvg above (an edge
+  // gets drawn wherever a cell's neighbor isn't "the same thing"), just
+  // generalized from "differs in regionMap" to "isn't in this cell set" --
+  // and checking all four neighbors per cell (not just right/bottom)
+  // since a hint's cell set isn't the full board partition _buildRegionSvg
+  // relies on to make the right/bottom-only trick exhaustive. Cheap to
+  // call once per hint render (a handful of set lookups per cell), not a
+  // hot path.
+  //
+  // `cellSets` is an array of { indices, color } -- one entry per shape to
+  // outline on THIS board, each in its own color. Multiple disjoint
+  // regions in one entry's indices each get their own traced boundary
+  // (a cell only shares an edge with something in the SAME entry if
+  // they're physically adjacent, so unrelated regions never bleed into
+  // each other); two regions in one entry that DO touch merge into a
+  // single outline around their union, which is the desired behavior for
+  // rules that treat a touching pair as one combined unit.
+  p._buildRegionOutlineSvg = function (cellSets) {
+    const n = this.n;
+    const COORD = 100;
+    const totalCoord = n * COORD;
+    // Thicker than the base black border (0.07) so a hint's outline reads
+    // as a deliberate overlay, not just another grid line -- extra width
+    // (vs. the earlier 0.12) makes up for the stroke now being drawn at
+    // reduced opacity (see .region-outline-svg path in style.css) so the
+    // black border/grid lines underneath stay visible through it.
+    const STROKE = COORD * 0.16;
+    // The viewBox padding, though, must match _buildRegionSvg's (0.07-based)
+    // exactly, NOT this element's own (thicker) STROKE -- both svgs are
+    // absolutely positioned to fill the exact same 100%-width/height
+    // container, so their coordinate-to-pixel scale only matches (and a
+    // board-coordinate like "cell (0,0)'s corner" only lands on the same
+    // pixel in both) when their viewBoxes use the same padding. Using this
+    // svg's own wider STROKE here throws that off proportionally to 1/n,
+    // most visible at the board's outer edge where the two boundaries'
+    // padding-driven offset is largest. Any stroke width beyond this
+    // shared padding simply gets clipped at the container edge, same as
+    // it would be for _buildRegionSvg's own border.
+    const VIEWBOX_STROKE = COORD * 0.07;
+    const VIEWBOX_HALF = VIEWBOX_STROKE / 2;
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "region-outline-svg");
+    svg.setAttribute("viewBox", `${-VIEWBOX_HALF} ${-VIEWBOX_HALF} ${totalCoord + VIEWBOX_STROKE} ${totalCoord + VIEWBOX_STROKE}`);
+
+    for (const { indices, color } of cellSets) {
+      const set = new Set(indices);
+      let paths = "";
+      for (const i of set) {
+        const r = Math.floor(i / n), c = i % n;
+        const x1 = c * COORD, y1 = r * COORD, x2 = x1 + COORD, y2 = y1 + COORD;
+        if (r === 0 || !set.has(i - n)) paths += `M ${x1} ${y1} L ${x2} ${y1} `;     // top
+        if (r === n - 1 || !set.has(i + n)) paths += `M ${x1} ${y2} L ${x2} ${y2} `; // bottom
+        if (c === 0 || !set.has(i - 1)) paths += `M ${x1} ${y1} L ${x1} ${y2} `;     // left
+        if (c === n - 1 || !set.has(i + 1)) paths += `M ${x2} ${y1} L ${x2} ${y2} `; // right
+      }
+      if (!paths) continue;
+      const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      pathEl.setAttribute("class", `region-outline-${color}`);
+      pathEl.setAttribute("d", paths);
+      pathEl.setAttribute("stroke-width", String(STROKE));
+      pathEl.setAttribute("stroke-linecap", "round");
+      pathEl.setAttribute("stroke-linejoin", "round");
+      pathEl.setAttribute("fill", "none");
+      svg.appendChild(pathEl);
+    }
+    return svg;
+  };
+
+  // Draws one region-outline SVG per board involved -- `regionOutlines` is
+  // an array of { indices, color, boardIdx }, grouped here by boardIdx
+  // since each board needs its own overlay (same coordinate space as
+  // _buildRegionSvg's board-sized viewBox). Appended as a LATER sibling of
+  // that board's own .region-svg (found via grid.parentElement, the same
+  // container _buildRegionSvg's output lives in), so the colored outline
+  // paints on top of the plain black region borders rather than under or
+  // beside them.
+  p._applyRegionOutlines = function (regionOutlines) {
+    const byBoard = new Map();
+    for (const ro of regionOutlines) {
+      if (!byBoard.has(ro.boardIdx)) byBoard.set(ro.boardIdx, []);
+      byBoard.get(ro.boardIdx).push(ro);
+    }
+    for (const [boardIdx, sets] of byBoard) {
+      const repIdx = sets[0].indices[0];
+      const grid = this._getCellsByIndex(repIdx)[boardIdx]?.parentElement;
+      if (!grid?.parentElement) continue;
+      const svg = this._buildRegionOutlineSvg(sets);
+      grid.parentElement.appendChild(svg);
+      if (!this._hintRegionOutlineEls) this._hintRegionOutlineEls = [];
+      this._hintRegionOutlineEls.push(svg);
+    }
+  };
+
+  p._clearRegionOutlines = function () {
+    if (!this._hintRegionOutlineEls) return;
+    for (const el of this._hintRegionOutlineEls) el.remove();
+    this._hintRegionOutlineEls = [];
+  };
+
   // --- Cell & Board Visuals ---
 
   // Update cell contents based on state value (star/dot/empty).
@@ -352,15 +454,14 @@ export function applyRenderer(GameClass) {
   p.applyHintUI = function (hint) {
     const involvedBoards = new Set();
 
-    // Tile outlines and the line-highlight band are separate overlay
-    // elements (not cell classes -- see _applyTileOutlines/
-    // _applyLineHighlight), so they don't get swept up by the class-based
-    // highlight loop below and need their own accumulation guard: clear
-    // any leftovers from a PREVIOUS hint before drawing this one's, since
-    // repeated Hint clicks call applyHintUI without necessarily going
-    // through clearHintUI in between.
+    // Tile outlines and region outlines are separate overlay elements (not
+    // cell classes -- see _applyTileOutlines/_applyRegionOutlines), so they
+    // don't get swept up by the class-based highlight loop below and need
+    // their own accumulation guard: clear any leftovers from a PREVIOUS
+    // hint before drawing this one's, since repeated Hint clicks call
+    // applyHintUI without necessarily going through clearHintUI in between.
     this._clearTileOutlines();
-    this._clearLineHighlight();
+    this._clearRegionOutlines();
 
     for (const { idx, color, boards } of [...hint.highlights, ...hint.marks]) {
       const targetBoards = boards ?? (hint.boardIdx !== undefined ? [hint.boardIdx] : null);
@@ -379,7 +480,7 @@ export function applyRenderer(GameClass) {
     }
 
     if (hint.tileOutlines) this._applyTileOutlines(hint.tileOutlines);
-    if (hint.lineHighlight) this._applyLineHighlight(hint.lineHighlight);
+    if (hint.regionOutlines) this._applyRegionOutlines(hint.regionOutlines);
 
     if (document.body.classList.contains('tab-mode')) {
       if (hint.boardIdx !== undefined) {
@@ -443,43 +544,6 @@ export function applyRenderer(GameClass) {
     this._hintTileOutlineEls = [];
   };
 
-  // Draws one outline box spanning an entire row or column -- see the
-  // "Region/line quota fill" rule family in solver-rules-multi.js. Same
-  // absolute-positioning technique as _applyTileOutlines (see its comment
-  // for why), just sized to span the whole line instead of a 2x2 tile.
-  // Always single-board (the rule's own reasoning never crosses boards --
-  // see hintRegionLineQuotaFill's comment), so this draws on exactly one
-  // board's grid, found via a representative cell at the line's start.
-  p._applyLineHighlight = function ({ boardIdx, axis, index, color }) {
-    const repIdx = axis === 'row' ? index * this.n : index;
-    const cell = this._getCellsByIndex(repIdx)[boardIdx];
-    const grid = cell?.parentElement;
-    if (!grid) return;
-
-    const outline = document.createElement('div');
-    outline.className = `line-highlight line-highlight-${color}`;
-    if (axis === 'row') {
-      outline.style.top = `calc(${index} * var(--cell-size))`;
-      outline.style.left = '0';
-      outline.style.width = `calc(${this.n} * var(--cell-size))`;
-      outline.style.height = 'var(--cell-size)';
-    } else {
-      outline.style.top = '0';
-      outline.style.left = `calc(${index} * var(--cell-size))`;
-      outline.style.width = 'var(--cell-size)';
-      outline.style.height = `calc(${this.n} * var(--cell-size))`;
-    }
-    grid.appendChild(outline);
-    if (!this._hintLineHighlightEls) this._hintLineHighlightEls = [];
-    this._hintLineHighlightEls.push(outline);
-  };
-
-  p._clearLineHighlight = function () {
-    if (!this._hintLineHighlightEls) return;
-    for (const el of this._hintLineHighlightEls) el.remove();
-    this._hintLineHighlightEls = [];
-  };
-
   // Highlights the swap button when the active hint involves a board other
   // than the one currently showing, so the player knows to check it. Cleared
   // whenever the board is actually switched (see _showBoard).
@@ -501,7 +565,7 @@ export function applyRenderer(GameClass) {
       );
     });
     this._clearTileOutlines();
-    this._clearLineHighlight();
+    this._clearRegionOutlines();
     const swapBtn = document.getElementById('board-swap-btn');
     if (swapBtn) swapBtn.classList.remove('board-tab--hint-flag');
   };

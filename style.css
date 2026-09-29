@@ -392,6 +392,41 @@ input[type="number"]::-webkit-inner-spin-button {
   stroke: var(--text-primary);
 }
 
+/* Prototype: colored region-boundary outlines for hints (see
+   renderer.js's _buildRegionOutlineSvg/_applyRegionOutlines) -- the
+   KrazyDad-style "trace the region's own shape" alternative to filling
+   its cells. Same absolute full-board overlay as .region-svg above (and
+   appended as its later sibling, so it paints on top), reusing the exact
+   same --tile-outline-* colors as the "Tiles" family below so a given hue
+   always means the same thing everywhere in the UI. */
+.region-outline-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  /* This svg's viewBox is intentionally sized to match .region-svg's own
+     (see _buildRegionOutlineSvg's VIEWBOX_STROKE), so its wider visual
+     stroke reaches past that viewBox's edge at the board's outer boundary.
+     Without this, an svg clips content to its own viewport by default, so
+     the board-edge case would show the stroke spilling to only ONE side of
+     the true border line (whichever side isn't clipped) instead of both --
+     same constant spill as every interior border gets. */
+  overflow: visible;
+}
+.region-outline-blue  { stroke: var(--tile-outline-blue); }
+.region-outline-brown { stroke: var(--tile-outline-brown); }
+.region-outline-cyan  { stroke: var(--tile-outline-cyan); }
+.region-outline-pink  { stroke: var(--tile-outline-pink); }
+/* Reuses the line-highlight amber token (not a new variable) so a row/
+   column outlined this way still means the same thing as the older
+   rectangular .line-highlight-amber band it replaces. */
+.region-outline-amber { stroke: var(--line-highlight-amber); }
+/* Semi-transparent so the black region/grid lines underneath stay visible
+   through the colored outline instead of getting fully painted over. */
+.region-outline-svg path { stroke-opacity: 0.6; }
+
 /* Cell state overlays. No !important needed — .cell sets background-color: white
    at the same specificity, and these classes appear later in the cascade.
 
@@ -540,26 +575,6 @@ input[type="number"]::-webkit-inner-spin-button {
 .tile-outline-brown { border-color: var(--tile-outline-brown); }
 .tile-outline-cyan   { border-color: var(--tile-outline-cyan); }
 .tile-outline-pink   { border-color: var(--tile-outline-pink); }
-
-/* "Region/line quota fill" rule family: a single outline box spanning an
-   entire target row or column, so a hint's "this row"/"this column" has a
-   visual anchor -- see solver-rules-multi.js's hintRegionLineQuotaFill and
-   renderer.js's _applyLineHighlight. Same technique as .tile-outline above
-   (absolute-positioned sibling, appended after the cell divs, border only,
-   no fill) for the same reason: border-only never obscures the star/dot
-   glyphs it passes over, and absolute positioning can't corrupt the
-   grid's auto-placement the way an explicit grid-row/grid-column item
-   would. Top/left/width/height are set inline by JS since they depend on
-   which row/column and the board's size (n). */
-.line-highlight {
-  position: absolute;
-  pointer-events: none;
-  box-sizing: border-box;
-  border: max(2px, calc(var(--cell-size) * 0.05)) solid transparent;
-  border-radius: calc(var(--cell-size) * 0.12);
-  z-index: 6; /* above .dot's z-index: 5, same as .tile-outline */
-}
-.line-highlight-amber { border-color: var(--line-highlight-amber); }
 
 /* Drag takes priority over hover sync/row-col-line when both are present */
 .cell-drag-highlight.cell-hover-sync { background-color: var(--highlight-drag-bg); }

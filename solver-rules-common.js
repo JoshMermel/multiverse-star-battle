@@ -72,19 +72,13 @@ export function applyCommonSolverRules(PuzzleSolver) {
         : `Exactly ${empty.length} spots are left for the remaining stars in this ${unitType}.`;
       return {
         description,
-        // Every already-resolved cell of the unit (dots AND any stars it
-        // already has), not just the dots -- this is meant to outline the
-        // unit's own shape/boundary for the player, and a star belongs to
-        // that outline exactly as much as a dot does. Excluding stars was
-        // invisible for 1★ (a unit can only reach this rule with 0 stars
-        // already placed there -- any star would already satisfy its
-        // 1-star quota, making `needed` 0), only showing up for 2★+ once
-        // a unit can have a star AND still need more.
-        highlights: unit.indices
-          .filter(i => !empty.includes(i))
-          .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-         marks: empty.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
-         boardIdx: unit.boardIdx
+        highlights: [],
+        marks: empty.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
+        boardIdx: unit.boardIdx,
+        // Outline the unit's own full shape/boundary for the player --
+        // a row/column outlines board-agnostically (see _outlineEntriesFor),
+        // a region only on its own board.
+        regionOutlines: this._outlineEntriesFor(unit, 'blue'),
       };
     });
   };
@@ -110,16 +104,12 @@ export function applyCommonSolverRules(PuzzleSolver) {
       const empty = unit.indices.filter(idx => this.vState(idx) === CELL.NONE);
       return {
         description: typeDescs[key],
-        // Every already-resolved cell of the unit (its placed stars AND
-        // any pre-existing dots), not just the stars -- same reasoning as
-        // hintOnlyEmpty: this outlines the unit's own shape/boundary for
-        // the player, and a dot belongs to that outline exactly as much
-        // as a star does.
-        highlights: unit.indices
-          .filter(idx => !empty.includes(idx))
-          .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        highlights: [],
         marks: empty.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-        boardIdx: unit.boardIdx ?? undefined
+        boardIdx: unit.boardIdx ?? undefined,
+        // Outline the unit's own full shape/boundary -- same reasoning as
+        // hintOnlyEmpty above.
+        regionOutlines: this._outlineEntriesFor(unit, 'blue'),
       };
     });
   };
@@ -272,7 +262,6 @@ export function applyCommonSolverRules(PuzzleSolver) {
     }
     if (targets.length === 0) return null;
 
-    const targetSet = new Set(targets);
     const N = unitCombo.length;
     const axisWord = axisLabel.toLowerCase();
     const otherWord = otherAxisLabel.toLowerCase();
@@ -292,8 +281,19 @@ export function applyCommonSolverRules(PuzzleSolver) {
     return {
       boardIdx: undefined,
       description,
-      highlights: availInUnits.filter(i => !targetSet.has(i)).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      // The trapping lines' own empty cells -- each one already known (by
+      // construction) to fall within one of the touched other-axis units.
+      // Filled in addition to the outline since the outlined lines are the
+      // WHOLE row/column, not just this subset.
+      highlights: availInUnits.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
       marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+      // Outline the trapping rows/columns' full shape -- board-agnostic, so
+      // it's drawn on every board -- same treatment as the region-based
+      // sibling rules (_hintRegionsTrappedInUnits/_hintMultiRegionsTrappedInUnits).
+      // One entry per board with every line's cells unioned together (not
+      // per-line) so non-adjacent lines still split into separate contours
+      // automatically, same as those siblings' own combo.flatMap pattern.
+      regionOutlines: this.boardIndices.map(boardIdx => ({ indices: unitCombo.flat(), color: 'blue', boardIdx })),
     };
   };
 
@@ -427,23 +427,26 @@ export function applyCommonSolverRules(PuzzleSolver) {
       const shape = `these two touching regions as one combined region`;
       const starsWord = `its ${need} remaining non-touching star${need === 1 ? '' : 's'}`;
       const note = `(ignoring how they split between the two regions)`;
+      // Prototype: outline the union (a and b touching, so they trace as
+      // ONE seamless blue shape -- no shared-edge line between them, since
+      // both are in the same outline entry) instead of filling its cells.
+      // See renderer.js's _buildRegionOutlineSvg.
+      const regionOutlines = [{ indices: union.indices, color: 'blue', boardIdx }];
       if (forcedStars.length > 0) {
         hints.push({
-          description: `Treat ${shape}. Every way to place ${starsWord} ${note} includes the marked cell${forcedStars.length === 1 ? ", so it's a star" : "s, so they're stars"}.`,
-          highlights: union.indices
-            .filter(i => !forcedStars.includes(i))
-            .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          description: `Treat ${shape} (outlined in blue). Every way to place ${starsWord} ${note} includes the marked cell${forcedStars.length === 1 ? ", so it's a star" : "s, so they're stars"}.`,
+          highlights: [],
           marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
+          regionOutlines,
           boardIdx
         });
       }
       if (forcedDots.length > 0) {
         hints.push({
-          description: `Treat ${shape}. Every way to place ${starsWord} ${note} rules out a star at the marked cell(s), so they're dots.`,
-          highlights: union.indices
-            .filter(i => !forcedDots.includes(i))
-            .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          description: `Treat ${shape} (outlined in blue). Every way to place ${starsWord} ${note} rules out a star at the marked cell(s), so they're dots.`,
+          highlights: [],
           marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+          regionOutlines,
           boardIdx
         });
       }
@@ -564,48 +567,61 @@ export function applyCommonSolverRules(PuzzleSolver) {
           }
           if (forcedStars.length === 0 && forcedDots.length === 0) continue;
 
-          // Which board(s) A/B actually live on -- empty when both are
-          // board-agnostic rows/cols, one board when either is a region,
-          // two when A and B are regions on DIFFERENT boards.
-          const abBoards = [...new Set([ua.boardIdx, ub.boardIdx].filter(b => b !== undefined))];
-          const drawBoards = abBoards.length > 0 ? abBoards : this.boardIndices;
-          const cIsRegion = cUnit.boardIdx !== undefined;
-          const cOnOwnBoard = cIsRegion && !abBoards.includes(cUnit.boardIdx);
-          const cName = cIsRegion
-            ? (abBoards.length > 1 ? `the brown region on Board ${cUnit.boardIdx + 1}` : `the brown region`)
-            : `${cUnit.label} (brown)`;
-          const boardWord = abBoards.length === 1 ? `Board ${abBoards[0] + 1}` : 'the board(s)';
-          const intro = `The two units on ${boardWord} made up of the blue and brown cells hold ${2 * N} stars together. `
+          // Prototype: outline R (= A∪B minus C) in blue and C in brown,
+          // instead of filling their cells -- see renderer.js's
+          // _buildRegionOutlineSvg. R's cells are split by whichever of
+          // A/B each one came from, so this still traces correctly even
+          // when A and B are regions on two DIFFERENT boards (a case that
+          // only exists now that A/B can be any disjoint unit, not just
+          // two same-board regions): a cell's own owner's board if it's a
+          // region, else the OTHER of A/B's board (so the shape still
+          // lands on one coherent board whenever at least one of A/B is a
+          // real region), else every board if both A and B are rows/cols.
+          // C is simpler -- always its own board if a region, every board
+          // if a row/col -- since outlining doesn't need the old fill
+          // version's "only where C overlaps A/B" restriction (an outline
+          // traces C's true shape regardless of what's inside it).
+          const fallbackBoard = ua.boardIdx ?? ub.boardIdx;
+          const remByBoard = new Map();
+          for (const idx of rem) {
+            const owner = aSet.has(idx) ? ua : ub;
+            const ownerBoards = owner.boardIdx !== undefined ? [owner.boardIdx]
+              : fallbackBoard !== undefined ? [fallbackBoard] : this.boardIndices;
+            for (const b of ownerBoards) {
+              if (!remByBoard.has(b)) remByBoard.set(b, []);
+              remByBoard.get(b).push(idx);
+            }
+          }
+          const cBoards = cUnit.boardIdx !== undefined ? [cUnit.boardIdx] : this.boardIndices;
+          const regionOutlines = [
+            ...[...remByBoard.entries()].map(([b, indices]) => ({ indices, color: 'blue', boardIdx: b })),
+            ...cBoards.map(b => ({ indices: cUnit.indices, color: 'brown', boardIdx: b })),
+          ];
+          // Marked cells are board-agnostic facts; show them on every
+          // board either outline actually appears on.
+          const allBoardsInvolved = new Set([...remByBoard.keys(), ...cBoards]);
+          const marksOn = [...allBoardsInvolved];
+          const boardIdx = allBoardsInvolved.size === 1 ? marksOn[0] : undefined;
+
+          const cName = cUnit.boardIdx !== undefined ? `the brown region` : `${cUnit.label} (brown)`;
+          const intro = `Two units, outlined in blue, hold ${2 * N} stars together. `
             + `Apart from dotted cells, ${cName} lies entirely inside them and holds ${starsText}, `
             + `so the blue cells hold exactly ${starsText}. `;
-          const highlights = [
-            ...rem.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[0], boards: drawBoards })),
-            // A row/column C is shown whole (the player reads it as a
-            // line); a region C is shown on A/B's board(s) only where it
-            // overlaps them.
-            ...cUnit.indices.filter(i => !cIsRegion || aSet.has(i) || bSet.has(i))
-              .map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[1], boards: drawBoards })),
-            ...(cOnOwnBoard ? cUnit.indices.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[1], boards: [cUnit.boardIdx] })) : []),
-          ];
-          // Marked cells are board-agnostic facts; show them wherever the
-          // hint is drawn (plus C's own board too, when that's a different
-          // one than A/B's).
-          const boardIdx = abBoards.length === 1 && !cOnOwnBoard ? abBoards[0] : undefined;
-          const marksOn = cOnOwnBoard ? [...drawBoards, cUnit.boardIdx] : drawBoards;
-          const without = cells => highlights.filter(h => !cells.includes(h.idx));
           if (forcedStars.length > 0) {
             hints.push({
               description: intro + why.stars,
-              highlights: without(forcedStars),
+              highlights: [],
               marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR, boards: marksOn })),
+              regionOutlines,
               boardIdx
             });
           }
           if (forcedDots.length > 0) {
             hints.push({
               description: intro + why.dots,
-              highlights: without(forcedDots),
+              highlights: [],
               marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: marksOn })),
+              regionOutlines,
               boardIdx
             });
           }

@@ -661,6 +661,18 @@ export class PuzzleSolver {
 
   // --- Hint Formatters ---
 
+  // Turns a unit (region OR row/col) into one-or-more regionOutline entries
+  // for renderer.js's _applyRegionOutlines. A region outlines on its own
+  // board; a board-agnostic row/col (boardIdx undefined) outlines on EVERY
+  // board, since it applies identically to all of them. Shared by several
+  // hint formatters below that outline a named unit instead of filling its
+  // cells -- see _buildRegionOutlineSvg's own comment for the prototype
+  // this generalizes from (region_subset_sync).
+  _outlineEntriesFor(unit, color) {
+    const boards = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
+    return boards.map(boardIdx => ({ indices: unit.indices, color, boardIdx }));
+  }
+
   // Turns a list/set of 0-indexed board indices into a display phrase, e.g.
   // "Board 1", "Board 1 and Board 2", or "Board 1, Board 2 and Board 3".
   // Used so cross-board hint text names its boards explicitly instead of
@@ -681,43 +693,48 @@ export class PuzzleSolver {
   }
 
   formatSubsetHint(sourceRegs, targetRegs, targets, sourceBoardIdx, targetBoardIdx) {
-    const targetSet = new Set(targets);
     // Both the source group and target group are physical grid cells that
     // exist on every board -- the deduction just happens to be justified by
     // region definitions on sourceBoardIdx and targetBoardIdx specifically.
-    // So each cell is colored on every board actually involved (both
-    // boards, or just one if they're the same), not source-only-on-its-
-    // board and target-only-on-its-board -- that would leave, say, a
-    // 3-board puzzle's board 2 correctly blank but board 1 and board 3
-    // each only showing half the picture.
+    // So marks are shown on every board actually involved (both boards, or
+    // just one if they're the same), not source-only-on-its-board and
+    // target-only-on-its-board -- that would leave, say, a 3-board puzzle's
+    // board 2 correctly blank but board 1 and board 3 each only showing
+    // half the picture.
     const involvedBoards = [...new Set([sourceBoardIdx, targetBoardIdx])];
 
-    const sourceHighlights = sourceRegs.flatMap(r =>
-      r.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-    ).map(idx => ({ idx, color: HINT_COLOR.SOURCE, boards: involvedBoards }));
+    // Prototype: outline each group's full region shape(s) on their own
+    // board instead of filling the source group's still-open cells (and,
+    // previously, giving the target group no visual treatment at all --
+    // the "is A's shape really inside B's?" question this hint answers was
+    // only ever shown via inference from the dots, never the shapes
+    // themselves). See renderer.js's _buildRegionOutlineSvg.
+    const regionOutlines = [
+      { indices: sourceRegs.flatMap(r => r.indices), color: 'blue', boardIdx: sourceBoardIdx },
+      { indices: targetRegs.flatMap(r => r.indices), color: 'brown', boardIdx: targetBoardIdx },
+    ];
 
     const crossBoard = sourceBoardIdx !== targetBoardIdx;
     const sourcePhrase = sourceRegs.length === 1 ? "One region" : `A group of ${sourceRegs.length} regions`;
     const targetPhrase = targetRegs.length === 1 ? "another region" : `a group of ${targetRegs.length} other regions`;
     const boardNote = crossBoard ? ` (${this._describeBoards([sourceBoardIdx])} vs. ${this._describeBoards([targetBoardIdx])})` : '';
     const restIs = targetRegs.length === 1 ? "that region is" : "those regions are";
-    const description = `${sourcePhrase} needs exactly as many stars as ${targetPhrase}${boardNote}, and all of its candidate cells `
+    const description = `${sourcePhrase} (blue) needs exactly as many stars as ${targetPhrase} (brown)${boardNote}, and all of its candidate cells `
       + `fall inside theirs too -- so the rest of ${restIs} dots.`;
 
     return {
       boardIdx: crossBoard ? undefined : sourceBoardIdx,
       description,
-      highlights: sourceHighlights,
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: involvedBoards }))
+      highlights: [],
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: involvedBoards })),
+      regionOutlines,
     };
   }
 
   formatCrossBoardHint(combo, targets, axis, uList) {
-    const targetSet = new Set(targets);
-
-    const sourceHighlights = combo.flatMap(r =>
-      r.availableIdxs.filter(idx => !targetSet.has(idx)).map(idx => ({ idx, color: HINT_COLOR.SOURCE, boards: [r.original.boardIdx] }))
-    );
+    // Prototype: outline each trapped region on its own board instead of
+    // filling its cells -- see _outlineEntriesFor/_buildRegionOutlineSvg.
+    const regionOutlines = combo.flatMap(r => this._outlineEntriesFor(r.original, 'blue'));
 
     const boardsInvolved = this._describeBoards(combo.map(r => r.original.boardIdx));
     return {
@@ -728,12 +745,13 @@ export class PuzzleSolver {
       // construction) -- for 2★+, a region can need more than 1 star, so
       // fewer regions than the window size can still supply its entire
       // need. Use each count where it actually belongs.
-      description: `Cross-board (${boardsInvolved}): These ${combo.length} region${combo.length === 1 ? '' : 's'} must place their stars in the same ${uList.length} ${axis.toLowerCase()}${uList.length === 1 ? '' : 's'}.`,
-      highlights: sourceHighlights,
+      description: `Cross-board (${boardsInvolved}): These ${combo.length} region${combo.length === 1 ? '' : 's'} (outlined in blue) must place their stars in the same ${uList.length} ${axis.toLowerCase()}${uList.length === 1 ? '' : 's'}.`,
+      highlights: [],
       // Target cells are a row/column consequence -- board-agnostic by
       // construction (rows/columns are shared across every board), so no
       // `boards` override here; they broadcast to every board as before.
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+      regionOutlines,
     };
   }
 

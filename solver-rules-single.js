@@ -90,13 +90,11 @@ export function applySingleStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.idxA - b.idxA || a.idxB - b.idxB);
     return candidates.map(({ idxA, idxB, targets, boardIdx }) => ({
-      description: "A star must be in the blue domino.",
-      highlights: [
-        { idx: idxA, color: HINT_COLOR.SOURCE },
-        { idx: idxB, color: HINT_COLOR.SOURCE }
-      ],
+      description: "A star must be in the blue-outlined domino.",
+      highlights: [],
       marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-      boardIdx
+      boardIdx,
+      regionOutlines: [{ indices: [idxA, idxB], color: 'blue', boardIdx }],
     }));
   };
 
@@ -127,17 +125,23 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (targets.length === 0) return null;
 
-    const targetSet = new Set(targets);
     const N = unitCombo.length;
     const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
 
     return {
       boardIdx: bIdx,
       description: `All empty cells in ${unitsPhrase} are covered by the blue regions.`,
-      highlights: coveringUnsolved.flatMap(r =>
-        r.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-      ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
+      // The window's own empty cells -- each one already known (by
+      // construction, see coveringRegLabels above) to belong to one of the
+      // outlined regions below. Filled in addition to the outline since the
+      // outlined regions can extend well beyond the window; this pins down
+      // exactly which part of them is the row/column-relevant part.
+      highlights: availInUnits.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+      // Outline the covering regions' own full shape instead of filling
+      // them -- all on this same bIdx by construction (unsolvedRegs is
+      // built per-board by the caller). See _buildRegionOutlineSvg.
+      regionOutlines: [{ indices: coveringUnsolved.flatMap(r => r.indices), color: 'blue', boardIdx: bIdx }],
     };
   };
 
@@ -166,17 +170,18 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (targets.length === 0) return null;
 
-    const targetSet = new Set(targets);
     const N = windowIndices.length;
     const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
 
     return {
       boardIdx: bIdx,
       description: `The star for ${unitsPhrase} must fall in one of the blue regions.`,
-      highlights: pinnedRegs.flatMap(r =>
-        r.indices.filter(i => this.vState(i) === CELL.NONE && !targetSet.has(i))
-      ).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET }))
+      highlights: [],
+      marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+      // Prototype: outline the pinned regions instead of filling their
+      // cells -- all on this same bIdx by construction. See
+      // _buildRegionOutlineSvg.
+      regionOutlines: [{ indices: pinnedRegs.flatMap(r => r.indices), color: 'blue', boardIdx: bIdx }],
     };
   };
 
@@ -272,9 +277,13 @@ export function applySingleStarRules(PuzzleSolver) {
     hintCandidates.sort((a, b) => a.candidates[0] - b.candidates[0]);
     return hintCandidates.map(({ unit, candidates, targets }) => ({
       boardIdx: unit.boardIdx,
-      description: `The blue cells must contain a star.`,
-      highlights: candidates.map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
+      description: `The blue-outlined cells must contain a star.`,
+      highlights: [],
       marks: targets,
+      // Outline the unit's own full shape/boundary, same convention as
+      // hintOnlyEmpty/hintExcludeSolvedUnit -- not just the still-empty
+      // candidate cells.
+      regionOutlines: this._outlineEntriesFor(unit, 'blue'),
     }));
   };
 
@@ -399,7 +408,7 @@ export function applySingleStarRules(PuzzleSolver) {
             const targets = shared.filter(i => this.vState(i) === CELL.NONE);
             if (targets.length === 0) continue;
 
-            candidates.push({ shared, onlyA, onlyB, boardA, boardB });
+            candidates.push({ shared, onlyA, onlyB, boardA, boardB, regA, regB });
           }
         }
       }
@@ -407,18 +416,22 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.shared[0] ?? 0) - (b.shared[0] ?? 0));
-    return candidates.map(({ shared, onlyA, onlyB, boardA, boardB }) => ({
+    return candidates.map(({ regA, regB, onlyA, onlyB, boardA, boardB }) => ({
       boardIdx: undefined,
-      description: `These two regions (${this._describeBoards([boardA, boardB])}) overlap. A star outside the shared cells would leave the other region unsolvable, so both stars must land there.`,
-      // A shared cell is a candidate for BOTH regions at once, so it's
-      // relevant on both boards, not just one.
-      highlights: shared
-        .filter(i => this.vState(i) === CELL.NONE)
-        .map(i => ({ idx: i, color: HINT_COLOR.SOURCE, boards: [boardA, boardB] })),
+      description: `These two regions (blue on ${this._describeBoards([boardA])}, brown on ${this._describeBoards([boardB])}) overlap. A star outside the shared cells would leave the other region unsolvable, so both stars must land there.`,
+      highlights: [],
       marks: [
         ...onlyA.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardA] })),
         ...onlyB.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardB] })),
-      ]
+      ],
+      // Prototype: outline each region's FULL shape on its own board
+      // instead of filling just the shared overlap cells -- shows the
+      // overlap geometrically (where the two outlines coincide) rather
+      // than only via the shared cells' fill. See _buildRegionOutlineSvg.
+      regionOutlines: [
+        { indices: regA.indices, color: 'blue', boardIdx: boardA },
+        { indices: regB.indices, color: 'brown', boardIdx: boardB },
+      ],
     }));
   };
 
@@ -488,9 +501,14 @@ export function applySingleStarRules(PuzzleSolver) {
     candidates.sort((a, b) => a.testIdx - b.testIdx);
     return candidates.map(({ testIdx, broken, boardIdx }) => ({
       boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
-      description: `The blue cells must contain a star — impossible if the circled cell holds one.`,
-      highlights: broken.indices.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
-      marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }]
+      description: `The blue-outlined cells must contain a star — impossible if the circled cell holds one.`,
+      highlights: [],
+      marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }],
+      // `broken` (from _findAllBrokenUnits) is itself a {indices, boardIdx}
+      // unit -- outline its shape instead of filling it. Empty for the rare
+      // 'adjacency' break (no unit shape to show), which _outlineEntriesFor
+      // handles fine (produces no path).
+      regionOutlines: this._outlineEntriesFor(broken, 'blue'),
     }));
   };
 
