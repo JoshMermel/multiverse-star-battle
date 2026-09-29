@@ -263,8 +263,8 @@ class CommonRules:
 
     # -- Region algebra --------------------------------------------------------
     #
-    # Two DISJOINT units A, B -- each a row, a column, or a region (on any
-    # board) -- jointly hold 2N stars. If some OTHER unit C (any row, column,
+    # Two DISJOINT units A, B on the same board -- each a row, a column, or
+    # a region -- jointly hold 2N stars. If some OTHER unit C (any row, column,
     # or region, other than A/B themselves) has all of its non-dot cells
     # inside A∪B (and reaches into both A and B), then all N of C's stars lie
     # in A∪B, so the remainder R = (A∪B) \ C holds exactly N stars. R is then
@@ -283,6 +283,9 @@ class CommonRules:
     # and B can be any disjoint pair of units at all -- e.g. two rows, or a
     # row and a region -- which also means there's no longer a single "home
     # board" to exclude C from; C only has to be a different unit than A/B.
+    # Two REGIONS must still share a board, though (2026-09-29, user's
+    # call): regions from different boards are never added together. A
+    # row/column is on every board, so it pairs with anything.
     #
     # Finding (A, B) by testing every disjoint PAIR of units up front doesn't
     # scale -- it's O(units^2 * units) and measured at ~90ms/call on a
@@ -324,6 +327,13 @@ class CommonRules:
                 for ub in b_candidates.values():
                     b_set = set(ub["indices"])
                     if a_set & b_set:
+                        continue
+                    # A and B must be on the same board: two regions from
+                    # different boards are never added together. A row/column
+                    # (board_idx None) is on every board, so it pairs with
+                    # anything. Matches solver-rules-common.js.
+                    if (ua["board_idx"] is not None and ub["board_idx"] is not None
+                            and ua["board_idx"] != ub["board_idx"]):
                         continue
                     c_set = set(c_unit["indices"])
                     rem = [i for i in ua["indices"] + ub["indices"] if i not in c_set]

@@ -1,4 +1,4 @@
-import { CELL, HINT_COLOR } from './constants.js';
+import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, TILE_OUTLINE_COLORS } from './constants.js';
 import { getNeighbors8, cellsAdjacent, rowIndices, colIndices, isRegionlessBoard } from './geometry.js';
 
 // _enumerateUnitCompletions bails out (returns null, same as "already at
@@ -105,13 +105,6 @@ export class PuzzleSolver {
     const antiDiagFn = i => (this.n-1 - i%this.n) * this.n + (this.n-1 - Math.floor(i/this.n));
     this.isMainDiagonalSymmetric = this._isBoardSymmetric(mainDiagFn) || this._computeInternalDiagonalSymmetry(mainDiagFn);
     this.isAntiDiagonalSymmetric = this._isBoardSymmetric(antiDiagFn) || this._computeInternalDiagonalSymmetry(antiDiagFn);
-    // Track specific symmetry types for hint descriptions. (No separate
-    // "cross-board" flag here: a board that's internally symmetric always
-    // trivially satisfies _isBoardSymmetric too via self-pairing, so
-    // "internal" vs "not internal" is the only distinction hint text can
-    // actually draw -- see hintSymmetryDeduction's comment.)
-    this.mainDiagInternal = this._computeInternalDiagonalSymmetry(mainDiagFn);
-    this.antiDiagInternal = this._computeInternalDiagonalSymmetry(antiDiagFn);
     this.internalRotation180   = this._computeInternalRotation180();
     this.crossboardRotation180 = this._computeCrossboardRotation180();
 
@@ -442,7 +435,10 @@ export class PuzzleSolver {
     for (const cell of combo) {
       for (const otherUnit of this._unitsByCell[cell]) {
         if (otherUnit.label === unit.label) continue;
-        if (visibleBoardIdx !== null && otherUnit.boardIdx !== undefined && otherUnit.boardIdx !== visibleBoardIdx) continue;
+        // visibleBoardIdx may also be an array of boards here (see
+        // _boardsNeededForBreak).
+        if (visibleBoardIdx !== null && otherUnit.boardIdx !== undefined
+          && !(Array.isArray(visibleBoardIdx) ? visibleBoardIdx.includes(otherUnit.boardIdx) : otherUnit.boardIdx === visibleBoardIdx)) continue;
         otherUnitCounts.set(otherUnit, (otherUnitCounts.get(otherUnit) || 0) + 1);
       }
     }
@@ -683,15 +679,6 @@ export class PuzzleSolver {
     return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
   }
 
-  // "Each board" reads oddly when there's only one -- used by the
-  // internal-symmetry hint text in solver-rules-single.js/-multi.js
-  // (hintSymmetryFill/hintSymmetryDeduction(Multi)), which otherwise
-  // hardcoded "Each board" regardless of how many boards this puzzle
-  // actually has.
-  _eachBoardWord() {
-    return this.game.regions.length === 1 ? 'The board' : 'Each board';
-  }
-
   formatSubsetHint(sourceRegs, targetRegs, targets, sourceBoardIdx, targetBoardIdx) {
     // Both the source group and target group are physical grid cells that
     // exist on every board -- the deduction just happens to be justified by
@@ -716,27 +703,43 @@ export class PuzzleSolver {
 
     const crossBoard = sourceBoardIdx !== targetBoardIdx;
     const sourcePhrase = sourceRegs.length === 1 ? "One region" : `A group of ${sourceRegs.length} regions`;
-    const targetPhrase = targetRegs.length === 1 ? "another region" : `a group of ${targetRegs.length} other regions`;
+    const targetPhrase = targetRegs.length === 1 ? "another" : `another group of ${targetRegs.length}`;
     const boardNote = crossBoard ? ` (${this._describeBoards([sourceBoardIdx])} vs. ${this._describeBoards([targetBoardIdx])})` : '';
-    const restIs = targetRegs.length === 1 ? "that region is" : "those regions are";
-    const description = `${sourcePhrase} (blue) needs exactly as many stars as ${targetPhrase} (brown)${boardNote}, and all of its candidate cells `
-      + `fall inside theirs too -- so the rest of ${restIs} dots.`;
+    const description = `${sourcePhrase} (blue) is a subset of ${targetPhrase} (brown)${boardNote}.`;
+
+    // Inside the larger (target) group, fill the smaller (source) group's
+    // empty cells in the source's own outline color, so the "fits inside"
+    // relationship reads directly on the target's board -- including when
+    // that's a different board than the source's own outline is drawn on.
+    const sourceEmpty = sourceRegs.flatMap(r => r.indices.filter(i => this.vState(i) === CELL.NONE));
 
     return {
       boardIdx: crossBoard ? undefined : sourceBoardIdx,
       description,
-      highlights: [],
+      highlights: sourceEmpty.map(idx => ({ idx, color: HINT_COLOR.SOURCE, boards: [targetBoardIdx] })),
       marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: involvedBoards })),
       regionOutlines,
     };
   }
 
   formatCrossBoardHint(combo, targets, axis, uList) {
-    // Prototype: outline each trapped region on its own board instead of
-    // filling its cells -- see _outlineEntriesFor/_buildRegionOutlineSvg.
-    const regionOutlines = combo.flatMap(r => this._outlineEntriesFor(r.original, 'blue'));
+    // Each trapped region gets its own color (TILE_OUTLINE_COLORS[i] for
+    // its outline, the matching HINT_SOURCE_VARIANTS[i] fill): outlined on
+    // its own board, and its empty cells shaded on every OTHER board --
+    // the regions come from different boards, so without the shading no
+    // single board shows all of them lining up in the same rows/columns.
+    const regionOutlines = [];
+    const highlights = [];
+    combo.forEach((r, i) => {
+      const home = r.original.boardIdx;
+      regionOutlines.push(...this._outlineEntriesFor(r.original, TILE_OUTLINE_COLORS[i % TILE_OUTLINE_COLORS.length]));
+      const otherBoards = this.boardIndices.filter(b => b !== home);
+      const fill = HINT_SOURCE_VARIANTS[i % HINT_SOURCE_VARIANTS.length];
+      for (const idx of r.availableIdxs) highlights.push({ idx, color: fill, boards: otherBoards });
+    });
 
     const boardsInvolved = this._describeBoards(combo.map(r => r.original.boardIdx));
+    const otherWord = this.boardIndices.length > 2 ? 'the other boards' : 'the other board';
     return {
       boardIdx: undefined,
       // combo.length (trapped REGIONS) and uList.length (the ROW/COL
@@ -745,8 +748,9 @@ export class PuzzleSolver {
       // construction) -- for 2★+, a region can need more than 1 star, so
       // fewer regions than the window size can still supply its entire
       // need. Use each count where it actually belongs.
-      description: `Cross-board (${boardsInvolved}): These ${combo.length} region${combo.length === 1 ? '' : 's'} (outlined in blue) must place their stars in the same ${uList.length} ${axis.toLowerCase()}${uList.length === 1 ? '' : 's'}.`,
-      highlights: [],
+      description: `Cross-board (${boardsInvolved}): These ${combo.length} region${combo.length === 1 ? '' : 's'} must place their stars in the same ${uList.length} ${axis.toLowerCase()}${uList.length === 1 ? '' : 's'}. `
+        + `Each region is outlined in its own color, and its empty cells are shaded in that color on ${otherWord}.`,
+      highlights,
       // Target cells are a row/column consequence -- board-agnostic by
       // construction (rows/columns are shared across every board), so no
       // `boards` override here; they broadcast to every board as before.
@@ -843,8 +847,9 @@ export class PuzzleSolver {
       }
     });
 
+    // boardIdx: null (every board), one board, or an array of boards.
     const regions = this._getRegionsContaining(idx)
-      .filter(r => boardIdx === null || r.boardIdx === boardIdx);
+      .filter(r => boardIdx === null || (Array.isArray(boardIdx) ? boardIdx.includes(r.boardIdx) : r.boardIdx === boardIdx));
     regions.forEach(reg => {
       const starCount = reg.indices.filter(i => state[i] === CELL.STAR).length;
       if (starCount === quota) {
@@ -872,6 +877,40 @@ export class PuzzleSolver {
   // what _enumerateUnitCompletions is allowed to reason about) to rows/columns and only
   // that one board's regions -- for the "single board" lookahead rules, which are meant
   // to only rely on information visible from one board.
+  // For the all-boards lookahead hints: the smallest set of boards whose
+  // regions are enough to see that `broken` breaks -- always including the
+  // broken unit's own board, if it's a region. `sandboxForBoards(boards)`
+  // rebuilds the hint's speculative state using only those boards' regions.
+  // Tries every subset of the other boards, smallest first (boards per
+  // puzzle are few, so this stays cheap). Falls back to every board.
+  _boardsNeededForBreak(broken, sandboxForBoards) {
+    const home = broken.boardIdx;
+    const others = this.boardIndices.filter(b => b !== home);
+    for (let k = 0; k <= others.length; k++) {
+      for (const extra of this.getCombinations(others, k)) {
+        const boards = home !== undefined ? [home, ...extra] : extra;
+        if (boards.length === 0) continue;
+        const state = sandboxForBoards(boards);
+        const overQuota = broken.indices.filter(i => state[i] === CELL.STAR).length > this.starsPerGroup;
+        if (overQuota || !this._unitHasValidCompletion(broken, this.starsPerGroup, state, boards)) return boards;
+      }
+    }
+    return this.boardIndices;
+  }
+
+  // Hint-text suffix naming the boards a player needs to look at to see
+  // why `broken` breaks, when that's more than one (see
+  // _boardsNeededForBreak). Empty for the 'adjacency' break (no unit).
+  _boardsNeededNote(broken, sandboxForBoards) {
+    if (broken.type === 'adjacency') return '';
+    const needed = this._boardsNeededForBreak(broken, sandboxForBoards);
+    if (needed.length <= 1) return '';
+    const home = broken.boardIdx;
+    return home !== undefined
+      ? ` You also need to look at ${this._describeBoards(needed.filter(b => b !== home))} to see why.`
+      : ` You need to look at ${this._describeBoards(needed)} to see why.`;
+  }
+
   _findAllBrokenUnits(state, visibleBoardIdx = null) {
     const quota = this.starsPerGroup;
     const units = visibleBoardIdx === null

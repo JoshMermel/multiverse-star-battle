@@ -1,4 +1,4 @@
-import { CELL, HINT_COLOR } from './constants.js';
+import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS } from './constants.js';
 import { cellsSee } from './geometry.js';
 
 // 1★-only rule implementations: rules that assume exactly one star per
@@ -70,31 +70,36 @@ export function applySingleStarRules(PuzzleSolver) {
     return targets.length > 0 ? targets : null;
   };
 
-  // Rule: Check for domino patterns in unsolved regions.
+  // Rule: Check for domino patterns in starless units -- any row, column,
+  // or region whose only 2 empty cells are orthogonally adjacent. Rows and
+  // columns are included to match Python's rule_domino
+  // (rules_single_star.py), which has always checked every unit kind.
   p.hintDomino = function () {
     const candidates = [];
 
-    for (const bIdx of this.boardIndices) {
-      for (const region of this.getUnsolvedRegions(bIdx)) {
-        const empty = region.indices.filter(i => this.vState(i) === CELL.NONE);
-        if (empty.length !== 2) continue;
+    for (const unit of this.units) {
+      if (unit.indices.some(i => this.vState(i) === CELL.STAR)) continue;
+      const empty = unit.indices.filter(i => this.vState(i) === CELL.NONE);
+      if (empty.length !== 2) continue;
 
-        const [idxA, idxB] = empty;
-        const targets = this._dominoEliminationTargets(idxA, idxB);
-        if (!targets) continue;
+      const [idxA, idxB] = empty;
+      const targets = this._dominoEliminationTargets(idxA, idxB);
+      if (!targets) continue;
 
-        candidates.push({ idxA, idxB, targets, boardIdx: region.boardIdx });
-      }
+      candidates.push({ unit, idxA, idxB, targets });
     }
 
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.idxA - b.idxA || a.idxB - b.idxB);
-    return candidates.map(({ idxA, idxB, targets, boardIdx }) => ({
-      description: "A star must be in the blue-outlined domino.",
-      highlights: [],
+    return candidates.map(({ unit, idxA, idxB, targets }) => ({
+      description: `The star for this ${this._unitKind(unit)} must be in the highlighted domino.`,
+      // Outline the whole unit and fill just the domino inside it, so the
+      // player sees both where the domino came from and the domino itself.
+      // A row/column (boardIdx undefined) shows on every board.
+      highlights: [idxA, idxB].map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
       marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-      boardIdx,
-      regionOutlines: [{ indices: [idxA, idxB], color: 'blue', boardIdx }],
+      boardIdx: unit.boardIdx,
+      regionOutlines: this._outlineEntriesFor(unit, 'blue'),
     }));
   };
 
@@ -126,11 +131,15 @@ export function applySingleStarRules(PuzzleSolver) {
     if (targets.length === 0) return null;
 
     const N = unitCombo.length;
-    const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
+    const axisWord = axis.toLowerCase();
+    const regWord = coveringUnsolved.length === 1 ? 'region' : 'regions';
+    const description = N === 1
+      ? `The highlighted ${axisWord} provides the star for the blue-outlined ${regWord}.`
+      : `The ${N} highlighted ${axisWord}s provide all the stars for the blue-outlined ${regWord}.`;
 
     return {
       boardIdx: bIdx,
-      description: `All empty cells in ${unitsPhrase} are covered by the blue regions.`,
+      description,
       // The window's own empty cells -- each one already known (by
       // construction, see coveringRegLabels above) to belong to one of the
       // outlined regions below. Filled in addition to the outline since the
@@ -171,12 +180,22 @@ export function applySingleStarRules(PuzzleSolver) {
     if (targets.length === 0) return null;
 
     const N = windowIndices.length;
-    const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
+    const axisWord = axis.toLowerCase();
+    const regWord = pinnedRegs.length === 1 ? 'region' : 'regions';
+    const description = N === 1
+      ? `The star for this ${axisWord} must come from the blue-outlined ${regWord}.`
+      : `All stars for these ${N} ${axisWord}s must come from the blue-outlined ${regWord}.`;
 
     return {
       boardIdx: bIdx,
-      description: `The star for ${unitsPhrase} must fall in one of the blue regions.`,
-      highlights: [],
+      description,
+      // The pinned regions' own empty cells -- all inside the window by
+      // construction. Same treatment as _hintUnitsCoveredByRegions's fill
+      // of the window's empty cells: whichever side is the subset gets
+      // its empty cells filled, on top of the regions' outline.
+      highlights: pinnedRegs
+        .flatMap(r => r.indices.filter(i => this.vState(i) === CELL.NONE))
+        .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
       marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
       // Prototype: outline the pinned regions instead of filling their
       // cells -- all on this same bIdx by construction. See
@@ -262,7 +281,9 @@ export function applySingleStarRules(PuzzleSolver) {
     return targets;
   };
 
-  // Helper to find external cells that see all options in a unit.
+  // Helper to find external cells that see all options in a unit. The
+  // unit's empty cells are filled on top of its whole-unit outline, since
+  // the outline alone doesn't show which few cells are still open.
   p._hintSeesTooMuchForUnits = function (units) {
     const hintCandidates = [];
     for (const unit of units) {
@@ -277,8 +298,8 @@ export function applySingleStarRules(PuzzleSolver) {
     hintCandidates.sort((a, b) => a.candidates[0] - b.candidates[0]);
     return hintCandidates.map(({ unit, candidates, targets }) => ({
       boardIdx: unit.boardIdx,
-      description: `The blue-outlined cells must contain a star.`,
-      highlights: [],
+      description: `The star for this ${this._unitKind(unit)} must be in one of the highlighted cells.`,
+      highlights: candidates.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
       marks: targets,
       // Outline the unit's own full shape/boundary, same convention as
       // hintOnlyEmpty/hintExcludeSolvedUnit -- not just the still-empty
@@ -416,10 +437,15 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.shared[0] ?? 0) - (b.shared[0] ?? 0));
-    return candidates.map(({ regA, regB, onlyA, onlyB, boardA, boardB }) => ({
+    return candidates.map(({ regA, regB, shared, onlyA, onlyB, boardA, boardB }) => ({
       boardIdx: undefined,
-      description: `These two regions (blue on ${this._describeBoards([boardA])}, brown on ${this._describeBoards([boardB])}) overlap. A star outside the shared cells would leave the other region unsolvable, so both stars must land there.`,
-      highlights: [],
+      description: `The blue region (${this._describeBoards([boardA])}) and the brown region (${this._describeBoards([boardB])}) overlap in the cyan cells. `
+        + `A star in either region outside the cyan cells would see every non-cyan cell of the other region, forcing that region's star into the cyan cells as well -- `
+        + `two stars in one region. So both regions share one star, in the cyan cells.`,
+      // The overlap's non-dot cells, shaded on both boards so the shared
+      // area is visible wherever the player looks -- the outlines alone
+      // only show it implicitly, as the place the two shapes coincide.
+      highlights: shared.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[2], boards: [boardA, boardB] })),
       marks: [
         ...onlyA.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardA] })),
         ...onlyB.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardB] })),
@@ -435,6 +461,38 @@ export function applySingleStarRules(PuzzleSolver) {
     }));
   };
 
+  // Sandbox for a speculative star at testIdx: the row/column/adjacency
+  // dots it implies (board-agnostic), plus dots for the rest of its region
+  // on each board in `boards`.
+  p._lookaheadHalfSandbox = function (testIdx, boards) {
+    const n = this.n;
+    const row = Math.floor(testIdx / n);
+    const col = testIdx % n;
+    const sandboxState = this._buildSpeculativeState(testIdx);
+
+    // Row and column elimination (board-agnostic).
+    for (let j = 0; j < n; j++) {
+      const rIdx = row * n + j;
+      const cIdx = j * n + col;
+      if (sandboxState[rIdx] === CELL.NONE && rIdx !== testIdx) sandboxState[rIdx] = CELL.DOT;
+      if (sandboxState[cIdx] === CELL.NONE && cIdx !== testIdx) sandboxState[cIdx] = CELL.DOT;
+    }
+
+    // Adjacency elimination (board-agnostic).
+    for (const nb of this.getNeighbors(testIdx)) {
+      if (sandboxState[nb] === CELL.NONE) sandboxState[nb] = CELL.DOT;
+    }
+
+    // Region elimination, on the given boards only.
+    for (const reg of this._getRegionsContaining(testIdx)) {
+      if (!boards.includes(reg.boardIdx)) continue;
+      reg.indices.forEach(i => {
+        if (sandboxState[i] === CELL.NONE) sandboxState[i] = CELL.DOT;
+      });
+    }
+    return sandboxState;
+  };
+
   // Shared implementation for hintLookaheadHalfSingleBoard/hintLookaheadHalf:
   // speculatively place one star, eliminate the row/column/adjacency dots it
   // implies (board-agnostic) plus region dots, and check for a broken unit.
@@ -443,7 +501,6 @@ export function applySingleStarRules(PuzzleSolver) {
   // singleBoard=false does it once per test cell, eliminating from EVERY
   // board's region at once and checking across all boards together.
   p._hintLookaheadHalfImpl = function (singleBoard) {
-    const n = this.n;
     const candidates = [];
 
     const emptyIndices = this.game.state
@@ -454,39 +511,10 @@ export function applySingleStarRules(PuzzleSolver) {
       : [null];
 
     for (const testIdx of emptyIndices) {
-      const row = Math.floor(testIdx / n);
-      const col = testIdx % n;
-
       for (const bIdx of boardScopes) {
-        let boardReg = null;
-        if (singleBoard) {
-          boardReg = this._getRegionsContaining(testIdx).find(r => r.boardIdx === bIdx);
-          if (!boardReg) continue;
-        }
+        if (singleBoard && !this._getRegionsContaining(testIdx).some(r => r.boardIdx === bIdx)) continue;
 
-        const sandboxState = this._buildSpeculativeState(testIdx);
-
-        // Row and column elimination (board-agnostic).
-        for (let j = 0; j < n; j++) {
-          const rIdx = row * n + j;
-          const cIdx = j * n + col;
-          if (sandboxState[rIdx] === CELL.NONE && rIdx !== testIdx) sandboxState[rIdx] = CELL.DOT;
-          if (sandboxState[cIdx] === CELL.NONE && cIdx !== testIdx) sandboxState[cIdx] = CELL.DOT;
-        }
-
-        // Adjacency elimination (board-agnostic).
-        for (const nb of this.getNeighbors(testIdx)) {
-          if (sandboxState[nb] === CELL.NONE) sandboxState[nb] = CELL.DOT;
-        }
-
-        // Region elimination: this board only in single-board mode, every
-        // board the cell belongs to otherwise.
-        const regionsToEliminate = singleBoard ? [boardReg] : this._getRegionsContaining(testIdx);
-        for (const reg of regionsToEliminate) {
-          reg.indices.forEach(i => {
-            if (sandboxState[i] === CELL.NONE) sandboxState[i] = CELL.DOT;
-          });
-        }
+        const sandboxState = this._lookaheadHalfSandbox(testIdx, singleBoard ? [bIdx] : this.boardIndices);
 
         const brokenUnits = singleBoard
           ? this._findAllBrokenUnits(sandboxState, bIdx)
@@ -499,17 +527,23 @@ export function applySingleStarRules(PuzzleSolver) {
 
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.testIdx - b.testIdx);
-    return candidates.map(({ testIdx, broken, boardIdx }) => ({
-      boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
-      description: `The blue-outlined cells must contain a star — impossible if the circled cell holds one.`,
-      highlights: [],
-      marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }],
-      // `broken` (from _findAllBrokenUnits) is itself a {indices, boardIdx}
-      // unit -- outline its shape instead of filling it. Empty for the rare
-      // 'adjacency' break (no unit shape to show), which _outlineEntriesFor
-      // handles fine (produces no path).
-      regionOutlines: this._outlineEntriesFor(broken, 'blue'),
-    }));
+    return candidates.map(({ testIdx, broken, boardIdx }) => {
+      // The all-boards variant also says which boards' regions the player
+      // needs to look at, when it's more than one.
+      const description = `The blue-outlined cells must contain a star — impossible if the circled cell holds one.`
+        + (singleBoard ? '' : this._boardsNeededNote(broken, boards => this._lookaheadHalfSandbox(testIdx, boards)));
+      return {
+        boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
+        description,
+        highlights: [],
+        marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }],
+        // `broken` (from _findAllBrokenUnits) is itself a {indices, boardIdx}
+        // unit -- outline its shape instead of filling it. Empty for the rare
+        // 'adjacency' break (no unit shape to show), which _outlineEntriesFor
+        // handles fine (produces no path).
+        regionOutlines: this._outlineEntriesFor(broken, 'blue'),
+      };
+    });
   };
 
   // Rule: Lookahead level 1 (check single-star placement contradiction within single board constraints).
@@ -558,20 +592,16 @@ export function applySingleStarRules(PuzzleSolver) {
     }
 
     if (this.isMainDiagonalSymmetric) {
-      // mainDiagInternal (every board individually symmetric) always makes
-      // mainDiagCrossBoard trivially true too, so checking the latter here
-      // never excludes anything -- see hintSymmetryDeduction above.
-      const desc = this.mainDiagInternal
-        ? `${this._eachBoardWord()} has diagonal symmetry across the main diagonal (↘).`
-        : `The solution is symmetric across the main diagonal (↘).`;
+      // Symmetry hints just state the solution's symmetry, whether it comes
+      // from each board being self-symmetric or from the boards pairing up
+      // with each other -- the "why" isn't needed to use the deduction.
+      const desc = `The solution is symmetric across the main diagonal (↘).`;
       const hint = this._hintSymmetryFill(i => (i % n) * n + Math.floor(i / n), desc);
       if (hint) results.push(hint);
     }
 
     if (this.isAntiDiagonalSymmetric) {
-      const desc = this.antiDiagInternal
-        ? `${this._eachBoardWord()} has diagonal symmetry across the anti-diagonal (↙).`
-        : `The solution is symmetric across the anti-diagonal (↙).`;
+      const desc = `The solution is symmetric across the anti-diagonal (↙).`;
       const hint = this._hintSymmetryFill(
         i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
         desc
@@ -596,30 +626,21 @@ export function applySingleStarRules(PuzzleSolver) {
     const cellToRegionMaps = this.game.regions.map((_, bIdx) => this.buildCellToRegionMap(bIdx));
 
     if (this.internalRotation180 || this.crossboardRotation180) {
-      // internalRotation180 (every board individually symmetric) always makes
-      // crossboardRotation180 trivially true too -- a self-symmetric board
-      // always satisfies its own "does a valid pairing exist" check -- so
-      // there's no genuinely-mixed "both" case to call out separately; it's
-      // internal-only, or a real cross-board pairing, never distinguishably both.
-      const description = this.internalRotation180
-        ? `${this._eachBoardWord()} has 180° rotational symmetry. A cell that "sees" its own rotation can't be a star.`
-        : `Each board is paired with its 180° rotation. A cell that "sees" its counterpart can't be a star.`;
+      // Just states the solution's symmetry, whether internal or cross-board
+      // -- same as hintSymmetryFill.
+      const description = `The solution has 180° rotational symmetry. A cell that "sees" its own rotation can't be a star.`;
       const hint = this._hintSymmetry(i => (n * n - 1) - i, description);
       if (hint) results.push(hint);
     }
 
     if (this.isMainDiagonalSymmetric) {
-      const description = this.mainDiagInternal
-        ? `${this._eachBoardWord()} has diagonal symmetry across the main diagonal (↘). A cell that "sees" its own reflection can't be a star.`
-        : `Each board is paired with its reflection across the main diagonal (↘). A cell that "sees" its own reflection can't be a star.`;
+      const description = `The solution is symmetric across the main diagonal (↘). A cell that "sees" its own reflection can't be a star.`;
       const hint = this._hintSymmetry(i => (i % n) * n + Math.floor(i / n), description);
       if (hint) results.push(hint);
     }
 
     if (this.isAntiDiagonalSymmetric) {
-      const description = this.antiDiagInternal
-        ? `${this._eachBoardWord()} has diagonal symmetry across the anti-diagonal (↙). A cell that "sees" its own reflection can't be a star.`
-        : `Each board is paired with its reflection across the anti-diagonal (↙). A cell that "sees" its own reflection can't be a star.`;
+      const description = `The solution is symmetric across the anti-diagonal (↙). A cell that "sees" its own reflection can't be a star.`;
       const hint = this._hintSymmetry(
         i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)),
         description
@@ -628,13 +649,9 @@ export function applySingleStarRules(PuzzleSolver) {
     }
 
 
-    const tryDiagParity = (diagIndices, dirLabel, internal) => {
+    const tryDiagParity = (diagIndices, dirLabel) => {
       const parity = n % 2 === 0 ? 'even' : 'odd';
-      const reason = internal
-        ? (this.game.regions.length === 1
-          ? `The board has ${dirLabel} diagonal symmetry`
-          : `Each board independently has ${dirLabel} diagonal symmetry`)
-        : `Each board is paired with its ${dirLabel} reflection`;
+      const reason = `The solution is symmetric across the ${dirLabel} diagonal`;
 
       const diagStars  = diagIndices.filter(i => this.vState(i) === CELL.STAR).length;
       const diagEmpties = diagIndices.filter(i => this.vState(i) === CELL.NONE);
@@ -684,10 +701,10 @@ export function applySingleStarRules(PuzzleSolver) {
     };
 
     if (this.isMainDiagonalSymmetric) {
-      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + k), '↘', this.mainDiagInternal);
+      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + k), '↘');
     }
     if (this.isAntiDiagonalSymmetric) {
-      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + (n - 1 - k)), '↙', this.antiDiagInternal);
+      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + (n - 1 - k)), '↙');
     }
 
     return results.length > 0 ? results : null;
@@ -789,8 +806,8 @@ export function applySingleStarRules(PuzzleSolver) {
       const targetList = [...targetSet].sort((a, b) => a - b);
       const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, matchingTiles, targetList);
       const description = matchingTiles.length === 1
-        ? "This tile's empty cells are a domino -- a star must be in the blue domino."
-        : `${matchingTiles.length} of these tiles are dominoes -- a star must be in each blue domino.`;
+        ? `This tile's empty cells must contain a star.`
+        : `${matchingTiles.length} of these tiles' empty cells must each contain a star.`;
       hints.push({
         description,
         highlights,

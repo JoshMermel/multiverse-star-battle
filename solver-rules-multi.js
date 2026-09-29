@@ -57,28 +57,19 @@ export function applyMultiStarRules(PuzzleSolver) {
     };
 
     if (this.internalRotation180 || this.crossboardRotation180) {
-      // internalRotation180 (every board individually symmetric) always makes
-      // crossboardRotation180 trivially true too -- a self-symmetric board
-      // always satisfies its own "does a valid pairing exist" check -- so
-      // there's no genuinely-mixed "both" case to call out separately; it's
-      // internal-only, or a real cross-board pairing, never distinguishably both.
-      const description = this.internalRotation180
-        ? `${this._eachBoardWord()} has 180° rotational symmetry. A cell that "sees" its own rotation (shares a row/column, or a region with no room for both) can't be a star.`
-        : `Each board is paired with its 180° rotation. A cell that "sees" its counterpart (shares a row/column, or a region with no room for both) can't be a star.`;
+      // Just states the solution's symmetry, whether internal or cross-board
+      // -- same as the 1★ hintSymmetryDeduction.
+      const description = `The solution has 180° rotational symmetry. A cell that "sees" its own rotation (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (n * n - 1) - i, description);
     }
 
     if (this.isMainDiagonalSymmetric) {
-      const description = this.mainDiagInternal
-        ? `${this._eachBoardWord()} has diagonal symmetry across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
-        : `Each board is paired with its reflection across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
+      const description = `The solution is symmetric across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (i % n) * n + Math.floor(i / n), description);
     }
 
     if (this.isAntiDiagonalSymmetric) {
-      const description = this.antiDiagInternal
-        ? `${this._eachBoardWord()} has diagonal symmetry across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`
-        : `Each board is paired with its reflection across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
+      const description = `The solution is symmetric across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
       trySeesOwnMirror(i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)), description);
     }
 
@@ -90,13 +81,9 @@ export function applyMultiStarRules(PuzzleSolver) {
     // incompatible (_cellsIncompatible), which is what's checked below
     // instead of plain adjacency-or-shared-region.
     const totalStars = n * this.starsPerGroup;
-    const tryDiagParity = (diagIndices, dirLabel, internal) => {
+    const tryDiagParity = (diagIndices, dirLabel) => {
       const parity = totalStars % 2 === 0 ? 'even' : 'odd';
-      const reason = internal
-        ? (this.game.regions.length === 1
-          ? `The board has ${dirLabel} diagonal symmetry`
-          : `Each board independently has ${dirLabel} diagonal symmetry`)
-        : `Each board is paired with its ${dirLabel} reflection`;
+      const reason = `The solution is symmetric across the ${dirLabel} diagonal`;
 
       const diagStars = diagIndices.filter(i => this.vState(i) === CELL.STAR).length;
       const diagEmpties = diagIndices.filter(i => this.vState(i) === CELL.NONE);
@@ -129,10 +116,10 @@ export function applyMultiStarRules(PuzzleSolver) {
     };
 
     if (this.isMainDiagonalSymmetric) {
-      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + k), '↘', this.mainDiagInternal);
+      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + k), '↘');
     }
     if (this.isAntiDiagonalSymmetric) {
-      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + (n - 1 - k)), '↙', this.antiDiagInternal);
+      tryDiagParity(Array.from({ length: n }, (_, k) => k * n + (n - 1 - k)), '↙');
     }
 
     return results.length > 0 ? results : null;
@@ -1022,13 +1009,18 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     if (targets.length === 0) return null;
 
+    // Same wording as the 1★ _hintUnitsCoveredByRegions, plus "remaining"
+    // since a region/line can already hold some of its stars here.
     const N = unitCombo.length;
-    const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
-    const starsPhrase = requiredCount === 1 ? "1 star" : `${requiredCount} stars`;
+    const axisWord = axis.toLowerCase();
+    const regWord = touchingRegs.length === 1 ? 'region' : 'regions';
+    const description = N === 1
+      ? `The highlighted ${axisWord} provides all the remaining stars for the blue-outlined ${regWord}.`
+      : `The ${N} highlighted ${axisWord}s provide all the remaining stars for the blue-outlined ${regWord}.`;
 
     return {
       boardIdx: bIdx,
-      description: `The blue region(s) still need exactly ${starsPhrase} in total — exactly what's left for ${unitsPhrase} — so all of it lands inside, and the rest of those regions are dots.`,
+      description,
       // The window's own empty cells -- each one already known (by
       // construction, see touchingLabels above) to belong to one of the
       // outlined regions below. Filled in addition to the outline since the
@@ -1072,16 +1064,23 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     if (targets.length === 0) return null;
 
+    // Same wording/fill as the 1★ _hintRegionsTrappedInUnits, plus
+    // "remaining" since a region/line can already hold some of its stars.
     const N = windowIndices.length;
-    const unitsPhrase = N === 1 ? `this ${axis.toLowerCase()}` : `these ${N} ${axis.toLowerCase()}s`;
-    const needVerb = N === 1 ? 'needs' : 'need';
-    const isVerb = N === 1 ? 'is' : 'are';
-    const starsPhrase = requiredCount === 1 ? "1 star" : `${requiredCount} stars`;
+    const axisWord = axis.toLowerCase();
+    const regWord = pinnedRegs.length === 1 ? 'region' : 'regions';
+    const description = N === 1
+      ? `All remaining stars for this ${axisWord} must come from the blue-outlined ${regWord}.`
+      : `All remaining stars for these ${N} ${axisWord}s must come from the blue-outlined ${regWord}.`;
 
     return {
       boardIdx: bIdx,
-      description: `${unitsPhrase[0].toUpperCase()}${unitsPhrase.slice(1)} still ${needVerb} exactly ${starsPhrase} in total, which is exactly what's left in the blue region(s) — so the rest of ${unitsPhrase} ${isVerb} dots.`,
-      highlights: [],
+      description,
+      // The pinned regions' own empty cells -- all inside the window by
+      // construction (the subset side gets its empty cells filled).
+      highlights: pinnedRegs
+        .flatMap(({ region }) => region.indices.filter(i => this.vState(i) === CELL.NONE))
+        .map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
       marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
       // Prototype: outline the pinned regions instead of filling their
       // cells -- all on this same bIdx by construction. See
@@ -1398,10 +1397,14 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.onlyA[0] ?? 0) - (b.onlyA[0] ?? 0));
-    return candidates.map(({ regA, regB, onlyA, onlyB, boardA, boardB }) => ({
+    return candidates.map(({ regA, regB, shared, onlyA, onlyB, boardA, boardB }) => ({
       boardIdx: undefined,
-      description: `These two regions (blue on ${this._describeBoards([boardA])}, brown on ${this._describeBoards([boardB])}) overlap almost entirely. Their few different cells touch, so they must match -- and matching stars would touch too, so they're all dots.`,
-      highlights: [],
+      description: `The blue region (${this._describeBoards([boardA])}) and the brown region (${this._describeBoards([boardB])}) overlap in the cyan cells. `
+        + `Outside the cyan cells, both regions must hold the same number of stars -- but every such cell of one region touches every such cell of the other, `
+        + `so neither can hold any. All their stars are in the cyan cells.`,
+      // The overlap's empty cells, shaded on both boards -- same treatment
+      // as the 1★ hintPartialOverlap.
+      highlights: shared.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[2], boards: [boardA, boardB] })),
       marks: [
         ...onlyA.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardA] })),
         ...onlyB.filter(i => this.vState(i) === CELL.NONE).map(i => ({ idx: i, color: HINT_COLOR.TARGET, boards: [boardB] })),
@@ -2061,7 +2064,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       const targets = windowIndices.filter(i => this.vState(i) === CELL.NONE && !covered.has(i));
       if (targets.length === 0) continue;
 
-      candidates.push({ bandAxis, combo, targets });
+      candidates.push({ bandAxis, combo, targets, windowStart });
     }
     return candidates;
   };
@@ -2085,20 +2088,19 @@ export function applyMultiStarRules(PuzzleSolver) {
       }
     }
 
-    return candidates.map(({ bandAxis, combo, targets }) => {
+    return candidates.map(({ bandAxis, combo, targets, windowStart }) => {
       const tilingIds = [...new Set(combo.map(t => t.tilingId))];
       const displayTiles = tilingIds.flatMap(id => tilesByTilingId.get(id));
       const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(displayTiles, combo, targets);
 
-      const targetWord = bandAxis === 'col' ? 'row' : 'column'; // the pair being filled
-      const sourceWord = bandAxis === 'col' ? 'column' : 'row'; // the pairs the tiles came from
-      const leadIn = combo.length === 1
-        ? `This ${sourceWord}-pair tile holds exactly one star`
-        : `These ${sourceWord}-pair tiles each hold exactly one star`;
+      // The pair being filled, named the same way renderer.js labels its
+      // axes: rows by 1-indexed number, columns by letter.
+      const pairName = bandAxis === 'col'
+        ? `rows ${windowStart + 1} and ${windowStart + 2}`
+        : `columns ${String.fromCharCode(65 + windowStart)} and ${String.fromCharCode(66 + windowStart)}`;
 
       return {
-        description: `${leadIn}, covering everything this ${targetWord} pair still needs -- `
-          + `so every other empty cell in the pair is a dot.`,
+        description: `Each tile must hold exactly one star. The colored cells satisfy ${pairName}.`,
         highlights,
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
@@ -2193,9 +2195,16 @@ export function applyMultiStarRules(PuzzleSolver) {
     const description = singleBoard
       ? `The blue-outlined cells can no longer reach their required star count if the circled cell holds a star.`
       : `The blue-outlined cells can no longer reach their required star count if the circled cell holds a star -- every way to place their remaining stars would break some other row, column, or region's own star limit.`;
+    // The cross-board version also says which boards the player needs to
+    // look at, when it's more than one -- same as the 1★ hintLookaheadHalf.
+    const sandboxForBoards = testIdx => boards => {
+      const state = this._buildSpeculativeState(testIdx);
+      this._applyStarPlacementDots(state, testIdx, boards);
+      return state;
+    };
     return candidates.map(({ testIdx, broken, boardIdx }) => ({
       boardIdx: singleBoard ? boardIdx : (broken.type === 'region' ? broken.boardIdx : undefined),
-      description,
+      description: description + (singleBoard ? '' : this._boardsNeededNote(broken, sandboxForBoards(testIdx))),
       highlights: [],
       marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }],
       // Same treatment as hintLookaheadHalf's identical broken-unit outline.

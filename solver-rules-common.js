@@ -456,8 +456,8 @@ export function applyCommonSolverRules(PuzzleSolver) {
 
   // -- Region algebra (1★ AND 2★+, Expert) ---------------------------------
   //
-  // Two DISJOINT units A, B -- each a row, a column, or a region (on any
-  // board) -- jointly hold 2N stars. If some OTHER unit C (any row, column,
+  // Two DISJOINT units A, B on the same board -- each a row, a column, or
+  // a region -- jointly hold 2N stars. If some OTHER unit C (any row, column,
   // or region, other than A/B themselves) has all of its non-dot cells
   // inside A∪B (and reaches into both A and B), then all N of C's stars lie
   // in A∪B, so the remainder R = (A∪B) \ C holds exactly N stars. R is then
@@ -478,6 +478,9 @@ export function applyCommonSolverRules(PuzzleSolver) {
   // and B can be any disjoint pair of units at all -- e.g. two rows, or a
   // row and a region -- which also means there's no longer a single "home
   // board" to exclude C from; C only has to be a different unit than A/B.
+  // Two REGIONS must still share a board, though (2026-09-29, user's
+  // call): regions from different boards are never added together. A
+  // row/column is on every board, so it pairs with anything.
   //
   // Finding (A, B) by testing every disjoint PAIR of units up front doesn't
   // scale -- O(units^2 * units), measured at ~90ms/call on a 25x25/6★ board.
@@ -523,6 +526,10 @@ export function applyCommonSolverRules(PuzzleSolver) {
         for (const ub of bCandidates) {
           const bSet = new Set(ub.indices);
           if (ua.indices.some(i => bSet.has(i))) continue; // not disjoint
+          // A and B must be on the same board: two regions from different
+          // boards are never added together. A row/column is on every
+          // board, so it can pair with anything.
+          if (ua.boardIdx !== undefined && ub.boardIdx !== undefined && ua.boardIdx !== ub.boardIdx) continue;
 
           const cSet = new Set(cUnit.indices);
           const rem = [...ua.indices, ...ub.indices].filter(i => !cSet.has(i));
@@ -588,21 +595,16 @@ export function applyCommonSolverRules(PuzzleSolver) {
           // of its own to compete with an outline's, so both read cleanly
           // nested inside it instead.
           //
-          // A/B's cells are split by board the same way region shapes
-          // always are: a region outlines on its own board; a row/column
-          // (boardIdx undefined) outlines on every board. When A and B
-          // share a board (including a row/col that expands onto it),
-          // their indices are merged into ONE array for that board so
-          // touching units still trace as a single seamless shape, same as
+          // A∪B is drawn as one outline on the pair's own board -- the
+          // region's board if either A or B is a region (a row/column
+          // paired with it is drawn there only, not on every board), else
+          // every board, like any other row/column outline. A and B's
+          // indices are merged into ONE array per board so touching units
+          // still trace as a single seamless shape, same as
           // hintRegionPairPlacementForced's union.
-          const pairByBoard = new Map();
-          for (const unit of [ua, ub]) {
-            const boards = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
-            for (const b of boards) {
-              if (!pairByBoard.has(b)) pairByBoard.set(b, []);
-              pairByBoard.get(b).push(...unit.indices);
-            }
-          }
+          const pairHome = ua.boardIdx ?? ub.boardIdx;
+          const pairBoards = pairHome !== undefined ? [pairHome] : this.boardIndices;
+          const pairByBoard = new Map(pairBoards.map(b => [b, [...ua.indices, ...ub.indices]]));
           const regionOutlines = [...pairByBoard.entries()].map(([b, indices]) => ({ indices, color: 'blue', boardIdx: b }));
 
           // A region only has geometric meaning on its own board, but its
