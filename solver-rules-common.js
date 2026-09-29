@@ -443,7 +443,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
       }
       if (forcedDots.length > 0) {
         hints.push({
-          description: `Treat ${shape} (outlined in blue). Every way to place ${starsWord} ${note} rules out a star at the marked cell(s), so they're dots.`,
+          description: `Treat ${shape} (outlined in blue). Every way to place ${starsWord} ${note} rules out a star at the marked cell${forcedDots.length === 1 ? ", so it's a dot" : "s, so they're dots"}.`,
           highlights: [],
           marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
           regionOutlines,

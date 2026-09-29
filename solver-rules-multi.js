@@ -245,7 +245,9 @@ export function applyMultiStarRules(PuzzleSolver) {
       // go there.
       if (forcedDots.length > 0) {
         hints.push({
-          description: `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cell(s), so they're dots.`,
+          description: forcedDots.length === 1
+            ? `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cell, so it's a dot.`
+            : `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cells, so they're dots.`,
           highlights: [],
           marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
           boardIdx: unit.boardIdx,
@@ -1730,9 +1732,15 @@ export function applyMultiStarRules(PuzzleSolver) {
       const targetList = [...targetSet].sort((a, b) => a - b);
       const K = tiling.tiles.length;
       const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, matchingTiles, targetList);
+      // The "marked cell(s)" count here is targetList.length -- the total
+      // number of distinct target cells -- not matchingTiles.length (the
+      // number of tiles), which is a different count and can differ from
+      // it (e.g. several tiles sharing one deduped target, or one tile
+      // with several touching targets).
+      const dotWord = targetList.length === 1 ? 'cell' : 'cells';
       const dotText = matchingTiles.length === 1
-        ? "Both of this tile's empty cells touch the marked cell(s), so they're dots."
-        : `In each of these ${matchingTiles.length} tiles, both empty cells touch the marked cell(s) next to it, so those cells are dots.`;
+        ? `Both of this tile's empty cells touch the marked ${dotWord}, so ${targetList.length === 1 ? "it's a dot" : "they're dots"}.`
+        : `In each of these ${matchingTiles.length} tiles, both empty cells touch a marked cell next to it, so the marked ${dotWord} ${targetList.length === 1 ? 'is a dot' : 'are dots'}.`;
 
       hints.push({
         description: `This ${this._axisPairLabel(tiling.axis)} still needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. ${dotText}`,
