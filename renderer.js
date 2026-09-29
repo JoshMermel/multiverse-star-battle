@@ -263,7 +263,7 @@ export function applyRenderer(GameClass) {
   // call once per hint render (a handful of set lookups per cell), not a
   // hot path.
   //
-  // `cellSets` is an array of { indices, color } -- one entry per shape to
+  // `cellSets` is an array of { indices, color, inset? } -- one entry per shape to
   // outline on THIS board, each in its own color. Multiple disjoint
   // regions in one entry's indices each get their own traced boundary
   // (a cell only shares an edge with something in the SAME entry if
@@ -299,10 +299,20 @@ export function applyRenderer(GameClass) {
     svg.setAttribute("class", "region-outline-svg");
     svg.setAttribute("viewBox", `${-VIEWBOX_HALF} ${-VIEWBOX_HALF} ${totalCoord + VIEWBOX_STROKE} ${totalCoord + VIEWBOX_STROKE}`);
 
-    for (const { indices, color } of cellSets) {
+    // An entry with `inset: true` (used for a whole row/column -- always a
+    // rectangle) is drawn as a dashed rectangle around its cells'
+    // bounding box, pulled INSIDE the cells by INSET, so it never sits on
+    // a region edge that another outline in the same hint may also trace.
+    const INSET = COORD * 0.15;
+    for (const { indices, color, inset } of cellSets) {
       const set = new Set(indices);
       let paths = "";
-      for (const i of set) {
+      if (inset && set.size > 0) {
+        const rows = [...set].map(i => Math.floor(i / n)), cols = [...set].map(i => i % n);
+        const x1 = Math.min(...cols) * COORD + INSET, y1 = Math.min(...rows) * COORD + INSET;
+        const x2 = (Math.max(...cols) + 1) * COORD - INSET, y2 = (Math.max(...rows) + 1) * COORD - INSET;
+        paths = `M ${x1} ${y1} L ${x2} ${y1} L ${x2} ${y2} L ${x1} ${y2} Z`;
+      } else for (const i of set) {
         const r = Math.floor(i / n), c = i % n;
         const x1 = c * COORD, y1 = r * COORD, x2 = x1 + COORD, y2 = y1 + COORD;
         if (r === 0 || !set.has(i - n)) paths += `M ${x1} ${y1} L ${x2} ${y1} `;     // top
@@ -318,6 +328,7 @@ export function applyRenderer(GameClass) {
       pathEl.setAttribute("stroke-linecap", "round");
       pathEl.setAttribute("stroke-linejoin", "round");
       pathEl.setAttribute("fill", "none");
+      if (inset) pathEl.setAttribute("stroke-dasharray", `${COORD * 0.3} ${COORD * 0.22}`);
       svg.appendChild(pathEl);
     }
     return svg;

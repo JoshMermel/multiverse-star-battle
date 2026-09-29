@@ -704,8 +704,7 @@ export class PuzzleSolver {
     const crossBoard = sourceBoardIdx !== targetBoardIdx;
     const sourcePhrase = sourceRegs.length === 1 ? "One region" : `A group of ${sourceRegs.length} regions`;
     const targetPhrase = targetRegs.length === 1 ? "another" : `another group of ${targetRegs.length}`;
-    const boardNote = crossBoard ? ` (${this._describeBoards([sourceBoardIdx])} vs. ${this._describeBoards([targetBoardIdx])})` : '';
-    const description = `${sourcePhrase} (blue) is a subset of ${targetPhrase} (brown)${boardNote}.`;
+    const description = `${sourcePhrase} (blue) is a subset of ${targetPhrase} (brown).`;
 
     // Inside the larger (target) group, fill the smaller (source) group's
     // empty cells in the source's own outline color, so the "fits inside"

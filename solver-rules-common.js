@@ -69,7 +69,9 @@ export function applyCommonSolverRules(PuzzleSolver) {
       const unitType = this._unitKind(unit);
       const description = starsPerGroup === 1
         ? `Only one spot is left for a star in this ${unitType}.`
-        : `Exactly ${empty.length} spots are left for the remaining stars in this ${unitType}.`;
+        : empty.length === 1
+          ? `Only one spot is left for the last star in this ${unitType}.`
+          : `Exactly ${empty.length} spots are left for the ${empty.length} remaining stars in this ${unitType}.`;
       return {
         description,
         highlights: [],
@@ -424,9 +426,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
       if (forcedStars.length === 0 && forcedDots.length === 0) continue;
 
       const need = needA + needB;
-      const shape = `these two touching regions as one combined region`;
-      const starsWord = `its ${need} remaining non-touching star${need === 1 ? '' : 's'}`;
-      const note = `(ignoring how they split between the two regions)`;
+      const intro = `Treat the two blue-outlined regions as one. Every way to place their ${need} remaining star${need === 1 ? '' : 's'}`;
       // Prototype: outline the union (a and b touching, so they trace as
       // ONE seamless blue shape -- no shared-edge line between them, since
       // both are in the same outline entry) instead of filling its cells.
@@ -434,7 +434,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
       const regionOutlines = [{ indices: union.indices, color: 'blue', boardIdx }];
       if (forcedStars.length > 0) {
         hints.push({
-          description: `Treat ${shape} (outlined in blue). Every way to place ${starsWord} ${note} includes the marked cell${forcedStars.length === 1 ? ", so it's a star" : "s, so they're stars"}.`,
+          description: `${intro} includes the marked cell${forcedStars.length === 1 ? '' : 's'}.`,
           highlights: [],
           marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
           regionOutlines,
@@ -443,7 +443,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
       }
       if (forcedDots.length > 0) {
         hints.push({
-          description: `Treat ${shape} (outlined in blue). Every way to place ${starsWord} ${note} rules out a star at the marked cell${forcedDots.length === 1 ? ", so it's a dot" : "s, so they're dots"}.`,
+          description: `${intro} rules out a star at the marked cell${forcedDots.length === 1 ? '' : 's'}.`,
           highlights: [],
           marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
           regionOutlines,
@@ -544,8 +544,8 @@ export function applyCommonSolverRules(PuzzleSolver) {
           if (have >= N) {
             forcedDots = avail;
             why = { dots: forcedDots.length === 1
-              ? `The cyan-highlighted cells already have their ${starsText}, so the marked cell is a dot.`
-              : `The cyan-highlighted cells already have their ${starsText}, so the marked cells are dots.` };
+              ? `The cyan cells already have their ${starsText}, so the marked cell is a dot.`
+              : `The cyan cells already have their ${starsText}, so the marked cells are dots.` };
           } else if (N === 1) {
             if (avail.length === 1) forcedStars = avail;
             for (let i = 0; i < n * n; i++) {
@@ -554,10 +554,10 @@ export function applyCommonSolverRules(PuzzleSolver) {
             why = {
               // forcedStars is only ever populated when avail.length === 1,
               // so this branch is always singular.
-              stars: `Only one cyan-highlighted cell is still open, so it's a star.`,
+              stars: `Only one cyan cell is still open, so it's a star.`,
               dots: forcedDots.length === 1
-                ? `A star at the marked cell would see every open cyan-highlighted cell, leaving them without their star, so it's a dot.`
-                : `A star at any of the marked cells would see every open cyan-highlighted cell, leaving them without their star, so they're dots.`,
+                ? `A star at the marked cell would see every open cyan cell, leaving them without their star.`
+                : `A star at any of the marked cells would see every open cyan cell, leaving them without their star.`,
             };
           } else {
             const combos = this._enumerateUnitCompletions({ indices: rem, label: 'regionAlgebra' }, false, N);
@@ -575,11 +575,11 @@ export function applyCommonSolverRules(PuzzleSolver) {
             ];
             why = {
               stars: forcedStars.length === 1
-                ? `Every way to place ${N} non-touching stars in the cyan-highlighted cells includes the marked cell, so it's a star.`
-                : `Every way to place ${N} non-touching stars in the cyan-highlighted cells includes the marked cells, so they're stars.`,
+                ? `Every way to place ${N} non-touching stars in the cyan cells includes the marked cell.`
+                : `Every way to place ${N} non-touching stars in the cyan cells includes the marked cells.`,
               dots: forcedDots.length === 1
-                ? `Every way to place ${N} non-touching stars in the cyan-highlighted cells rules out a star at the marked cell, so it's a dot.`
-                : `Every way to place ${N} non-touching stars in the cyan-highlighted cells rules out a star at the marked cells, so they're dots.`,
+                ? `Every way to place ${N} non-touching stars in the cyan cells rules out a star at the marked cell.`
+                : `Every way to place ${N} non-touching stars in the cyan cells rules out a star at the marked cells.`,
             };
           }
           if (forcedStars.length === 0 && forcedDots.length === 0) continue;
@@ -642,10 +642,10 @@ export function applyCommonSolverRules(PuzzleSolver) {
           const marksOn = [...allBoardsInvolved];
           const boardIdx = allBoardsInvolved.size === 1 ? marksOn[0] : undefined;
 
-          const cName = cUnit.boardIdx !== undefined ? `the brown-highlighted region` : `${cUnit.label} (brown-highlighted)`;
-          const intro = `Two units, outlined in blue, hold ${2 * N} stars together. `
-            + `Apart from dotted cells, ${cName} lies entirely inside them and holds ${starsText}, `
-            + `so the cyan-highlighted cells hold exactly ${starsText}. `;
+          const cName = cUnit.boardIdx !== undefined ? `The brown region` : `${cUnit.label} (brown)`;
+          const intro = `The two blue-outlined units hold ${2 * N} stars together. `
+            + `${cName} has all its open cells inside them, so it accounts for ${N} of those, `
+            + `leaving exactly ${starsText} for the cyan cells. `;
           if (forcedStars.length > 0) {
             hints.push({
               description: intro + why.stars,

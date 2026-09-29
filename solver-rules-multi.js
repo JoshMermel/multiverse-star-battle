@@ -215,8 +215,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       if (forcedStars.length > 0) {
         hints.push({
           description: forcedStars.length === 1
-            ? `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell, so it's a star.`
-            : `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cells, so they're stars.`,
+            ? `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell.`
+            : `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cells.`,
           highlights: [],
           marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
           boardIdx: unit.boardIdx,
@@ -233,8 +233,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       if (forcedDots.length > 0) {
         hints.push({
           description: forcedDots.length === 1
-            ? `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cell, so it's a dot.`
-            : `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cells, so they're dots.`,
+            ? `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cell.`
+            : `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cells.`,
           highlights: [],
           marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
           boardIdx: unit.boardIdx,
@@ -415,7 +415,7 @@ export function applyMultiStarRules(PuzzleSolver) {
           // _outlineEntriesFor's every-board default.
           regionOutlines: [
             { indices: combo.flatMap(({ unit }) => unit.indices), color: 'blue', boardIdx },
-            { indices: lineIndices, color: 'amber', boardIdx },
+            { indices: lineIndices, color: 'amber', boardIdx, inset: true },
           ],
         });
       }
@@ -563,7 +563,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         // default.
         regionOutlines: [
           { indices: groupCells, color: 'blue', boardIdx },
-          { indices: lineIndices, color: 'amber', boardIdx },
+          { indices: lineIndices, color: 'amber', boardIdx, inset: true },
         ],
       };
     });
@@ -756,7 +756,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         // lineHighlight, not _outlineEntriesFor's every-board default.
         regionOutlines: [
           { indices: regionIndices, color: 'blue', boardIdx },
-          { indices: lineIndices, color: 'amber', boardIdx },
+          { indices: lineIndices, color: 'amber', boardIdx, inset: true },
         ],
       };
     });
@@ -873,7 +873,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         // board's copy of the matched regions it's shown next to.
         regionOutlines: [
           ...combo.map(({ unit }) => ({ indices: unit.indices, color: 'blue', boardIdx: unit.boardIdx })),
-          { indices: lineIndices, color: 'amber', boardIdx: combo[0].unit.boardIdx },
+          { indices: lineIndices, color: 'amber', boardIdx: combo[0].unit.boardIdx, inset: true },
         ],
       });
     }
@@ -968,6 +968,7 @@ export function applyMultiStarRules(PuzzleSolver) {
             indices: lineKind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx],
             color: 'amber',
             boardIdx: unit.boardIdx,
+            inset: true,
           },
         ],
       };
@@ -1845,10 +1846,13 @@ export function applyMultiStarRules(PuzzleSolver) {
       const tileWord = combo.length === 1 ? 'tile' : 'tiles';
       const holdWord = combo.length === 1 ? 'holds' : 'each hold';
       return {
-        description: `The ${combo.length} highlighted ${tileWord} ${holdWord} exactly one star, accounting for all ${combo.length} star${combo.length === 1 ? '' : 's'} this ${this._unitKind(unit)} needs -- so every other empty cell here is a dot.`,
+        description: `The ${combo.length} highlighted ${tileWord} ${holdWord} exactly one star, accounting for all ${combo.length} star${combo.length === 1 ? '' : 's'} the amber-outlined ${this._unitKind(unit)} needs.`,
         highlights,
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
+        // The unit the tiles are filling. Amber, since the tiles themselves
+        // already cycle through every TILE_OUTLINE_COLORS hue.
+        regionOutlines: this._outlineEntriesFor(unit, 'amber'),
         boardIdx: unit.boardIdx
       };
     });
@@ -1926,14 +1930,11 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       const targetList = [...targetSet].sort((a, b) => a - b);
       const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, matchingTiles, targetList);
-      const tileWord = matchingTiles.length === 1 ? 'this tile' : 'each of these tiles';
-      const cellWord = targetList.length === 1 ? 'cell' : 'cells';
-      const isAre = targetList.length === 1 ? 'is' : 'are';
-      const itsTheyre = targetList.length === 1 ? "it's" : "they're";
+      // Same wording as the 1★ hintTileSeesTooMuch.
       hints.push({
-        description: `No matter which cell in ${tileWord} ends up with the star, the marked ${cellWord} `
-          + `${isAre} ruled out too -- either by touching it, or because that placement `
-          + `would complete a row or column, leaving no room left. So ${itsTheyre} dot${targetList.length === 1 ? '' : 's'}.`,
+        description: matchingTiles.length === 1
+          ? `This tile's empty cells must contain a star.`
+          : `${matchingTiles.length} of these tiles' empty cells must each contain a star.`,
         highlights,
         marks: targetList.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
@@ -2530,16 +2531,11 @@ export function applyMultiStarRules(PuzzleSolver) {
         axis, lineIdx, barLen: barCells.length,
         hint: {
           boardIdx: undefined,
-          description: `The ${tiles.length} tile${tiles.length === 1 ? '' : 's'} provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} blue-outlined ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}.`,
-          highlights: [],
+          description: `The ${tiles.length} tile${tiles.length === 1 ? '' : 's'} provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} highlighted ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}.`,
+          // The bar's own cells, filled (board-agnostic, so on every
+          // board). Never overlaps `targets`, which are all off the bar.
+          highlights: barCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
           marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-          // barCells is a connected path along the band (see this
-          // section's own comment on _tileBarFactsImpl), not a rectangle
-          // like the confirmed tiles below -- outline its own shape
-          // instead of a flat fill. Board-agnostic like every row/column
-          // shape in this file, hence _outlineEntriesFor rather than a
-          // single raw entry.
-          regionOutlines: this._outlineEntriesFor({ indices: barCells, boardIdx: undefined }, 'blue'),
           // Index 0 (blue), matching every other tile hint's single-
           // covering case -- hints display one at a time, so there's never
           // a second concurrent covering here needing a distinct color the
