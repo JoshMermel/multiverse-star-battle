@@ -965,13 +965,18 @@ export function applySingleStarRules(PuzzleSolver) {
       // hintTilePairQuotaFill in solver-rules-multi.js).
       { key: 'tilePairQuotaFill',        fn: () => this.hintTilePairQuotaFill() },
       { key: 'disjointUnitRegionSync3',  fn: () => this.hintDisjointUnitRegionSync(3) },
-      // 3-region cross-board pin -- moved to the start of Expert (was
-      // after rowColLineSync3/crossBoardPinned2Row/2Col).
-      { key: 'crossBoardPinned3Row',     fn: () => this.hintCrossBoardRegionPinned(3, "Row") },
-      { key: 'crossBoardPinned3Col',     fn: () => this.hintCrossBoardRegionPinned(3, "Column") },
-      { key: 'rowColLineSync3',          fn: () => this.hintRowColLineSync(3) },
+      // Cross-board pin, 2-region case -- opens Expert, ahead of the
+      // 3-region case (after rowColLineSync3 below). The two swapped
+      // positions: 60ef66b had promoted the 3-region case here, leaving
+      // the strictly simpler 2-region case behind it, so the GUI's first
+      // hint could show "3 regions in 3 rows" while a "2 regions in 2
+      // cols" deduction was also available.
       { key: 'crossBoardPinned2Row',     fn: () => this.hintCrossBoardRegionPinned(2, "Row") },
       { key: 'crossBoardPinned2Col',     fn: () => this.hintCrossBoardRegionPinned(2, "Column") },
+      { key: 'rowColLineSync3',          fn: () => this.hintRowColLineSync(3) },
+      // Cross-board pin, 3-region case -- see the 2-region case above.
+      { key: 'crossBoardPinned3Row',     fn: () => this.hintCrossBoardRegionPinned(3, "Row") },
+      { key: 'crossBoardPinned3Col',     fn: () => this.hintCrossBoardRegionPinned(3, "Column") },
       { key: 'partialOverlap',           fn: () => this.hintPartialOverlap() },
       { key: 'lookaheadHalfSingleBoard', fn: () => this.hintLookaheadHalfSingleBoard() },
       { key: 'lookaheadHalf',            fn: () => this.hintLookaheadHalf() },

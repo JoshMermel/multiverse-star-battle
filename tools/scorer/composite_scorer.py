@@ -143,16 +143,18 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_tile_pair_quota_fill,                 40, "Expert"),
             (self.rule_3_disjoint_rows,                     45, "Expert"),
             (self.rule_3_disjoint_cols,                     45, "Expert"),
-            # 3-region cross-board pin -- moved to the start of Expert
-            # (was after rule_3_row_col_line_sync_*/
-            # rule_2_region_pinned_crossboard_*, weight unchanged); matches
-            # solver-rules-single.js's identical reorder.
-            (self.rule_3_region_pinned_crossboard_rows,     60, "Expert"),
-            (self.rule_3_region_pinned_crossboard_cols,     60, "Expert"),
+            # Cross-board pin, 2-region case -- opens Expert, ahead of the
+            # 3-region case (after rule_3_row_col_line_sync_*). The two
+            # swapped positions AND weights: 60ef66b had promoted the
+            # 3-region case here, leaving the strictly simpler 2-region
+            # case behind it at a higher weight. Matches
+            # solver-rules-single.js.
+            (self.rule_2_region_pinned_crossboard_rows,     60, "Expert"),
+            (self.rule_2_region_pinned_crossboard_cols,     60, "Expert"),
             (self.rule_3_row_col_line_sync_rows,            65, "Expert"),
             (self.rule_3_row_col_line_sync_cols,            65, "Expert"),
-            (self.rule_2_region_pinned_crossboard_rows,     70, "Expert"),
-            (self.rule_2_region_pinned_crossboard_cols,     70, "Expert"),
+            (self.rule_3_region_pinned_crossboard_rows,     70, "Expert"),
+            (self.rule_3_region_pinned_crossboard_cols,     70, "Expert"),
             (self.rule_crossboard_partial_overlap,          75, "Expert"),
             (self.rule_lookahead_half_stage_single_board,   78, "Expert"),
             (self.rule_lookahead_half_stage,                80, "Expert"),
@@ -292,12 +294,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
 
             # -- Expert -------------------------------------------------------
             
-            # Cross-board N-regions-pin-N-rows/cols (3-region case): moved
-            # to the start of Expert (was after
-            # rule_crossboard_n_region_pinned_multi_2_*, weight unchanged);
-            # matches solver-rules-multi.js's identical reorder.
-            (self.rule_crossboard_n_region_pinned_multi_3_rows,   112, "Expert"),
-            (self.rule_crossboard_n_region_pinned_multi_3_cols,   113, "Expert"),
+            # Cross-board N-regions-pin-N-rows/cols, 2-region case -- opens
+            # Expert; the 3-region case sits later (after
+            # rule_tile_pair_quota_fill). The two swapped positions AND
+            # weights: 60ef66b had promoted the 3-region case here, leaving
+            # the strictly simpler 2-region case behind it at a higher
+            # weight. Matches solver-rules-multi.js.
+            (self.rule_crossboard_n_region_pinned_multi_2_rows,   112, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_2_cols,   113, "Expert"),
             # The full (cross-board) strong variants: a deduction here may
             # require combining BOTH boards' region layouts, unlike the
             # Medium/Hard intermediate variants above, which only ever need
@@ -323,11 +327,11 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # Restored from pre-experiment.
             (self.rule_unit_completion_satisfies_other_unit_strong, 118, "Expert"),
             (self.rule_unit_region_sync_multi_2_disjoint,         119, "Expert"),
-            # 3-region case (rows/cols) moved to the start of Expert -- see
-            # above.
             (self.rule_tile_pair_quota_fill,                      120, "Expert"),
-            (self.rule_crossboard_n_region_pinned_multi_2_rows,   125, "Expert"),
-            (self.rule_crossboard_n_region_pinned_multi_2_cols,   125, "Expert"),
+            # Cross-board pin, 3-region case -- see the 2-region case at the
+            # start of Expert.
+            (self.rule_crossboard_n_region_pinned_multi_3_rows,   125, "Expert"),
+            (self.rule_crossboard_n_region_pinned_multi_3_cols,   125, "Expert"),
             (self.rule_region_subset_sync_3,                      130, "Expert"),
             (self.rule_region_subset_sync_4,                      150, "Expert"),
             # Region algebra, then the region-pair hybrid enumeration -- see
