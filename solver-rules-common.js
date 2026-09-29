@@ -536,15 +536,21 @@ export function applyCommonSolverRules(PuzzleSolver) {
           let why;
           if (have >= N) {
             forcedDots = avail;
-            why = { dots: `The blue cells already have their ${starsText}, so the marked cells are dots.` };
+            why = { dots: forcedDots.length === 1
+              ? `The cyan-highlighted cells already have their ${starsText}, so the marked cell is a dot.`
+              : `The cyan-highlighted cells already have their ${starsText}, so the marked cells are dots.` };
           } else if (N === 1) {
             if (avail.length === 1) forcedStars = avail;
             for (let i = 0; i < n * n; i++) {
               if (this.vState(i) === CELL.NONE && !remSet.has(i) && avail.every(c => sees(i, c))) forcedDots.push(i);
             }
             why = {
-              stars: `Only one blue cell is still open, so it's a star.`,
-              dots: `A star at the marked cell(s) would see every open blue cell, leaving the blue cells without their star, so they're dots.`,
+              // forcedStars is only ever populated when avail.length === 1,
+              // so this branch is always singular.
+              stars: `Only one cyan-highlighted cell is still open, so it's a star.`,
+              dots: forcedDots.length === 1
+                ? `A star at the marked cell would see every open cyan-highlighted cell, leaving them without their star, so it's a dot.`
+                : `A star at any of the marked cells would see every open cyan-highlighted cell, leaving them without their star, so they're dots.`,
             };
           } else {
             const combos = this._enumerateUnitCompletions({ indices: rem, label: 'regionAlgebra' }, false, N);
@@ -561,56 +567,87 @@ export function applyCommonSolverRules(PuzzleSolver) {
               ...[...outside].filter(cell => combos.every(combo => combo.some(s => this._cellsAdjacent(s, cell)))),
             ];
             why = {
-              stars: `Every way to place ${N} non-touching stars in the blue cells includes the marked cell(s), so they're stars.`,
-              dots: `Every way to place ${N} non-touching stars in the blue cells rules out a star at the marked cell(s), so they're dots.`,
+              stars: forcedStars.length === 1
+                ? `Every way to place ${N} non-touching stars in the cyan-highlighted cells includes the marked cell, so it's a star.`
+                : `Every way to place ${N} non-touching stars in the cyan-highlighted cells includes the marked cells, so they're stars.`,
+              dots: forcedDots.length === 1
+                ? `Every way to place ${N} non-touching stars in the cyan-highlighted cells rules out a star at the marked cell, so it's a dot.`
+                : `Every way to place ${N} non-touching stars in the cyan-highlighted cells rules out a star at the marked cells, so they're dots.`,
             };
           }
           if (forcedStars.length === 0 && forcedDots.length === 0) continue;
 
-          // Prototype: outline R (= A∪B minus C) in blue and C in brown,
-          // instead of filling their cells -- see renderer.js's
-          // _buildRegionOutlineSvg. R's cells are split by whichever of
-          // A/B each one came from, so this still traces correctly even
-          // when A and B are regions on two DIFFERENT boards (a case that
-          // only exists now that A/B can be any disjoint unit, not just
-          // two same-board regions): a cell's own owner's board if it's a
-          // region, else the OTHER of A/B's board (so the shape still
-          // lands on one coherent board whenever at least one of A/B is a
-          // real region), else every board if both A and B are rows/cols.
-          // C is simpler -- always its own board if a region, every board
-          // if a row/col -- since outlining doesn't need the old fill
-          // version's "only where C overlaps A/B" restriction (an outline
-          // traces C's true shape regardless of what's inside it).
-          const fallbackBoard = ua.boardIdx ?? ub.boardIdx;
-          const remByBoard = new Map();
-          for (const idx of rem) {
-            const owner = aSet.has(idx) ? ua : ub;
-            const ownerBoards = owner.boardIdx !== undefined ? [owner.boardIdx]
-              : fallbackBoard !== undefined ? [fallbackBoard] : this.boardIndices;
-            for (const b of ownerBoards) {
-              if (!remByBoard.has(b)) remByBoard.set(b, []);
-              remByBoard.get(b).push(idx);
+          // Outline A∪B -- the whole "region pair" -- in blue. C (the
+          // thing "implied" to lie inside it) and R (= A∪B minus C, the
+          // thing actually gaining an exact star count) each get their own
+          // highlight-fill color instead of a second outline color: C can
+          // sit deep inside A∪B, so its boundary and part of A∪B's own
+          // boundary often run right alongside each other, and two
+          // semi-transparent outline strokes doing that read as a blurry
+          // mess rather than two distinct shapes. A fill has no boundary
+          // of its own to compete with an outline's, so both read cleanly
+          // nested inside it instead.
+          //
+          // A/B's cells are split by board the same way region shapes
+          // always are: a region outlines on its own board; a row/column
+          // (boardIdx undefined) outlines on every board. When A and B
+          // share a board (including a row/col that expands onto it),
+          // their indices are merged into ONE array for that board so
+          // touching units still trace as a single seamless shape, same as
+          // hintRegionPairPlacementForced's union.
+          const pairByBoard = new Map();
+          for (const unit of [ua, ub]) {
+            const boards = unit.boardIdx !== undefined ? [unit.boardIdx] : this.boardIndices;
+            for (const b of boards) {
+              if (!pairByBoard.has(b)) pairByBoard.set(b, []);
+              pairByBoard.get(b).push(...unit.indices);
             }
           }
-          const cBoards = cUnit.boardIdx !== undefined ? [cUnit.boardIdx] : this.boardIndices;
-          const regionOutlines = [
-            ...[...remByBoard.entries()].map(([b, indices]) => ({ indices, color: 'blue', boardIdx: b })),
-            ...cBoards.map(b => ({ indices: cUnit.indices, color: 'brown', boardIdx: b })),
-          ];
+          const regionOutlines = [...pairByBoard.entries()].map(([b, indices]) => ({ indices, color: 'blue', boardIdx: b }));
+
+          // A region only has geometric meaning on its own board, but its
+          // cells still exist (and still matter to this argument) on every
+          // board -- highlight them everywhere so the relationship is
+          // visible no matter which board the player is looking at. A
+          // row/column already looks identical on every board, so
+          // repeating its highlight on all of them is just noise -- show
+          // it once, on whichever board the blue outline is itself
+          // anchored to (a concrete region's board if either A or B is
+          // one, else the lowest board index the outline actually
+          // touches).
+          const fallbackBoard = ua.boardIdx ?? ub.boardIdx ?? [...pairByBoard.keys()].sort((x, y) => x - y)[0];
+          const cBoards = cUnit.boardIdx !== undefined ? this.boardIndices : [fallbackBoard];
+          const cColor = HINT_SOURCE_VARIANTS[1]; // brown
+          // C's cells minus dots (see `live` above) -- a dot isn't part of
+          // the "C lies entirely inside A∪B" argument, so it isn't part of
+          // what's highlighted either.
+          const highlights = cBoards.flatMap(b => live.map(idx => ({ idx, color: cColor, boards: [b] })));
+
+          // R gets the same per-cell board treatment as the blue outline
+          // (each cell shown on its owning unit's board, or the same
+          // fallback a row/col owner would use) -- just as a highlight
+          // instead of a separate outline entry.
+          const rColor = HINT_SOURCE_VARIANTS[2]; // cyan
+          for (const idx of rem) {
+            const owner = aSet.has(idx) ? ua : ub;
+            const boards = owner.boardIdx !== undefined ? [owner.boardIdx] : [fallbackBoard];
+            for (const b of boards) highlights.push({ idx, color: rColor, boards: [b] });
+          }
+
           // Marked cells are board-agnostic facts; show them on every
-          // board either outline actually appears on.
-          const allBoardsInvolved = new Set([...remByBoard.keys(), ...cBoards]);
+          // board the outline or either highlight actually appears on.
+          const allBoardsInvolved = new Set([...pairByBoard.keys(), ...cBoards, fallbackBoard]);
           const marksOn = [...allBoardsInvolved];
           const boardIdx = allBoardsInvolved.size === 1 ? marksOn[0] : undefined;
 
-          const cName = cUnit.boardIdx !== undefined ? `the brown region` : `${cUnit.label} (brown)`;
+          const cName = cUnit.boardIdx !== undefined ? `the brown-highlighted region` : `${cUnit.label} (brown-highlighted)`;
           const intro = `Two units, outlined in blue, hold ${2 * N} stars together. `
             + `Apart from dotted cells, ${cName} lies entirely inside them and holds ${starsText}, `
-            + `so the blue cells hold exactly ${starsText}. `;
+            + `so the cyan-highlighted cells hold exactly ${starsText}. `;
           if (forcedStars.length > 0) {
             hints.push({
               description: intro + why.stars,
-              highlights: [],
+              highlights,
               marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR, boards: marksOn })),
               regionOutlines,
               boardIdx
@@ -619,7 +656,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
           if (forcedDots.length > 0) {
             hints.push({
               description: intro + why.dots,
-              highlights: [],
+              highlights,
               marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: marksOn })),
               regionOutlines,
               boardIdx
