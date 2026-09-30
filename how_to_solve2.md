@@ -341,6 +341,31 @@ all of its open cells inside them and needs 2 stars of its own. That leaves
 exactly 2 stars for the rest of the pair. Every one of the 6 ways to place
 those 2 remaining stars puts one next to the circled cell, so it must be a dot.
 
+## Row/col line sync, revisited
+
+The first volume's row/col line sync — rows against columns, no regions involved —
+still works at 2★+, but it gets much stranger. At 1★, N rows always trap exactly N
+columns. At 2★+ the counts come apart: what has to match is the *remaining star
+need* of the rows and the *remaining room* of the columns their empty cells touch,
+and those can be spread across a different number of lines.
+
+<a href="index.html?book=armory2&puzzle=22">
+<img src="images/multi_row_col_line_sync.png" width="600"></img> </a>
+
+Rows 3 and 4 have no stars yet, so they need 4 between them. Every one of their
+empty cells sits in column D, F, H, or J — four columns for two rows — and each of
+those columns already has one star, so they have exactly 4 stars of room left
+between them. The two rows need all 4 of those stars, and the columns can't hold
+any more, so the columns' last stars must all land in rows 3 and 4. Every other
+empty cell in those columns — J1, J2, H5, and J7 — must be a dot.
+
+Because it's so hard to spot at 2★+, this is the last Expert technique my scorer
+tries (it's a Hard technique at 1★), and only the 2-row/2-column version is used —
+the 3-line version essentially never mattered. The flip side is that a puzzle
+almost never *needs* it: by the time it would be tried, something else has usually
+already found the same dots. So unlike the other examples here, this puzzle doesn't
+require it — it's just a position where it applies.
+
 ## Lookahead
 
 <a href="index.html?book=armory2&puzzle=21">

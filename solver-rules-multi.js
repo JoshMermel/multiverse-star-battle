@@ -2627,11 +2627,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'unitPlacementForcedIntermediateDots', fn: () => this.hintUnitPlacementForced('intermediate', 'dots') },
       { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
       // Row<->column line sync (see solver-rules-common.js): the 1★ family's
-      // hintRowColLineSync generalized to any starsPerGroup, only just added
-      // here -- no region information needed, so it's exactly as sound on a
-      // regionless board as a regular one. Slotted at the same N/tier as the
-      // 1★ list's rowColLineSync2/3.
-      { key: 'rowColLineSync2',                fn: () => this.hintRowColLineSync(2) },
       // Tiles rule 2.
       { key: 'tileTwoEmptyDot',                fn: () => this.hintTileTwoEmptyDot() },
       // Tile-quota-fill's K=1 special case: a single confirmed tile already
@@ -2656,7 +2651,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Restored from pre-experiment (see the section comment above
       // hintUnitCompletionSatisfiesOtherUnit).
       { key: 'unitCompletionSatisfiesOtherUnitIntermediate', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('intermediate') },
-      { key: 'rowColLineSync3',                fn: () => this.hintRowColLineSync(3) },
       // 2★+ generalization of tileSeesTooMuch -- see the section comment
       // above hintTileSeesTooMuchMulti. Toward the end of Hard: it needs
       // the same tile-spotting as tileSingleEmpty/tileTwoEmptyDot (start
@@ -2717,6 +2711,14 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'regionAlgebra',                  fn: () => this.hintRegionAlgebra() },
       { key: 'regionPairPlacementForced',      fn: () => this.hintRegionPairPlacementForced() },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
+      // Row<->column line sync (hintRowColLineSync, shared with 1★) -- no
+      // region information needed, so it works on regionless boards too.
+      // For 2★+ the N rows and the columns they touch needn't match in
+      // count, which makes it much harder to spot than the 1★ version: the
+      // 2-line case sits at the very end of Expert here (Hard for 1★), and
+      // the 3-line case isn't used for 2★+ at all (2026-09-29, user's call
+      // -- it almost never fired even in Hard). Matches composite_scorer.py.
+      { key: 'rowColLineSync2',                fn: () => this.hintRowColLineSync(2) },
       // Grandmaster
       // Cross-board region/line quota fill + partition forced -- see the
       // section comment above hintCrossBoardRegionLineQuotaFill. Genuinely

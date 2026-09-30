@@ -122,10 +122,8 @@ other empty cell in rows 4 and 5, including G5, must be a dot.
 ## Adjacent and disjoint rows/cols, revisited
 
 Same as in part 1: both of these compare a *count of regions* to a *count of
-rows/columns*, so neither has a regionless equivalent. Row/col line sync — covered
-in the 1★ companion — is still the right regionless-native substitute in principle,
-but I don't currently have a small, clean 2★+ example of it; it turned out to be
-much rarer at 2★+ than I expected; I'll add one if I find a good candidate.
+rows/columns*, so neither has a regionless equivalent. Row/col line sync is the
+regionless-native substitute — see below.
 
 ## Region/Line Quota Fill
 
@@ -158,6 +156,26 @@ practice.
 Every crossboard technique compares regions across two different boards. None of
 them have a regionless equivalent, and every regionless puzzle I publish is
 single-board besides.
+
+## Row/col line sync, revisited
+
+Rows against columns, no regions involved — so it works on a regionless board
+exactly as it does on a regular one. At 2★+ the rows and the columns they touch
+don't have to match in count: what has to match is the rows' remaining star need
+and those columns' remaining room.
+
+<a href="index.html?book=armory2_regionless&puzzle=12">
+<img src="images/regionless/row_col_line_sync_multi.png" width="600"></img> </a>
+
+Rows 2 and 9 have no stars yet, so they need 4 between them. Their only non-void
+cells are A2, E2, J2, A9, F9, and J9 — all in columns A, E, F, and J — and each of
+those columns already has one star, leaving exactly 4 stars of room between them.
+So all of those columns' remaining stars land in rows 2 and 9, and every other
+empty cell in them — A1, F1, J1, A5, A10, E10, and J10 — must be a dot.
+
+As in the regions version (see [how_to_solve2.md](how_to_solve2.md)), this is the
+last Expert technique the scorer tries at 2★+, and puzzles almost never *need* it
+— this example is a position where it applies, not one that requires it.
 
 ## Lookahead
 

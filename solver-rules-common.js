@@ -264,21 +264,27 @@ export function applyCommonSolverRules(PuzzleSolver) {
     }
     if (targets.length === 0) return null;
 
-    const N = unitCombo.length;
-    const axisWord = axisLabel.toLowerCase();
-    const otherWord = otherAxisLabel.toLowerCase();
-    const unitsPhrase = N === 1 ? `this ${axisWord}` : `these ${N} ${axisWord}s`;
+    // Name every line involved, the same way renderer.js labels the axes:
+    // rows by 1-indexed number, columns by letter.
+    const lineName = (label, i) => label === "Row" ? String(i + 1) : String.fromCharCode(65 + i);
+    const listPhrase = (label, idxs) => {
+      const names = [...idxs].sort((a, b) => a - b).map(i => lineName(label, i));
+      const word = label.toLowerCase() + (names.length === 1 ? '' : 's');
+      const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+      return `${word} ${list}`;
+    };
+    const windowIdxs = unitCombo.map(u => axisLabel === "Row" ? Math.floor(u[0] / n) : u[0] % n);
+    const otherPhrase = listPhrase(otherAxisLabel, touchedOther);
+    const windowPhrase = listPhrase(axisLabel, windowIdxs);
     const otherCount = touchedOther.size;
-    const otherPhrase = otherCount === 1 ? otherWord : `${otherWord}s`;
-    const thoseWord = otherCount === 1 ? 'that' : 'those';
-
-    // Identical wording to before this generalized (requiredCount === otherCount is the
-    // starsPerGroup === 1 case, and still the common case at higher quotas too) -- only
-    // reaches for the more explicit "combined room" phrasing when that's no longer exact
-    // enough to describe accurately (a touched unit whose own remaining need is > 1).
-    const description = requiredCount === otherCount
-      ? `All empty cells in ${unitsPhrase} fall within ${otherCount} ${otherPhrase}, so the rest of ${thoseWord} ${otherPhrase} must be dots.`
-      : `All empty cells in ${unitsPhrase} fall within ${otherCount} ${otherPhrase}, whose remaining room adds up to exactly ${requiredCount} star${requiredCount === 1 ? '' : 's'} -- so the rest of ${thoseWord} ${otherPhrase} must be dots.`;
+    const provides = otherCount === 1 ? 'provides' : 'provide';
+    const needs = windowIdxs.length === 1 ? 'needs' : 'need';
+    const starsPhrase = requiredCount === 1 ? 'the 1 star' : `the ${requiredCount} stars`;
+    const satisfies = otherCount === 1 ? `that ${otherAxisLabel.toLowerCase()}`
+      : otherCount === 2 ? `both ${otherAxisLabel.toLowerCase()}s`
+      : `all of those ${otherAxisLabel.toLowerCase()}s`;
+    const description = `${otherPhrase[0].toUpperCase()}${otherPhrase.slice(1)} ${provides} ${starsPhrase} `
+      + `${windowPhrase} still ${needs}, which satisfies ${satisfies}.`;
 
     return {
       boardIdx: undefined,

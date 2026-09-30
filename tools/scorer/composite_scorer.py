@@ -256,14 +256,6 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_placement_forced_intermediate_any,    35, "Hard"),
             (self.rule_unit_placement_forced_intermediate_dots,   35, "Hard"),
             (self.rule_unit_region_sync_multi_3,                  45, "Hard"),
-            # Row<->column line sync (rules_common.py): the 1★ family's
-            # _rule_axis_line_sync generalized to any stars_per_unit, only
-            # just added here -- no region information needed, so it's
-            # exactly as sound on a regionless board as a regular one.
-            # Slotted at the same N/tier as the 1★ table's row_col_line_sync
-            # rules (see rules_1star above).
-            (self.rule_2_row_col_line_sync_rows,                  46, "Hard"),
-            (self.rule_2_row_col_line_sync_cols,                  46, "Hard"),
             (self.rule_tile_two_empty_dot,                        50, "Hard"),
             # Tile-quota-fill's K=1 special case: a single confirmed tile
             # already covers a unit's whole remaining need. See
@@ -278,8 +270,6 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # Restored from pre-experiment -- see rules_multi_star.py's
             # "Restored from pre-experiment" section comment.
             (self.rule_unit_completion_satisfies_other_unit_intermediate, 82, "Hard"),
-            (self.rule_3_row_col_line_sync_rows,                  83, "Hard"),
-            (self.rule_3_row_col_line_sync_cols,                  83, "Hard"),
             # 2★+ generalization of rule_tile_sees_too_much -- see
             # rules_multi_star.py's section comment above
             # rule_tile_sees_too_much_multi. Toward the end of Hard: same
@@ -339,6 +329,16 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_region_algebra,                            152, "Expert"),
             (self.rule_region_pair_placement_forced,              155, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),
+            # Row<->column line sync (rules_common.py's _rule_axis_line_sync,
+            # shared with 1★) -- no region information needed, so it works on
+            # regionless boards too. For 2★+ the N rows and the columns they
+            # touch needn't match in count, which makes it much harder to spot
+            # than the 1★ version: the 2-line case sits at the very end of
+            # Expert here (Hard for 1★), and the 3-line case isn't used for
+            # 2★+ at all (2026-09-29, user's call -- it almost never fired
+            # even in Hard). Matches solver-rules-multi.js.
+            (self.rule_2_row_col_line_sync_rows,                  175, "Expert"),
+            (self.rule_2_row_col_line_sync_cols,                  175, "Expert"),
 
             # -- Grandmaster ------------------------------------------------
             # Cross-board region/line quota fill + partition forced -- see
