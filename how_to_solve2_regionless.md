@@ -60,10 +60,10 @@ exactly one star, G2 must be it.
 <a href="index.html?book=armory2_regionless&puzzle=5">
 <img src="images/regionless/tile_two_empty_dot.png" width="600"></img> </a>
 
-A confirmed tile with exactly two empty cells (G5, H5 here) is guaranteed exactly
+A confirmed tile with exactly two empty cells (G6, H6 here) is guaranteed exactly
 one star — but voids or not, this rule never needs to know *which* one. Any other
-cell touching both G5 and H5 would be dotted whichever cell wins, and here that's
-already every one of this puzzle's very first round: no prior deduction was even
+cell touching both G6 and H6 would be dotted whichever cell wins — here, that's G5
+and H5. This one is available from the very first move: no prior deduction was
 needed to spot it.
 
 ---
@@ -112,7 +112,7 @@ star nowhere to go. C6 must be a dot.
 ---
 
 <a href="index.html?book=armory2_regionless&puzzle=10">
-<img src="images/regionless/tile_pair_quota_fill.png" width="600"></img> </a>
+<img src="images/regionless/tile_pair_quota_fill_multi.png" width="600"></img> </a>
 
 Two confirmed tiles from unrelated column-pairs — C4/C5 and E4/E5 — both happen
 to land inside the same row-pair, rows 4 and 5. That row-pair needs exactly 2

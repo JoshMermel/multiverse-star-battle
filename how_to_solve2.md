@@ -88,7 +88,7 @@ move, once ordinary adjacency catches up to it — but this rule got there first
 
 The same reasoning finds dots, too — both inside the unit in question, and in cells
 just outside it that every valid completion's stars would touch. Here, the
-highlighted region's five cells form a diamond around H5: H4, G5, I5, and H6 surround
+blue-outlined region's five cells form a diamond around H5: H4, G5, I5, and H6 surround
 it, and every one of them touches H5. The region needs 2 non-touching stars, and the
 only two non-touching pairs available are {H4, H6} and {G5, I5} — so H5, which
 touches all four of the others, can never be one of the two stars, and must be a dot.
@@ -166,11 +166,11 @@ tile — must be a dot.
 <a href="index.html?book=armory2&puzzle=9">
 <img src="images/multi_tile_disjoint_quota_fill.png" width="600"></img> </a>
 
-The general K>1 case: a region on board 2 still needs 2 stars, and its remaining
-empty cells — A5, B5, C6, C7, and C8 — split cleanly into two disjoint confirmed
-tiles, {A5, B5} and {C6, C7}. Together those two tiles already account for both of
-the region's remaining stars, so C8 — inside the region but outside both tiles —
-must be a dot.
+The general K>1 case: the amber-outlined region on board 2 still needs 2 stars,
+and among its remaining empty cells — A5, B5, B6, C6, B7, C7, and C8 — sit two
+disjoint confirmed tiles, {A5, B5} and {C6, C7}. Together those two tiles already
+account for both of the region's remaining stars, so B6, B7, and C8 — inside the
+region but outside both tiles — must be dots.
 
 ---
 
@@ -218,10 +218,10 @@ region or a row can need more than one star now.
 <a href="index.html?book=armory2&puzzle=13">
 <img src="images/multi_adjacent_rows.png" width="600"></img> </a>
 
-Here, two adjacent rows still need 4 stars between them, and the highlighted
-region(s) confined to those rows need exactly 4 stars themselves — so those regions
-must be supplying the rows' entire quota, and the rest of those rows' cells (C7 and
-I7, outside the highlighted regions) must be dots.
+Here, rows 8 and 9 (highlighted) still need 4 stars between them, and every one
+of their empty cells sits in one of the outlined regions — which need exactly 4
+stars themselves. So rows 8 and 9 must be supplying those regions' entire remaining
+quota, and the rest of those regions' cells (A7, B7, C7, and I7) must be dots.
 
 ---
 
@@ -245,10 +245,10 @@ something you can bank on regardless of which completion is real.
 <a href="index.html?book=armory2&puzzle=15">
 <img src="images/multi_region_line_quota_fill.png" width="600"></img> </a>
 
-The amber-outlined column here needs exactly 1 more star. The highlighted region
+The amber-outlined column here needs exactly 1 more star. The blue-outlined region
 is guaranteed to place at least 1 star in that column no matter how its own
 remaining cells resolve — and since that alone already covers the column's whole
-remaining need, every other empty cell in the column (C1, C5, C6, C7) must be a dot.
+remaining need, every other empty cell in the column (C1, C5, C6, C7, C8) must be a dot.
 (With more than one region involved, you'd add up several regions' guarantees to
 hit the line's quota — this example just happens to need only one.)
 
@@ -260,7 +260,7 @@ hit the line's quota — this example just happens to need only one.)
 Two siblings of this idea are worth a mention. Once a region's contribution to a
 line is pinned to an exact count (like the column above), you can treat its
 remaining cells — split into "in the line" and "everywhere else" — as their own
-small, self-contained puzzles. Here, the highlighted region must place exactly 1
+small, self-contained puzzles. Here, the blue-outlined region must place exactly 1
 star in the amber column, which pins its *other* remaining star to the rest of the
 region; every valid way to place that one star happens to agree on G9, so G9 must
 be a star ("partition forced"). The other sibling ("partition trapped") runs the
@@ -374,7 +374,7 @@ require it — it's just a position where it applies.
 Same idea as the first volume's half-stage lookahead: hypothesize a star at some
 cell, propagate the immediate consequences (adjacency, filled units, only-empty),
 and see if it breaks the board. Here, a star at the circled cell would leave the
-blue cells' unit unable to reach its required star count — so the circled cell must
+blue-outlined column unable to reach its required star count — so the circled cell must
 be a dot.
 
 I also have a multi-stage version of this — repeating the propagation for several

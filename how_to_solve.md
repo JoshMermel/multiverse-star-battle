@@ -91,8 +91,7 @@ href="index.html?book=armory&puzzle=3">
 <img src="images/triomino.png" width="600"></img> </a>
 
 There must be a star in {A3, B3, C3}, because they are the only empty cells in
-board 1's top-left region. A star at B4 would make this region unsolvable, so B4
-must be a dot.
+row 3. A star at B4 would make row 3 unsolvable, so B4 must be a dot.
 
 <a
 href="index.html?book=armory&puzzle=3">
@@ -265,7 +264,7 @@ inside just two rows, 3 and 4. Columns D and G need two stars between them, and
 rows 3 and 4 also need exactly two stars between them. Since columns D and G's
 stars have nowhere else to go but rows 3 and 4, those two columns must be
 supplying rows 3 and 4's entire quota. So every other empty cell in rows 3 and 4
-— here, that's B3, A4, and B4 — must be dots.
+— here, that's A3, B3, A4, and B4 — must be dots.
 
 More generally: if N rows' empty cells all fall within some set of columns, and
 those columns' combined remaining room exactly matches what the N rows still
@@ -369,8 +368,8 @@ In this case, the two boards are diagonal reflections of one another. If the
 solution wasn't symmetric along that reflection, then we could reflect it, and
 have a second valid solution. But since we know the solution is unique, we can
 infer that the reflection of every dot must be a dot, and the reflection of
-every star must be a star. In this case, we've placed a dot at D1, and that
-tells us that there must also be a dot at A4.
+every star must be a star. In this case, we've placed a dot at A4, and that
+tells us that there must also be a dot at D1.
 
 ---
 
@@ -541,8 +540,8 @@ columns {D, E, F}.  So the rest of those columns must contain only dots.
 href="index.html?book=armory&puzzle=30">
 <img src="images/partial_overlap.png" width="600"></img> </a>
 
-Focus on the regions containing blue cells on each board. They share 3 cells
-{B5, C5, D5}, and each have one cell which is not shared (D3 and D7). If we put
+Focus on the blue-outlined region on board 1 and the brown-outlined region on
+board 2. They share 3 cells {B5, C5, D5} (shaded cyan), and each have one cell which is not shared (D3 and D7). If we put
 the star in the non-shared cell of one, then we'd put dots in all shared cells,
 and be forced to put a dot in the non-shared cell of the other. But in this
 case, D3 and D7 see each other, so we aren't allowed to put stars in both.
