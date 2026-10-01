@@ -84,7 +84,8 @@ class ScorerCore:
     def solve(self, puzzle):
         """
         Attempts to solve the puzzle using the rule list in order.
-        Returns (is_solved, total_score, max_tier).
+        Returns (is_solved, total_score, max_tier). For an UNSOLVED puzzle,
+        total_score is the count of decided non-void cells (see below).
         """
         if self.verbose:
             print(f"\n--- Solving: {puzzle.name} ---")
@@ -121,6 +122,15 @@ class ScorerCore:
                        if i not in puzzle.void_cells)
         if not solved:
             max_tier = "UNSOLVED"
+            # Deliberate hack (user's request, 2026-09-30): an UNSOLVED
+            # puzzle's "score" is the number of non-void cells the rules
+            # managed to decide (stars + dots) before getting stuck, NOT the
+            # sum of rule weights -- so sorting/filtering UNSOLVED rows by
+            # score ranks them by how far the solver got, which is what
+            # matters when picking bonus puzzles. 0 still means "no rule
+            # ever fired". The logic-error path above keeps -999.
+            total_score = sum(1 for i, val in enumerate(puzzle.grid)
+                              if val is not None and i not in puzzle.void_cells)
         return solved, total_score, max_tier
 
     # -- Internal helpers -----------------------------------------------------
