@@ -361,9 +361,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       const [kind, idxStr] = key.split(':');
       const lineIdx = Number(idxStr);
       const lineIndices = kind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
-      const inLine = kind === 'row'
-        ? (cell => Math.floor(cell / this.n) === lineIdx)
-        : (cell => cell % this.n === lineIdx);
 
       const stars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
       const needed = this.starsPerGroup - stars;
@@ -408,25 +405,16 @@ export function applyMultiStarRules(PuzzleSolver) {
         candidates.push({
           boardIdx,
           description: `The amber-outlined ${lineWord} needs ${needed} more star${needed === 1 ? '' : 's'}. The blue-outlined ${regionWord} always put${combo.length === 1 ? 's' : ''} at least ${needed} there, no matter how ${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
-          // Every matched region's own cells INSIDE the line get a plain
-          // fill instead of outline treatment -- a contributing region can
-          // run deep into the line (that's exactly what makes it a
-          // contributor), and outlining that part would draw a blue
-          // boundary running right alongside -- sometimes right on top of
-          // -- the amber line's own boundary. A fill has no edge of its
-          // own to compete with amber's.
-          highlights: combo.flatMap(({ unit }) => unit.indices.filter(inLine)).map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+          highlights: [],
           marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-          // Outline only the matched regions' OUTSIDE-the-line cells in
-          // blue -- together with the fill above, this still conveys each
-          // region's full shape, just without the inside portion's
-          // outline running alongside the amber line. Plus the line
-          // itself (amber), replacing the older rectangular lineHighlight
-          // band with the same outline mechanism. Always single-board
-          // like the old lineHighlight, not _outlineEntriesFor's
-          // every-board default.
+          // Outline the matched regions (blue) instead of filling their
+          // cells -- all on this same boardIdx by construction ("Never
+          // cross-board" above) -- plus the line itself (amber), replacing
+          // the older rectangular lineHighlight band with the same outline
+          // mechanism. Always single-board like the old lineHighlight, not
+          // _outlineEntriesFor's every-board default.
           regionOutlines: [
-            { indices: combo.flatMap(({ unit }) => unit.indices.filter(i => !inLine(i))), color: 'blue', boardIdx },
+            { indices: combo.flatMap(({ unit }) => unit.indices), color: 'blue', boardIdx },
             { indices: lineIndices, color: 'amber', boardIdx, inset: true },
           ],
         });
@@ -649,6 +637,43 @@ export function applyMultiStarRules(PuzzleSolver) {
     return intersection ? [...intersection] : [];
   };
 
+  // Outline colors for a region-line combo (hintRegionLinePartitionForced /
+  // hintCrossBoardRegionLinePartitionForced): a single-region combo always
+  // gets plain 'blue', matching every other region-outline hint. Once a
+  // line's exact split depends on >1 region's guarantee summing together
+  // (see the section comment above hintRegionLinePartitionForced), each
+  // region gets its own color from the rest of the outline palette --
+  // otherwise the "other" region(s) that make the exact-count claim true
+  // would be invisible, which was the original bug report for this whole
+  // rule family.
+  const COMBO_OUTLINE_COLORS = ['blue', 'brown', 'cyan', 'pink'];
+  p._comboOutlineColors = function (comboUnits) {
+    return comboUnits.map((_, i) => COMBO_OUTLINE_COLORS[i % COMBO_OUTLINE_COLORS.length]);
+  };
+
+  // "blue-outlined region" / "blue- and brown-outlined regions" /
+  // "blue-, brown-, and cyan-outlined regions" -- names every region in a
+  // combo by its assigned outline color, for the multi-region phrasing
+  // below.
+  p._colorsPhrase = function (colors) {
+    const noun = colors.length === 1 ? 'region' : 'regions';
+    if (colors.length === 1) return `${colors[0]}-outlined ${noun}`;
+    const allButLast = colors.slice(0, -1).map(c => `${c}-`).join(', ');
+    const sep = colors.length === 2 ? ' and ' : ', and ';
+    return `${allButLast}${sep}${colors[colors.length - 1]}-outlined ${noun}`;
+  };
+
+  // Cross-board variant of the above: names each region by color AND the
+  // board it's on (matches the existing "the blue region (Board 1)"
+  // convention from hintRegionAlgebra), since for a cross-board combo which
+  // board a region lives on is itself part of the point.
+  p._colorsPhraseWithBoards = function (comboUnits, colors) {
+    const parts = comboUnits.map((u, i) => `${colors[i]}-outlined region (${this._describeBoards([u.boardIdx])})`);
+    if (parts.length === 1) return parts[0];
+    if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+    return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
+  };
+
   // Every region/line/side triple, on any board, where a successful
   // regionLineQuotaFill-style subset-sum match pins the region's split to
   // an exact count and some specific cell is forced across every local
@@ -689,6 +714,13 @@ export function applyMultiStarRules(PuzzleSolver) {
       for (const [boardIdx, boardEntries] of byBoard) {
         const combo = this._findSubsetSumCombo(boardEntries, needed);
         if (!combo) continue;
+        // The full matched combo, carried on every fact pushed below (even
+        // ones about just one region's own share) -- the "exactly k, not
+        // just at least k" claim for ANY of these regions is only true
+        // because the OTHER regions in this same combo cover the rest of
+        // the line's need, so the hint needs to show all of them, not just
+        // the one holding the marked cell.
+        const comboUnits = combo.map(e => e.unit);
 
         // Every region in this matched combo is now pinned to EXACTLY its
         // own guaranteed k in this line (see the section comment above).
@@ -700,23 +732,17 @@ export function applyMultiStarRules(PuzzleSolver) {
           const insideCells = unit.indices.filter(i => this.vState(i) === CELL.NONE && inLine(i));
           const outsideCells = unit.indices.filter(i => this.vState(i) === CELL.NONE && !inLine(i));
           const existingStars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
-          // Full-shape split (regardless of dot/star state), for rendering --
-          // see hintRegionLinePartitionForced's comment on regionOutsideLine/
-          // regionInsideLine for why this is outlined/filled instead of
-          // outlining unit.indices whole.
-          const regionInsideLine = unit.indices.filter(inLine);
-          const regionOutsideLine = unit.indices.filter(i => !inLine(i));
 
           if (k >= 1) {
             const forced = this._forcedCellsInGroup(insideCells, k, existingStars);
             if (forced.length > 0) {
-              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'inside', regionInsideLine, regionOutsideLine, forcedCells: forced, lineCount: k, restCount: outsideCount });
+              result.push({ boardIdx, lineKind: kind, lineIdx, lineNeeded: needed, side: 'inside', regionIndices: unit.indices, comboUnits, forcedCells: forced, lineCount: k, restCount: outsideCount });
             }
           }
           if (outsideCount >= 1) {
             const forced = this._forcedCellsInGroup(outsideCells, outsideCount, existingStars);
             if (forced.length > 0) {
-              result.push({ boardIdx, lineKind: kind, lineIdx, side: 'outside', regionInsideLine, regionOutsideLine, forcedCells: forced, lineCount: k, restCount: outsideCount });
+              result.push({ boardIdx, lineKind: kind, lineIdx, lineNeeded: needed, side: 'outside', regionIndices: unit.indices, comboUnits, forcedCells: forced, lineCount: k, restCount: outsideCount });
             }
           }
         }
@@ -740,19 +766,17 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.forcedCells[0] - b.forcedCells[0]);
 
-    return candidates.map(({ boardIdx, lineKind, lineIdx, side, regionInsideLine, regionOutsideLine, forcedCells, lineCount, restCount }) => {
+    return candidates.map(({ boardIdx, lineKind, lineIdx, lineNeeded, side, regionIndices, comboUnits, forcedCells, lineCount, restCount }) => {
       const lineWord = lineKind === 'row' ? 'row' : 'column';
       const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
       const itsAStar = forcedCells.length === 1 ? "it's a star" : "they're stars";
 
-      // Lead with the concrete fact the subset-sum match establishes (see
-      // the section comment above): this region places EXACTLY lineCount
-      // stars in the line, not just "at least". 'outside' facts also name
-      // what that leaves for the rest of the region -- that's the count
-      // whose placements are actually being reasoned about below, even
-      // though the marked cells might be only SOME of them (e.g. 1 forced
-      // cell among a 2-star remainder): "every way to do that includes
-      // the marked cell(s)" stays correct either way, unlike asserting the
+      // 'outside' facts also name what the line's own exact count leaves
+      // for the rest of the region -- that's the count whose placements
+      // are actually being reasoned about below, even though the marked
+      // cells might be only SOME of them (e.g. 1 forced cell among a
+      // 2-star remainder): "every one of those arrangements includes the
+      // marked cell(s)" stays correct either way, unlike asserting the
       // marked cells are the star count's only home.
       const restClause = side === 'outside'
         ? `, leaving exactly ${restCount} star${restCount === 1 ? '' : 's'} for the rest of the region`
@@ -760,28 +784,60 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       const lineIndices = lineKind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
 
+      // One outline color per region in the matched combo (see
+      // _comboOutlineColors) -- a single-region combo (the common case)
+      // always resolves to plain 'blue', same as before this family
+      // supported >1 region. `ownColor` is specifically the color of the
+      // region this fact's marked cell(s) belong to, found by reference
+      // (regionIndices IS comboUnits[i].indices, see
+      // _regionLinePartitionForcedFactsImpl).
+      const colors = this._comboOutlineColors(comboUnits);
+      const ownColor = colors[comboUnits.findIndex(u => u.indices === regionIndices)];
+
+      // "No matter how... always" names the actual justification for the
+      // region's own exact-count claim -- it comes from checking every
+      // valid way the region's remaining stars could be arranged (see
+      // _regionLineGuarantees/_unitCompletionsByLevel), not something
+      // visible from the shapes alone. Leading with a flat assertion here
+      // read as unexplained; this at least tells the player WHAT kind of
+      // fact it is (an exhaustive check), matching the phrasing
+      // hintRegionLineQuotaFill already uses for the same kind of claim.
+      //
+      // When >1 region's guarantee was needed to pin this exact count (the
+      // original bug report for this whole rule: two regions both forced
+      // into a line, but only one ever shown), the description says so
+      // explicitly and names every region by its outline color, instead of
+      // asserting the "own region" claim as if it stood alone.
+      const description = comboUnits.length === 1
+        ? `No matter how the ${ownColor}-outlined region places its remaining stars, exactly ${lineCount} `
+          + `of them always land in the amber-outlined ${lineWord}${restClause} -- and every one of those `
+          + `arrangements includes the marked ${cellWord}, so ${itsAStar}.`
+        : `The amber-outlined ${lineWord} needs ${lineNeeded} more star${lineNeeded === 1 ? '' : 's'}. No matter `
+          + `how the ${this._colorsPhrase(colors)} place their own remaining stars, they always account for `
+          + `exactly ${lineNeeded} of them between them -- which pins the ${ownColor}-outlined region's own `
+          + `share to exactly ${lineCount}${restClause}. Every way to do that includes the marked ${cellWord}, `
+          + `so ${itsAStar}.`;
+
       return {
         boardIdx,
-        description: `The blue-outlined region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} in the amber-outlined ${lineWord}${restClause}. Every way to do that includes the marked ${cellWord}, so ${itsAStar}.`,
-        // The region's own cells INSIDE the line get a plain fill instead
-        // of outline treatment -- a region can run deep into the line
-        // (several cells, not just a one-cell nick), and outlining that
-        // part would draw a blue boundary running right alongside -- and
-        // sometimes right on top of -- the amber line's own boundary. A
-        // fill has no edge of its own to compete with amber's, so it
-        // reads cleanly as "this part of the region, which happens to be
-        // inside the amber line" instead of a blurry double border.
-        highlights: regionInsideLine.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        description,
+        highlights: [],
         marks: forcedCells.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
-        // Outline only the region's OUTSIDE-the-line cells in blue --
-        // together with the fill above, this still conveys the region's
-        // full shape, just without the inside portion's outline running
-        // alongside the amber line. Plus the line itself (amber),
-        // replacing the older rectangular lineHighlight band with the same
-        // outline mechanism. Always single-board like the old
-        // lineHighlight, not _outlineEntriesFor's every-board default.
+        // Outline every region in the matched combo (not just the one
+        // holding the marked cell) on its own color, plus the line itself
+        // (amber). Each region's full shape is shown (not just its
+        // in-line/out-of-line slice) so the player can see it genuinely
+        // reaches into the amber line, at a glance -- the marked cell(s)
+        // above are the actual, narrower claim. Always single-board like
+        // the old lineHighlight, not _outlineEntriesFor's every-board
+        // default. Deliberately NOT split or stepped-aside around the
+        // overlap (tried both -- see commit history) -- the user was fine
+        // with outlines overlapping; the real gaps were the text not
+        // explaining the region's own guarantee, and (this rule's other
+        // region(s), when >1 was involved) being invisible -- both fixed
+        // above instead.
         regionOutlines: [
-          { indices: regionOutsideLine, color: 'blue', boardIdx },
+          ...comboUnits.map((u, i) => ({ indices: u.indices, color: colors[i], boardIdx })),
           { indices: lineIndices, color: 'amber', boardIdx, inset: true },
         ],
       };
@@ -865,9 +921,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       const [kind, idxStr] = key.split(':');
       const lineIdx = Number(idxStr);
       const lineIndices = kind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
-      const inLine = kind === 'row'
-        ? (cell => Math.floor(cell / this.n) === lineIdx)
-        : (cell => cell % this.n === lineIdx);
 
       const stars = lineIndices.filter(i => this.vState(i) === CELL.STAR).length;
       const needed = this.starsPerGroup - stars;
@@ -893,19 +946,15 @@ export function applyMultiStarRules(PuzzleSolver) {
           + `star${needed === 1 ? '' : 's'}. The blue-outlined ${regionWord} on different boards always `
           + `put${combo.length === 1 ? 's' : ''} at least ${needed} there between them, no matter how `
           + `${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
-        // Each matched region's own cells INSIDE the line get a plain
-        // fill instead of outline treatment -- see the same-board
-        // sibling's identical comment in hintRegionLineQuotaFill.
-        highlights: combo.flatMap(({ unit }) =>
-          unit.indices.filter(inLine).map(idx => ({ idx, color: HINT_COLOR.SOURCE, boards: [unit.boardIdx] }))),
+        highlights: [],
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-        // Outline only each matched region's OUTSIDE-the-line cells, on
-        // its own board (blue), plus the line itself (amber) on one
-        // representative board -- same single board the old lineHighlight
-        // used, since the line's own identity doesn't depend on which
-        // board's copy of the matched regions it's shown next to.
+        // Outline each matched region on its own board instead of filling
+        // its cells, plus the line itself (amber) on one representative
+        // board -- same single board the old lineHighlight used, since
+        // the line's own identity doesn't depend on which board's copy of
+        // the matched regions it's shown next to.
         regionOutlines: [
-          ...combo.map(({ unit }) => ({ indices: unit.indices.filter(i => !inLine(i)), color: 'blue', boardIdx: unit.boardIdx })),
+          ...combo.map(({ unit }) => ({ indices: unit.indices, color: 'blue', boardIdx: unit.boardIdx })),
           { indices: lineIndices, color: 'amber', boardIdx: combo[0].unit.boardIdx, inset: true },
         ],
       });
@@ -941,6 +990,12 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       const combo = this._findCrossBoardSubsetSumCombo(entries, needed);
       if (!combo) continue;
+      // Always >= 2 regions by construction (_findCrossBoardSubsetSumCombo
+      // requires >= 2 distinct boards), carried on every fact below so the
+      // hint can show every region the exact-count claim actually depends
+      // on -- see the identical comment in
+      // _regionLinePartitionForcedFactsImpl.
+      const comboUnits = combo.map(e => e.unit);
 
       for (const { unit, k } of combo) {
         const regionStars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
@@ -950,18 +1005,13 @@ export function applyMultiStarRules(PuzzleSolver) {
         const insideCells = unit.indices.filter(i => this.vState(i) === CELL.NONE && inLine(i));
         const outsideCells = unit.indices.filter(i => this.vState(i) === CELL.NONE && !inLine(i));
         const existingStars = unit.indices.filter(i => this.vState(i) === CELL.STAR);
-        // Full-shape split (regardless of dot/star state), for rendering --
-        // see the same-board sibling's identical comment in
-        // hintRegionLinePartitionForced.
-        const regionInsideLine = unit.indices.filter(inLine);
-        const regionOutsideLine = unit.indices.filter(i => !inLine(i));
 
         if (k >= 1) {
           const forced = this._forcedCellsInGroup(insideCells, k, existingStars);
           if (forced.length > 0) {
             const fkey = this._groupKey(forced);
             if (!seen.has(fkey)) {
-              seen.set(fkey, { unit, side: 'inside', regionInsideLine, regionOutsideLine, forcedCells: forced, lineKind: kind, lineIdx, lineCount: k, restCount: outsideCount });
+              seen.set(fkey, { unit, comboUnits, side: 'inside', forcedCells: forced, lineKind: kind, lineIdx, lineNeeded: needed, lineCount: k, restCount: outsideCount });
             }
           }
         }
@@ -970,7 +1020,7 @@ export function applyMultiStarRules(PuzzleSolver) {
           if (forced.length > 0) {
             const fkey = this._groupKey(forced);
             if (!seen.has(fkey)) {
-              seen.set(fkey, { unit, side: 'outside', regionInsideLine, regionOutsideLine, forcedCells: forced, lineKind: kind, lineIdx, lineCount: k, restCount: outsideCount });
+              seen.set(fkey, { unit, comboUnits, side: 'outside', forcedCells: forced, lineKind: kind, lineIdx, lineNeeded: needed, lineCount: k, restCount: outsideCount });
             }
           }
         }
@@ -981,36 +1031,43 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.forcedCells[0] - b.forcedCells[0]);
 
-    return candidates.map(({ unit, side, regionInsideLine, regionOutsideLine, forcedCells, lineKind, lineIdx, lineCount, restCount }) => {
+    return candidates.map(({ unit, comboUnits, side, forcedCells, lineKind, lineIdx, lineNeeded, lineCount, restCount }) => {
       const lineWord = lineKind === 'row' ? 'row' : 'column';
       const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
       const itsAStar = forcedCells.length === 1 ? "it's a star" : "they're stars";
       const restClause = side === 'outside'
         ? `, leaving exactly ${restCount} star${restCount === 1 ? '' : 's'} for the rest of the region`
         : '';
+      const lineIndices = lineKind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx];
+
+      // One outline color per region in the matched combo -- see the
+      // same-board sibling's identical comment in
+      // hintRegionLinePartitionForced. Always >= 2 regions here (cross-board
+      // by construction), so this always takes the multi-region phrasing.
+      const colors = this._comboOutlineColors(comboUnits);
+      const ownColor = colors[comboUnits.findIndex(u => u === unit)];
 
       return {
         boardIdx: unit.boardIdx,
-        description: `Cross-board: the blue-outlined region must place exactly ${lineCount} star${lineCount === 1 ? '' : 's'} `
-          + `in the amber-outlined ${lineWord}${restClause}, combined with a region on another board to cover `
-          + `the line's whole need. Every way to do that includes the marked ${cellWord}, so ${itsAStar}.`,
-        // See the same-board sibling's identical comment in
-        // hintRegionLinePartitionForced: the region's cells inside the
-        // line are a plain fill, not outline, so they don't compete with
-        // the amber line's own boundary.
-        highlights: regionInsideLine.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),
+        // See the same-board sibling's identical comment on why this leads
+        // with "no matter how... always" instead of asserting the region's
+        // own guarantee flat, and names every region in the combo instead
+        // of just this one -- the "combined with a region on another
+        // board" clause used to leave that other region (and which board
+        // it's on) unstated and unoutlined entirely.
+        description: `Cross-board: the amber-outlined ${lineWord} needs ${lineNeeded} more star${lineNeeded === 1 ? '' : 's'}. `
+          + `No matter how the ${this._colorsPhraseWithBoards(comboUnits, colors)} place their own remaining `
+          + `stars, they always account for exactly ${lineNeeded} of them between them -- which pins the `
+          + `${ownColor}-outlined region's own share to exactly ${lineCount}${restClause}. Every way to do that `
+          + `includes the marked ${cellWord}, so ${itsAStar}.`,
+        highlights: [],
         marks: forcedCells.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
-        // Outline only the region's OUTSIDE-the-line cells in blue -- see
-        // the same-board sibling's identical comment. Plus the line itself
-        // (amber), replacing the older rectangular lineHighlight band.
+        // Outline every region in the matched combo, each on its own board,
+        // in its own color -- see the same-board sibling's identical
+        // comment in hintRegionLinePartitionForced.
         regionOutlines: [
-          { indices: regionOutsideLine, color: 'blue', boardIdx: unit.boardIdx },
-          {
-            indices: lineKind === 'row' ? this.axisIndices.Row[lineIdx] : this.axisIndices.Column[lineIdx],
-            color: 'amber',
-            boardIdx: unit.boardIdx,
-            inset: true,
-          },
+          ...comboUnits.map((u, i) => ({ indices: u.indices, color: colors[i], boardIdx: u.boardIdx })),
+          { indices: lineIndices, color: 'amber', boardIdx: unit.boardIdx, inset: true },
         ],
       };
     });
