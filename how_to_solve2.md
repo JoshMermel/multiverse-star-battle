@@ -245,10 +245,10 @@ something you can bank on regardless of which completion is real.
 <a href="index.html?book=armory2&puzzle=15">
 <img src="images/multi_region_line_quota_fill.png" width="600"></img> </a>
 
-The amber-outlined column here needs exactly 1 more star. The blue-outlined region
-is guaranteed to place at least 1 star in that column no matter how its own
-remaining cells resolve — and since that alone already covers the column's whole
-remaining need, every other empty cell in the column (C1, C5, C6, C7, C8) must be a dot.
+The amber-outlined row here needs exactly 1 more star. The blue-outlined region
+is guaranteed to place at least 1 star in that row no matter how its own
+remaining cells resolve — and since that alone already covers the row's whole
+remaining need, every other empty cell in the row (A4 and I4) must be a dot.
 (With more than one region involved, you'd add up several regions' guarantees to
 hit the line's quota — this example just happens to need only one.)
 
@@ -267,6 +267,39 @@ be a star ("partition forced"). The other sibling ("partition trapped") runs the
 same idea in reverse: if a region is proven to place at least a few stars among a
 fixed set of its own cells, any outside cell touching *all* of them can be dotted,
 without needing to know exactly which cell gets the star.
+
+---
+
+<a href="index.html?book=armory2&puzzle=23">
+<img src="images/multi_region_line_partition_3regions.png" width="600"></img> </a>
+
+"Partition forced" sums guarantees across several regions the same way quota fill
+does — the single-region case above just happens to be the easy version. Here, the
+amber-outlined column needs 3 more stars, and three different regions (blue, brown,
+cyan) are each independently guaranteed at least 1 star in it, no matter how their
+own cells resolve. Those three guarantees already add up to exactly the column's
+whole remaining need, so none of the three can contribute *more* than its own
+guaranteed share without overshooting — which pins the cyan region's share to
+exactly 1, and its other 2 stars to the rest of its own cells. Every valid way to
+place those 2 stars happens to agree on D12, so D12 must be a star. The blue and
+brown regions get outlined too, even though neither one's own marked cell is shown
+here — their guarantees are just as load-bearing to the "exactly 1" claim as
+cyan's own shape is, so hiding them would leave the "no matter how" half of the
+argument floating with nothing to point at.
+
+---
+
+<a href="index.html?book=armory2&puzzle=24">
+<img src="images/multi_crossboard_region_line_quota_fill.png" width="600"></img> </a>
+
+Quota fill doesn't have to stay on one board, either. Here, the amber-outlined row
+needs 2 more stars, and no single region on either board is guaranteed that many by
+itself — but the blue-outlined region on board 1 and the blue-outlined region on
+board 2 are each independently guaranteed at least 1 star in that same physical
+row, and a star from either board's region fills the same row just as well, since
+both boards share the same underlying cells. Combined, that covers the row's whole
+remaining need, so the only other empty cell in it, G3, must be a dot — a
+conclusion neither board could reach on its own.
 
 ## Symmetry, revisited
 
