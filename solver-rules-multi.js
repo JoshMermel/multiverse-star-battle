@@ -1193,8 +1193,32 @@ export function applyMultiStarRules(PuzzleSolver) {
     const n = this.n;
     const axisIndices = this.axisIndices[axis];
 
-    const windows = Array.from({ length: n - N + 1 }, (_, startU) =>
-      Array.from({ length: N }, (_, i) => axisIndices[startU + i]));
+    // Skip any window containing an already-solved unit, anywhere in it --
+    // not just at the ends. A window like [A, B(solved), C] isn't a genuine
+    // 3-contiguous-column relationship at all: B contributes nothing, so
+    // the real deduction (if any) is actually a DISJOINT 2-column
+    // relationship between A and C -- exactly what the disjoint sibling
+    // rules (hintDisjointUnitRegionSyncMulti et al.) exist to catch. Keeping
+    // a solved unit in the middle would attribute that deduction to the
+    // wrong rule/tier (a contiguous N-window instead of a disjoint N-1
+    // one), even though the arithmetic still happens to check out.
+    //
+    // Tradeoff (2026-10-02, user's call): the disjoint rules don't (yet)
+    // reach every case this contiguous-with-a-gap path used to -- a 14x14/
+    // 2★ Expert-tier corpus regression found 14 puzzles that move tier
+    // under this stricter filter (8 Expert -> Grandmaster, 6 Expert ->
+    // UNSOLVED by this specific rule, though still solvable overall via a
+    // harder one). Accepted in favor of correct rule attribution over
+    // squeezing maximum solve power out of this one rule.
+    const isSolved = unitIndices =>
+      unitIndices.filter(i => this.vState(i) === CELL.STAR).length >= this.starsPerGroup;
+
+    const windows = [];
+    for (let startU = 0; startU + N <= n; startU++) {
+      const window = Array.from({ length: N }, (_, i) => axisIndices[startU + i]);
+      if (window.some(isSolved)) continue;
+      windows.push(window);
+    }
 
     const candidates = [];
     for (const bIdx of this.boardIndices) {
@@ -1943,8 +1967,11 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       const tileWord = combo.length === 1 ? 'tile' : 'tiles';
       const holdWord = combo.length === 1 ? 'holds' : 'each hold';
+      // "all 1 star" reads as a typo, not a count -- "all" only pulls its
+      // weight once there's more than one to sum up.
+      const starsPhrase = combo.length === 1 ? 'the 1 star' : `all ${combo.length} stars`;
       return {
-        description: `The ${combo.length} highlighted ${tileWord} ${holdWord} exactly one star, accounting for all ${combo.length} star${combo.length === 1 ? '' : 's'} the amber-outlined ${this._unitKind(unit)} needs.`,
+        description: `The ${combo.length} highlighted ${tileWord} ${holdWord} exactly one star, accounting for ${starsPhrase} the amber-outlined ${this._unitKind(unit)} needs.`,
         highlights,
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,

@@ -961,21 +961,17 @@ class MultiStarRules:
         changes = 0
         units = p.row_indices if axis == "row" else p.col_indices
 
-        # Slide a window of size 'n' across the board's units. No "already has
-        # a star" pre-filter here (unlike the 1★-only rule_only_empty this was
-        # copied from, where any star IS the unit's full quota) -- at
-        # stars_per_unit > 1, a unit can hold a star and still need more, and
-        # skipping the whole window in that case silently disabled this rule
-        # almost immediately on any 2★+ puzzle once a few stars land. The
-        # downstream _hint_multi_regions_trapped_or_covered already computes
-        # each unit's remaining need correctly (stars placed subtract from
-        # its quota, whether that's 0 or more left), so no pre-filter is
-        # needed: a fully-solved unit already has nothing left to decide
-        # (rule_exclude_solved_unit dots it out well before this Hard-tier
-        # rule runs) and contributes 0 to the window's required count either
-        # way.
-        for start_idx in range(p.n - n + 1):
-            window_units = [units[i] for i in range(start_idx, start_idx + n)]
+        # Only slide the window across units that still need at least 1 more
+        # star -- see _eligible_axis_windows's own docstring for why a
+        # fully-solved unit riding along for free produces a redundant
+        # duplicate of a smaller window's deduction rather than a genuinely
+        # new one. (An earlier version of this comment argued the opposite --
+        # that no pre-filter was needed since a solved unit contributes 0 to
+        # the window's required count either way -- but "contributes 0" is
+        # exactly the problem: it lets the window's equation collapse to the
+        # same one a smaller, already-eligible window already satisfies.)
+        for window_positions in self._eligible_axis_windows(p, n, axis):
+            window_units = [units[i] for i in window_positions]
 
             for b_idx in range(p.n_boards):
                 changes = self._hint_multi_regions_trapped_or_covered(p, window_units, b_idx, axis)
@@ -1003,6 +999,44 @@ class MultiStarRules:
                 return changes
         return 0
 
+    def _eligible_axis_windows(self, p, n, axis):
+        """
+        Adjacent-unit windows of size n, skipping any window that contains
+        an already-solved unit ANYWHERE in it, not just at the ends. A
+        window like [A, B(solved), C] isn't a genuine 3-contiguous-unit
+        relationship at all: B contributes 0 to the required-star count, so
+        the real deduction (if any) is actually a DISJOINT 2-unit
+        relationship between A and C -- exactly what the disjoint sibling
+        rules (rule_unit_region_sync_multi_2_disjoint et al.) exist to
+        catch. Keeping a solved unit in the middle would attribute that
+        deduction to the wrong rule/tier (a contiguous n-window instead of a
+        disjoint n-1 one), even though the arithmetic still happens to check
+        out. See the JS parity fix in solver-rules-multi.js's
+        _hintMultiWindowRegionSyncAll for the duplicate-hint bug in the live
+        hint UI this whole filter exists to fix.
+
+        Tradeoff (2026-10-02, user's call): the disjoint rules don't (yet)
+        reach every case this contiguous-with-a-gap path used to -- only a
+        2-unit disjoint sibling exists today, nothing for 3+. A 14x14/2★
+        Expert-tier corpus regression found 14 puzzles that move tier under
+        this stricter filter (8 Expert -> Grandmaster, 6 Expert -> UNSOLVED
+        by this specific rule, though still solvable overall via a harder
+        one). Accepted in favor of correct rule attribution over squeezing
+        maximum solve power out of this one rule.
+        """
+        units = p.row_indices if axis == "row" else p.col_indices
+
+        def is_solved(u):
+            return sum(1 for i in units[u] if p.grid[i] == "x") >= p.stars_per_unit
+
+        windows = []
+        for start in range(p.n - n + 1):
+            positions = list(range(start, start + n))
+            if any(is_solved(u) for u in positions):
+                continue
+            windows.append(positions)
+        return windows
+
     def _apply_pin_rule_multi(self, p, n, axis):
         """
         Multi-star generalization of _apply_pin_rule: instead of comparing a
@@ -1011,8 +1045,7 @@ class MultiStarRules:
         compares that sum to the window's total remaining need.
         """
         units = p.row_indices if axis == "row" else p.col_indices
-        for start_u in range(p.n - n + 1):
-            u_range = range(start_u, start_u + n)
+        for u_range in self._eligible_axis_windows(p, n, axis):
             unit_idxs = set().union(*(units[u] for u in u_range))
 
             stars_in_window = sum(1 for i in unit_idxs if p.grid[i] == "x")
@@ -1024,6 +1057,7 @@ class MultiStarRules:
             if not avail_in_units:
                 continue
 
+            start_u = u_range[0]
             for b_idx in range(p.n_boards):
                 needing = p.get_regions_needing_stars(b_idx)
 

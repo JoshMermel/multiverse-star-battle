@@ -648,8 +648,22 @@ export function applyCommonSolverRules(PuzzleSolver) {
           const marksOn = [...allBoardsInvolved];
           const boardIdx = allBoardsInvolved.size === 1 ? marksOn[0] : undefined;
 
+          // Names A/B's own kinds instead of the generic "two blue-outlined
+          // units" -- "two rows", "two columns", "two regions", or a
+          // row/column paired with a region (region named second either
+          // way, to read as "the odd one out" against the other two
+          // matching). A row+column pair can never happen here: every row
+          // and every column intersect in exactly one cell, so they can
+          // never be the disjoint A/B this rule requires -- only
+          // same-kind pairs or a row-or-column-with-a-region pair are
+          // reachable, covering all 5 real cases.
+          const kindA = this._unitKind(ua), kindB = this._unitKind(ub);
+          const pairPhrase = kindA === kindB
+            ? `two blue-outlined ${kindA}s`
+            : `the blue-outlined ${kindA === 'region' ? kindB : kindA} and region`;
+
           const cName = cUnit.boardIdx !== undefined ? `The brown region` : `${cUnit.label} (brown)`;
-          const intro = `The two blue-outlined units hold ${2 * N} stars together. `
+          const intro = `${pairPhrase[0].toUpperCase()}${pairPhrase.slice(1)} hold ${2 * N} stars together. `
             + `${cName} has all its open cells inside them, so it accounts for ${N} of those, `
             + `leaving exactly ${starsText} for the cyan cells. `;
           if (forcedStars.length > 0) {
