@@ -98,84 +98,69 @@ class CommonRules:
                 return changes
         return 0
 
-    def _build_region_need_combo_sets(self, p, k):
-        """
-        Build region combos (per board) whose TOTAL remaining star need sums
-        to exactly k. Unlike a plain "N regions" combo (which implicitly
-        assumed 1 star per region), this also picks up partially-solved
-        regions (e.g. a region needing exactly 1 more star) and lets
-        different-sized combos be compared against each other -- e.g. one
-        region needing 2 stars vs two different regions each needing 1.
-        Python port of _buildRegionNeedComboSets in solver.js.
-        """
-        combo_sets = []
+    # -- Region subset, matched by capacity ---------------------------------------
+    #
+    # A region's capacity is how many stars it still needs. What a player
+    # notices is "these cells are all inside that region, and both still need
+    # the same number of stars", so the star count itself doesn't change the
+    # tier:
+    #   Hard   : one region needing K stars sits inside another region
+    #            needing K stars, for any K.
+    #   Expert : a region OR a PAIR of regions (two on one board) needing K
+    #            stars sits inside another region or pair needing K stars.
+    #            At least one side is a pair (single-in-single is Hard);
+    #            groups of 3+ regions are not considered.
+    # Either way the outer combo's cells outside the inner one are dots: all
+    # K of the outer combo's stars must come from the inner combo's cells.
+    # Combos may be on different boards (the boards share one solution).
+    # Python port of hintRegionSubsetHard/Expert in solver-rules-common.js.
+    # Replaced the K-indexed rule_region_subset_sync_1..4; at 2★ nearly
+    # tier-neutral (2 of ~8,000 puzzles move), at 3★ ~70% of Expert -> Hard.
+
+    def _region_capacity_combos(self, p, max_size):
+        combos = []
         for b_idx in range(p.n_boards):
             needing = p.get_regions_needing_stars(b_idx)
-
-            # A combo's size can never exceed k, since every member needs >= 1 star.
-            for size in range(1, k + 1):
+            for size in range(1, max_size + 1):
                 for combo in combinations(needing, size):
-                    total = sum(e["remaining"] for e in combo)
-                    if total != k:
-                        continue
-
-                    regions = [e["unit"] for e in combo]
-                    combo_sets.append({
-                        "label": "B{} Combo({})".format(
-                            b_idx + 1, ",".join(r["label"].split(" ")[-1] for r in regions)
-                        ),
-                        # Only still-open cells matter here -- an already-placed
-                        # star elsewhere isn't part of the "where can the
-                        # remaining stars go" reasoning for this combo.
-                        "indices": {i for r in regions for i in r["indices"] if p.grid[i] is None},
-                        "board_idx": b_idx,
-                        "regions": regions,
+                    combos.append({
+                        "k": sum(e["remaining"] for e in combo),
+                        "regions": [e["unit"] for e in combo],
+                        # Only still-open cells matter: a star already placed
+                        # elsewhere isn't part of "where can the remaining
+                        # stars go".
+                        "indices": {i for e in combo for i in e["unit"]["indices"] if p.grid[i] is None},
                     })
-        return combo_sets
+        return combos
 
-    def rule_region_subset_sync_1(self, p):
-        return self._rule_region_subset_sync(p, 1)
-
-    def rule_region_subset_sync_2(self, p):
-        return self._rule_region_subset_sync(p, 2)
-
-    def rule_region_subset_sync_3(self, p):
-        return self._rule_region_subset_sync(p, 3)
-
-    def rule_region_subset_sync_4(self, p):
-        return self._rule_region_subset_sync(p, 4)
-
-    def _rule_region_subset_sync(self, p, k):
-        """
-        Compare region combos -- possibly spanning different boards, which
-        matters for multiverse puzzles where the same physical cell can
-        belong to a different region on each board -- whose total remaining
-        star need sums to exactly k. If combo A's still-open cells are a
-        full subset of combo B's, the extra open cells in B must be dots.
-        Python port of hintRegionSubsetSync(K) in solver.js.
-        """
-        combo_sets = self._build_region_need_combo_sets(p, k)
-
-        for set_a in combo_sets:
-            for set_b in combo_sets:
-                if set_a is set_b:
+    def _rule_region_subset_by_capacity(self, p, max_size, require_pair, name):
+        combos = self._region_capacity_combos(p, max_size)
+        for a in combos:
+            for b in combos:
+                if a is b or a["k"] != b["k"]:
                     continue
-                if not set_a["indices"].issubset(set_b["indices"]):
+                if require_pair and len(a["regions"]) == 1 and len(b["regions"]) == 1:
                     continue
-                targets = [
-                    idx for idx in set_b["indices"]
-                    if idx not in set_a["indices"] and p.grid[idx] is None
-                ]
+                if not a["indices"] <= b["indices"]:
+                    continue
+                targets = [i for i in b["indices"] if i not in a["indices"]]
                 if not targets:
                     continue
-                label = f"RegionSubsetSync({set_a['label']} ⊆ {set_b['label']})"
-                changes = sum(
-                    p.validate_and_set(idx, ".", label, self.verbose)
-                    for idx in targets
+                label = "{}({} ⊆ {})".format(
+                    name,
+                    ",".join(r["label"].split(" ")[-1] for r in a["regions"]),
+                    ",".join(r["label"].split(" ")[-1] for r in b["regions"]),
                 )
+                changes = sum(p.validate_and_set(i, ".", label, self.verbose) for i in targets)
                 if changes > 0:
                     return changes
         return 0
+
+    def rule_region_subset_hard(self, p):
+        return self._rule_region_subset_by_capacity(p, 1, False, "RegionSubsetHard")
+
+    def rule_region_subset_expert(self, p):
+        return self._rule_region_subset_by_capacity(p, 2, True, "RegionSubsetExpert")
 
     # -- Region-pair placement forced ------------------------------------------
     #

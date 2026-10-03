@@ -194,6 +194,77 @@ export function applyCommonSolverRules(PuzzleSolver) {
       this.formatSubsetHint(setA.regions, setB.regions, targets, setA.boardIdx, setB.boardIdx));
   };
 
+  // -- Region subset, matched by capacity (2★+) ---------------------------------
+  //
+  // The 2★+ replacement for hintRegionSubsetSync(K) in the multi-star rule
+  // list (1★ still uses hintRegionSubsetSync(1)/(2), where K happens to equal
+  // the number of regions). A region's CAPACITY is how many stars it still
+  // needs. What a player actually notices is "these cells are all inside
+  // that region, and both still need the same number of stars" -- so the
+  // star count itself shouldn't change how hard the pattern is:
+  //
+  //  - Hard   (hintRegionSubsetHard): one region needing K stars sits inside
+  //    another region needing K stars, for any K.
+  //  - Expert (hintRegionSubsetExpert): a region OR a PAIR of regions (two
+  //    regions on one board) needing K stars sits inside another region or
+  //    pair needing K stars. At least one side must be a pair -- single-in-
+  //    single is the Hard rule. Groups of three or more regions are not
+  //    considered.
+  //
+  // Either way the cells of the outer combo outside the inner one are dots:
+  // the outer combo's K stars all have to come from the inner combo's cells.
+  //
+  // Measured against the old K-tiered hintRegionSubsetSync(1..4) on 10 books
+  // (~1000 puzzles each): essentially tier-neutral at 2★ (2 of ~8,000
+  // puzzles move), but at 3★ roughly 70% of Expert puzzles become Hard, since
+  // a region needing 3 inside another needing 3 used to be Expert purely
+  // because of the 3.
+  p._regionCapacityCombos = function (maxSize) {
+    const combos = [];
+    for (const bIdx of this.boardIndices) {
+      const needing = this.getRegionsNeedingStars(bIdx);
+      for (let size = 1; size <= maxSize; size++) {
+        for (const combo of this.getCombinations(needing, size)) {
+          combos.push({
+            K: combo.reduce((sum, e) => sum + e.remaining, 0),
+            regions: combo.map(e => e.region),
+            // Only still-open cells matter: a star already placed elsewhere
+            // isn't part of "where can the remaining stars go".
+            indices: new Set(combo.flatMap(e => e.region.indices.filter(i => this.vState(i) === CELL.NONE))),
+            boardIdx: bIdx,
+          });
+        }
+      }
+    }
+    return combos;
+  };
+
+  p._regionSubsetByCapacity = function (maxSize, requirePair) {
+    const combos = this._regionCapacityCombos(maxSize);
+    const candidates = [];
+    for (const a of combos) {
+      for (const b of combos) {
+        if (a === b || a.K !== b.K) continue;
+        if (requirePair && a.regions.length === 1 && b.regions.length === 1) continue;
+        if (!Array.from(a.indices).every(idx => b.indices.has(idx))) continue;
+        const targets = Array.from(b.indices).filter(idx => !a.indices.has(idx));
+        if (targets.length > 0) candidates.push({ a, b, targets });
+      }
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((x, y) => (x.targets[0] ?? 0) - (y.targets[0] ?? 0));
+    return candidates.map(({ a, b, targets }) =>
+      this.formatSubsetHint(a.regions, b.regions, targets, a.boardIdx, b.boardIdx));
+  };
+
+  p.hintRegionSubsetHard = function () {
+    return this._regionSubsetByCapacity(1, false);
+  };
+
+  p.hintRegionSubsetExpert = function () {
+    return this._regionSubsetByCapacity(2, true);
+  };
+
   p.hintFromSolution = function () {
     const n = this.n;
     const candidates = [];

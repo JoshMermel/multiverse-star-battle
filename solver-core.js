@@ -585,7 +585,10 @@ export class PuzzleSolver {
 
   // --- Hint Dispatch ---
 
-  getHint() {
+  // advance=false re-returns the hint last shown for this exact board state
+  // (if any) instead of cycling to the next one -- for a player who clicked
+  // away from a complex hint and wants it back, not a different one.
+  getHint({ advance = true } = {}) {
     const rules = this.starsPerGroup === 1
       ? this._getSingleStarRuleList()
       : this._getMultiStarRuleList();
@@ -597,7 +600,10 @@ export class PuzzleSolver {
       this.currentHintType  = null;
       this.currentHintIndex = 0;
       this.lastMatchedRuleIndex = 0;
+      this._lastShownHint = null;
     }
+
+    if (!advance && this._lastShownHint) return this._lastShownHint;
 
     // Resume scanning from the rule that matched last time for this exact
     // board state, instead of re-running every earlier rule from scratch
@@ -621,9 +627,11 @@ export class PuzzleSolver {
 
       const hint = this.currentHints[this.currentHintIndex % this.currentHints.length];
       this.currentHintIndex++;
+      this._lastShownHint = hint;
       return hint;
     }
     this.lastMatchedRuleIndex = 0;
+    this._lastShownHint = null;
     return null;
   }
 

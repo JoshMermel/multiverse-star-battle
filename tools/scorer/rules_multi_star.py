@@ -15,7 +15,7 @@ progressed. Still cut (the whole at-least-1/at-most-1 abstraction, which
 had no remaining consumers once these were cut): rule_clump_*,
 rule_witness_* -- superseded by the Tiles/region-line-quota-fill rules,
 or judged too hard to explain to a player. Restored:
-rule_lookahead_dots(_single_board), rule_region_subset_sync_3/4 (defined
+rule_lookahead_dots(_single_board), rule_region_subset_expert (defined
 in rules_common.py), rule_unit_completion_satisfies_other_unit_*,
 rule_unit_region_sync_multi_2_disjoint, rule_crossboard_n_region_pinned_multi_*,
 and rule_lookahead_1/2/3_stage_multi (all three commented out in
@@ -1868,6 +1868,167 @@ class MultiStarRules:
                     return result
             return None
         return backtrack(0, [], frozenset())
+
+    # -- Region tiles (2★+) ------------------------------------------------------
+    #
+    # Python port of solver-rules-multi.js's "Region tiles on their own" and
+    # "Region tiles fill a row/column" sections. A region still needing K
+    # stars whose empty cells can be partitioned into exactly K cliques
+    # (cells that all mutually touch -- subsets of one 2x2 box) holds exactly
+    # one star per clique ("tile"): K stars, K groups that can each hold at
+    # most 1.
+
+    def _clique_partition_tiles(self, p, empties, k):
+        """
+        Union of every group appearing in ANY partition of `empties` into
+        exactly k cliques, as a set of frozensets (empty if no partition
+        exists). Each such tile holds exactly one star.
+        """
+        empties = tuple(sorted(empties))
+        if k <= 0 or len(empties) < k or len(empties) > 4 * k:
+            return set()
+        adj = {c: set(p._neighbor_map[c]) for c in empties}
+        memo = {}
+
+        def rec(remaining, k_left):
+            key = (remaining, k_left)
+            if key in memo:
+                return memo[key]
+            if not remaining:
+                memo[key] = (k_left == 0, frozenset())
+                return memo[key]
+            if k_left == 0 or len(remaining) > 4 * k_left or len(remaining) < k_left:
+                memo[key] = (False, frozenset())
+                return memo[key]
+            x, rest = remaining[0], remaining[1:]
+            partners = [c for c in rest if c in adj[x]]
+            ok, union = False, set()
+            for size in range(0, min(3, len(partners)) + 1):
+                for combo in combinations(partners, size):
+                    if any(b not in adj[a] for a, b in combinations(combo, 2)):
+                        continue
+                    group = frozenset((x, *combo))
+                    sub_ok, sub_tiles = rec(tuple(c for c in rest if c not in group), k_left - 1)
+                    if sub_ok:
+                        ok = True
+                        union.add(group)
+                        union |= sub_tiles
+            memo[key] = (ok, frozenset(union))
+            return memo[key]
+
+        ok, tiles = rec(empties, k)
+        return set(tiles) if ok else set()
+
+    def _region_tiles(self, p):
+        """[(unit, set of tiles)] for every region unit still needing stars.
+        Cached two ways: on the whole grid state (every region tile rule in
+        a step shares one pass), and per unit on that unit's own cells -- a
+        unit's tiles depend only on its own empties, so a one-cell change
+        only recomputes the (at most a few) regions that cell belongs to.
+        """
+        key = tuple(p.grid)
+        cache = getattr(p, "_region_tiles_cache", None)
+        if cache is not None and cache[0] == key:
+            return cache[1]
+        unit_cache = getattr(p, "_region_tiles_unit_cache", None)
+        if unit_cache is None:
+            unit_cache = p._region_tiles_unit_cache = {}
+        out = []
+        for unit in p.units:
+            if unit["board_idx"] is None:
+                continue
+            k = p.stars_per_unit - sum(1 for i in unit["indices"] if p.grid[i] == "x")
+            if k <= 0:
+                continue
+            empties = tuple(i for i in unit["indices"] if p.grid[i] is None)
+            if len(empties) < k or len(empties) > 4 * k:
+                continue
+            ukey = (unit["label"], k, empties)
+            tiles = unit_cache.get(ukey)
+            if tiles is None:
+                tiles = unit_cache[ukey] = self._clique_partition_tiles(p, empties, k)
+            if tiles:
+                out.append((unit, tiles))
+        p._region_tiles_cache = (key, out)
+        return out
+
+    def rule_region_tile_star(self, p):
+        """
+        Beginner (same tier/score as rule_unit_placement_forced_weak_all,
+        which finds the same deduction and runs first): a region tile with ONE empty cell
+        holds its star there. Skipped when every tile in the region's tiling
+        is a single cell (just "as many empties as stars needed", which the
+        placement-forced wording covers); here that means some partition
+        containing the tile also has a multi-cell tile.
+        """
+        for unit, tiles in self._region_tiles(p):
+            k = p.stars_per_unit - sum(1 for i in unit["indices"] if p.grid[i] == "x")
+            empties = [i for i in unit["indices"] if p.grid[i] is None]
+            if len(empties) == k:
+                continue
+            for tile in tiles:
+                if len(tile) == 1:
+                    (i,) = tile
+                    changes = p.validate_and_set(i, "x", "RegionTileStar", self.verbose)
+                    if changes > 0:
+                        return changes
+        return 0
+
+    def rule_region_tile_dots(self, p):
+        """
+        Beginner (same tier/score as rule_unit_placement_forced_weak_dots):
+        a region tile of 2-3 empty cells holds exactly one star at one of
+        them, so any other empty cell touching EVERY cell of the tile is a dot.
+        """
+        for unit, tiles in self._region_tiles(p):
+            for tile in tiles:
+                if len(tile) < 2:
+                    continue
+                cells = sorted(tile)
+                targets = [
+                    i for i in p._neighbor_map[cells[0]]
+                    if p.grid[i] is None and i not in tile
+                    and all(i in p._neighbor_map[c] for c in cells[1:])
+                ]
+                changes = sum(p.validate_and_set(i, ".", "RegionTileDots", self.verbose) for i in targets)
+                if changes > 0:
+                    return changes
+        return 0
+
+    def rule_region_tile_line_fill(self, p):
+        """
+        End of Medium: a row/column still needing K stars with K disjoint
+        REGION tiles lying entirely inside it -- each holds exactly one
+        star, so every other empty cell in the line is a dot.
+        """
+        region_tiles = self._region_tiles(p)
+        if not region_tiles:
+            return 0
+        pool = set()
+        for _, tiles in region_tiles:
+            pool |= tiles
+        pool = sorted(pool, key=lambda t: sorted(t))
+        for unit in p.units:
+            if unit["board_idx"] is not None:
+                continue
+            k = p.stars_per_unit - sum(1 for i in unit["indices"] if p.grid[i] == "x")
+            if k <= 0:
+                continue
+            avail = {i for i in unit["indices"] if p.grid[i] is None}
+            if len(avail) <= k:
+                continue
+            inside = [t for t in pool if t <= avail]
+            if len(inside) < k:
+                continue
+            combo = self._find_disjoint_tile_combo(inside, k)
+            if combo is None:
+                continue
+            covered = set().union(*combo)
+            targets = [i for i in avail if i not in covered]
+            changes = sum(p.validate_and_set(i, ".", "RegionTileLineFill", self.verbose) for i in targets)
+            if changes > 0:
+                return changes
+        return 0
 
     def _tile_quota_fill(self, p, want_single):
         """

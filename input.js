@@ -277,6 +277,10 @@ export function applyInput(GameClass) {
 
       // Keep hints visible when switching board tabs.
       if (e.target.closest('.board-tab')) return;
+      // Pressing Hint with a hint showing cycles to the next one; clearing
+      // here (pointerup fires before the click handler) would make it
+      // look like the hint had been dismissed. getHint() clears it itself.
+      if (e.target.closest('.ctrl-hint')) return;
 
       this.clearHintUI();
       const isWinToast = document.getElementById('toast').classList.contains('toast-win');

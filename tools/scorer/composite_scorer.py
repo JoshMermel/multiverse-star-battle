@@ -194,9 +194,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_exclude_adjacency,                         1,  "Beginner"),
             (self.rule_exclude_solved_unit,                       1,  "Beginner"),
             (self.rule_unit_placement_forced_weak_all,           5,  "Beginner"),
+            # Region tiles (see rules_multi_star.py): the tile-shaped version of
+            # the placement-forced rules. The star rule runs AFTER the weak
+            # all-stars rule; the dots rule just before the weak dots rule.
+            (self.rule_region_tile_star,                         5,  "Beginner"),
             (self.rule_unit_placement_forced_weak_any,           10, "Beginner"),
             # Covers both inside-the-unit and outside-the-unit forced dots --
             # see rule_unit_placement_forced_cond's docstring.
+            (self.rule_region_tile_dots,                         10, "Beginner"),
             (self.rule_unit_placement_forced_weak_dots,          10, "Beginner"),
             # Moved here from Medium (multi-star-rules-experiment).
             (self.rule_unit_region_sync_multi_1,                  15, "Beginner"),
@@ -230,6 +235,8 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # win than excluding one.
             (self.rule_region_line_partition_forced_weak,         33, "Medium"),
             (self.rule_region_line_partition_trapped_weak,        34, "Medium"),
+            # Region tiles inside one row/column fill its quota -- last in Medium.
+            (self.rule_region_tile_line_fill,                     35, "Medium"),
 
             # -- Hard ---------------------------------------------------------
             # Tiles (multi-star-rules-experiment) -- see rules_multi_star.py's
@@ -257,12 +264,15 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_unit_placement_forced_intermediate_dots,   35, "Hard"),
             (self.rule_unit_region_sync_multi_3,                  45, "Hard"),
             (self.rule_tile_two_empty_dot,                        50, "Hard"),
+            # Region needing K stars inside a region needing K stars (any K).
+            (self.rule_region_subset_hard,                        55, "Hard"),
             # Tile-quota-fill's K=1 special case: a single confirmed tile
             # already covers a unit's whole remaining need. See
-            # rule_tile_disjoint_quota_fill (Expert) for K>1.
+            # rule_tile_disjoint_quota_fill (Expert) for K>1. Deliberately
+            # AFTER rule_region_subset_hard: for a tile that is a whole
+            # region this is the same deduction, and the subset wording is
+            # the one a player would notice.
             (self.rule_tile_quota_fill_single,                    52, "Hard"),
-            (self.rule_region_subset_sync_1,                      55, "Hard"),
-            (self.rule_region_subset_sync_2,                      60, "Hard"),
             (self.rule_region_line_quota_fill_intermediate,       60, "Hard"),
             (self.rule_region_line_partition_forced_intermediate, 65, "Hard"),
             (self.rule_region_line_partition_trapped_intermediate, 65, "Hard"),
@@ -322,8 +332,8 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # start of Expert.
             (self.rule_crossboard_n_region_pinned_multi_3_rows,   125, "Expert"),
             (self.rule_crossboard_n_region_pinned_multi_3_cols,   125, "Expert"),
-            (self.rule_region_subset_sync_3,                      130, "Expert"),
-            (self.rule_region_subset_sync_4,                      150, "Expert"),
+            # Region or region-pair inside a region or pair, equal need.
+            (self.rule_region_subset_expert,                      130, "Expert"),
             # Region algebra, then the region-pair hybrid enumeration -- see
             # rules_common.py's section comments for both.
             (self.rule_region_algebra,                            152, "Expert"),

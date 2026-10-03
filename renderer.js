@@ -529,10 +529,17 @@ export function applyRenderer(GameClass) {
   // positioning is pure decoration, entirely outside grid layout, so it
   // can't interfere with the cells no matter how many outlines are added.
   p._applyTileOutlines = function (tileOutlines) {
-    for (const { topLeftIdx, color } of tileOutlines) {
+    for (const { topLeftIdx, color, boards, cells: shapeCells } of tileOutlines) {
+      // A tile carrying its own `cells` is drawn as a shape hugging just
+      // those cells (see _applyTileShape) instead of the fixed 2x2 box.
+      if (shapeCells) { this._applyTileShape(shapeCells, color, boards); continue; }
       const row = Math.floor(topLeftIdx / this.n);
       const col = topLeftIdx % this.n;
-      for (const cell of this._getCellsByIndex(topLeftIdx)) {
+      // `boards` (optional) limits the outline to those boards' copies of
+      // the cell -- a region tile only means something on its own board.
+      const allCells = this._getCellsByIndex(topLeftIdx);
+      const cells = boards ? boards.map(b => allCells[b]).filter(Boolean) : allCells;
+      for (const cell of cells) {
         const grid = cell?.parentElement;
         if (!grid) continue;
         const outline = document.createElement('div');
@@ -547,6 +554,107 @@ export function applyRenderer(GameClass) {
         this._hintTileOutlineEls.push(outline);
       }
     }
+  };
+
+  // Draws a tile outline as an inset shape around exactly `cellIdxs` (a
+  // connected set inside one 2x2 box: 1 cell, a domino, an L, or the whole
+  // box), in the same look as the 2x2 box outline -- thin colored border,
+  // inset by 10% of a cell. One absolutely positioned SVG per board, sized
+  // to the shape's bounding box.
+  p._applyTileShape = function (cellIdxs, color, boards) {
+    const n = this.n;
+    const rows = cellIdxs.map(i => Math.floor(i / n)), cols = cellIdxs.map(i => i % n);
+    const r0 = Math.min(...rows), c0 = Math.min(...cols);
+    const h = Math.max(...rows) - r0 + 1, w = Math.max(...cols) - c0 + 1;
+    const local = new Set(cellIdxs.map(i => (Math.floor(i / n) - r0) * w + ((i % n) - c0)));
+    const path = this._tileShapePath(local, w, h);
+
+    const allCells = this._getCellsByIndex(r0 * n + c0);
+    const targets = boards ? boards.map(b => allCells[b]).filter(Boolean) : allCells;
+    for (const cell of targets) {
+      const grid = cell?.parentElement;
+      if (!grid) continue;
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", `tile-shape tile-shape-${color}`);
+      svg.setAttribute("viewBox", `0 0 ${w * 100} ${h * 100}`);
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.style.top = `calc(${r0} * var(--cell-size))`;
+      svg.style.left = `calc(${c0} * var(--cell-size))`;
+      svg.style.width = `calc(${w} * var(--cell-size))`;
+      svg.style.height = `calc(${h} * var(--cell-size))`;
+      const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      pathEl.setAttribute("d", path);
+      svg.appendChild(pathEl);
+      grid.appendChild(svg);
+      if (!this._hintTileOutlineEls) this._hintTileOutlineEls = [];
+      this._hintTileOutlineEls.push(svg);
+    }
+  };
+
+  // Closed path (local units, 100 per cell) tracing the boundary of the
+  // cells in `set` (indices r * w + c within a w x h box), pulled INSIDE by
+  // 10 units on every side. Boundary edges are collected clockwise; each
+  // vertex is then moved in by 10 along both adjoining edges' inward
+  // normals (right for convex corners, and equally right for the inner
+  // corner of an L). Collinear vertices are dropped first. Falls back to
+  // the plain bounding rectangle if the shape isn't a single simple loop.
+  p._tileShapePath = function (set, w, h) {
+    const U = 100, M = 10;
+    // Two diagonally opposite cells: a "bowtie" -- each cell's inset square,
+    // joined through a narrow diagonal neck around their shared corner.
+    // Local box is 2x2 (200 units); {1,2} is top-right + bottom-left, and
+    // {0,3} is the mirror image.
+    if (w === 2 && h === 2 && set.size === 2) {
+      const pts = [
+        [110, M], [200 - M, M], [200 - M, 90], [120, 90], [90, 120],
+        [90, 200 - M], [M, 200 - M], [M, 110], [75, 110], [110, 75],
+      ];
+      if (set.has(1) && set.has(2)) return pts.map((q, i) => `${i ? 'L' : 'M'} ${q[0]} ${q[1]}`).join(' ') + ' Z';
+      if (set.has(0) && set.has(3)) return pts.map((q, i) => `${i ? 'L' : 'M'} ${200 - q[0]} ${q[1]}`).join(' ') + ' Z';
+    }
+    const has = (r, c) => r >= 0 && c >= 0 && r < h && c < w && set.has(r * w + c);
+    const next = new Map();   // "x,y" -> [x, y] of the edge's end
+    let simple = true;
+    const addEdge = (x1, y1, x2, y2) => {
+      const k = `${x1},${y1}`;
+      if (next.has(k)) simple = false;
+      next.set(k, [x2, y2]);
+    };
+    for (const idx of set) {
+      const r = Math.floor(idx / w), c = idx % w;
+      if (!has(r - 1, c)) addEdge(c, r, c + 1, r);
+      if (!has(r, c + 1)) addEdge(c + 1, r, c + 1, r + 1);
+      if (!has(r + 1, c)) addEdge(c + 1, r + 1, c, r + 1);
+      if (!has(r, c - 1)) addEdge(c, r + 1, c, r);
+    }
+    const rect = () => `M ${M} ${M} L ${w * U - M} ${M} L ${w * U - M} ${h * U - M} L ${M} ${h * U - M} Z`;
+    if (!simple || next.size === 0) return rect();
+
+    const [startKey] = next.keys();
+    let verts = [];
+    let key = startKey;
+    do {
+      const [x, y] = key.split(',').map(Number);
+      verts.push([x, y]);
+      const [nx, ny] = next.get(key);
+      key = `${nx},${ny}`;
+    } while (key !== startKey && verts.length <= next.size);
+    if (verts.length !== next.size) return rect();
+
+    const dir = (a, b) => [Math.sign(b[0] - a[0]), Math.sign(b[1] - a[1])];
+    verts = verts.filter((v, i) => {
+      const prev = verts[(i + verts.length - 1) % verts.length], nxt = verts[(i + 1) % verts.length];
+      const din = dir(prev, v), dout = dir(v, nxt);
+      return din[0] !== dout[0] || din[1] !== dout[1];
+    });
+    const pts = verts.map((v, i) => {
+      const prev = verts[(i + verts.length - 1) % verts.length], nxt = verts[(i + 1) % verts.length];
+      const din = dir(prev, v), dout = dir(v, nxt);
+      // inward normal of a clockwise edge with direction (dx, dy) is (-dy, dx)
+      const nin = [-din[1], din[0]], nout = [-dout[1], dout[0]];
+      return [v[0] * U + M * (nin[0] + nout[0]), v[1] * U + M * (nin[1] + nout[1])];
+    });
+    return pts.map((p, i) => `${i ? 'L' : 'M'} ${p[0]} ${p[1]}`).join(' ') + ' Z';
   };
 
   p._clearTileOutlines = function () {
@@ -568,6 +676,7 @@ export function applyRenderer(GameClass) {
 
   // Clear active hint highlights.
   p.clearHintUI = function () {
+    this._hintDisplayed = false;
     const { HINT_COLOR, HINT_SOURCE_VARIANTS } = this._constants;
     this._allCells.forEach(cell => {
       cell.classList.remove(

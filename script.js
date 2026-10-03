@@ -421,10 +421,18 @@ class StarBattleGame {
   // --- Hints ---
 
   // Request a hint from the solver and update UI.
+  //
+  // Pressing Hint while a hint is on screen cycles to the next one;
+  // pressing it after the hint was dismissed (clicking elsewhere) brings
+  // the SAME hint back, so a long multi-step explanation can be re-read
+  // without losing your place.
   getHint() {
-    const hint = this.solver.getHint();
+    const advance = this._hintDisplayed === true;
+    this.clearHintUI();
+    const hint = this.solver.getHint({ advance });
     if (hint) {
       this.applyHintUI(hint);
+      this._hintDisplayed = true;
     } else {
       this.showToast("No hints found!", "info");
     }

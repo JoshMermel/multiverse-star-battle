@@ -557,6 +557,26 @@ input[type="number"]::-webkit-inner-spin-button {
    outlines on adjacent tiles never look like they're touching or merging
    into one shape, and the border alone (no fill) never obscures the
    star/dot glyph inside a cell. */
+/* Shrunken tile outline (region / single-line tiles): an inset shape hugging
+   just the tile's own cells -- see renderer.js _applyTileShape. Same look as
+   the 2x2 .tile-outline box (thin colored border, 10% inset, above dots). */
+.tile-shape {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 6;
+}
+.tile-shape path {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-width: max(2px, calc(var(--cell-size) * 0.05));
+  stroke-linejoin: round;
+}
+.tile-shape-blue path  { stroke: var(--tile-outline-blue); }
+.tile-shape-brown path { stroke: var(--tile-outline-brown); }
+.tile-shape-cyan path  { stroke: var(--tile-outline-cyan); }
+.tile-shape-pink path  { stroke: var(--tile-outline-pink); }
+
 .tile-outline {
   position: absolute;
   /* Inset 10% of a cell-size on all four sides: JS sets top/left already
