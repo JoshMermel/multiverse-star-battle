@@ -647,21 +647,53 @@ export class PuzzleSolver {
   // a real deduction hint in the same breath as "fix your mistake first",
   // which doesn't make sense -- there's nothing to deduce from a board
   // that's currently wrong. That hint should just stand alone.
+  // Tag for hints that reason about ONE row/column/region ("one-unit"
+  // family: the tile rules and unit-placement-forced at every level). Used
+  // only by _isRedundantPadding below.
+  _unitObservation(unit) {
+    return { family: 'one-unit', unit: unit.label };
+  }
+
+  // A padding candidate is redundant when it's the same kind of observation
+  // about the same unit as the primary hint (e.g. the weak forced-placement
+  // version of a region-tile deduction, or the strong version of a weak one)
+  // and marks nothing the primary doesn't already mark. Padding is meant to
+  // show the player OTHER things they might have noticed, so a repeat of the
+  // primary's own observation is dropped. Hints without an `observation` tag
+  // are never judged redundant.
+  _isRedundantPadding(primary, candidate) {
+    const a = primary.observation, b = candidate.observation;
+    if (!a || !b || a.family !== b.family || a.unit !== b.unit) return false;
+    const key = m => `${m.idx}:${m.color}`;
+    const have = new Set((primary.marks || []).map(key));
+    return (candidate.marks || []).every(m => have.has(key(m)));
+  }
+
+  // The padding for a single-hint primary comes from the next applicable
+  // rule; if every hint it offers is redundant (see above), look at up to
+  // PADDING_LOOKAHEAD further applicable rules for something new, and use no
+  // padding if none has anything.
   _buildHintBatch(hints, rules, matchedIndex) {
+    const PADDING_LOOKAHEAD = 3;
     const batch = this._shuffle(hints.slice());
     if (batch.length > 1) return batch;
     if (rules[matchedIndex].key === 'checkForErrors') return batch;
 
-    for (let j = matchedIndex + 1; j < rules.length; j++) {
+    let applicableSeen = 0;
+    for (let j = matchedIndex + 1; j < rules.length && applicableSeen < PADDING_LOOKAHEAD; j++) {
       const { key, fn } = rules[j];
       if (key === 'fromSolution') continue;
       const nextHints = fn();
       if (!nextHints || nextHints.length === 0) continue;
-      const padding = this._shuffle(nextHints.slice()).slice(0, 4);
+      applicableSeen++;
+      const fresh = nextHints.filter(h => !this._isRedundantPadding(batch[0], h));
+      if (fresh.length === 0) continue;
+      const padding = this._shuffle(fresh).slice(0, 4);
       return [...batch, ...padding];
     }
     return batch;
   }
+
 
   // --- Hint Formatters ---
 

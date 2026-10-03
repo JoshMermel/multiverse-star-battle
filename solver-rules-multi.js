@@ -224,6 +224,7 @@ export function applyMultiStarRules(PuzzleSolver) {
           // with the forcedStars marks above, which are a separate visual
           // layer (a cell mark, not a highlight fill).
           regionOutlines: this._outlineEntriesFor(unit, 'blue'),
+          observation: this._unitObservation(unit),
         });
       }
       // One combined hint for every forced dot this unit produces, inside or
@@ -243,6 +244,7 @@ export function applyMultiStarRules(PuzzleSolver) {
           // "touching" case), which the outline naturally excludes since
           // it's only ever built from unit.indices.
           regionOutlines: this._outlineEntriesFor(unit, 'blue'),
+          observation: this._unitObservation(unit),
         });
       }
     }
@@ -2534,7 +2536,8 @@ export function applyMultiStarRules(PuzzleSolver) {
           marks: targetList.map(idx => ({ idx, color: wantStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET })),
           tileOutlines,
           regionOutlines: this._outlineEntriesFor(unit, 'amber'),
-          boardIdx: unit.boardIdx
+          boardIdx: unit.boardIdx,
+          observation: this._unitObservation(unit)
         });
       }
     }
