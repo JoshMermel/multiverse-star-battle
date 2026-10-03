@@ -1919,14 +1919,15 @@ class MultiStarRules:
         ok, tiles = rec(empties, k)
         return set(tiles) if ok else set()
 
-    def _region_tiles(self, p):
-        """[(unit, set of tiles)] for every region unit still needing stars.
-        Cached two ways: on the whole grid state (every region tile rule in
+    def _region_tiles(self, p, lines=False):
+        """[(unit, set of tiles)] for every region unit (or, lines=True, every
+        row/column -- tiles are then 1x2 dominoes or single cells) still
+        needing stars. Cached two ways: on the whole grid state (every region tile rule in
         a step shares one pass), and per unit on that unit's own cells -- a
         unit's tiles depend only on its own empties, so a one-cell change
         only recomputes the (at most a few) regions that cell belongs to.
         """
-        key = tuple(p.grid)
+        key = (tuple(p.grid), lines)
         cache = getattr(p, "_region_tiles_cache", None)
         if cache is not None and cache[0] == key:
             return cache[1]
@@ -1935,7 +1936,7 @@ class MultiStarRules:
             unit_cache = p._region_tiles_unit_cache = {}
         out = []
         for unit in p.units:
-            if unit["board_idx"] is None:
+            if (unit["board_idx"] is None) != lines:
                 continue
             k = p.stars_per_unit - sum(1 for i in unit["indices"] if p.grid[i] == "x")
             if k <= 0:
@@ -1952,16 +1953,8 @@ class MultiStarRules:
         p._region_tiles_cache = (key, out)
         return out
 
-    def rule_region_tile_star(self, p):
-        """
-        Beginner (same tier/score as rule_unit_placement_forced_weak_all,
-        which finds the same deduction): a region tile with ONE empty cell
-        holds its star there. Skipped when every tile in the region's tiling
-        is a single cell (just "as many empties as stars needed", which the
-        placement-forced wording covers); here that means some partition
-        containing the tile also has a multi-cell tile.
-        """
-        for unit, tiles in self._region_tiles(p):
+    def _tile_star(self, p, lines, label):
+        for unit, tiles in self._region_tiles(p, lines):
             k = p.stars_per_unit - sum(1 for i in unit["indices"] if p.grid[i] == "x")
             empties = [i for i in unit["indices"] if p.grid[i] is None]
             if len(empties) == k:
@@ -1969,18 +1962,13 @@ class MultiStarRules:
             for tile in tiles:
                 if len(tile) == 1:
                     (i,) = tile
-                    changes = p.validate_and_set(i, "x", "RegionTileStar", self.verbose)
+                    changes = p.validate_and_set(i, "x", label, self.verbose)
                     if changes > 0:
                         return changes
         return 0
 
-    def rule_region_tile_dots(self, p):
-        """
-        Beginner (same tier/score as rule_unit_placement_forced_weak_dots):
-        a region tile of 2-3 empty cells holds exactly one star at one of
-        them, so any other empty cell touching EVERY cell of the tile is a dot.
-        """
-        for unit, tiles in self._region_tiles(p):
+    def _tile_dots(self, p, lines, label):
+        for unit, tiles in self._region_tiles(p, lines):
             for tile in tiles:
                 if len(tile) < 2:
                     continue
@@ -1990,10 +1978,39 @@ class MultiStarRules:
                     if p.grid[i] is None and i not in tile
                     and all(i in p._neighbor_map[c] for c in cells[1:])
                 ]
-                changes = sum(p.validate_and_set(i, ".", "RegionTileDots", self.verbose) for i in targets)
+                changes = sum(p.validate_and_set(i, ".", label, self.verbose) for i in targets)
                 if changes > 0:
                     return changes
         return 0
+
+    def rule_region_tile_star(self, p):
+        """
+        Beginner (same tier/score as rule_unit_placement_forced_weak_all,
+        which finds the same deduction): a region tile with ONE empty cell
+        holds its star there. Skipped when every tile in the region's tiling
+        is a single cell (just "as many empties as stars needed", which the
+        placement-forced wording covers); here that means some partition
+        containing the tile also has a multi-cell tile.
+        """
+        return self._tile_star(p, False, "RegionTileStar")
+
+    def rule_region_tile_dots(self, p):
+        """
+        Beginner (same tier/score as rule_unit_placement_forced_weak_dots):
+        a region tile of 2-3 empty cells holds exactly one star at one of
+        them, so any other empty cell touching EVERY cell of the tile is a dot.
+        """
+        return self._tile_dots(p, False, "RegionTileDots")
+
+    def rule_line_tile_star(self, p):
+        """Same as rule_region_tile_star, for a single row/column whose empties
+        split into K dominoes (1 cell, or 2 touching cells)."""
+        return self._tile_star(p, True, "LineTileStar")
+
+    def rule_line_tile_dots(self, p):
+        """Same as rule_region_tile_dots, for a single row/column tiled by
+        dominoes: a cell touching both cells of a domino is a dot."""
+        return self._tile_dots(p, True, "LineTileDots")
 
     def rule_region_tile_line_fill(self, p):
         """

@@ -2455,7 +2455,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     return ` Each color of outlined tiles exactly covers the empty cells of one ${joined} that still needs that many stars, so every tile holds exactly one.`;
   };
 
-  // -- Region tiles on their own (2★+, Beginner) ----------------------------------
+  // -- Region and line tiles on their own (2★+, Beginner) ----------------------------------
   //
   // The pure single-region version of the tile deductions: a region still
   // needing K stars whose empty cells split into K cliques (tiles) holds
@@ -2468,12 +2468,17 @@ export function applyMultiStarRules(PuzzleSolver) {
   // 'all_stars' / 'dots' variants at the same tier and score -- same
   // deductions, but shown as the tiling that makes them obvious. K=1 with
   // the whole region in a 2x2 box is by far the commonest case. At most one
-  // hint per region (the tiling marking the most cells).
-  p._regionTileHints = function (wantStar) {
+  // hint per region (the tiling marking the most cells). The line versions
+  // (lineTileStar/Dots) do the same for a single row/column, whose tiles are
+  // 1x2 dominoes or single cells.
+  p._regionTileHints = function (wantStar, lines = false) {
     const hints = [];
     const seenWitness = new Set();
     for (const unit of this.units) {
-      if (unit.boardIdx === undefined) continue;
+      // Region units, or (lines = true) single rows/columns, whose tiles are
+      // dominoes: 1 empty cell or 2 touching ones.
+      if ((unit.boardIdx === undefined) !== lines) continue;
+      const kind = this._unitKind(unit);
       const byWitness = new Map();
       for (const entry of this._unitTileEntries(unit)) {
         let targets;
@@ -2509,9 +2514,13 @@ export function applyMultiStarRules(PuzzleSolver) {
         const targetList = [...targets].sort((a, b) => a - b);
         const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(witness, matching, targetList);
         const K = witness.length;
-        const intro = K === 1
-          ? `The empty cells of the amber-outlined region all touch each other (they fit in a 2x2 box), so it can hold only one star -- and it needs exactly one more.`
-          : `The amber-outlined region still needs ${K} stars, and its empty cells split into these ${K} tiles that can each hold at most one star -- so exactly one each.`;
+        const intro = lines
+          ? (K === 1
+            ? `This ${kind} needs one more star, and its empty cells are just these two touching cells, which can hold only one star.`
+            : `This ${kind} still needs ${K} stars, and its empty cells split into these ${K} tiles of one or two touching cells -- each holds at most one star, so exactly one each.`)
+          : (K === 1
+            ? `The empty cells of the amber-outlined region all touch each other (they fit in a 2x2 box), so it can hold only one star -- and it needs exactly one more.`
+            : `The amber-outlined region still needs ${K} stars, and its empty cells split into these ${K} tiles that can each hold at most one star -- so exactly one each.`);
         const outro = wantStar
           ? (matching.length === 1
             ? `The highlighted tile has only one empty cell left, so that cell is the star.`
@@ -2524,7 +2533,8 @@ export function applyMultiStarRules(PuzzleSolver) {
           highlights,
           marks: targetList.map(idx => ({ idx, color: wantStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET })),
           tileOutlines,
-          regionOutlines: this._outlineEntriesFor(unit, 'amber'),
+          // A row/column isn't outlined (the tiles all sit in it already).
+          regionOutlines: lines ? [] : this._outlineEntriesFor(unit, 'amber'),
           boardIdx: unit.boardIdx
         });
       }
@@ -2536,6 +2546,10 @@ export function applyMultiStarRules(PuzzleSolver) {
 
   p.hintRegionTileStar = function () { return this._regionTileHints(true); };
   p.hintRegionTileDots = function () { return this._regionTileHints(false); };
+  // Same deductions for a single row/column tiled by 1x2 dominoes -- see the
+  // section comment above; slotted right after the region versions.
+  p.hintLineTileStar = function () { return this._regionTileHints(true, true); };
+  p.hintLineTileDots = function () { return this._regionTileHints(false, true); };
 
   // -- Region tiles fill a row/column (2★+, end of Medium) ------------------------
   //
@@ -3016,11 +3030,13 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Region tiles (see "Region tiles on their own"): the tile-shaped version
       // of the next rule(s), tried first at the same tier and score.
       { key: 'regionTileStar',                 fn: () => this.hintRegionTileStar() },
+      { key: 'lineTileStar',                   fn: () => this.hintLineTileStar() },
       { key: 'unitPlacementForcedWeakAll',     fn: () => this.hintUnitPlacementForced('weak', 'all_stars') },
       { key: 'unitPlacementForcedWeakAny',     fn: () => this.hintUnitPlacementForced('weak', 'any_star') },
       // 'dots' covers both inside-the-unit and outside-the-unit forced dots --
       // see hintUnitPlacementForced's comment for the unified reasoning.
       { key: 'regionTileDots',                 fn: () => this.hintRegionTileDots() },
+      { key: 'lineTileDots',                   fn: () => this.hintLineTileDots() },
       { key: 'unitPlacementForcedWeakDots',    fn: () => this.hintUnitPlacementForced('weak', 'dots') },
       // Moved here from Medium (multi-star-rules-experiment).
       { key: 'unitRegionSyncMulti1',           fn: () => this.hintUnitRegionSyncMulti(1) },

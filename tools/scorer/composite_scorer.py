@@ -196,11 +196,13 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # Region tiles (see rules_multi_star.py): the tile-shaped version of
             # the next rule(s), tried first at the same tier and score.
             (self.rule_region_tile_star,                         5,  "Beginner"),
+            (self.rule_line_tile_star,                           5,  "Beginner"),
             (self.rule_unit_placement_forced_weak_all,           5,  "Beginner"),
             (self.rule_unit_placement_forced_weak_any,           10, "Beginner"),
             # Covers both inside-the-unit and outside-the-unit forced dots --
             # see rule_unit_placement_forced_cond's docstring.
             (self.rule_region_tile_dots,                         10, "Beginner"),
+            (self.rule_line_tile_dots,                           10, "Beginner"),
             (self.rule_unit_placement_forced_weak_dots,          10, "Beginner"),
             # Moved here from Medium (multi-star-rules-experiment).
             (self.rule_unit_region_sync_multi_1,                  15, "Beginner"),
