@@ -1992,8 +1992,8 @@ export function applyMultiStarRules(PuzzleSolver) {
     const sorted = [...candidates].sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
 
     return sorted.map(({ unit, combo, targets }) => {
-      // combo tiles can come from different coverings (row/column pairs,
-      // and -- for the Mixed rules -- regions or single rows/columns) --
+      // combo tiles can come from different coverings (row/column pairs
+      // or regions) --
       // expand each one out to its full sibling tile set (see
       // _displayTilesForCombo) so the player can see why every combo tile
       // is trustworthy. Only the combo tiles themselves get highlighted,
@@ -2299,37 +2299,18 @@ export function applyMultiStarRules(PuzzleSolver) {
     return this._formatTilePairQuotaFillHints(candidates);
   };
 
-  // -- Tile sources beyond row/column-pair bands, with mixing (2★+) ---------------
+  // -- Region tiles: shared machinery (2★+) ----------------------------------------
   //
-  // The tile rules above only ever see tiles from row-pair/column-pair BAND
-  // tilings ("B"). Two more sources confirm tiles by the very same
-  // pigeonhole argument -- K stars needed, K groups that can each hold at
-  // most 1, so each group holds exactly 1:
+  // Besides the row-pair/column-pair BAND tilings above, a region still
+  // needing K stars whose empties can be partitioned into exactly K CLIQUES
+  // (cells that all mutually touch, i.e. subsets of one 2x2 box) confirms
+  // tiles by the very same pigeonhole argument -- K stars needed, K groups
+  // that can each hold at most 1, so each group holds exactly 1. Used by the
+  // region-tile rules below (regionTileStar/Dots/LineFill).
   //
-  //  - Region tiles ("R"): a region still needing K stars whose empties can
-  //    be partitioned into exactly K CLIQUES (cells that all mutually touch,
-  //    i.e. subsets of one 2x2 box). Per board, since regions are.
-  //  - Line tiles ("L"): the same for a single row/column, partitioned into
-  //    "dominoes" (1 empty cell, or 2 consecutive empty cells).
-  //
-  // Mixed rules below run immediately after their base twin (same tier), so
-  // they only ever fire on a deduction the base rule could NOT make, i.e.
-  // one that needs a new-source tile. They differ from the base rules in
-  // two ways: the tile pool is B + R + L, and a combo of K disjoint tiles
-  // (quota fill / pair fill) may MIX sources -- e.g. a band tile plus a
-  // region tile together filling a row's quota. A combo drawn from a
-  // single source is preferred (R, L, then B) before any mixed combo is
-  // tried. Filling a REGION's quota never mixes sources (see
-  // _tileQuotaFillCandidatesMixed).
-  //
-  // Measured on the 2★ Expert books (9x9/10x10/14x14, ~1000 puzzles each):
-  // mixing roughly doubles the reach of K>1 quota fill on 9x9 but changes
-  // no puzzle's tier relative to single-source combos; region-tile "sees too
-  // much" is the one that lowers tiers (~1-2% of Expert puzzles become Hard),
-  // always via its line-finish clause. Line tiles and the single-tile rules
-  // (single empty, two empty) added essentially nothing -- they're subsumed
-  // by unit-placement-forced -- so those get no Mixed twin. See
-  // tools/tile_sources_*.py (Python prototype) for the experiment code.
+  // (Mixed rules combining band, region, and line tiles were tried and
+  // removed -- the hints stacked too many overlapping coverings for the few
+  // deductions they added. See tools/tile_sources_*.py for the experiments.)
 
   // Every partition of `empties` into exactly k cliques. Each partition is a
   // list of cell-index arrays. Empty if none exists (e.g. the unit's
@@ -2435,32 +2416,6 @@ export function applyMultiStarRules(PuzzleSolver) {
     return result;
   };
 
-  // The combined tile pool: one entry per distinct cell set, tagged with
-  // every source that confirms it (B band / R region / L line). Band tiles
-  // keep their own tiling as the display witness (preferred over R/L).
-  p._taggedTilePool = function () {
-    return this._cachedOnState('taggedTilePool', () => {
-      const pool = new Map();
-      const add = (cells, source, rep, witness) => {
-        const key = this._groupKey(cells);
-        let e = pool.get(key);
-        if (!e) {
-          e = { cells, sources: new Set(), rep, witness };
-          pool.set(key, e);
-        }
-        e.sources.add(source);
-      };
-      for (const tiling of this._confirmedTiles()) {
-        for (const t of tiling.tiles) add(t.cells, 'B', t, tiling.tiles);
-      }
-      for (const unit of this.units) {
-        const source = unit.boardIdx !== undefined ? 'R' : 'L';
-        for (const e of this._unitTileEntries(unit)) add(e.cells, source, e.rep, e.witness);
-      }
-      return [...pool.values()].map(e => ({ ...e.rep, cells: e.cells, sources: e.sources, witness: e.witness }));
-    });
-  };
-
   // The full set of tiles to outline for a combo: each combo tile's whole
   // originating covering (deduped), so the player can see why every combo
   // tile holds exactly one star. Works for band tiles (looked up by
@@ -2500,138 +2455,6 @@ export function applyMultiStarRules(PuzzleSolver) {
     return ` Each color of outlined tiles exactly covers the empty cells of one ${joined} that still needs that many stars, so every tile holds exactly one.`;
   };
 
-  // K disjoint tiles from `tiles`, preferring a combo drawn from a single
-  // source (R, then L, then B) and only then allowing any mix. Returns the
-  // combo, or null.
-  p._findMixedCombo = function (tiles, need, allowMix = true) {
-    for (const src of ['R', 'L', 'B']) {
-      const sub = tiles.filter(t => t.sources.has(src));
-      if (sub.length >= need) {
-        const combo = this._findDisjointTileCombo(sub, need);
-        if (combo) return combo;
-      }
-    }
-    if (allowMix && tiles.length >= need) return this._findDisjointTileCombo(tiles, need);
-    return null;
-  };
-
-  // Mixed-pool version of _tileQuotaFillCandidates (same unit filtering).
-  p._tileQuotaFillCandidatesMixed = function (wantSingle) {
-    const pool = this._taggedTilePool();
-    const candidates = [];
-    for (const unit of this.units) {
-      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
-      const k = this.starsPerGroup - stars;
-      if (k <= 0) continue;
-      if (wantSingle ? k !== 1 : k <= 1) continue;
-      const avail = new Set(unit.indices.filter(i => this.vState(i) === CELL.NONE));
-      if (avail.size <= k) continue;
-
-      const relevant = pool.filter(t => t.cells.every(c => avail.has(c)));
-      if (relevant.length < k) continue;
-      // A REGION's quota is never filled by a mix of source kinds (e.g. a
-      // row-pair tile plus a region tile): those hints stacked several
-      // overlapping coverings on the board, and the case is rare and hard.
-      // Rows/columns (and pair windows, below) still allow mixing.
-      const combo = this._findMixedCombo(relevant, k, unit.boardIdx === undefined);
-      if (!combo) continue;
-
-      const covered = new Set(combo.flatMap(t => t.cells));
-      const targets = [...avail].filter(i => !covered.has(i));
-      if (targets.length === 0) continue;
-      candidates.push({ unit, combo, targets });
-    }
-    return candidates;
-  };
-
-  // Rule 3a, Mixed (2★+, Hard): see section comment. What's left once
-  // hintRegionSubsetHard has had its turn is the tile-only case: a region
-  // tile that is only PART of a larger region, sitting inside a unit
-  // needing 1 star.
-  p.hintTileQuotaFillSingleMixed = function () {
-    return this._formatTileQuotaFillHints(this._tileQuotaFillCandidatesMixed(true));
-  };
-
-  // Rule 3b, Mixed (2★+, Expert): K>1 disjoint tiles -- from ANY mix of
-  // band, region and line coverings -- accounting for a unit's whole need.
-  p.hintTileDisjointQuotaFillMixed = function () {
-    return this._formatTileQuotaFillHints(this._tileQuotaFillCandidatesMixed(false));
-  };
-
-  // Pair-window fill over the mixed pool: ANY tile whose cells all lie
-  // inside two adjacent rows (or columns) counts toward that window's
-  // quota, whichever kind of covering it came from. A superset of the base
-  // rule, which only counts tiles from the other axis's bands.
-  p._tilePairQuotaFillCandidatesMixed = function (minTiles, maxTiles = Infinity) {
-    const quota = this.starsPerGroup;
-    const pool = this._taggedTilePool();
-    const candidates = [];
-    // bandAxis 'col' = the window is a ROW pair (see _formatTilePairQuotaFillHints).
-    for (const [bandAxis, lines] of [['col', this.axisIndices.Row], ['row', this.axisIndices.Column]]) {
-      for (let w = 0; w + 1 < lines.length; w++) {
-        const windowIndices = [...lines[w], ...lines[w + 1]];
-        const stars = windowIndices.filter(i => this.vState(i) === CELL.STAR).length;
-        const needed = 2 * quota - stars;
-        if (needed <= 0 || needed < minTiles || needed > maxTiles) continue;
-
-        const windowSet = new Set(windowIndices);
-        const inside = pool.filter(t => t.cells.every(c => windowSet.has(c)));
-        if (inside.length < needed) continue;
-        const combo = this._findMixedCombo(inside, needed);
-        if (!combo) continue;
-
-        const covered = new Set(combo.flatMap(t => t.cells));
-        const targets = windowIndices.filter(i => this.vState(i) === CELL.NONE && !covered.has(i));
-        if (targets.length === 0) continue;
-        candidates.push({ bandAxis, combo, targets, windowStart: w });
-      }
-    }
-    return candidates;
-  };
-
-  p.hintTilePairQuotaFillMixed = function () {
-    return this._formatTilePairQuotaFillHints(this._tilePairQuotaFillCandidatesMixed(2, 2));
-  };
-
-  p.hintTilePairQuotaFillMixedGrandmaster = function () {
-    return this._formatTilePairQuotaFillHints(this._tilePairQuotaFillCandidatesMixed(3));
-  };
-
-  // Sees-too-much over the mixed pool (2★+, Hard). Same logic as
-  // hintTileSeesTooMuchMulti (a 3-empty tile, or two diagonally opposite
-  // empties, always holds its star at one of those candidates; any other
-  // cell ruled out by EVERY candidate -- touching it, or sharing its
-  // row/column when its placement would finish that line -- is a dot), but
-  // over region/line tiles too. Every firing found so far is a region tile
-  // that needs the line-finish clause: unit enumeration (unit-placement-
-  // forced) only models the "touching" half, which is why these dots
-  // weren't already available.
-  p.hintTileSeesTooMuchMultiMixed = function () {
-    const hints = [];
-    for (const tile of this._taggedTilePool()) {
-      if (tile.cells.length !== 3 && !this._isDiagonalTilePair(tile.cells)) continue;
-      const targets = [];
-      for (let i = 0; i < this.n * this.n; i++) {
-        if (this.vState(i) !== CELL.NONE || tile.cells.includes(i)) continue;
-        if (tile.cells.every(c => this._externalConflictsWithCandidate(i, c))) targets.push(i);
-      }
-      if (targets.length === 0) continue;
-
-      const displayTiles = this._displayTilesForCombo([tile]);
-      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(displayTiles, [tile], targets);
-      hints.push({
-        description: `This tile's empty cells must contain a star.${this._tileCoverClause(displayTiles)}`,
-        highlights,
-        marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-        tileOutlines,
-        boardIdx: undefined
-      });
-    }
-    if (hints.length === 0) return null;
-    hints.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
-    return hints;
-  };
-
   // -- Region tiles on their own (2★+, Beginner) ----------------------------------
   //
   // The pure single-region version of the tile deductions: a region still
@@ -2641,12 +2464,11 @@ export function applyMultiStarRules(PuzzleSolver) {
   //  - a tile of 2-3 empty cells: any other cell touching EVERY one of them
   //    touches that tile's star whichever cell it is, so it's a dot.
   // unitPlacementForced('weak') already finds both of these (it enumerates
-  // the region's placements), so they share its tier and score: the dots
-  // rule sits immediately before its 'dots' variant, the star rule right
-  // after its 'all_stars' variant (which already covers any cell in every
-  // placement, so the tile star only fires on what that one leaves). Same
+  // the region's placements), which is why they sit immediately before its
+  // 'all_stars' / 'dots' variants at the same tier and score -- same
   // deductions, but shown as the tiling that makes them obvious. K=1 with
-  // the whole region in a 2x2 box is by far the commonest case.
+  // the whole region in a 2x2 box is by far the commonest case. At most one
+  // hint per region (the tiling marking the most cells).
   p._regionTileHints = function (wantStar) {
     const hints = [];
     const seenWitness = new Set();
@@ -2675,7 +2497,13 @@ export function applyMultiStarRules(PuzzleSolver) {
         group.matching.push(entry.rep);
         targets.forEach(t => group.targets.add(t));
       }
-      for (const [id, { witness, matching, targets }] of byWitness) {
+      // A region can have several similar tilings with similar deductions;
+      // show only the one that marks the most cells (first found on ties).
+      let best = null;
+      for (const [id, group] of byWitness) {
+        if (!best || group.targets.size > best.group.targets.size) best = { id, group };
+      }
+      for (const [id, { witness, matching, targets }] of best ? [[best.id, best.group]] : []) {
         if (seenWitness.has(id)) continue;
         seenWitness.add(id);
         const targetList = [...targets].sort((a, b) => a - b);
@@ -2723,7 +2551,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       if (unit.boardIdx === undefined) continue;
       for (const e of this._unitTileEntries(unit)) {
         const key = this._groupKey(e.cells);
-        if (!pool.has(key)) pool.set(key, { ...e.rep, cells: e.cells, sources: new Set(['R']), witness: e.witness });
+        if (!pool.has(key)) pool.set(key, { ...e.rep, cells: e.cells, witness: e.witness });
       }
     }
     if (pool.size === 0) return null;
@@ -3185,12 +3013,10 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'onlyEmpty',                      fn: () => this.hintOnlyEmpty() },
       { key: 'excludeAdjacency',               fn: () => this.hintExcludeAdjacency() },
       { key: 'excludeSolvedUnit',              fn: () => this.hintExcludeSolvedUnit() },
-      { key: 'unitPlacementForcedWeakAll',     fn: () => this.hintUnitPlacementForced('weak', 'all_stars') },
       // Region tiles (see "Region tiles on their own"): the tile-shaped version
-      // of the placement-forced rules. The star rule runs AFTER the weak
-      // all-stars rule (a cell in every placement is the simpler hint); the
-      // dots rule runs just before the weak dots rule.
+      // of the next rule(s), tried first at the same tier and score.
       { key: 'regionTileStar',                 fn: () => this.hintRegionTileStar() },
+      { key: 'unitPlacementForcedWeakAll',     fn: () => this.hintUnitPlacementForced('weak', 'all_stars') },
       { key: 'unitPlacementForcedWeakAny',     fn: () => this.hintUnitPlacementForced('weak', 'any_star') },
       // 'dots' covers both inside-the-unit and outside-the-unit forced dots --
       // see hintUnitPlacementForced's comment for the unified reasoning.
@@ -3247,8 +3073,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'unitPlacementForcedIntermediateAny',  fn: () => this.hintUnitPlacementForced('intermediate', 'any_star') },
       { key: 'unitPlacementForcedIntermediateDots', fn: () => this.hintUnitPlacementForced('intermediate', 'dots') },
       { key: 'unitRegionSyncMulti3',           fn: () => this.hintUnitRegionSyncMulti(3) },
-      // Row<->column line sync (see solver-rules-common.js): the 1★ family's
-      // Tiles rule 2.
       { key: 'tileTwoEmptyDot',                fn: () => this.hintTileTwoEmptyDot() },
       // Region subset, by capacity: a region needing K stars sits inside a
       // region needing K stars (any K). See hintRegionSubsetHard in
@@ -3261,10 +3085,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       // language, and the subset wording is the one a player would actually
       // notice.
       { key: 'tileQuotaFillSingle',            fn: () => this.hintTileQuotaFillSingle() },
-      // Mixed twin: what's left for it, beyond restating the subset rule, is
-      // the genuinely tile-only case (a tile from part of a larger region
-      // inside a region needing 1).
-      { key: 'tileQuotaFillSingleMixed',     fn: () => this.hintTileQuotaFillSingleMixed() },
       { key: 'regionLineQuotaFillIntermediate', fn: () => this.hintRegionLineQuotaFill('intermediate') },
       { key: 'regionLinePartitionForcedIntermediate', fn: () => this.hintRegionLinePartitionForced('intermediate') },
       { key: 'regionLinePartitionTrappedIntermediate', fn: () => this.hintRegionLinePartitionTrapped('intermediate') },
@@ -3286,7 +3106,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       // the same tile-spotting as tileSingleEmpty/tileTwoEmptyDot (start
       // of Hard) PLUS a per-candidate line-completion check on top.
       { key: 'tileSeesTooMuchMulti',           fn: () => this.hintTileSeesTooMuchMulti() },
-      { key: 'tileSeesTooMuchMultiMixed',    fn: () => this.hintTileSeesTooMuchMultiMixed() },
       // Symmetry - requires insight but not hard to apply
       { key: 'symmetryDeductionMulti',         fn: () => this.hintSymmetryDeductionMulti() },
       // Expert
@@ -3320,7 +3139,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'crossBoardPartialOverlapMulti',  fn: () => this.hintCrossBoardPartialOverlapMulti() },
       // Tiles rule 3.
       { key: 'tileDisjointQuotaFill',          fn: () => this.hintTileDisjointQuotaFill() },
-      { key: 'tileDisjointQuotaFillMixed',   fn: () => this.hintTileDisjointQuotaFillMixed() },
       { key: 'regionLineQuotaFillStrong',      fn: () => this.hintRegionLineQuotaFill('strong') },
       { key: 'regionLinePartitionForcedStrong',    fn: () => this.hintRegionLinePartitionForced('strong') },
       { key: 'regionLinePartitionTrappedStrong',   fn: () => this.hintRegionLinePartitionTrapped('strong') },
@@ -3331,7 +3149,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Moved here (was the very start of Expert) per a manual scoring
       // reorder -- matches Python's composite_scorer.py.
       { key: 'tilePairQuotaFill',              fn: () => this.hintTilePairQuotaFill() },
-      { key: 'tilePairQuotaFillMixed',       fn: () => this.hintTilePairQuotaFillMixed() },
       // Cross-board pin, 3-region case -- see the 2-region case at the
       // start of Expert.
       { key: 'crossBoardPinnedMulti3Row',      fn: () => this.hintCrossBoardRegionPinnedMulti(3, "Row") },
@@ -3346,14 +3163,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'regionAlgebra',                  fn: () => this.hintRegionAlgebra() },
       { key: 'regionPairPlacementForced',      fn: () => this.hintRegionPairPlacementForced() },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
-      // Row<->column line sync (hintRowColLineSync, shared with 1★) -- no
-      // region information needed, so it works on regionless boards too.
-      // For 2★+ the N rows and the columns they touch needn't match in
-      // count, which makes it much harder to spot than the 1★ version: the
-      // 2-line case sits at the very end of Expert here (Hard for 1★), and
-      // the 3-line case isn't used for 2★+ at all (2026-09-29, user's call
-      // -- it almost never fired even in Hard). Matches composite_scorer.py.
-      { key: 'rowColLineSync2',                fn: () => this.hintRowColLineSync(2) },
       // Grandmaster
       // Cross-board region/line quota fill + partition forced -- see the
       // section comment above hintCrossBoardRegionLineQuotaFill. Genuinely
@@ -3377,7 +3186,6 @@ export function applyMultiStarRules(PuzzleSolver) {
       // depends on them. Matches Python's rule_tile_pair_quota_fill_
       // grandmaster in rules_multi_star.py.
       { key: 'tilePairQuotaFillGrandmaster',   fn: () => this.hintTilePairQuotaFillGrandmaster() },
-      { key: 'tilePairQuotaFillMixedGrandmaster', fn: () => this.hintTilePairQuotaFillMixedGrandmaster() },
       // Cross-board lookahead-dots: moved here (was Expert, right after
       // lookaheadDotsSingleBoard) to match Python's identical reorder --
       // see the comment above rule_lookahead_dots in composite_scorer.py.

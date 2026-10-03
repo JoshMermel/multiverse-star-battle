@@ -1955,7 +1955,7 @@ class MultiStarRules:
     def rule_region_tile_star(self, p):
         """
         Beginner (same tier/score as rule_unit_placement_forced_weak_all,
-        which finds the same deduction and runs first): a region tile with ONE empty cell
+        which finds the same deduction): a region tile with ONE empty cell
         holds its star there. Skipped when every tile in the region's tiling
         is a single cell (just "as many empties as stars needed", which the
         placement-forced wording covers); here that means some partition

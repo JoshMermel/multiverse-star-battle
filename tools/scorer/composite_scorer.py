@@ -193,11 +193,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_only_empty_multi,                          1,  "Beginner"),
             (self.rule_exclude_adjacency,                         1,  "Beginner"),
             (self.rule_exclude_solved_unit,                       1,  "Beginner"),
-            (self.rule_unit_placement_forced_weak_all,           5,  "Beginner"),
             # Region tiles (see rules_multi_star.py): the tile-shaped version of
-            # the placement-forced rules. The star rule runs AFTER the weak
-            # all-stars rule; the dots rule just before the weak dots rule.
+            # the next rule(s), tried first at the same tier and score.
             (self.rule_region_tile_star,                         5,  "Beginner"),
+            (self.rule_unit_placement_forced_weak_all,           5,  "Beginner"),
             (self.rule_unit_placement_forced_weak_any,           10, "Beginner"),
             # Covers both inside-the-unit and outside-the-unit forced dots --
             # see rule_unit_placement_forced_cond's docstring.
@@ -339,16 +338,6 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_region_algebra,                            152, "Expert"),
             (self.rule_region_pair_placement_forced,              155, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),
-            # Row<->column line sync (rules_common.py's _rule_axis_line_sync,
-            # shared with 1★) -- no region information needed, so it works on
-            # regionless boards too. For 2★+ the N rows and the columns they
-            # touch needn't match in count, which makes it much harder to spot
-            # than the 1★ version: the 2-line case sits at the very end of
-            # Expert here (Hard for 1★), and the 3-line case isn't used for
-            # 2★+ at all (2026-09-29, user's call -- it almost never fired
-            # even in Hard). Matches solver-rules-multi.js.
-            (self.rule_2_row_col_line_sync_rows,                  175, "Expert"),
-            (self.rule_2_row_col_line_sync_cols,                  175, "Expert"),
 
             # -- Grandmaster ------------------------------------------------
             # Cross-board region/line quota fill + partition forced -- see

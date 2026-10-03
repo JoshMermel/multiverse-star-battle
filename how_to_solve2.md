@@ -75,10 +75,10 @@ stars can't be adjacent, so not every combination of cells works). Then ask:
 <a href="index.html?book=armory2&puzzle=3">
 <img src="images/multi_placement_forced_all.png" width="600"></img> </a>
 
-Look at board 2's rightmost region: just three cells, I6, I7, and I8, stacked
-vertically. This puzzle needs 2 stars per region, and I6-I7 touch, and I7-I8 touch —
+Look at row 9: it needs 2 stars, and everything in it except A9, B9, and C9 is
+already a dot. Those three sit in a straight run, A9 touches B9, and B9 touches C9 —
 so the only way to fit 2 non-touching stars in these three cells is to skip the
-middle one. I6 and I8 must both be stars. (I7 then becomes a dot on the very next
+middle one. A9 and C9 must both be stars. (B9 then becomes a dot on the very next
 move, once ordinary adjacency catches up to it — but this rule got there first.)
 
 ---
@@ -88,14 +88,12 @@ move, once ordinary adjacency catches up to it — but this rule got there first
 
 The same reasoning finds dots, too — both inside the unit in question, and in cells
 just outside it that every valid completion's stars would touch. Here, the
-blue-outlined region's five cells form a diamond around H5: H4, G5, I5, and H6 surround
-it, and every one of them touches H5. The region needs 2 non-touching stars, and the
-only two non-touching pairs available are {H4, H6} and {G5, I5} — so H5, which
-touches all four of the others, can never be one of the two stars, and must be a dot.
-The same logic reaches outside the region too: G4 and I4 each touch H4 (one candidate
-pair) as well as G5 or I5 respectively (the other candidate pair), and G6 and I6
-similarly each touch H6 and their nearer side-cell — so no matter which pair turns
-out to be the real one, all four are touching a star, and all four must be dots.
+blue-outlined region on board 2 needs 2 stars and has seven open cells: C5, D5, B6,
+C6, D6, D7, and D8. Look at C7, just outside it. The only open cells that *don't*
+touch C7 are C5 and D5, and those touch each other, so at most one of them can be a
+star. Every valid pair of stars therefore includes at least one of the other cells —
+and every one of those touches C7. C7 would touch a star no matter which valid
+completion turns out to be real, so it must be a dot.
 
 ---
 
@@ -188,13 +186,14 @@ tile's cells ends up holding the star, D6 is ruled out either way.
 <a href="index.html?book=armory2&puzzle=11">
 <img src="images/multi_tile_bar_trapped.png" width="600"></img> </a>
 
-A subtler tiling trick: this row-pair still needs 4 stars, and columns D through I
-tile cleanly into three confirmed tiles — so those six columns can supply at most 3
-of the 4 needed stars. That means the remaining three cells of the pair, A5/B5/C5 (a
-straight run along row 5), must supply at least 1 star themselves — a guarantee even
-though we don't know which of the three. B4 touches all three of them (A5 and C5
-diagonally, B5 directly), so if B4 were a star, none of A5/B5/C5 could be — leaving
-that guaranteed star with nowhere to go. B4 must be a dot.
+A subtler tiling trick: this row-pair (rows 3 and 4) still needs 4 stars, and
+columns D through I tile cleanly into three confirmed tiles — so those six columns
+can supply at most 3 of the 4 needed stars. That means the remaining cells of the
+pair, A4/B4/C4 (A3, B3, and C3 are already dots — a straight run along row 4), must
+supply at least 1 star themselves — a guarantee even though we don't know which of
+the three. B5 touches all three of them (A4 and C4 diagonally, B4 directly), so if
+B5 were a star, none of A4/B4/C4 could be — leaving that guaranteed star with
+nowhere to go. B5 must be a dot.
 
 ---
 
@@ -207,6 +206,51 @@ unrelated column-pair tile at J9/J10 both land inside the same row-pair (rows 9
 and 10) — and that row-pair needs exactly 2 stars. Independently, each tile is
 guaranteed one star; together, that's the row-pair's entire remaining quota. So
 every other empty cell in rows 9 and 10 — A9, A10, B9, and B10 — must be dots.
+
+## Region tiles
+
+Tiles can come from regions too, not just from pairs of rows or columns. Suppose a
+region still needs K stars, and its remaining empty cells can be split into exactly
+K groups where every group fits inside a 2×2 block. Each group can hold at most one
+star, and the region needs K stars from K groups, so **every group holds exactly one
+star**. That's the same pigeonhole argument as above, applied to a single region.
+
+Two things follow from one such group (a "tile") alone. If it has only one empty
+cell left, that cell is the star. If it has two or three, any other cell that
+touches *all* of them touches the group's star no matter which one it is, so it must
+be a dot. These are the same deductions Unit Placement Forced finds for a region
+(and they're scored at the same level, Beginner), but showing the tiles makes them
+much easier to see, which is why the hint system tries them first.
+
+<a href="index.html?book=armory2&puzzle=24">
+<img src="images/multi_region_tile_dots.png" width="600"></img> </a>
+
+Board 2's amber-outlined region already has one star (G4) and needs one more. Its
+only empty cells left are I4 and I5, which touch each other, so they form a single
+tile that holds the last star. J4 and J5 each touch both I4 and I5, so whichever one
+turns out to be the star, J4 and J5 are next to it: both are dots.
+
+---
+
+<a href="index.html?book=armory2&puzzle=25">
+<img src="images/multi_region_tile_star.png" width="600"></img> </a>
+
+Here the amber-outlined region on board 2 needs 2 stars and has three empty cells
+left: C1, D1, and D4. C1 and D1 touch, so they make one tile that can hold only one
+star, and D4 is a tile of its own. Two stars from two tiles means each tile holds
+exactly one — so D4 is a star.
+
+---
+
+<a href="index.html?book=armory2&puzzle=26">
+<img src="images/multi_region_tile_line_fill.png" width="600"></img> </a>
+
+Region tiles also fill rows and columns, and this one is easy to spot when every
+tile sits inside a single row or column. Column D still needs 2 stars. The
+highlighted tiles D3–D4 and D5–D6 each belong to a region that is split into tiles
+exactly as above (blue and brown), so each holds exactly one star. Together they
+account for both of column D's stars, so every other empty cell in the column —
+D1 and D7 through D10 — is a dot.
 
 ## Adjacent and disjoint rows/cols, revisited
 
@@ -270,7 +314,7 @@ without needing to know exactly which cell gets the star.
 
 ---
 
-<a href="index.html?book=armory2&puzzle=23">
+<a href="index.html?book=armory2&puzzle=22">
 <img src="images/multi_region_line_partition_3regions.png" width="600"></img> </a>
 
 "Partition forced" sums guarantees across several regions the same way quota fill
@@ -289,17 +333,20 @@ argument floating with nothing to point at.
 
 ---
 
-<a href="index.html?book=armory2&puzzle=24">
+<a href="index.html?book=armory2&puzzle=23">
 <img src="images/multi_crossboard_region_line_quota_fill.png" width="600"></img> </a>
 
-Quota fill doesn't have to stay on one board, either. Here, the amber-outlined row
-needs 2 more stars, and no single region on either board is guaranteed that many by
-itself — but the blue-outlined region on board 1 and the blue-outlined region on
-board 2 are each independently guaranteed at least 1 star in that same physical
-row, and a star from either board's region fills the same row just as well, since
-both boards share the same underlying cells. Combined, that covers the row's whole
-remaining need, so the only other empty cell in it, G3, must be a dot — a
-conclusion neither board could reach on its own.
+Quota fill doesn't have to stay on one board, either. Here, the amber-outlined
+column I needs 2 more stars, and neither blue-outlined region is guaranteed that
+many in it on its own. The blue region on board 1 needs 2 stars, and its open cells
+outside column I — H3 and G4 — touch each other diagonally, so at most one of them
+can be a star: at least one of the region's stars has to land in column I (I4 or I5).
+The same goes for the blue region on board 2: its open cells outside column I (G8,
+G9, and H9) all touch each other, so at least one of its 2 stars has to land in I7,
+I8, or I9. The two regions' share of column I doesn't overlap, and both boards share
+the same underlying cells, so between them they guarantee 2 stars in column I — its
+entire remaining need. I1, I2, and I3 must be dots, a conclusion neither board could
+reach on its own.
 
 ## Symmetry, revisited
 
@@ -339,6 +386,18 @@ region (H5 and I5) must be dots.
 
 ---
 
+<a href="index.html?book=armory2&puzzle=27">
+<img src="images/multi_region_subset_expert.png" width="600"></img> </a>
+
+The harder version compares *groups* of up to two regions on the same board. On
+board 1, the two regions outlined in blue together need some number of stars; on
+board 2, the two regions outlined in brown need exactly the same number, and every
+open cell of the blue pair is also an open cell of the brown pair. The blue cells
+therefore have to supply all of the brown pair's stars, so the brown pair's other
+open cells — I1 and G6 — must be dots.
+
+---
+
 <a href="index.html?book=armory2&puzzle=18">
 <img src="images/multi_crossboard_partial_overlap.png" width="600"></img> </a>
 
@@ -373,31 +432,6 @@ another region — this time on a *different* board, the crossboard case — has
 all of its open cells inside them and needs 2 stars of its own. That leaves
 exactly 2 stars for the rest of the pair. Every one of the 6 ways to place
 those 2 remaining stars puts one next to the circled cell, so it must be a dot.
-
-## Row/col line sync, revisited
-
-The first volume's row/col line sync — rows against columns, no regions involved —
-still works at 2★+, but it gets much stranger. At 1★, N rows always trap exactly N
-columns. At 2★+ the counts come apart: what has to match is the *remaining star
-need* of the rows and the *remaining room* of the columns their empty cells touch,
-and those can be spread across a different number of lines.
-
-<a href="index.html?book=armory2&puzzle=22">
-<img src="images/multi_row_col_line_sync.png" width="600"></img> </a>
-
-Rows 3 and 4 have no stars yet, so they need 4 between them. Every one of their
-empty cells sits in column D, F, H, or J — four columns for two rows — and each of
-those columns already has one star, so they have exactly 4 stars of room left
-between them. The two rows need all 4 of those stars, and the columns can't hold
-any more, so the columns' last stars must all land in rows 3 and 4. Every other
-empty cell in those columns — J1, J2, H5, and J7 — must be a dot.
-
-Because it's so hard to spot at 2★+, this is the last Expert technique my scorer
-tries (it's a Hard technique at 1★), and only the 2-row/2-column version is used —
-the 3-line version essentially never mattered. The flip side is that a puzzle
-almost never *needs* it: by the time it would be tried, something else has usually
-already found the same dots. So unlike the other examples here, this puzzle doesn't
-require it — it's just a position where it applies.
 
 ## Lookahead
 
