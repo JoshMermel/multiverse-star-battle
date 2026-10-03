@@ -2533,8 +2533,7 @@ export function applyMultiStarRules(PuzzleSolver) {
           highlights,
           marks: targetList.map(idx => ({ idx, color: wantStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET })),
           tileOutlines,
-          // A row/column isn't outlined (the tiles all sit in it already).
-          regionOutlines: lines ? [] : this._outlineEntriesFor(unit, 'amber'),
+          regionOutlines: this._outlineEntriesFor(unit, 'amber'),
           boardIdx: unit.boardIdx
         });
       }
