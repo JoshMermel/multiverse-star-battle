@@ -2012,19 +2012,24 @@ class MultiStarRules:
         dominoes: a cell touching both cells of a domino is a dot."""
         return self._tile_dots(p, True, "LineTileDots")
 
-    def rule_region_tile_line_fill(self, p):
+    def _region_tile_line_fill(self, p, cross_board, label):
         """
-        End of Medium: a row/column still needing K stars with K disjoint
-        REGION tiles lying entirely inside it -- each holds exactly one
-        star, so every other empty cell in the line is a dot.
+        A row/column still needing K stars with K disjoint REGION tiles lying
+        entirely inside it -- each holds exactly one star, so every other
+        empty cell in the line is a dot. cross_board=False only combines tiles
+        from one board's regions at a time; True also lets a combo mix boards.
         """
         region_tiles = self._region_tiles(p)
         if not region_tiles:
             return 0
-        pool = set()
-        for _, tiles in region_tiles:
-            pool |= tiles
-        pool = sorted(pool, key=lambda t: sorted(t))
+        by_board = {}
+        for unit, tiles in region_tiles:
+            by_board.setdefault(unit["board_idx"], set()).update(tiles)
+        if cross_board:
+            pools = [set().union(*by_board.values())]
+        else:
+            pools = list(by_board.values())
+        pools = [sorted(pool, key=lambda t: sorted(t)) for pool in pools]
         for unit in p.units:
             if unit["board_idx"] is not None:
                 continue
@@ -2034,18 +2039,28 @@ class MultiStarRules:
             avail = {i for i in unit["indices"] if p.grid[i] is None}
             if len(avail) <= k:
                 continue
-            inside = [t for t in pool if t <= avail]
-            if len(inside) < k:
-                continue
-            combo = self._find_disjoint_tile_combo(inside, k)
-            if combo is None:
-                continue
-            covered = set().union(*combo)
-            targets = [i for i in avail if i not in covered]
-            changes = sum(p.validate_and_set(i, ".", "RegionTileLineFill", self.verbose) for i in targets)
-            if changes > 0:
-                return changes
+            for pool in pools:
+                inside = [t for t in pool if t <= avail]
+                if len(inside) < k:
+                    continue
+                combo = self._find_disjoint_tile_combo(inside, k)
+                if combo is None:
+                    continue
+                covered = set().union(*combo)
+                targets = [i for i in avail if i not in covered]
+                changes = sum(p.validate_and_set(i, ".", label, self.verbose) for i in targets)
+                if changes > 0:
+                    return changes
         return 0
+
+    def rule_region_tile_line_fill(self, p):
+        """End of Medium: single-board version of _region_tile_line_fill."""
+        return self._region_tile_line_fill(p, False, "RegionTileLineFill")
+
+    def rule_region_tile_line_fill_cross(self, p):
+        """Hard (right after rule_region_subset_hard): the version whose
+        K disjoint region tiles may come from both boards."""
+        return self._region_tile_line_fill(p, True, "RegionTileLineFillCross")
 
     def _tile_quota_fill(self, p, want_single):
         """

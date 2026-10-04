@@ -2553,25 +2553,48 @@ export function applyMultiStarRules(PuzzleSolver) {
   p.hintLineTileStar = function () { return this._regionTileHints(true, true); };
   p.hintLineTileDots = function () { return this._regionTileHints(false, true); };
 
-  // -- Region tiles fill a row/column (2★+, end of Medium) ------------------------
+  // -- Region tiles fill a row/column (2★+) --------------------------------------
   //
   // A row/column still needing K stars, with K disjoint REGION tiles lying
   // entirely inside it: each tile holds exactly one star, so together they
   // account for all K and every other empty cell in the line is a dot.
   // Only region tiles count -- a single row/column's own "domino" tiles
   // would cover the whole line (nothing to dot), and band tiles are the
-  // harder Hard-tier rules. Easy to spot because every tile sits in one line.
-  p.hintRegionTileLineFill = function () {
-    const pool = new Map();
+  // harder Hard-tier rules.
+  //
+  // Two rules share this body. regionTileLineFill (end of Medium) only
+  // combines tiles from ONE board's regions at a time -- easy to spot, since
+  // you only ever look at one board's coloring. regionTileLineFillCross
+  // (Hard, right after regionSubsetHard) may also mix tiles from both boards'
+  // regions to reach K, which means holding both colorings in mind at once.
+  p._regionTileLineFillHints = function (crossBoard) {
+    // Tiles by board. The pool is keyed by (board, cells) so the same cell
+    // set appearing on two boards stays two tiles for the single-board pass.
+    const byBoard = new Map();
     for (const unit of this.units) {
       if (unit.boardIdx === undefined) continue;
+      if (!byBoard.has(unit.boardIdx)) byBoard.set(unit.boardIdx, new Map());
+      const pool = byBoard.get(unit.boardIdx);
       for (const e of this._unitTileEntries(unit)) {
         const key = this._groupKey(e.cells);
         if (!pool.has(key)) pool.set(key, { ...e.rep, cells: e.cells, witness: e.witness });
       }
     }
-    if (pool.size === 0) return null;
-    const tiles = [...pool.values()];
+    if (byBoard.size === 0) return null;
+
+    // Each entry is one tile list to search: a single board's tiles, or
+    // (cross-board) every board's tiles together, deduped by cell set.
+    let tileLists;
+    if (crossBoard) {
+      const all = new Map();
+      for (const pool of byBoard.values()) {
+        for (const [key, t] of pool) if (!all.has(key)) all.set(key, t);
+      }
+      tileLists = [[...all.values()]];
+    } else {
+      tileLists = [...byBoard.values()].map(pool => [...pool.values()]);
+    }
+
     const candidates = [];
     for (const unit of this.units) {
       if (unit.boardIdx !== undefined) continue;
@@ -2580,17 +2603,23 @@ export function applyMultiStarRules(PuzzleSolver) {
       if (k <= 0) continue;
       const avail = new Set(unit.indices.filter(i => this.vState(i) === CELL.NONE));
       if (avail.size <= k) continue;
-      const inside = tiles.filter(t => t.cells.every(c => avail.has(c)));
-      if (inside.length < k) continue;
-      const combo = this._findDisjointTileCombo(inside, k);
-      if (!combo) continue;
-      const covered = new Set(combo.flatMap(t => t.cells));
-      const targets = [...avail].filter(i => !covered.has(i));
-      if (targets.length === 0) continue;
-      candidates.push({ unit, combo, targets });
+      for (const tiles of tileLists) {
+        const inside = tiles.filter(t => t.cells.every(c => avail.has(c)));
+        if (inside.length < k) continue;
+        const combo = this._findDisjointTileCombo(inside, k);
+        if (!combo) continue;
+        const covered = new Set(combo.flatMap(t => t.cells));
+        const targets = [...avail].filter(i => !covered.has(i));
+        if (targets.length === 0) continue;
+        candidates.push({ unit, combo, targets });
+        break;
+      }
     }
     return this._formatTileQuotaFillHints(candidates);
   };
+
+  p.hintRegionTileLineFill = function () { return this._regionTileLineFillHints(false); };
+  p.hintRegionTileLineFillCross = function () { return this._regionTileLineFillHints(true); };
 
   // -- Lookahead-dots (2★+, restored from pre-experiment) ---------------------
   //
@@ -3066,8 +3095,9 @@ export function applyMultiStarRules(PuzzleSolver) {
       // -- confirming a star outright is a bigger win than excluding one.
       { key: 'regionLinePartitionForcedWeak',      fn: () => this.hintRegionLinePartitionForced('weak') },
       { key: 'regionLinePartitionTrappedWeak',     fn: () => this.hintRegionLinePartitionTrapped('weak') },
-      // Region tiles inside one row/column fill its quota (see
-      // hintRegionTileLineFill) -- last in Medium.
+      // Region tiles from ONE board inside one row/column fill its quota
+      // (see _regionTileLineFillHints) -- last in Medium. The cross-board
+      // version is in Hard, after regionSubsetHard.
       { key: 'regionTileLineFill',             fn: () => this.hintRegionTileLineFill() },
       // Hard
       // Tiles rule 1 (see the "Tiles" section comment above hintTileSingleEmpty)
@@ -3096,6 +3126,9 @@ export function applyMultiStarRules(PuzzleSolver) {
       // region needing K stars (any K). See hintRegionSubsetHard in
       // solver-rules-common.js; the Expert version (pairs of regions) is below.
       { key: 'regionSubsetHard',               fn: () => this.hintRegionSubsetHard() },
+      // Same as regionTileLineFill (Medium), but the K disjoint region tiles
+      // may come from both boards' regions.
+      { key: 'regionTileLineFillCross',        fn: () => this.hintRegionTileLineFillCross() },
       // Tile-quota-fill's K=1 special case: a single confirmed tile already
       // covers a unit's whole remaining need. See tileDisjointQuotaFill
       // (Expert) for K>1. Deliberately AFTER regionSubsetHard: when a tile is

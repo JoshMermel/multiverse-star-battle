@@ -267,6 +267,9 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_tile_two_empty_dot,                        50, "Hard"),
             # Region needing K stars inside a region needing K stars (any K).
             (self.rule_region_subset_hard,                        55, "Hard"),
+            # Same as rule_region_tile_line_fill (Medium), but the K disjoint
+            # region tiles may come from both boards.
+            (self.rule_region_tile_line_fill_cross,               55, "Hard"),
             # Tile-quota-fill's K=1 special case: a single confirmed tile
             # already covers a unit's whole remaining need. See
             # rule_tile_disjoint_quota_fill (Expert) for K>1. Deliberately
