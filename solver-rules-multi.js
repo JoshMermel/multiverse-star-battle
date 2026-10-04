@@ -401,22 +401,24 @@ export function applyMultiStarRules(PuzzleSolver) {
         // --line-highlight-amber (reused by .region-outline-amber) -- keep
         // this word in sync if that color ever changes.
         const lineWord = kind === 'row' ? 'row' : 'column';
-        const regionWord = combo.length === 1 ? 'region' : 'regions';
         const resolveWord = combo.length === 1 ? 'it resolves' : 'they resolve';
+        // One outline color per matched region (a lone region is plain
+        // blue), so adjacent regions don't merge into one blob.
+        const colors = this._comboOutlineColors(combo.map(e => e.unit));
 
         candidates.push({
           boardIdx,
-          description: `The amber-outlined ${lineWord} needs ${needed} more star${needed === 1 ? '' : 's'}. The blue-outlined ${regionWord} always put${combo.length === 1 ? 's' : ''} at least ${needed} there, no matter how ${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
+          description: `The amber-outlined ${lineWord} needs ${needed} more star${needed === 1 ? '' : 's'}. The ${this._colorsPhrase(colors)} always put${combo.length === 1 ? 's' : ''} at least ${needed} there, no matter how ${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
           highlights: [],
           marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-          // Outline the matched regions (blue) instead of filling their
+          // Outline the matched regions (each in its own color) instead of filling their
           // cells -- all on this same boardIdx by construction ("Never
           // cross-board" above) -- plus the line itself (amber), replacing
           // the older rectangular lineHighlight band with the same outline
           // mechanism. Always single-board like the old lineHighlight, not
           // _outlineEntriesFor's every-board default.
           regionOutlines: [
-            { indices: combo.flatMap(({ unit }) => unit.indices), color: 'blue', boardIdx },
+            ...combo.map(({ unit }, i) => ({ indices: unit.indices, color: colors[i], boardIdx })),
             { indices: lineIndices, color: 'amber', boardIdx, inset: true },
           ],
         });
@@ -938,14 +940,15 @@ export function applyMultiStarRules(PuzzleSolver) {
       if (targets.length === 0) continue;
 
       const lineWord = kind === 'row' ? 'row' : 'column';
-      const regionWord = combo.length === 1 ? 'region' : 'regions';
       const resolveWord = combo.length === 1 ? 'it resolves' : 'they resolve';
       const boardsNote = this._describeBoards(combo.map(e => e.boardIdx));
+      // One outline color per matched region -- see hintRegionLineQuotaFill.
+      const colors = this._comboOutlineColors(combo.map(e => e.unit));
 
       candidates.push({
         boardIdx: undefined,
         description: `Cross-board (${boardsNote}): the amber-outlined ${lineWord} needs ${needed} more `
-          + `star${needed === 1 ? '' : 's'}. The blue-outlined ${regionWord} on different boards always `
+          + `star${needed === 1 ? '' : 's'}. The ${this._colorsPhraseWithBoards(combo.map(e => e.unit), colors)} always `
           + `put${combo.length === 1 ? 's' : ''} at least ${needed} there between them, no matter how `
           + `${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
         highlights: [],
@@ -956,7 +959,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         // the line's own identity doesn't depend on which board's copy of
         // the matched regions it's shown next to.
         regionOutlines: [
-          ...combo.map(({ unit }) => ({ indices: unit.indices, color: 'blue', boardIdx: unit.boardIdx })),
+          ...combo.map(({ unit }, i) => ({ indices: unit.indices, color: colors[i], boardIdx: unit.boardIdx })),
           { indices: lineIndices, color: 'amber', boardIdx: combo[0].unit.boardIdx, inset: true },
         ],
       });
