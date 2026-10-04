@@ -979,13 +979,21 @@ class MultiStarRules:
                     return changes
         return 0
 
-    def rule_unit_region_sync_multi_4_plus(self, p):
-        for n in range(4, p.n):
+    def _rule_unit_region_sync_multi_range(self, p, lo, hi):
+        for n in range(lo, p.n if hi is None else min(hi, p.n)):
             for axis in ["row", "col"]:
                 changes = self._rule_multi_window_sync(p, n, axis)
                 if changes > 0:
                     return changes
         return 0
+
+    def rule_unit_region_sync_multi_4_to_5(self, p):
+        """Hard: windows of 4 or 5 adjacent rows/cols."""
+        return self._rule_unit_region_sync_multi_range(p, 4, 6)
+
+    def rule_unit_region_sync_multi_6_plus(self, p):
+        """Expert: windows of 6 or more adjacent rows/cols."""
+        return self._rule_unit_region_sync_multi_range(p, 6, None)
 
     def _rule_unit_region_sync_multi(self, p, n):
         """

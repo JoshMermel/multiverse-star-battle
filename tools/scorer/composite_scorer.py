@@ -115,8 +115,8 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_2_disjoint_cols,                     30, "Hard"),
             (self.rule_2_row_col_line_sync_rows,            30, "Hard"),
             (self.rule_2_row_col_line_sync_cols,            30, "Hard"),
-            (self.rule_many_adjacent_rows,                  35, "Hard"),
-            (self.rule_many_adjacent_cols,                  35, "Hard"),
+            (self.rule_4_5_adjacent_rows,                   35, "Hard"),
+            (self.rule_4_5_adjacent_cols,                   35, "Hard"),
             (self.rule_region_contains_region,              40, "Hard"),
             # Tiles for 1★ (rules_single_star.py's own "Tiles for 1★"
             # section comment) -- moved here from Expert (2026-09-10,
@@ -135,6 +135,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_diagonal_parity,                      15, "Symmetry"),
 
             # -- Expert -------------------------------------------------------
+            # 6 or more adjacent rows/cols: the long-window tail of the
+            # Hard-tier 4-5 rules, easiest end of Expert.
+            (self.rule_6_plus_adjacent_rows,                40, "Expert"),
+            (self.rule_6_plus_adjacent_cols,                40, "Expert"),
             # Tiles rule 4 -- shared with 2★+, see rules_multi_star.py's
             # section comment above rule_tile_pair_quota_fill. Restricted
             # to the 2-tile case; the 3-or-more-tile generalization
@@ -280,7 +284,7 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_region_line_quota_fill_intermediate,       60, "Hard"),
             (self.rule_region_line_partition_forced_intermediate, 65, "Hard"),
             (self.rule_region_line_partition_trapped_intermediate, 65, "Hard"),
-            (self.rule_unit_region_sync_multi_4_plus,             80, "Hard"),
+            (self.rule_unit_region_sync_multi_4_to_5,             80, "Hard"),
             # Restored from pre-experiment -- see rules_multi_star.py's
             # "Restored from pre-experiment" section comment.
             (self.rule_unit_completion_satisfies_other_unit_intermediate, 82, "Hard"),
@@ -298,6 +302,9 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
 
             # -- Expert -------------------------------------------------------
             
+            # 6 or more adjacent rows/cols: the long-window tail of the
+            # Hard-tier 4-5 rule, easiest end of Expert.
+            (self.rule_unit_region_sync_multi_6_plus,             90, "Expert"),
             # Cross-board N-regions-pin-N-rows/cols, 2-region case -- opens
             # Expert; the 3-region case sits later (after
             # rule_tile_pair_quota_fill). The two swapped positions AND

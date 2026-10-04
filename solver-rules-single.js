@@ -253,10 +253,12 @@ export function applySingleStarRules(PuzzleSolver) {
     return candidates;
   };
 
-  // Rule: Check region synchronization for 4+ rows/columns.
-  p.hintManyRegionsSync = function () {
+  // Rule: Check region synchronization for windows of N adjacent
+  // rows/columns, lo <= N < hi (hi=Infinity -> up to the board size).
+  // 4-5 is Hard (manyRegionsSync); 6 or more is Expert (longRegionsSync).
+  p._hintRegionSyncRange = function (lo, hi) {
     const candidates = [];
-    for (let n = 4; n < this.n; n++) {
+    for (let n = lo; n < Math.min(hi, this.n); n++) {
       for (const axis of ["Row", "Column"]) {
         candidates.push(...this._hintWindowRegionSyncAll(n, axis, true));
       }
@@ -265,6 +267,8 @@ export function applySingleStarRules(PuzzleSolver) {
     candidates.sort((a, b) => (a.highlights[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? 0));
     return candidates;
   };
+  p.hintManyRegionsSync = function () { return this._hintRegionSyncRange(4, 6); };
+  p.hintLongRegionsSync = function () { return this._hintRegionSyncRange(6, Infinity); };
 
   // Helper: indices of every empty cell OUTSIDE `excludeIndices` that sees
   // every one of `candidateIndices`. Shared by the row/col/region
@@ -978,6 +982,9 @@ export function applySingleStarRules(PuzzleSolver) {
       // ever trying the tile rules.
       { key: 'symmetryDeduction',        fn: () => this.hintSymmetryDeduction() },
       // Expert
+      // 6 or more adjacent rows/cols: the long-window tail of manyRegionsSync
+      // (Hard, 4-5), easiest end of Expert.
+      { key: 'longRegionsSync',          fn: () => this.hintLongRegionsSync() },
       // Tiles rule 4 (shared with 2★+ -- see the section comment above
       // hintTilePairQuotaFill in solver-rules-multi.js).
       { key: 'tilePairQuotaFill',        fn: () => this.hintTilePairQuotaFill() },

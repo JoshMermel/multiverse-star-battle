@@ -242,19 +242,26 @@ class SingleStarRules:
     def rule_3_adjacent_cols(self, p):
         return self._rule_n_unit_region_sync(p, n=3, axis="col")
 
-    def rule_many_adjacent_rows(self, p):
-        for n in range(4, p.n):
-            changes = self._rule_n_unit_region_sync(p, n, axis="row")
+    def _rule_many_adjacent(self, p, axis, lo, hi):
+        """N-adjacent region sync for N in [lo, hi) (hi=None -> up to p.n)."""
+        for n in range(lo, p.n if hi is None else min(hi, p.n)):
+            changes = self._rule_n_unit_region_sync(p, n, axis=axis)
             if changes > 0:
                 return changes
         return 0
 
-    def rule_many_adjacent_cols(self, p):
-        for n in range(4, p.n):
-            changes = self._rule_n_unit_region_sync(p, n, axis="col")
-            if changes > 0:
-                return changes
-        return 0
+    # 4 and 5 adjacent rows/cols stay in Hard; 6 or more is Expert.
+    def rule_4_5_adjacent_rows(self, p):
+        return self._rule_many_adjacent(p, "row", 4, 6)
+
+    def rule_4_5_adjacent_cols(self, p):
+        return self._rule_many_adjacent(p, "col", 4, 6)
+
+    def rule_6_plus_adjacent_rows(self, p):
+        return self._rule_many_adjacent(p, "row", 6, None)
+
+    def rule_6_plus_adjacent_cols(self, p):
+        return self._rule_many_adjacent(p, "col", 6, None)
 
     def _rule_n_unit_region_sync(self, p, n, axis):
         units = p.row_indices if axis == "row" else p.col_indices

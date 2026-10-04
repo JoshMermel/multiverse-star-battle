@@ -3049,6 +3049,19 @@ export function applyMultiStarRules(PuzzleSolver) {
     return hints;
   };
 
+  // Windows of N adjacent rows/cols for lo <= N < hi (hi=Infinity -> up to
+  // the board size). 4-5 is Hard (unitRegionSyncMulti4To5); 6 or more is
+  // Expert (unitRegionSyncMulti6Plus).
+  p._hintMultiRegionSyncRange = function (lo, hi) {
+    const candidates = [];
+    for (let n = lo; n < Math.min(hi, this.n); n++) {
+      for (const axis of ["Row", "Column"]) {
+        candidates.push(...this._hintMultiWindowRegionSyncAll(n, axis));
+      }
+    }
+    return candidates.length > 0 ? candidates : null;
+  };
+
   p._getMultiStarRuleList = function () {
     return [
       // Error validation
@@ -3139,16 +3152,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'regionLineQuotaFillIntermediate', fn: () => this.hintRegionLineQuotaFill('intermediate') },
       { key: 'regionLinePartitionForcedIntermediate', fn: () => this.hintRegionLinePartitionForced('intermediate') },
       { key: 'regionLinePartitionTrappedIntermediate', fn: () => this.hintRegionLinePartitionTrapped('intermediate') },
-      { key: 'unitRegionSyncMulti4Plus',       fn: () => {
-          const candidates = [];
-          for (let n = 4; n < this.n; n++) {
-            for (const axis of ["Row", "Column"]) {
-              candidates.push(...this._hintMultiWindowRegionSyncAll(n, axis));
-            }
-          }
-          return candidates.length > 0 ? candidates : null;
-        }
-      },
+      { key: 'unitRegionSyncMulti4To5',      fn: () => this._hintMultiRegionSyncRange(4, 6) },
       // Restored from pre-experiment (see the section comment above
       // hintUnitCompletionSatisfiesOtherUnit).
       { key: 'unitCompletionSatisfiesOtherUnitIntermediate', fn: () => this.hintUnitCompletionSatisfiesOtherUnit('intermediate') },
@@ -3160,6 +3164,9 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Symmetry - requires insight but not hard to apply
       { key: 'symmetryDeductionMulti',         fn: () => this.hintSymmetryDeductionMulti() },
       // Expert
+      // 6 or more adjacent rows/cols: the long-window tail of
+      // unitRegionSyncMulti4To5 (Hard), easiest end of Expert.
+      { key: 'unitRegionSyncMulti6Plus',      fn: () => this._hintMultiRegionSyncRange(6, Infinity) },
       // Cross-board N-regions-pin-N-rows/cols: generalizes the 1★-only
       // hintCrossBoardRegionPinned to any starsPerGroup. Always genuinely
       // cross-board (see hintCrossBoardRegionPinnedMulti's comment). The
