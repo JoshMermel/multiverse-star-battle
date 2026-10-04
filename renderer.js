@@ -428,7 +428,7 @@ export function applyRenderer(GameClass) {
 
   // Update loading state overlay and controls.
   p.setLoading = function (isLoading) {
-    const ids = ['prev-puz', 'next-puz', 'puzzle-input', 'category-select'];
+    const ids = ['prev-puz', 'next-puz', 'puzzle-input', 'category-select', 'browse-btn'];
     ids.forEach(id => document.getElementById(id).disabled = isLoading);
     const classes = ['ctrl-hint', 'ctrl-check', 'ctrl-reset'];
     classes.forEach(cls => document.querySelectorAll(`.${cls}`).forEach(btn => btn.disabled = isLoading));

@@ -72,7 +72,14 @@ class StarBattleGame {
         const isArbitraryCsv = catId && !manifestCat && !catId.startsWith('daily_');
 
         if (isArbitraryCsv) {
-          await this.loadCategory(catId, puzNum ?? this._getRememberedPuzzleNum(catId));
+          // Unlike the select-change path, nothing else toggles loading
+          // state here, and browse-btn starts disabled in index.html.
+          this.setLoading(true);
+          try {
+            await this.loadCategory(catId, puzNum ?? this._getRememberedPuzzleNum(catId));
+          } finally {
+            this.setLoading(false);
+          }
         } else {
           catSelect.value = manifestCat ? manifestCat.id : this.categories[0].id;
           catSelect.dispatchEvent(new CustomEvent('change', { detail: { targetPuz: puzNum } }));
