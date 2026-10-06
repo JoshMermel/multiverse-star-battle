@@ -410,6 +410,58 @@ Crossboard region-pinning generalizes the same way too (summed need instead of r
 counts) — I just don't have a small, clean example of that one handy for this
 document yet.
 
+## Partial subsets
+
+<a href="index.html?book=armory2&puzzle=28">
+<img src="images/multi_partial_subset.png" width="600"></img> </a>
+
+"Region contains region" only works when both sides need the *same* number of
+stars, so everything left over is a dot. Drop that requirement and you get a
+sneakier version: if every open cell of one unit (the blue region here) is also an
+open cell of a bigger unit (the brown region), and the blue one needs *fewer* stars,
+then all of the blue stars are among the brown stars — and the brown unit's other
+cells must hold exactly the difference. That leftover (the pink cells) is a
+brand-new little region with a known star count, and you can reason about it
+exactly like any other region.
+
+Here the blue region on board 1 needs 1 more star and the brown region on board 2
+needs 2, and all three open blue cells (E7, D9, E9) are open in the brown region
+too. So the brown region's remaining cells, E6 and D7, hold exactly 1 star. There
+are only two ways to do that, and E7 touches both E6 and D7 — so E7 must be a dot.
+
+The units don't have to be regions: a row or column works the same way, and so
+does any mix of the three, from either board. This puzzle is Hard *only* because
+of this rule: take it away and my scorer has to reach for an Expert technique
+instead. (It's rarely the only way in — most of the time something else in the
+Hard tier gets to the same cell first — but it's a real, distinct thing to notice.)
+
+---
+
+<a href="index.html?book=armory2&puzzle=29">
+<img src="images/multi_partial_subset_union.png" width="600"></img> </a>
+
+The harder version lets either side be a *union of two units*, adding their needs
+together. Two regions are only ever combined on the same board; a row or column
+can be paired with anything.
+
+On board 2, the blue region needs 2 stars and has four open cells. On board 1,
+the brown outline is row 5 plus a region, which together need 4 stars — and all
+four of the blue cells are open inside that union. So the blue region accounts for
+2 of those 4, leaving exactly 2 stars for the pink cells (D5, E5, I5, E6). Only
+three ways to place 2 non-touching stars there exist, and every one of them uses
+I5 — so I5 is a star, and the marked cells H4, I4 and I6 around it must be dots.
+
+---
+
+<a href="index.html?book=armory2&puzzle=30">
+<img src="images/multi_partial_subset_union_pair.png" width="600"></img> </a>
+
+Both sides can be unions at once. The two blue rows (8 and 10) still need 2 stars
+between them, and every one of their open cells lies inside the two brown regions
+on board 2, which together need 4. That leaves exactly 2 stars for the pink cells
+(C6, C7, H7, G9). Of the five ways to place them, every one has a star at H7 or G9
+— and both of those touch H8, so H8 must be a dot.
+
 ## Region pairs
 
 <a href="index.html?book=armory2&puzzle=19">
