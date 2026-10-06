@@ -281,6 +281,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # region this is the same deduction, and the subset wording is
             # the one a player would notice.
             (self.rule_tile_quota_fill_single,                    52, "Hard"),
+            # A inside B where A needs FEWER stars: B \ A holds exactly the
+            # difference, reasoned about like a synthetic region. See
+            # rules_common.py's "Partial subset" section comment.
+            (self.rule_partial_subset,                            58, "Hard"),
             (self.rule_region_line_quota_fill_intermediate,       60, "Hard"),
             (self.rule_region_line_partition_forced_intermediate, 65, "Hard"),
             (self.rule_region_line_partition_trapped_intermediate, 65, "Hard"),
@@ -350,6 +354,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_region_algebra,                            152, "Expert"),
             (self.rule_region_pair_placement_forced,              155, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),
+            # Partial subset where either side is a union of two units --
+            # hardest rule in Expert. See rules_common.py's "Partial subset"
+            # section comment.
+            (self.rule_partial_subset_union,                      170, "Expert"),
 
             # -- Grandmaster ------------------------------------------------
             # Cross-board region/line quota fill + partition forced -- see

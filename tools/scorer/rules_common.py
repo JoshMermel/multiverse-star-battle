@@ -370,3 +370,157 @@ class CommonRules:
                     if changes > 0:
                         return changes
         return 0
+
+    # -- Partial subset + partial union-subset ---------------------------------
+    #
+    # Region subset (rule_region_subset_hard/expert, above) needs both sides
+    # to need the SAME number of stars, so the leftover is all dots. These two
+    # rules drop that restriction. If every open cell of A lies inside B, and A
+    # needs fewer stars than B, then all of A's stars are among B's, so the
+    # leftover R = B \ A holds EXACTLY need(B) - need(A) stars. R is then
+    # reasoned about like a synthetic region with that quota, using the same
+    # deduction as rule_region_algebra: the weak (adjacency-only) placement
+    # enumeration -- cells in no placement or touching a star of every
+    # placement are dots, cells in every placement are stars.
+    #
+    #  - rule_partial_subset (Hard): A and B are each a single unit (row,
+    #    column or region -- regions from either board, since the boards
+    #    share one solution).
+    #  - rule_partial_subset_union (Expert): the same with a side that is a
+    #    UNION of two disjoint units: pair-in-single, single-in-pair or
+    #    pair-in-pair, quotas summed. Two regions are only ever added together
+    #    on the same board (matching region algebra); a row/column pairs with
+    #    anything. A pair never shares a member with the other side (that
+    #    reduces to a plain partial subset).
+    #
+    # Only OPEN cells count, and "needs" are remaining needs, so a star
+    # already placed inside A or B just lowers the quota. Equal needs are left
+    # to the region-subset rules; this only fires for need(A) < need(B).
+
+    def _open_unit_masks(self, p):
+        """[(unit, open-cell bitmask, remaining need)] for every unit that
+        still needs stars and has at least that many open cells."""
+        N = p.stars_per_unit
+        out = []
+        for u in p.units:
+            need = N
+            mask = 0
+            n_open = 0
+            for i in u["indices"]:
+                v = p.grid[i]
+                if v is None:
+                    mask |= 1 << i
+                    n_open += 1
+                elif v == "x":
+                    need -= 1
+            if need > 0 and n_open >= need:
+                out.append((u, mask, need))
+        return out
+
+    def _synthetic_region_deduce(self, p, rem_cells, quota, label):
+        """Forced stars/dots from R = rem_cells (all open) holding exactly
+        `quota` stars. Returns the number of cells changed."""
+        if len(rem_cells) < quota:
+            return 0
+        r_unit = {"indices": rem_cells, "label": label, "board_idx": None}
+        combos = self._enumerate_unit_completions(p, r_unit, strong=False, quota=quota)
+        if not combos:
+            return 0
+        rem_set = set(rem_cells)
+        outside = {
+            nb for cell in rem_cells for nb in p._neighbor_map[cell]
+            if nb not in rem_set and p.grid[nb] is None
+        }
+        forced_stars = [c for c in rem_cells if all(c in combo for combo in combos)]
+        forced_dots = [c for c in rem_cells if not any(c in combo for combo in combos)]
+        forced_dots += [
+            c for c in outside
+            if all(any(self._cells_adjacent(p, s, c) for s in combo) for combo in combos)
+        ]
+        changes = 0
+        for idx in forced_stars:
+            changes += p.validate_and_set(idx, "x", label, self.verbose)
+        for idx in forced_dots:
+            changes += p.validate_and_set(idx, ".", label, self.verbose)
+        return changes
+
+    @staticmethod
+    def _mask_cells(mask):
+        cells = []
+        while mask:
+            low = mask & -mask
+            cells.append(low.bit_length() - 1)
+            mask ^= low
+        return cells
+
+    def rule_partial_subset(self, p):
+        infos = self._open_unit_masks(p)
+        tried = set()
+        for ub, mb, kb in infos:
+            for ua, ma, ka in infos:
+                if ka >= kb or ma & ~mb or ma == mb:
+                    continue
+                rmask = mb & ~ma
+                key = (rmask, kb - ka)
+                if key in tried:
+                    continue
+                tried.add(key)
+                label = f"PartialSubset({ua['label']} ⊆ {ub['label']})"
+                changes = self._synthetic_region_deduce(p, self._mask_cells(rmask), kb - ka, label)
+                if changes:
+                    return changes
+        return 0
+
+    def rule_partial_subset_union(self, p):
+        infos = self._open_unit_masks(p)
+        if len(infos) < 2:
+            return 0
+
+        def compatible(x, y):
+            ux, mx, _ = x
+            uy, my, _ = y
+            if mx & my:
+                return False
+            return not (ux["board_idx"] is not None and uy["board_idx"] is not None
+                        and ux["board_idx"] != uy["board_idx"])
+
+        # Candidate sides: (member indices, union mask, summed need, label).
+        singles = [((k,), m, kk, u["label"]) for k, (u, m, kk) in enumerate(infos)]
+        pairs = []
+        for a in range(len(infos)):
+            for b in range(a + 1, len(infos)):
+                if compatible(infos[a], infos[b]):
+                    pairs.append(((a, b), infos[a][1] | infos[b][1], infos[a][2] + infos[b][2],
+                                  f"{infos[a][0]['label']} + {infos[b][0]['label']}"))
+        outers = sorted(singles + pairs, key=lambda s: bin(s[1]).count("1"))
+        tried = set()
+        for o_members, o_mask, o_need, o_label in outers:
+            # Singles lying inside this outer side (not its own members).
+            inside = [s for s in singles
+                      if s[0][0] not in o_members and not (s[1] & ~o_mask) and s[1] != o_mask]
+            if not inside:
+                continue
+            # Inner candidates: a single (only inside an outer PAIR -- single-in-
+            # single is rule_partial_subset), or a compatible pair of singles.
+            cand = list(inside) if len(o_members) == 2 else []
+            for x in range(len(inside)):
+                for y in range(x + 1, len(inside)):
+                    sx, sy = inside[x], inside[y]
+                    if compatible(infos[sx[0][0]], infos[sy[0][0]]):
+                        cand.append(((sx[0][0], sy[0][0]), sx[1] | sy[1], sx[2] + sy[2],
+                                     f"{sx[3]} + {sy[3]}"))
+            for i_members, i_mask, i_need, i_label in cand:
+                if i_need >= o_need or i_mask == o_mask or i_mask & ~o_mask:
+                    continue
+                if len(o_members) == 1 and len(i_members) == 1:
+                    continue
+                rmask = o_mask & ~i_mask
+                key = (rmask, o_need - i_need)
+                if key in tried:
+                    continue
+                tried.add(key)
+                label = f"PartialSubsetUnion({i_label} ⊆ {o_label})"
+                changes = self._synthetic_region_deduce(p, self._mask_cells(rmask), o_need - i_need, label)
+                if changes:
+                    return changes
+        return 0

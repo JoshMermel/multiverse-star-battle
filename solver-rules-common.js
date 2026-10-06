@@ -761,6 +761,222 @@ export function applyCommonSolverRules(PuzzleSolver) {
     return hints.length > 0 ? hints : null;
   };
 
+  // -- Partial subset + partial union-subset (2★+) --------------------------------
+  //
+  // Region subset (hintRegionSubsetHard/Expert) needs both sides to need the
+  // SAME number of stars, so everything left over is a dot. These two rules
+  // drop that restriction. If every open cell of A lies inside B, and A needs
+  // FEWER stars than B, then all of A's stars are among B's, so the leftover
+  // R = B \ A holds EXACTLY need(B) - need(A) stars. R is reasoned about like
+  // a synthetic region with that quota, same as hintRegionAlgebra's
+  // remainder: the weak (adjacency-only) placement enumeration -- cells in no
+  // placement, or just outside R touching a star of every placement, are
+  // dots; cells in every placement are stars.
+  //
+  //  - hintPartialSubset (Hard): A and B are each a single unit (row,
+  //    column or region -- regions from either board, since the boards share
+  //    one solution).
+  //  - hintPartialSubsetUnion (Expert): one side or both is a UNION of two
+  //    disjoint units (single-in-pair, pair-in-single, pair-in-pair), needs
+  //    summed. Two regions are only ever added together on the same board
+  //    (same convention as hintRegionAlgebra); a row/column pairs with
+  //    anything. A pair never shares a member with the other side (that
+  //    reduces to a plain partial subset).
+  //
+  // Only OPEN cells count and "needs" are remaining needs, so a star already
+  // placed inside A or B just lowers the quota. Equal needs are left to the
+  // region-subset rules. Python port: rule_partial_subset /
+  // rule_partial_subset_union in rules_common.py.
+
+  // One entry per unit that still needs stars (and has enough open cells):
+  // BigInt bitmask of its open cells, so subset/disjointness tests on whole
+  // units are single operations even on a 25x25 board.
+  p._openUnitInfos = function () {
+    const N = this.starsPerGroup;
+    const infos = [];
+    for (const unit of this.units) {
+      let need = N, mask = 0n, size = 0;
+      for (const i of unit.indices) {
+        const s = this.vState(i);
+        if (s === CELL.NONE) { mask |= 1n << BigInt(i); size++; }
+        else if (s === CELL.STAR) need--;
+      }
+      if (need > 0 && size >= need) infos.push({ members: [unit], mask, size, need });
+    }
+    return infos;
+  };
+
+  // Same as above for a side made of one or two units.
+  p._partialSubsetSide = function (...parts) {
+    return {
+      members: parts.flatMap(x => x.members),
+      mask: parts.reduce((m, x) => m | x.mask, 0n),
+      size: parts.reduce((s, x) => s + x.size, 0),
+      need: parts.reduce((s, x) => s + x.need, 0),
+    };
+  };
+
+  // Disjoint open cells, and never two regions from different boards.
+  p._partialSubsetCompatible = function (x, y) {
+    if (x.mask & y.mask) return false;
+    const bx = x.members[0].boardIdx, by = y.members[0].boardIdx;
+    return !(bx !== undefined && by !== undefined && bx !== by);
+  };
+
+  p._maskCells = function (mask) {
+    const cells = [];
+    for (let i = 0; mask > 0n; i++, mask >>= 1n) if (mask & 1n) cells.push(i);
+    return cells;
+  };
+
+  // "the blue row", "the two blue columns", "the blue row and region"...
+  p._partialSubsetPhrase = function (side, color) {
+    const kinds = side.members.map(u => this._unitKind(u));
+    if (kinds.length === 1) return `the ${color} ${kinds[0]}`;
+    if (kinds[0] === kinds[1]) return `the two ${color} ${kinds[0]}s`;
+    const [line, other] = kinds[0] === 'region' ? [kinds[1], kinds[0]] : [kinds[0], kinds[1]];
+    return `the ${color} ${line} and ${other}`;
+  };
+
+  // The board a side is drawn on: its region's board if it has one (a
+  // row/column paired with a region is drawn there only), else `fallback`.
+  p._partialSubsetBoard = function (side, fallback) {
+    const owner = side.members.find(u => u.boardIdx !== undefined);
+    return owner ? owner.boardIdx : fallback;
+  };
+
+  // Builds the star/dot hints for "R = rem holds exactly `quota` stars", or
+  // null if nothing is forced. `inner`/`outer` are the two sides.
+  p._partialSubsetHints = function (inner, outer, remMask, quota) {
+    const rem = this._maskCells(remMask);
+    if (rem.length < quota) return null;
+    const combos = this._enumerateUnitCompletions({ indices: rem, label: 'partialSubset' }, false, quota);
+    if (!combos || combos.length === 0) return null;
+    const remSet = new Set(rem);
+    const outside = new Set();
+    for (const cell of rem) {
+      for (const nb of this.getNeighbors(cell)) {
+        if (!remSet.has(nb) && this.vState(nb) === CELL.NONE) outside.add(nb);
+      }
+    }
+    const forcedStars = rem.filter(cell => combos.every(combo => combo.includes(cell)));
+    const forcedDots = [
+      ...rem.filter(cell => !combos.some(combo => combo.includes(cell))),
+      ...[...outside].filter(cell => combos.every(combo => combo.some(s => this._cellsAdjacent(s, cell)))),
+    ];
+    if (forcedStars.length === 0 && forcedDots.length === 0) return null;
+
+    // Each side is outlined on its own board (blue = inner, brown = outer),
+    // the inner side's open cells are filled blue and R pink (cyan sat too close to blue to tell apart), all on the
+    // outer side's board -- same visual language as formatSubsetHint /
+    // hintRegionAlgebra. A side that is only rows/columns is board-agnostic,
+    // so it is drawn once, on the other side's board (or board 0).
+    const fallbackBoard = this._partialSubsetBoard(inner, this._partialSubsetBoard(outer, this.boardIndices[0]));
+    const innerBoard = this._partialSubsetBoard(inner, fallbackBoard);
+    const outerBoard = this._partialSubsetBoard(outer, fallbackBoard);
+    const involved = [...new Set([innerBoard, outerBoard])];
+    const boardIdx = involved.length === 1 ? involved[0] : undefined;
+    const regionOutlines = [
+      { indices: inner.members.flatMap(u => u.indices), color: 'blue', boardIdx: innerBoard },
+      { indices: outer.members.flatMap(u => u.indices), color: 'brown', boardIdx: outerBoard },
+    ];
+    const highlights = [
+      ...this._maskCells(inner.mask).map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[0], boards: [outerBoard] })),
+      ...rem.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[3], boards: [outerBoard] })),
+    ];
+
+    const starsText = k => k === 1 ? '1 star' : `${k} stars`;
+    const cap = s => s[0].toUpperCase() + s.slice(1);
+    // A side that is a pair of units reads as plural ("the two blue rows
+    // need 4 stars together"); a single unit stays singular.
+    const verb = (side, singular, plural) => side.members.length === 2 ? plural : singular;
+    const intro = `${cap(this._partialSubsetPhrase(inner, 'blue'))} ${verb(inner, 'needs', 'need')} ${starsText(inner.need)}`
+      + `${inner.members.length === 2 ? ' together' : ''} and ${verb(inner, 'lies', 'lie')} entirely inside `
+      + `${this._partialSubsetPhrase(outer, 'brown')}, which ${verb(outer, 'needs', 'together need')} ${starsText(outer.need)}. `
+      + `All of the blue stars are among the brown ones, leaving exactly ${starsText(quota)} for the pink cells. `;
+    const hints = [];
+    if (forcedStars.length > 0) {
+      hints.push({
+        description: intro + (forcedStars.length === 1
+          ? `Every way to place ${quota} non-touching ${quota === 1 ? 'star' : 'stars'} in the pink cells includes the marked cell.`
+          : `Every way to place ${quota} non-touching ${quota === 1 ? 'star' : 'stars'} in the pink cells includes the marked cells.`),
+        highlights, regionOutlines, boardIdx,
+        marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR, boards: involved })),
+      });
+    }
+    if (forcedDots.length > 0) {
+      hints.push({
+        description: intro + (forcedDots.length === 1
+          ? `Every way to place ${quota} non-touching ${quota === 1 ? 'star' : 'stars'} in the pink cells rules out a star at the marked cell.`
+          : `Every way to place ${quota} non-touching ${quota === 1 ? 'star' : 'stars'} in the pink cells rules out a star at the marked cells.`),
+        highlights, regionOutlines, boardIdx,
+        marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: involved })),
+      });
+    }
+    return hints;
+  };
+
+  p.hintPartialSubset = function () {
+    const infos = this._openUnitInfos();
+    const tried = new Set();
+    const hints = [];
+    for (const b of infos) {
+      for (const a of infos) {
+        if (a.need >= b.need || (a.mask & ~b.mask) !== 0n || a.mask === b.mask) continue;
+        const remMask = b.mask & ~a.mask;
+        const quota = b.need - a.need;
+        const key = `${remMask}:${quota}`;
+        if (tried.has(key)) continue;
+        tried.add(key);
+        const found = this._partialSubsetHints(a, b, remMask, quota);
+        if (found) hints.push(...found);
+      }
+    }
+    return hints.length > 0 ? hints : null;
+  };
+
+  p.hintPartialSubsetUnion = function () {
+    const infos = this._openUnitInfos();
+    if (infos.length < 2) return null;
+    const singles = infos;
+    const pairs = [];
+    for (let a = 0; a < singles.length; a++) {
+      for (let b = a + 1; b < singles.length; b++) {
+        if (this._partialSubsetCompatible(singles[a], singles[b])) {
+          pairs.push(this._partialSubsetSide(singles[a], singles[b]));
+        }
+      }
+    }
+    const outers = [...singles, ...pairs].sort((x, y) => x.size - y.size);
+    const tried = new Set();
+    const hints = [];
+    for (const outer of outers) {
+      // Singles lying inside this outer side (not its own members).
+      const inside = singles.filter(s =>
+        !outer.members.includes(s.members[0]) && (s.mask & ~outer.mask) === 0n && s.mask !== outer.mask);
+      if (inside.length === 0) continue;
+      // Inner candidates: a single (only inside an outer PAIR -- single-in-
+      // single is hintPartialSubset), or a compatible pair of singles.
+      const cand = outer.members.length === 2 ? [...inside] : [];
+      for (let x = 0; x < inside.length; x++) {
+        for (let y = x + 1; y < inside.length; y++) {
+          if (this._partialSubsetCompatible(inside[x], inside[y])) cand.push(this._partialSubsetSide(inside[x], inside[y]));
+        }
+      }
+      for (const inner of cand) {
+        if (inner.need >= outer.need || inner.mask === outer.mask || (inner.mask & ~outer.mask) !== 0n) continue;
+        const remMask = outer.mask & ~inner.mask;
+        const quota = outer.need - inner.need;
+        const key = `${remMask}:${quota}`;
+        if (tried.has(key)) continue;
+        tried.add(key);
+        const found = this._partialSubsetHints(inner, outer, remMask, quota);
+        if (found) hints.push(...found);
+      }
+    }
+    return hints.length > 0 ? hints : null;
+  };
+
   // Rule: Multi-stage lookahead for contradiction checking.
   p.hintLookahead = function (nStages) {
     const candidates = [];

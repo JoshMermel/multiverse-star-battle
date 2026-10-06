@@ -3152,6 +3152,10 @@ export function applyMultiStarRules(PuzzleSolver) {
       // language, and the subset wording is the one a player would actually
       // notice.
       { key: 'tileQuotaFillSingle',            fn: () => this.hintTileQuotaFillSingle() },
+      // A inside B where A needs FEWER stars: B \ A holds exactly the
+      // difference, reasoned about like a synthetic region. See the section
+      // comment above hintPartialSubset in solver-rules-common.js.
+      { key: 'partialSubset',                  fn: () => this.hintPartialSubset() },
       { key: 'regionLineQuotaFillIntermediate', fn: () => this.hintRegionLineQuotaFill('intermediate') },
       { key: 'regionLinePartitionForcedIntermediate', fn: () => this.hintRegionLinePartitionForced('intermediate') },
       { key: 'regionLinePartitionTrappedIntermediate', fn: () => this.hintRegionLinePartitionTrapped('intermediate') },
@@ -3224,6 +3228,9 @@ export function applyMultiStarRules(PuzzleSolver) {
       { key: 'regionAlgebra',                  fn: () => this.hintRegionAlgebra() },
       { key: 'regionPairPlacementForced',      fn: () => this.hintRegionPairPlacementForced() },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
+      // Partial subset where either side is a union of two units -- hardest
+      // rule in Expert. See the section comment above hintPartialSubset.
+      { key: 'partialSubsetUnion',             fn: () => this.hintPartialSubsetUnion() },
       // Grandmaster
       // Cross-board region/line quota fill + partition forced -- see the
       // section comment above hintCrossBoardRegionLineQuotaFill. Genuinely
