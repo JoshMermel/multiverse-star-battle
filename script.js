@@ -54,6 +54,7 @@ class StarBattleGame {
       this.setupMenu();
       this.setupControls();
       this.setupHelpModal();
+      this.setupChangelogModal();
       this.setupResetModal();
 
       const catSelect = document.getElementById('category-select');

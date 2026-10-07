@@ -926,6 +926,14 @@ body.show-bottom-controls .bottom-controls { display: flex; }
   margin-top: 16px;
 }
 
+.changelog-entry + .changelog-entry {
+  margin-top: 20px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+.changelog-entry h3 { margin-top: 12px; }
+.changelog-entry p { margin: 8px 0; }
+
 .modal-footer-note {
   margin-top: 16px;
   font-size: 0.9rem;

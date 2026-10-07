@@ -1,6 +1,7 @@
 // Mixin for binding DOM input events and setting up UI controls.
 
 import { CELL } from './constants.js';
+import { parseChangelog, unseenSections, renderMarkdown } from './changelog.js';
 
 export function applyInput(GameClass) {
   const p = GameClass.prototype;
@@ -75,10 +76,70 @@ export function applyInput(GameClass) {
 
     // Auto-open the help modal the very first time a user visits, then
     // remember that they've seen it so it won't pop up again.
-    if (!localStorage.getItem('has-seen-help-modal')) {
+    // Remembered so the changelog popup (setupChangelogModal) can skip
+    // first-time visitors, who already have the help modal to read.
+    this._isFirstVisit = !localStorage.getItem('has-seen-help-modal');
+    if (this._isFirstVisit) {
       localStorage.setItem('has-seen-help-modal', 'true');
       open();
     }
+  };
+
+  // --- Changelog ("What's new") ---
+  //
+  // changelog.md is fetched on every visit (revalidated, so a fresh deploy
+  // is picked up immediately); its `## ` headings are compared against the
+  // list this browser has already shown ('changelog-seen' in localStorage).
+  // Any unseen entries pop up in a modal, then count as seen. First-time
+  // visitors are marked as caught up silently -- they get the help modal
+  // instead. A returning visitor with no stored list (i.e. everyone, the
+  // first time this ships) sees the newest few entries. The help modal's
+  // "What's new" link reopens it on demand. Offline / missing file: no-op.
+  const CHANGELOG_SEEN_KEY = 'changelog-seen';
+  const CHANGELOG_MAX_AUTO = 5;
+  const CHANGELOG_MAX_MANUAL = 10;
+
+  p.setupChangelogModal = async function () {
+    const modal = document.getElementById('changelog-modal');
+    if (!modal) return;
+    const { open } = this.setupModal('changelog-modal');
+    const body = document.getElementById('changelog-body');
+
+    const show = (sections) => {
+      body.innerHTML = sections.map(s =>
+        `<section class="changelog-entry"><h3>${renderMarkdown(s.heading).replace(/^<p>|<\/p>$/g, '')}</h3>${renderMarkdown(s.body)}</section>`
+      ).join('');
+      body.scrollTop = 0;
+      open();
+    };
+
+    let sections = [];
+    try {
+      const resp = await fetch('changelog.md', { cache: 'no-cache' });
+      if (!resp.ok) throw new Error(`changelog fetch failed: ${resp.status}`);
+      sections = parseChangelog(await resp.text());
+    } catch (err) {
+      console.warn('[changelog] skipped:', err);
+    }
+
+    const link = document.getElementById('help-changelog-link');
+    if (link) {
+      link.hidden = sections.length === 0;
+      link.onclick = (e) => {
+        e.preventDefault();
+        document.getElementById('help-modal').classList.add('modal-hidden');
+        show(sections.slice(0, CHANGELOG_MAX_MANUAL));
+      };
+    }
+    if (sections.length === 0) return;
+
+    let seen = null;
+    try { seen = JSON.parse(localStorage.getItem(CHANGELOG_SEEN_KEY)); } catch (e) { /* corrupt -> treat as unset */ }
+    const fresh = Array.isArray(seen) ? unseenSections(sections, seen) : (this._isFirstVisit ? [] : sections);
+    if (fresh.length === 0 && Array.isArray(seen)) return;
+
+    localStorage.setItem(CHANGELOG_SEEN_KEY, JSON.stringify(sections.map(s => s.heading)));
+    if (fresh.length > 0) show(fresh.slice(0, CHANGELOG_MAX_AUTO));
   };
 
   // Set up reset confirmation modal.
