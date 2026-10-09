@@ -159,6 +159,9 @@ cell in that unit must be a dot. Here a single confirmed tile already covers a
 region's entire remaining need (K=1), so G5 — a cell in that region but outside the
 tile — must be a dot.
 
+(The same idea works with the tiles of a single region, row, or column — see
+"Region tiles" below.)
+
 ---
 
 <a href="index.html?book=armory2&puzzle=9">
@@ -252,6 +255,53 @@ exactly as above (blue and brown), so each holds exactly one star. Together they
 account for both of column D's stars, so every other empty cell in the column —
 D1 and D7 through D10 — is a dot.
 
+### Region tiles, doing the band tiles' jobs
+
+Everything the band tiles above can do, a region's own tiles (or a row's or
+column's) can do too: fill a unit's quota, and "see too much". Since both kinds of
+tile hold exactly one star, which one explains a deduction is just a matter of which
+you spot first — when both apply, the Hint button shows one of them at random.
+
+<a href="index.html?book=armory2&puzzle=32">
+<img src="images/multi_unit_tile_quota_fill.png" width="600"></img> </a>
+
+**Quota fill.** If a row, column, or region still needs K stars and you can find K
+disjoint tiles lying inside its open cells, those tiles hold all K stars and the
+unit's other open cells are dots. The tiles don't have to belong to the unit —
+or even to the same board. Here the blue region at the bottom right of board 1 needs 2
+stars, and its six open cells split into two tiles, {G8, F9, G9} and {H8, I8, I9},
+each holding exactly one star. Board 2's amber-outlined region needs just 1 more
+star, and the whole first tile — G8, F9, G9 — lies inside it. Its one star is in that
+tile, so its only other open cell, I9, must be a dot.
+
+---
+
+<a href="index.html?book=armory2&puzzle=33">
+<img src="images/multi_unit_tile_disjoint_quota_fill.png" width="600"></img> </a>
+
+With more than one star to fill, the tiles can come from different regions. Board 1's
+amber-outlined region at the top right needs 2 more stars. On board 2, the blue region
+splits into the tiles {F1, G1} and {E2, E3, F3}, and the brown region into {I1, I2}
+and {H3, I3, H4, I4} — every tile holding exactly one star. The blue tile {F1, G1}
+and the brown tile {I1, I2} both sit inside the amber region's open cells, so
+between them they hold its 2 stars. Its remaining open cells, E1 and I3, must be
+dots.
+
+---
+
+<a href="index.html?book=armory2&puzzle=31">
+<img src="images/multi_unit_tile_sees_too_much.png" width="600"></img> </a>
+
+**Sees too much.** A tile of three cells, or two diagonal ones, holds its star at
+one of them — and a cell that conflicts with *every* candidate is a dot, whichever
+one it turns out to be. A candidate conflicts with a cell if they touch, or if the
+star there would be the last one its row or column needs, filling it. Board 2's
+amber-outlined region needs 2 stars and its empty cells split into two tiles: the
+vertical pair C6–C7 and the diagonal pair D4–C5. Take the diagonal pair. A star at D4
+touches E5; a star at C5 would be row 5's second star (I5 already has one), filling
+the row — so E5 is ruled out either way, and must be a dot. This puzzle is Hard only
+because of this rule: without it, my scorer needs an Expert technique.
+
 ## Adjacent and disjoint rows/cols, revisited
 
 The 1★ "adjacent rows/cols" and "disjoint rows/cols" techniques generalize
@@ -337,15 +387,15 @@ argument floating with nothing to point at.
 <img src="images/multi_crossboard_region_line_quota_fill.png" width="600"></img> </a>
 
 Quota fill doesn't have to stay on one board, either. Here, the amber-outlined
-column I needs 2 more stars, and neither blue-outlined region is guaranteed that
-many in it on its own. The blue region on board 1 needs 2 stars, and its open cells
-outside column I — H3 and G4 — touch each other diagonally, so at most one of them
-can be a star: at least one of the region's stars has to land in column I (I4 or I5).
-The same goes for the blue region on board 2: its open cells outside column I (G8,
-G9, and H9) all touch each other, so at least one of its 2 stars has to land in I7,
-I8, or I9. The two regions' share of column I doesn't overlap, and both boards share
-the same underlying cells, so between them they guarantee 2 stars in column I — its
-entire remaining need. I1, I2, and I3 must be dots, a conclusion neither board could
+column I needs 2 more stars, and neither blue- nor brown-outlined region is
+guaranteed that many in it on its own. The blue region on board 1 needs 2 stars, and
+its open cells outside column I — G3 and H3 — touch each other, so at most one of
+them can be a star: at least one of the region's stars has to land in column I (I1,
+I2, or I3). The same goes for the brown region on board 2: its open cells outside
+column I (H6 and H7) touch each other, so at least one of its 2 stars has to land in
+I6, I7, I8, or I9. The two regions' share of column I doesn't overlap, and both boards
+share the same underlying cells, so between them they guarantee 2 stars in column I
+— its entire remaining need. I4 and I5 must be dots, a conclusion neither board could
 reach on its own.
 
 ## Symmetry, revisited
@@ -413,7 +463,7 @@ document yet.
 ## Partial subsets
 
 <a href="index.html?book=armory2&puzzle=28">
-<img src="images/multi_partial_subset.png" width="600"></img> </a>
+<img src="images/multi_partial_subset.png" width="800"></img> </a>
 
 "Region contains region" only works when both sides need the *same* number of
 stars, so everything left over is a dot. Drop that requirement and you get a
@@ -424,16 +474,18 @@ cells must hold exactly the difference. That leftover (the pink cells) is a
 brand-new little region with a known star count, and you can reason about it
 exactly like any other region.
 
-Here the blue region on board 1 needs 1 more star and the brown region on board 2
-needs 2, and all three open blue cells (E7, D9, E9) are open in the brown region
-too. So the brown region's remaining cells, E6 and D7, hold exactly 1 star. There
-are only two ways to do that, and E7 touches both E6 and D7 — so E7 must be a dot.
+Here the blue region on board 3 needs 1 more star, and all three of its open cells
+(I12, G13, and H13) are open in board 1's brown region, which needs 3. So the brown
+region's remaining cells — L10, I11, K11, and I13 — hold exactly 2 stars. There are
+five ways to place 2 non-touching stars among them, and every one uses I11 or I13,
+both of which touch I12 — so I12 must be a dot.
 
 The units don't have to be regions: a row or column works the same way, and so
 does any mix of the three, from either board. This puzzle is Hard *only* because
 of this rule: take it away and my scorer has to reach for an Expert technique
-instead. (It's rarely the only way in — most of the time something else in the
-Hard tier gets to the same cell first — but it's a real, distinct thing to notice.)
+instead. (It's rarely the only way in — most of the time one of the tile
+techniques above gets to the same cell first — but it's a real, distinct thing to
+notice.)
 
 ---
 
