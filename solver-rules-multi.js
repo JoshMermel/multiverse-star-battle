@@ -1940,9 +1940,9 @@ export function applyMultiStarRules(PuzzleSolver) {
   // Backtracking search for k mutually disjoint tiles among `tiles` (each
   // { cells, topLeftIdx }). Returns the combo (array of k tiles) if found,
   // else null.
-  p._findDisjointTileCombo = function (tiles, k) {
+  p._findDisjointTileCombo = function (tiles, k, accept = null) {
     const backtrack = (start, chosen, used) => {
-      if (chosen.length === k) return chosen;
+      if (chosen.length === k) return !accept || accept(chosen) ? chosen : null;
       for (let idx = start; idx < tiles.length; idx++) {
         const t = tiles[idx];
         if (t.cells.some(c => used.has(c))) continue;
@@ -2038,7 +2038,7 @@ export function applyMultiStarRules(PuzzleSolver) {
   // single confirmed tile already accounts for a unit's entire remaining
   // need (it's down to its last star), so every other empty cell in the
   // unit must be a dot.
-  p.hintTileQuotaFillSingle = function () {
+  p.hintBandTileQuotaFillSingle = function () {
     return this._formatTileQuotaFillHints(this._tileQuotaFillCandidates(true));
   };
 
@@ -2080,7 +2080,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     return false;
   };
 
-  p.hintTileSeesTooMuchMulti = function () {
+  p.hintBandTileSeesTooMuchMulti = function () {
     const seenKeys = new Set(); // "targets|tile cells" already claimed by an earlier tiling
     const hints = [];
     for (const tiling of this._confirmedTiles()) {
@@ -2124,7 +2124,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
   // Rule 3b (2★+, Expert): the general K>1 case -- K mutually disjoint
   // confirmed tiles together account for all K stars a unit still needs.
-  p.hintTileDisjointQuotaFill = function () {
+  p.hintBandTileDisjointQuotaFill = function () {
     return this._formatTileQuotaFillHints(this._tileQuotaFillCandidates(false));
   };
 
@@ -2623,6 +2623,155 @@ export function applyMultiStarRules(PuzzleSolver) {
 
   p.hintRegionTileLineFill = function () { return this._regionTileLineFillHints(false); };
   p.hintRegionTileLineFillCross = function () { return this._regionTileLineFillHints(true); };
+
+  // -- Single-unit tiles: quota fill + sees-too-much (2★+) ---------------------------
+  //
+  // The band-tile rules (hintBandTileQuotaFillSingle/DisjointQuotaFill/
+  // SeesTooMuchMulti) only use CONFIRMED BAND tiles -- a pair of adjacent
+  // rows/columns that tiles cleanly. These are the same ideas run on
+  // SINGLE-UNIT tiles instead: a region's empties split into exactly K
+  // cliques, or a single row/column's empties split into exactly K
+  // dominoes (see _unitTileEntries). Each such tile holds exactly one star,
+  // same as a band tile. Not mixed with band tiles: each deduction below
+  // draws from single-unit tiles only.
+  //
+  // The rule-list entries (hintTileQuotaFillSingle, hintTileDisjointQuotaFill,
+  // hintTileSeesTooMuchMulti, at the end of this section) are wrappers
+  // returning BOTH the band and the single-unit hints in one list, so the
+  // hint cycler (which shuffles whatever list a rule returns) shows a mix of
+  // the two kinds. Python port: rule_unit_tile_quota_fill_single /
+  // _disjoint_quota_fill / rule_unit_tile_sees_too_much_multi in
+  // rules_multi_star.py, each listed there just before its band counterpart
+  // at the same tier and weight.
+
+  // Every single-unit tile on the board (any region, row or column),
+  // deduped by cell set. Each carries its originating partition ("witness").
+  p._singleUnitTilePool = function () {
+    const pool = new Map();
+    for (const unit of this.units) {
+      for (const e of this._unitTileEntries(unit)) {
+        const key = this._groupKey(e.cells);
+        if (!pool.has(key)) pool.set(key, { ...e.rep, cells: e.cells, witness: e.witness });
+      }
+    }
+    return [...pool.values()];
+  };
+
+  // Same search as _tileQuotaFillCandidates, over single-unit tiles. A unit's
+  // own tiling covers all its empties (nothing to dot), so keep searching
+  // past it for a combo that leaves something -- see the Python rule.
+  p._unitTileQuotaFillCandidates = function (wantSingle) {
+    const allTiles = this._singleUnitTilePool();
+    const candidates = [];
+    for (const unit of this.units) {
+      const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
+      const k = this.starsPerGroup - stars;
+      if (k <= 0) continue;
+      if (wantSingle ? k !== 1 : k <= 1) continue;
+      const avail = new Set(unit.indices.filter(i => this.vState(i) === CELL.NONE));
+      if (avail.size <= k) continue;
+
+      const relevant = allTiles.filter(t => t.cells.every(c => avail.has(c)));
+      if (relevant.length < k) continue;
+      // Canonical tile order (lexicographic by cells), matching the Python rule.
+      relevant.sort((a, b) => {
+        for (let i = 0; i < Math.min(a.cells.length, b.cells.length); i++) {
+          if (a.cells[i] !== b.cells[i]) return a.cells[i] - b.cells[i];
+        }
+        return a.cells.length - b.cells.length;
+      });
+
+      const combo = this._findDisjointTileCombo(relevant, k,
+        chosen => chosen.reduce((n, t) => n + t.cells.length, 0) < avail.size);
+      if (!combo) continue;
+
+      const covered = new Set(combo.flatMap(t => t.cells));
+      const targets = [...avail].filter(i => !covered.has(i));
+      if (targets.length === 0) continue;
+      candidates.push({ unit, combo, targets });
+    }
+    return candidates;
+  };
+
+  p.hintUnitTileQuotaFillSingle = function () {
+    return this._formatTileQuotaFillHints(this._unitTileQuotaFillCandidates(true));
+  };
+  p.hintUnitTileDisjointQuotaFill = function () {
+    return this._formatTileQuotaFillHints(this._unitTileQuotaFillCandidates(false));
+  };
+
+  // hintBandTileSeesTooMuchMulti's argument for single-unit tiles: a tile of
+  // 3 empty cells, or 2 diagonal ones, holds one star at one of them, so any
+  // other cell that conflicts with EVERY candidate (touches it, or shares its
+  // row/column which that placement would complete) is a dot. Only region
+  // tiles can qualify -- a row/column's dominoes are never 3 cells or
+  // diagonal. One hint per tiling (witness) that has a matching tile.
+  p.hintUnitTileSeesTooMuchMulti = function () {
+    const hints = [];
+    const seenKeys = new Set();
+    const seenWitness = new Set();
+    for (const unit of this.units) {
+      const byWitness = new Map();
+      for (const entry of this._unitTileEntries(unit)) {
+        if (entry.cells.length !== 3 && !this._isDiagonalTilePair(entry.cells)) continue;
+        const targets = [];
+        for (let i = 0; i < this.n * this.n; i++) {
+          if (this.vState(i) !== CELL.NONE || entry.cells.includes(i)) continue;
+          if (entry.cells.every(c => this._externalConflictsWithCandidate(i, c))) targets.push(i);
+        }
+        if (targets.length === 0) continue;
+        const key = this._groupKey(targets) + '|' + this._groupKey(entry.cells);
+        if (seenKeys.has(key)) continue;
+        seenKeys.add(key);
+        const id = entry.witness[0].tilingId;
+        if (!byWitness.has(id)) byWitness.set(id, { witness: entry.witness, matching: [], targets: new Set() });
+        const group = byWitness.get(id);
+        group.matching.push(entry.rep);
+        targets.forEach(t => group.targets.add(t));
+      }
+      for (const [id, { witness, matching, targets }] of byWitness) {
+        if (seenWitness.has(id)) continue;
+        seenWitness.add(id);
+        const targetList = [...targets].sort((a, b) => a - b);
+        const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(witness, matching, targetList);
+        const kind = this._unitKind(unit);
+        const K = witness.length;
+        const intro = K === 1
+          ? `The empty cells of the amber-outlined ${kind} all touch each other (they fit in a 2x2 box), so it can hold only one star -- and it needs exactly one more.`
+          : `The amber-outlined ${kind} still needs ${K} stars, and its empty cells split into these ${K} tiles that can each hold at most one star -- so exactly one each.`;
+        const which = matching.length === 1 ? "the highlighted tile's cells" : "any highlighted tile's cells";
+        const one = targetList.length === 1;
+        hints.push({
+          description: `${intro} Wherever the star lands among ${which}, it either touches ${one ? 'the marked cell' : 'each marked cell'} or fills a row or column that ${one ? 'it shares' : 'they share'} -- so ${one ? "it's a dot" : "they're dots"}.`,
+          highlights,
+          marks: targetList.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
+          tileOutlines,
+          regionOutlines: this._outlineEntriesFor(unit, 'amber'),
+          boardIdx: unit.boardIdx,
+          observation: this._unitObservation(unit)
+        });
+      }
+    }
+    if (hints.length === 0) return null;
+    hints.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
+    return hints;
+  };
+
+  // Rule-list entries: band + single-unit hints in ONE list (see the section
+  // comment above), same tier and score as the band rule each wraps.
+  const bothKinds = (a, b) => {
+    const all = [...(a ?? []), ...(b ?? [])];
+    return all.length > 0 ? all : null;
+  };
+  p.hintTileQuotaFillSingle = function () {
+    return bothKinds(this.hintBandTileQuotaFillSingle(), this.hintUnitTileQuotaFillSingle());
+  };
+  p.hintTileDisjointQuotaFill = function () {
+    return bothKinds(this.hintBandTileDisjointQuotaFill(), this.hintUnitTileDisjointQuotaFill());
+  };
+  p.hintTileSeesTooMuchMulti = function () {
+    return bothKinds(this.hintBandTileSeesTooMuchMulti(), this.hintUnitTileSeesTooMuchMulti());
+  };
 
   // -- Lookahead-dots (2★+, restored from pre-experiment) ---------------------
   //

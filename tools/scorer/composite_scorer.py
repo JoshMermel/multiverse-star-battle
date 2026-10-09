@@ -280,6 +280,10 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # AFTER rule_region_subset_hard: for a tile that is a whole
             # region this is the same deduction, and the subset wording is
             # the one a player would notice.
+            # Single-unit-tile version of the rule below (region/line tiles
+            # instead of band tiles) -- see rules_multi_star.py's "Single-unit
+            # tiles" section comment. Same tier/score as the band rule.
+            (self.rule_unit_tile_quota_fill_single,               52, "Hard"),
             (self.rule_tile_quota_fill_single,                    52, "Hard"),
             # A inside B where A needs FEWER stars: B \ A holds exactly the
             # difference, reasoned about like a synthetic region. See
@@ -297,6 +301,7 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # rule_tile_sees_too_much_multi. Toward the end of Hard: same
             # tile-spotting as rule_tile_single_empty/two_empty_dot (start
             # of Hard) PLUS a per-candidate line-completion check on top.
+            (self.rule_unit_tile_sees_too_much_multi,             84, "Hard"),
             (self.rule_tile_sees_too_much_multi,                  84, "Hard"),
 
             # -- Symmetry - requires insight but not hard to apply -----------
@@ -330,6 +335,7 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # "Cross-board partial overlap" section comment for the
             # stars_per_unit-agnostic algebra behind it.
             (self.rule_crossboard_partial_overlap_multi,          105, "Expert"),
+            (self.rule_unit_tile_disjoint_quota_fill,             110, "Expert"),
             (self.rule_tile_disjoint_quota_fill,                  110, "Expert"),
             # Tile rule 4 -- needs a genuinely incomplete tiling (a band
             # rule_tile_single_empty/two_empty_dot/quota_fill give up on

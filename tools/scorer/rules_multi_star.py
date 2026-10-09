@@ -1862,11 +1862,13 @@ class MultiStarRules:
                 return changes
         return 0
 
-    def _find_disjoint_tile_combo(self, tiles, k):
-        """Backtracking search for k mutually disjoint tiles among `tiles`."""
+    def _find_disjoint_tile_combo(self, tiles, k, accept=None):
+        """Backtracking search for k mutually disjoint tiles among `tiles`.
+        `accept`, if given, must also hold for the combo (so the search keeps
+        going past a combo that's disjoint but useless)."""
         def backtrack(start, chosen, used):
             if len(chosen) == k:
-                return list(chosen)
+                return list(chosen) if accept is None or accept(chosen) else None
             for idx in range(start, len(tiles)):
                 t = tiles[idx]
                 if used & t:
@@ -2070,7 +2072,7 @@ class MultiStarRules:
         K disjoint region tiles may come from both boards."""
         return self._region_tile_line_fill(p, True, "RegionTileLineFillCross")
 
-    def _tile_quota_fill(self, p, want_single):
+    def _tile_quota_fill(self, p, want_single, tiles=None, label_prefix="TileQuotaFill"):
         """
         Shared by rule_tile_quota_fill_single (Hard, K=1) and
         rule_tile_disjoint_quota_fill (Expert, K>1): for a row/column/region
@@ -2082,7 +2084,7 @@ class MultiStarRules:
         than combining several disjoint tiles at once, hence the lower tier)
         vs K>1 for the general case.
         """
-        all_tiles = list(self._confirmed_tiles(p))
+        all_tiles = list(self._confirmed_tiles(p) if tiles is None else tiles)
         for unit in p.units:
             stars = sum(1 for i in unit["indices"] if p.grid[i] == "x")
             k = p.stars_per_unit - stars
@@ -2100,7 +2102,17 @@ class MultiStarRules:
             if len(relevant) < k:
                 continue
 
-            combo = self._find_disjoint_tile_combo(relevant, k)
+            # Single-unit tiles include the unit's OWN tiling, which covers
+            # every empty cell and so dots nothing; keep searching past it for
+            # a combo that leaves something to dot, so whether the rule fires
+            # never depends on search order.
+            accept = None
+            if tiles is not None:
+                # Canonical tile order (lexicographic by sorted cells), so the
+                # JS port's search picks the very same combo.
+                relevant.sort(key=lambda t: sorted(t))
+                accept = lambda c: len(set().union(*c)) < len(avail)
+            combo = self._find_disjoint_tile_combo(relevant, k, accept)
             if combo is None:
                 continue
 
@@ -2109,7 +2121,7 @@ class MultiStarRules:
             if not targets:
                 continue
 
-            label = f"TileQuotaFill({unit['label']}, K={k})"
+            label = f"{label_prefix}({unit['label']}, K={k})"
             changes = sum(
                 p.validate_and_set(idx, ".", label, self.verbose) for idx in targets
             )
@@ -2124,6 +2136,54 @@ class MultiStarRules:
     def rule_tile_disjoint_quota_fill(self, p):
         """Rule 3b (Expert): the general K>1 case -- see _tile_quota_fill."""
         return self._tile_quota_fill(p, want_single=False)
+
+    # -- Single-unit tiles (2★+): quota fill + sees-too-much -----------------------
+    #
+    # The band-tile rules above (tile_quota_fill_*, tile_sees_too_much_multi)
+    # only ever use CONFIRMED BAND tiles (a pair of adjacent rows/columns
+    # that tiles cleanly). These are the same two ideas run on SINGLE-UNIT
+    # tiles instead -- the tiles of _region_tiles: a region's empties split
+    # into exactly K cliques, or a single row/column's empties split into
+    # exactly K dominoes. Each such tile holds exactly one star, same as a
+    # band tile. Deliberately NOT mixed with band tiles: each rule here
+    # draws from single-unit tiles only. Same tier and score as the band
+    # rule each mirrors, tried just before it.
+
+    def _single_unit_tiles(self, p):
+        tiles = set()
+        for lines in (False, True):
+            for _unit, unit_tiles in self._region_tiles(p, lines):
+                tiles |= unit_tiles
+        return tiles
+
+    def rule_unit_tile_quota_fill_single(self, p):
+        """Hard, K=1: a single-unit tile already covers a row/column/region's
+        whole remaining need -- see _tile_quota_fill."""
+        return self._tile_quota_fill(p, want_single=True, tiles=self._single_unit_tiles(p),
+                                     label_prefix="UnitTileQuotaFill")
+
+    def rule_unit_tile_disjoint_quota_fill(self, p):
+        """Expert, K>1: K disjoint single-unit tiles fill the unit's whole
+        remaining need -- see _tile_quota_fill."""
+        return self._tile_quota_fill(p, want_single=False, tiles=self._single_unit_tiles(p),
+                                     label_prefix="UnitTileQuotaFill")
+
+    def rule_unit_tile_sees_too_much_multi(self, p):
+        """Hard: rule_tile_sees_too_much_multi's argument for single-unit
+        tiles (3-cell tiles, or diagonal pairs) instead of band tiles."""
+        for tile in self._single_unit_tiles(p):
+            if len(tile) != 3 and not self._is_diagonal_tile_pair(p, tile):
+                continue
+            candidates = list(tile)
+            changes = 0
+            for i in range(p.n * p.n):
+                if p.grid[i] is not None or i in tile:
+                    continue
+                if all(self._external_conflicts_with_candidate(p, i, c) for c in candidates):
+                    changes += p.validate_and_set(i, ".", "UnitTileSeesTooMuchMulti", self.verbose)
+            if changes > 0:
+                return changes
+        return 0
 
     # -- Tile pair quota fill (1★ AND 2★+, Expert) -------------------------------
     #
