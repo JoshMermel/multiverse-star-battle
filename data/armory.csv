@@ -37,3 +37,6 @@ puzzle_1_stage_lookahead,8,CCCCGGDHECCCGGDHEECCGGHHEEEEHHHHBAEHHHHHAAEHHHHHAAAFF
 puzzle_both_or_neither,8,AAABBBBBAAABBBBBAACCDDDDAACCEDDDFCCCEEGGFCCEEEGGFFHHHEGGFFHHHHGG,AABBBBCCDAABBBCCDDAABCCCDDAAEEECDDFGEEECDFFGGGHHFFFFGGHHFFFFFFHH,...x....x.............x...x..........x.........x....x....x......,229,rule_lookahead_half_stage,True
 puzzle_hardest_beginner,8,FAAAAAACFAAGHHACFAAGHHHCGGGGHHHCGGGHHHECGGEEEEECGGDDDEEBGGDDDBBB,AAGGGBBBDAGHHBBBDAGHHHHHDDDHHHFFDDDCCHFFDDEECCFFEEEEEFFFEEEEEFFF,x..............x..x.........x....x...........x.....x..........x.,174,hardest_beginner,True
 puzzle_easiest_gm,8,BGGGGHHHBEEDDHHHBEEDDDDHBBBDDDAABBBFAAAABBFFFFAABFFFFAAABCCFFAAA,DDDEEEEEDDDDEEEEDDDAECBBDAAAACBBAAAHAGBBFAAHHGGBFAAAHHHHFFAHHHHH,....x....x.............x.....x.....x..........x.x.........x.....,177,rule_lookahead_1_stage,True
+puzzle_region_algebra_regions_region,6,AABBBBADBBBBDDDBCCFFDCCCFFFFEEFFFFEE,FFFFDDEEBBDDEEBBDDBBBCCDBBBCCACCCCAA,...x..x.........x...x........x.x....,439,rule_region_algebra,True
+puzzle_region_algebra_row_region,6,FFFAADFFAADDFFAAEDFBBAEEBBBBEECCBBEE,DDDDBBDDBBBBECCCCBEEECCAEEAAAAFFFAAA,..x........x...x...x........x.x.....,242,rule_region_algebra,True
+puzzle_region_algebra_rows_region,6,AAAAADAAFFFDAAFFFFEEFFCCEEEFCCEEBFCC,FFCCCCFFFACEFFFACEBFFACEBBAAEEBBDEEE,.....x.x.......x..x.........x...x...,125,rule_region_algebra,True

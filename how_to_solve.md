@@ -566,19 +566,80 @@ always see a star. It must be a dot.
 
 ---
 
+### Region algebra
+
 <a
 href="index.html?book=armory&puzzle=32">
 <img src="images/region_algebra.png" width="600"></img> </a>
 
-A different way to combine two regions. If two regions jointly hold 2 stars,
-and some *other* row, column, or region already has all of its open cells
-inside that pair (and reaches into both of them), then that other unit's star
-must come from there — leaving exactly 1 star for the rest of the pair. Here,
-Row 3's only two open cells already sit inside the blue pair, and Row 3 needs
-its 1 star from somewhere — so the rest of the pair (outside Row 3) holds
-exactly 1 star too. That leaves only F1 and B6 open. B1 sees both of them (F1
-by row, B6 by column), so a star at B1 would leave neither available. B1 must
-be a dot.
+A different way to combine two units, and one of the most flexible tricks in
+the game. The recipe has three steps:
+
+1. Pick two units that don't overlap, **A** and **B**. Each is a row, a column,
+   or a region (two regions have to be on the same board). Together they hold 2
+   stars.
+2. Find a third unit, **C**, whose open cells all sit inside A and B and that
+   reaches into both of them. C can be a row, a column, or a region on *either*
+   board. C needs 1 star, and the only place it can get one is inside A and B.
+3. That uses up one of the pair's 2 stars, so the rest of the pair (the part
+   outside C) holds exactly 1 star. Treat that leftover as a brand new region:
+   a cell that sees every open cell of it must be a dot, and if only one open
+   cell is left, it's a star.
+
+In the pictures, the blue outline is A and B together, the brown cells are C,
+and the cyan cells are what's left over.
+
+Here A is Column A and B is a region (the blue outline traces both). Column A has
+A2 and A3 open, and the region has E3 and F1 open. C is Row 3, shown in brown: its
+only open cells, A3 and E3, are one in each of the blue units, so Row 3's star
+must come from the blue pair. That leaves exactly 1 star for the rest of the
+pair, the cyan cells A2 and F1. B1 sees both of them (A2 diagonally, F1 along its
+row), so a star at B1 would leave neither available. B1 must be a dot.
+
+The three units can be any mix of rows, columns and regions. The only
+combination that can't happen is a row paired with a column, because they
+always cross. The next three examples show some of the other combinations.
+
+---
+
+<a
+href="index.html?book=armory&puzzle=39">
+<img src="images/region_algebra_regions_region.png" width="600"></img> </a>
+
+*Two regions, minus a region from the other board.* A and B are two regions on
+board 1, outlined in blue, and together they hold 2 stars. C is a region on
+board 2, shown in brown. Its only open cells are A2, A3 and B3: A2 is inside
+the upper blue region and A3 and B3 are inside the lower one. So C's star is in
+the blue pair too, and the four cyan cells left over (A1, B1, C3 and C4) hold
+exactly 1 star. C1 sees all four of them — A1 and B1 along its row, C3 and C4
+down its column — so C1 must be a dot.
+
+---
+
+<a
+href="index.html?book=armory&puzzle=40">
+<img src="images/region_algebra_row_region.png" width="600"></img> </a>
+
+*A row and a region, minus a region from the other board.* This time A is Row 5
+and B is a region on board 2; the blue outline traces both. Row 5 has C5, D5,
+E5 and F5 open, and the region has C3, D3, E3 and E4 open. C is the brown
+region on board 1, whose open cells are E3, E4, E5 and F5. The first two are
+inside the blue region and the last two are inside the blue row, so C's star
+comes from the blue pair. The cyan cells C3, D3, C5 and D5 hold exactly 1 star
+between them, and C4 touches all four, so C4 must be a dot.
+
+---
+
+<a
+href="index.html?book=armory&puzzle=41">
+<img src="images/region_algebra_rows_region.png" width="600"></img> </a>
+
+*Two rows, minus a region.* A and B are Row 1 and Row 4, together holding 2
+stars. C is the brown region from board 2, which has only two open cells left,
+F1 and E4 — one in each of the blue rows. Its star must be one of them, so the
+rest of the blue rows, which is just B1 and A4, holds exactly 1 star. B3 sees
+B1 (same column) and A4 (diagonally), so a star at B3 would leave neither of
+them available. B3 must be a dot.
 
 ### Lookahead
 

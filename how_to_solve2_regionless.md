@@ -150,6 +150,18 @@ theoretically possible — its own description allows a row's completions to for
 column's quota, no region required — but it seems to be too rare to matter in
 practice.
 
+## Region algebra
+
+On a regionless board this technique reduces to rows and columns: two rows with a
+column tucked inside them, or two columns with a row tucked inside them (see
+[how_to_solve_regionless.md](how_to_solve_regionless.md) for the 1★ version and
+examples). The rule is implemented for 2★+ regionless boards just the same, with
+each unit holding 2 stars instead of 1, but it never turned up in my testing: I
+checked 3,000 regionless 9x9 puzzles (every Hard, Expert and Grandmaster one I
+sampled) and 600 13x13 Experts, and in none of them did the solver ever reach for it. The
+other row/column techniques above get there first. No example here for that
+reason.
+
 ## Crossboard, revisited
 
 Every crossboard technique compares regions across two different boards. None of

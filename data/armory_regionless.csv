@@ -12,3 +12,5 @@ puzzle_diagonal_symmetry,8,**A***AA*A*****AA****A******AAAA***AA*A***AA***AA**AA
 puzzle_rotation_180,8,AAAAA*A****A**A*AA*AAAA**A*A********A*A**AAAA*AA*A**A****A*AAAAA,x..........x.........x...x............x...x.........x..........x,19,rule_rotation_180,True
 puzzle_diagonal_parity,8,AA*AA*A*A**A***A**A**A**AA***A**A*****A***AA*A*AA***A****A***A**,...x...........x.....x..x.............x...x.........x....x......,118,rule_diagonal_parity,True
 puzzle_lookahead,8,A*****AA*A*AA*****A**A**A***A***AAA*A**AAA**A*AAA*AAA*A*A****A**,......x.....x.....x.....x..............x.x.........x.........x..,133,rule_lookahead_1_stage,True
+puzzle_region_algebra_rows,6,*A*AA*A*A**AAA*A**AA***A*AAA**A***A*,.x.........x...x..x.......x.......x.,285,rule_region_algebra,True
+puzzle_region_algebra_cols,6,*AA*AA*AA*A*A*AA***A*AA**AA*AAA**A**,.....x..x...x.........x..x.......x..,185,rule_region_algebra,True

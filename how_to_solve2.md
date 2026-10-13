@@ -537,6 +537,34 @@ all of its open cells inside them and needs 2 stars of its own. That leaves
 exactly 2 stars for the rest of the pair. Every one of the 6 ways to place
 those 2 remaining stars puts one next to the circled cell, so it must be a dot.
 
+As in part 1, the pair doesn't have to be two regions: any two non-overlapping
+rows, columns and regions work, and the third unit can be a row, a column or a
+region on either board. Two more examples:
+
+<a href="index.html?book=armory2&puzzle=34">
+<img src="images/multi_region_algebra_row_region.png" width="600"></img> </a>
+
+*A row and a region, minus a region from the other board.* The blue outline is
+Row 1 plus a region on board 1, which need 4 stars between them. The brown
+region from board 2 has all of its open cells inside the pair (D1, E1, G1, H1
+and I1 are in the row, and H2, I2, H3 and I3 are in the region), so it accounts
+for 2 of those 4. That leaves exactly 2 stars for the cyan cells: A1, B1, C1,
+and the 2x2 block H4, I4, H5, I5. The 2x2 block can only hold one star, since
+all four of its cells touch, so at least one star lands in A1, B1 or C1. B2
+touches all three of those, so B2 must be a dot.
+
+---
+
+<a href="index.html?book=armory2&puzzle=35">
+<img src="images/multi_region_algebra_cols_region.png" width="600"></img> </a>
+
+*Two columns, minus a region.* Columns E and F need 4 stars between them. The
+brown region from board 2 has only cells inside those two columns, so it uses
+up 2 of the 4, leaving exactly 2 stars for the cyan cells E5 through E9, F7 and
+F8. E8, E9 and F8 all touch each other, so at most one star fits there, which
+means the other star is one of E5, E6, E7 or F7. F6 touches every one of those,
+so F6 must be a dot.
+
 ## Lookahead
 
 <a href="index.html?book=armory2&puzzle=21">

@@ -156,6 +156,47 @@ Every crossboard technique compares regions across two different boards, so none
 them have a regionless equivalent — doubly so, since every regionless puzzle I
 publish is single-board anyway.
 
+## Region algebra
+
+The region algebra technique from the original document ("two units hold some
+stars, a third unit lives entirely inside them, so what's left over holds exactly
+the remainder") works fine on regionless boards, with one catch: there are no
+regions to use, so all three units are rows and columns.
+
+A row and a column always cross, so they can never be the non-overlapping pair
+the technique needs. That leaves two cases: the pair is two rows and the third
+unit is a column, or the pair is two columns and the third unit is a row. In
+both, the third unit has all of its open cells inside the pair, so its star must
+come from there. That uses up 1 of the pair's 2 stars, and the rest of the pair
+holds exactly 1 star. Any cell that sees every open cell of that leftover must
+be a dot.
+
+It's a close cousin of row/col line sync: both argue about stars crossing between
+rows and columns. Line sync needs the rows' cells to line up inside the columns
+completely, while region algebra only needs one column (or row) tucked inside
+the pair, and then makes a smaller deduction about the leftover. Of the
+regionless puzzles I sampled that use it, about four in five were the
+two-columns-and-a-row kind.
+
+<a href="index.html?book=armory_regionless&puzzle=14">
+<img src="images/regionless/region_algebra_rows.png" width="600"></img> </a>
+
+Rows 2 and 4 (blue) hold 2 stars together. Column F's only two open cells,
+F2 and F4, are one in each row, so Column F's star is inside the pair, and the
+four cyan cells A2, C2, A4 and B4 hold exactly 1 star. B3 touches all four, so
+B3 must be a dot. (This one is available from the very first move.)
+
+---
+
+<a href="index.html?book=armory_regionless&puzzle=15">
+<img src="images/regionless/region_algebra_cols.png" width="600"></img> </a>
+
+The same idea turned sideways. Columns A and D (blue) hold 2 stars together.
+Row 6's only open cells, A6 and D6, are one in each column, so its star is
+inside the pair too, and the cyan cells A3, D3 and D4 hold exactly 1 star. C3
+sees all three (A3 along its row, D3 right next to it, D4 diagonally), so C3
+must be a dot.
+
 ## Lookahead
 
 Half-stage lookahead didn't turn up in any of the regionless puzzles I sampled while
