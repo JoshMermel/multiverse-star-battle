@@ -15,6 +15,10 @@
     comment, the title) is ignored.
 -->
 
+## 2026-10-12 — Puzzles refreshed
+
+- Most puzzle books were regenerated for consistency and quality, so many puzzles have changed.
+
 ## 2026-10-06
 
 - Introduce changelog
