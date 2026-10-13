@@ -30,7 +30,7 @@ export function applyHistory(GameClass) {
 
   // Save current state to history and truncate any undone future states.
   p.saveHistory = function () {
-    const snap = JSON.stringify({ state: this.state, dotReasons: serializeDotReasons(this.dotReasons) });
+    const snap = JSON.stringify({ state: this.state, dotReasons: serializeDotReasons(this.dotReasons), highlights: this.highlights });
     // Skip if state is unchanged.
     if (snap === this.history[this.historyIdx]) return;
 
@@ -48,6 +48,7 @@ export function applyHistory(GameClass) {
       const snap = JSON.parse(this.history[this.historyIdx]);
       this.state = snap.state;
       this.dotReasons = deserializeDotReasons(snap.dotReasons);
+      this.highlights = snap.highlights ?? new Array(this.n * this.n).fill(null);
       this.updateVisuals();
       this.validate();
       this.updateControls();
@@ -63,6 +64,7 @@ export function applyHistory(GameClass) {
       const snap = JSON.parse(this.history[this.historyIdx]);
       this.state = snap.state;
       this.dotReasons = deserializeDotReasons(snap.dotReasons);
+      this.highlights = snap.highlights ?? new Array(this.n * this.n).fill(null);
       this.updateVisuals();
       this.validate();
       this.updateControls();
@@ -74,6 +76,7 @@ export function applyHistory(GameClass) {
   // in-progress elapsed time so a resumed session picks up where it left off.
   p.saveCurrentState = function () {
     storageManager.savePuzzleState(this.currentPuzzleUniqueId, this.state);
+    storageManager.saveHighlights(this.currentPuzzleUniqueId, this.highlights);
     this._persistTimerProgress();
   };
 
@@ -82,11 +85,14 @@ export function applyHistory(GameClass) {
   // loaded/reset/reconstructed state has no per-cell provenance to speak
   // of, so any dots already on the board (e.g. reconstructed from a
   // solved solution) are just inert until live play re-establishes
-  // reasons for them.
-  p._resetHistoryTo = function (state) {
+  // reasons for them. `highlights` (the player's cell colors) is the
+  // exception -- it's saved per puzzle, so loads pass the saved copy back in;
+  // everything else (reset, clear-all) gets none.
+  p._resetHistoryTo = function (state, highlights = null) {
     this.state = state;
     this.dotReasons = new Map();
-    this.history = [JSON.stringify({ state, dotReasons: {} })];
+    this.highlights = highlights ?? new Array(this.n * this.n).fill(null);
+    this.history = [JSON.stringify({ state, dotReasons: {}, highlights: this.highlights })];
     this.historyIdx = 0;
   };
 
@@ -105,7 +111,7 @@ export function applyHistory(GameClass) {
   p.loadProgress = function ({ suppressWinToast = false, isReset = false } = {}) {
     const savedState = storageManager.getPuzzleState(this.currentPuzzleUniqueId);
     if (savedState && savedState.length === this.n * this.n) {
-      this._resetHistoryTo(savedState);
+      this._resetHistoryTo(savedState, storageManager.getHighlights(this.currentPuzzleUniqueId, this.n * this.n));
       this.updateVisuals();
       this.validate({ suppressWinToast });
     } else if (!isReset && storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {

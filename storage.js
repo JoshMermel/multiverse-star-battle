@@ -124,6 +124,21 @@ class StorageManager {
     localStorage.setItem(`sb_v2_state_${puzzleId}`, this._serializeState(stateArray));
   }
 
+  // --- Cell colors (local-only; never synced to the cloud) ---
+
+  // One char per cell: '-' for uncolored, else the palette index as a digit.
+  getHighlights(puzzleId, length) {
+    const str = localStorage.getItem(`sb_hl_${puzzleId}`);
+    if (!str || str.length !== length) return null;
+    return str.split('').map(ch => (ch === '-' ? null : Number(ch)));
+  }
+
+  saveHighlights(puzzleId, highlights) {
+    const str = highlights.map(h => (h == null ? '-' : String(h))).join('');
+    if (/^-*$/.test(str)) localStorage.removeItem(`sb_hl_${puzzleId}`);
+    else localStorage.setItem(`sb_hl_${puzzleId}`, str);
+  }
+
   markPuzzleSolved(puzzleId) {
     if (!this._solvedCache.includes(puzzleId)) {
       this._solvedCache.push(puzzleId);
@@ -187,7 +202,7 @@ class StorageManager {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key === 'sb_solved' || key === 'sb_solve_times' || key === 'sb_elapsed_times' ||
-        key.startsWith('sb_v2_state_')) {
+        key.startsWith('sb_v2_state_') || key.startsWith('sb_hl_')) {
         keysToDelete.push(key);
       }
     }

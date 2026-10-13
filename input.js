@@ -17,6 +17,7 @@ export function applyInput(GameClass) {
     document.querySelectorAll('.ctrl-redo').forEach(btn => btn.onclick = () => this.redo());
     document.querySelectorAll('.ctrl-check').forEach(btn => btn.onclick = () => this.checkCorrectness());
     document.querySelectorAll('.ctrl-hint').forEach(btn => btn.onclick = () => this.getHint());
+    this.setupHighlightPalette();
     this.setupBrowseModal();
     this.setupBookPicker();
     this.setupSettings();
@@ -194,6 +195,9 @@ export function applyInput(GameClass) {
       // this straight off localStorage on every hover, so there's nothing
       // to (re-)apply when the toggle itself changes.
       { key: 'setting-row-col-highlight', applyOnInit: false, onChange: null },
+      // Opt-in cell coloring. applyOnInit: the palette bar already exists
+      // (index.html); _renderHighlights no-ops until boards are rendered.
+      { key: 'setting-highlights', applyOnInit: true, onChange: (self, v) => self._applyHighlightsSetting(v) },
       // applyOnInit: false -- the at-load register/unregister decision is
       // already made by index.html's inline bootstrap script, which runs
       // before this module even loads (see its own comment for why).

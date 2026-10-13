@@ -1,5 +1,5 @@
 import { PuzzleSolver } from './solver.js';
-import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS } from './constants.js';
+import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, HIGHLIGHT_COLORS } from './constants.js';
 import { storageManager } from './storage.js';
 import { isRegionlessBoard } from './geometry.js';
 import { applyRenderer } from './renderer.js';
@@ -20,7 +20,7 @@ class StarBattleGame {
   constructor() {
     // Expose singletons to renderer and input modules to avoid circular imports.
     this._deps = { storageManager };
-    this._constants = { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS };
+    this._constants = { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, HIGHLIGHT_COLORS };
 
     this.puzzleCache = new Map();
     this.categories = [];
@@ -132,6 +132,7 @@ class StarBattleGame {
     );
 
     this.state = new Array(this.n * this.n).fill(CELL.NONE);
+    this.highlights = new Array(this.n * this.n).fill(null);
     this.history = [JSON.stringify(this.state)];
     this.historyIdx = 0;
   }
@@ -307,7 +308,11 @@ class StarBattleGame {
     if (!isWinToast) this.hideToast();
     this.isDragging = true;
 
-    if (isRightClick) {
+    if (isRightClick && this.activeHighlight != null) {
+      // In color mode, right-click erases the cell's color.
+      this._setHighlights([idx], null);
+      this.isDragging = false;
+    } else if (isRightClick) {
       this._getCellsByIndex(idx).forEach(cell => {
         cell.classList.add('cell-drag-highlight');
       });
@@ -320,6 +325,10 @@ class StarBattleGame {
         });
       }, 80);
     } else {
+      // A color drag that starts on an already-so-colored cell erases (see
+      // _commitHighlightDrag); flag it so its preview isn't shown in color.
+      document.body.classList.toggle('hl-erasing',
+        this.activeHighlight != null && this.highlights[idx] === this.activeHighlight);
       this.draggedIndices = [idx];
       this._getCellsByIndex(idx).forEach(cell => {
         cell.classList.add('cell-drag-highlight');
@@ -339,6 +348,7 @@ class StarBattleGame {
 
   _commitDrag() {
     if (!this.draggedIndices || this.draggedIndices.length === 0) return;
+    if (this.activeHighlight != null) { this._commitHighlightDrag(); return; }
 
     if (this.draggedIndices.length === 1) {
       const idx = this.draggedIndices[0];
@@ -363,7 +373,29 @@ class StarBattleGame {
     this.draggedIndices = [];
   }
 
+  // Commit a click/drag made while a highlight color is selected. The first
+  // cell decides the gesture: starting on a cell that already has the
+  // selected color erases across the whole drag, otherwise it paints.
+  _commitHighlightDrag() {
+    const color = this.activeHighlight;
+    const erase = this.highlights[this.draggedIndices[0]] === color;
+    this._setHighlights(this.draggedIndices, erase ? null : color);
+    this.draggedIndices = [];
+  }
+
+  // Set (or clear, with null) the highlight on each of `indices` as ONE
+  // undoable event. Highlights never touch cell state, dots or stars.
+  _setHighlights(indices, color) {
+    for (const idx of indices) {
+      if (!this.voidCells?.has(idx)) this.highlights[idx] = color;
+    }
+    this._renderHighlights();
+    this.saveCurrentState();
+    this.saveHistory();
+  }
+
   clearDragHighlights() {
+    document.body.classList.remove('hl-erasing');
     document.querySelectorAll('.cell-drag-highlight').forEach(cell => {
       cell.classList.remove('cell-drag-highlight');
     });

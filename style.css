@@ -97,6 +97,20 @@
      pointing at. Named directly in the hint text ("the amber-outlined
      row/column") -- keep that wording in sync if this color ever changes. */
   --line-highlight-amber: #e08e00;
+
+  /* The player's own cell colors (opt-in "Cell colors" setting) -- see
+     HIGHLIGHT_COLORS in constants.js. Swatches use the opaque base; cells
+     use a translucent version so stars/dots and grid lines stay legible. */
+  --hl-yellow: 240, 228, 66;
+  --hl-orange: 213, 94,  0;
+  --hl-brown:  140, 90,  43;
+  --hl-sky:    86,  180, 233;
+  --hl-blue:   0,   114, 178;
+  --hl-gray:   117, 117, 117;
+  --hl-cell-alpha: 0.5;
+  /* The lighter tint shown under the cursor / while dragging in color
+     mode, in the SELECTED color (--hl-active, set from JS). */
+  --hl-cursor-alpha: 0.25;
 }
 
 [data-theme="dark"] {
@@ -136,6 +150,8 @@
   --highlight-hint-green-bg:  rgba(70,  230, 70,  0.9);
   --highlight-hint-yellow:    rgba(255, 255, 80,  0.50);
   --highlight-error-star:     #ff6b6b;
+  --hl-cell-alpha: 0.6;
+  --hl-cursor-alpha: 0.32;
 
   /* Extra SOURCE shades — see the light-theme block above for why these
      hues were picked. Boosted opacity to match the rest of this block's
@@ -440,6 +456,16 @@ input[type="number"]::-webkit-inner-spin-button {
    still reads clearly. The cursor's own cell (.cell-hover-sync) is the
    opposite: the one thing that should always stay visible regardless of
    what else is going on in that cell, so it's defined last/highest. */
+/* The player's own cell colors (see _renderHighlights) sit BELOW everything
+   else here -- later rules win -- so errors, hints, drag and hover stay
+   readable on a colored cell. */
+.cell-hl-yellow { background-color: rgba(var(--hl-yellow), var(--hl-cell-alpha)); }
+.cell-hl-orange { background-color: rgba(var(--hl-orange), var(--hl-cell-alpha)); }
+.cell-hl-brown  { background-color: rgba(var(--hl-brown), var(--hl-cell-alpha)); }
+.cell-hl-sky    { background-color: rgba(var(--hl-sky), var(--hl-cell-alpha)); }
+.cell-hl-blue   { background-color: rgba(var(--hl-blue), var(--hl-cell-alpha)); }
+.cell-hl-gray   { background-color: rgba(var(--hl-gray), var(--hl-cell-alpha)); }
+
 .cell-hover-line { background-color: var(--highlight-hover-line-bg); }
 
 .error-cell          { background-color: var(--highlight-error-bg); }
@@ -602,6 +628,18 @@ input[type="number"]::-webkit-inner-spin-button {
 .cell-autodot-flash.cell-hover-sync { background-color: var(--highlight-drag-bg); }
 .cell-autodot-flash.cell-hover-line { background-color: var(--highlight-drag-bg); }
 
+/* In color mode the cursor's cell and the cells being dragged over show a
+   lighter tint of the SELECTED color instead of the usual teal/orange, and
+   win over a cell's own existing color (that's the point of the preview).
+   --hl-active is set from JS (_selectHighlight). A drag that will ERASE
+   (.hl-erasing) keeps the neutral drag color, since previewing the color
+   there would be misleading (the hover rule steps aside too, so the drag
+   color shows). (0,3,1) beats the (0,2,0) combined rules above. */
+body.highlight-mode:not(.hl-erasing) .cell-hover-sync,
+body.highlight-mode:not(.hl-erasing) .cell-drag-highlight {
+  background-color: rgba(var(--hl-active), var(--hl-cursor-alpha));
+}
+
 /* 5b. AXIS LABELS */
 
 /* When labels are on, .grid-wrapper becomes a CSS grid. The grid-template-columns
@@ -648,6 +686,47 @@ input[type="number"]::-webkit-inner-spin-button {
   max-width: 800px;
   margin-block: 20px;
 }
+
+/* Cell-color palette (opt-in "Cell colors" setting): a "Dots & stars" mode
+   button plus one swatch per color; the pressed one is the active mode. */
+.highlight-palette {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.highlight-palette[hidden] { display: none; }
+.hl-btn, .hl-clear-btn {
+  cursor: pointer;
+  border: 2px solid var(--border-strong);
+  background: var(--bg-white);
+  color: var(--text-primary);
+}
+.hl-btn--none, .hl-clear-btn {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+}
+.hl-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  padding: 0;
+}
+.hl-btn[aria-pressed="true"] {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 2px var(--primary-blue);
+}
+.hl-btn--none[aria-pressed="true"] { background: var(--primary-blue-active-bg); }
+.hl-clear-btn { margin-left: 6px; }
+.hl-swatch-yellow { background: rgb(var(--hl-yellow)); }
+.hl-swatch-orange { background: rgb(var(--hl-orange)); }
+.hl-swatch-brown  { background: rgb(var(--hl-brown)); }
+.hl-swatch-sky    { background: rgb(var(--hl-sky)); }
+.hl-swatch-blue   { background: rgb(var(--hl-blue)); }
+.hl-swatch-gray   { background: rgb(var(--hl-gray)); }
 
 /* Duplicate control bar at the bottom of the page -- off by default,
    shown by the "Buttons also on bottom" setting (see _applyBottomControls

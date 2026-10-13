@@ -380,6 +380,95 @@ export function applyRenderer(GameClass) {
     this._allCells.forEach(cell => {
       this.updateCellVisual(cell, this.state[cell.dataset.index]);
     });
+    this._renderHighlights();
+  };
+
+  // --- Cell colors (opt-in "Cell colors" setting) ---
+  //
+  // The player's own colors, kept in this.highlights (cell index -> index
+  // into HIGHLIGHT_COLORS, or null) independently of the dot/star state.
+  // Drawn as a `cell-hl-<name>` class, which style.css orders BELOW errors,
+  // hint colors, drag and hover so those stay readable on top of one.
+  // They're hidden entirely (not just overridden) while a hint is showing,
+  // and come back when it's dismissed -- see applyHintUI/clearHintUI.
+  p._highlightsEnabled = function () {
+    return localStorage.getItem('setting-highlights') === 'true';
+  };
+
+  p._renderHighlights = function () {
+    if (!this._allCells || !this.highlights) return;
+    const { HIGHLIGHT_COLORS } = this._constants;
+    const classes = HIGHLIGHT_COLORS.map(name => `cell-hl-${name}`);
+    const show = this._highlightsEnabled() && !this._hintShowing;
+    this._allCells.forEach(cell => {
+      cell.classList.remove(...classes);
+      const color = show ? this.highlights[cell.dataset.index] : null;
+      if (color != null) cell.classList.add(classes[color]);
+    });
+  };
+
+  // Build the color palette bar (buttons for "Dots & stars" mode plus one
+  // swatch per color). Called once at startup; shown/hidden by the setting.
+  p.setupHighlightPalette = function () {
+    const palette = document.getElementById('highlight-palette');
+    if (!palette) return;
+    const { HIGHLIGHT_COLORS } = this._constants;
+    this.activeHighlight = null;
+
+    const makeButton = (color, label, className) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `hl-btn ${className}`;
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+      btn.onclick = () => this._selectHighlight(color);
+      palette.appendChild(btn);
+      return btn;
+    };
+    const none = makeButton(null, 'Place dots and stars', 'hl-btn--none');
+    none.textContent = 'Dots & stars';
+    HIGHLIGHT_COLORS.forEach((name, i) => {
+      makeButton(i, `Color cells ${name}`, `hl-swatch hl-swatch-${name}`);
+    });
+
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'hl-clear-btn';
+    clear.textContent = 'Clear colors';
+    clear.onclick = () => this._clearAllHighlights();
+    palette.appendChild(clear);
+
+    this._selectHighlight(null);
+  };
+
+  // Remove every color from the board, as a single undoable event (so no
+  // confirmation prompt -- Undo brings them all back).
+  p._clearAllHighlights = function () {
+    this._setHighlights(this.highlights.map((_, i) => i), null);
+  };
+
+  // Switch between dot/star mode (null) and painting with color `color`.
+  p._selectHighlight = function (color) {
+    this.activeHighlight = color;
+    const buttons = [...document.querySelectorAll('#highlight-palette .hl-btn')];
+    buttons.forEach((btn, i) => {
+      // Button 0 is "Dots & stars" (color null); swatch i+1 is color i.
+      btn.setAttribute('aria-pressed', String(i === (color == null ? 0 : color + 1)));
+    });
+    document.body.classList.toggle('highlight-mode', color != null);
+    // Drives the cursor/drag tint (style.css, "In color mode ...").
+    if (color != null) {
+      document.body.style.setProperty('--hl-active', `var(--hl-${this._constants.HIGHLIGHT_COLORS[color]})`);
+    }
+  };
+
+  p._applyHighlightsSetting = function (on) {
+    const palette = document.getElementById('highlight-palette');
+    if (palette) palette.hidden = !on;
+    // Turning the feature off must also leave color mode, or clicks would
+    // silently keep painting colors nobody can see.
+    if (!on) this._selectHighlight(null);
+    this._renderHighlights();
   };
 
   // Sync cell hover state across boards. When "setting-row-col-highlight"
@@ -473,6 +562,9 @@ export function applyRenderer(GameClass) {
     // applyHintUI without necessarily going through clearHintUI in between.
     this._clearTileOutlines();
     this._clearRegionOutlines();
+
+    this._hintShowing = true;
+    this._renderHighlights();
 
     for (const { idx, color, boards } of [...hint.highlights, ...hint.marks]) {
       const targetBoards = boards ?? (hint.boardIdx !== undefined ? [hint.boardIdx] : null);
@@ -688,6 +780,10 @@ export function applyRenderer(GameClass) {
     this._clearRegionOutlines();
     const swapBtn = document.getElementById('board-swap-btn');
     if (swapBtn) swapBtn.classList.remove('board-tab--hint-flag');
+    if (this._hintShowing) {
+      this._hintShowing = false;
+      this._renderHighlights();
+    }
   };
 
   // --- Toast Notifications ---

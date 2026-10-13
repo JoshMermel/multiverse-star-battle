@@ -41,3 +41,18 @@ export const HINT_SOURCE_VARIANTS = Object.freeze([
 // here intentionally matches HINT_SOURCE_VARIANTS[i], so a multi-tile hint's
 // outline color always matches that tile's own cell-highlight color.
 export const TILE_OUTLINE_COLORS = Object.freeze(['blue', 'brown', 'cyan', 'pink']);
+
+// The user's own cell-coloring palette (the opt-in "Cell colors" setting) --
+// purely a note-taking aid, unrelated to HINT_COLOR above. A highlight is
+// stored as an index into this list (null = uncolored); each name maps to a
+// `cell-hl-<name>` class on the board and a `hl-swatch-<name>` class on the
+// palette button (style.css). Append new colors at the END: saved
+// highlights (storage.js) are indices, so reordering would recolor them.
+//
+// Chosen to stay distinguishable under protanopia/deuteranopia/tritanopia
+// in both themes, as translucent cell tints: a simulated pairwise-distance
+// search over candidate hues ruled out the usual red/green/purple picks
+// (red~green and blue~purple collapse for red-green colorblindness) in
+// favor of colors that differ in LIGHTNESS as well as hue -- light yellow
+// and sky vs. mid orange/gray vs. dark brown/blue.
+export const HIGHLIGHT_COLORS = Object.freeze(['yellow', 'orange', 'brown', 'sky', 'blue', 'gray']);

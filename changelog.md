@@ -15,6 +15,10 @@
     comment, the title) is ignored.
 -->
 
+## 2026-10-13 — Cell colors
+
+- Added a new setting, **Cell colors**, that lets you color in cells while solving. It's off by default; turn it on in Settings.
+
 ## 2026-10-12 — Puzzles refreshed
 
 - Most puzzle books were regenerated for consistency and quality, so many puzzles have changed.
