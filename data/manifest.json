@@ -82,6 +82,7 @@
     {"id": "9x9_twin",              "label": "Twin",                  "group": "Symmetry",    "desc": "Both boards are the same, one flipped or rotated", "stars": 2, "size": "9x9 two stars"},
     {"id": "9x9_symmetric",         "label": "Symmetric",             "group": "Symmetry",    "desc": "Each board has rotational, mirror, or translation symmetry", "stars": 2, "size": "9x9 two stars"},
     {"id": "9x9_symmetric_mono",    "label": "Symmetric 1-board",     "group": "Symmetry",    "desc": "One board with rotational, mirror, or translation symmetry", "stars": 2, "size": "9x9 two stars"},
+    {"id": "10x10_symmetric_twin",  "label": "Symmetric Twin",        "group": "Symmetry",    "desc": "Both Symmetric and Twin at once", "stars": 2, "size": "10x10 two stars"},
     {"id": "8x8_regionless_symmetric",   "label": "8x8 regionless symmetric",     "group": "Symmetry",     "desc": "Regionless puzzles with internal symmetry", "stars": 1, "size": "regionless"},
     {"id": "10x10_regionless_symmetric", "label": "10x10 regionless symmetric",   "group": "Symmetry",     "desc": "Regionless puzzles with internal symmetry", "stars": 2, "size": "regionless"},
     {"id": "8x8_regionless_complement",   "label": "8x8 regionless complement",   "group": "Symmetry",     "desc": "Regionless puzzles where the black and white squares have the same shape", "stars": 1, "size": "regionless"},
