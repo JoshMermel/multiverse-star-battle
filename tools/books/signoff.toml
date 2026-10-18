@@ -1,0 +1,15 @@
+# Books in the "Signoff" group of data/manifest.json (their pools may live in other tools/library/ dirs; see tools/build_books.py).
+# Run:  python3 build_books.py signoff   (stages to books_staging/; add --promote to copy into data/)
+
+# The signoff message: one puzzle per letter pair (board 1 is shaped like the first letter, board 2 like the second), each pair's
+# single hardest Expert, in message order. The pool (library/signoff/letter_pairs.csv) holds the eight original winners
+# (puzzle_0_<PAIR>) plus Medium+ puzzles from gen_signoff.py; grow it with gen_signoff.py to hunt for harder Experts.
+[[book]]
+out    = "signoff"
+source = "signoff/letter_pairs.csv"
+group_by = "suffix"
+groups = { TH = ["TH"], AN = ["AN"], KS = ["KS"], FO = ["FO"], RP = ["RP"], LA = ["LA"], YI = ["YI"], NG = ["NG"] }
+shares = { TH = 1, AN = 1, KS = 1, FO = 1, RP = 1, LA = 1, YI = 1, NG = 1 }
+tiers  = [ {tier="Expert", count=8, min=0, max=1000000, pick="hardest"} ]    # = the hardest Expert of each pair
+order_by_group = true          # message order (TH AN KS FO RP LA YI NG), not score order
+rename = "puzzle_{group}"      # the book's puzzle names spell the message

@@ -1,0 +1,236 @@
+# Books in the "One Star" group of data/manifest.json (their pools may live in other tools/library/ dirs; see tools/build_books.py).
+# Run:  python3 build_books.py one_star   (stages to books_staging/; add --promote to copy into data/)
+
+[ranges.6x6]
+Beginner  = [8, 80]   # INFERRED from current book span -- verify
+Medium    = [40, 150]   # INFERRED from current book span -- verify
+Hard      = [115, 225]   # INFERRED from current book span -- verify
+Expert    = [190, 450]   # INFERRED from current book span -- verify
+
+[ranges.daily]
+Beginner  = [30, 80]   # INFERRED from current book span -- verify
+Medium    = [65, 130]   # INFERRED from current book span -- verify
+Hard      = [120, 260]   # 2026-10-12 (Josh): was 140-320, too heavy against the work-per-row ladder (books/THRESHOLDS.md); the other daily bands are kept narrow on purpose (shuffled books)
+Expert    = [220, 400]   # INFERRED from current book span -- verify
+
+[ranges.8x8]
+Beginner  = [12, 85]   # INFERRED from current book span -- verify
+Medium    = [40, 190]   # per user: Medium 40-190
+Hard      = [125, 275]   # shell history
+Expert    = [225, 500]   # shell history
+
+[ranges.12x12]
+Beginner  = [37, 120]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
+Medium    = [110, 255]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
+Hard      = [225, 425]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
+Expert    = [335, 795]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
+
+
+[ranges.6x6_mono]
+Beginner  = [10, 80]   # INFERRED from current book span -- verify
+Medium    = [45, 125]   # INFERRED from current book span -- verify
+Hard      = [115, 225]   # INFERRED from current book span -- verify
+Expert    = [190, 445]   # INFERRED from current book span -- verify
+
+[ranges.12x12_mono]
+Beginner  = [22, 105]   # INFERRED from current book span -- verify
+Medium    = [150, 272]   # INFERRED from current book span -- verify
+Hard      = [162, 350]   # INFERRED from current book span -- verify
+Expert    = [295, 1070]   # 2026-10-13: ladder band from the pool with the heavy Experts added (library/one_star/mono_12_heavy.csv); Hard and the other tiers unchanged
+
+[ranges.12x12_trio]
+Beginner  = [46, 150]   # shell history
+Medium    = [175, 300]   # INFERRED from current book span -- verify
+Hard      = [225, 425]   # INFERRED from current book span -- verify
+Expert    = [353, 997]   # INFERRED from current book span -- verify
+
+[[book]]
+out    = "12x12_beginner"
+source = "one_star/puzzles12.csv"
+ranges = "12x12"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "12x12_expert"
+source = "one_star/puzzles12.csv"
+ranges = "12x12"
+tier   = "Expert"
+count  = 1000
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "12x12_hard"
+source = "one_star/puzzles12.csv"
+ranges = "12x12"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "12x12_medium"
+source = "one_star/puzzles12.csv"
+ranges = "12x12"
+tier   = "Medium"
+count  = 1000
+
+[[book]]
+out    = "6x6_beginner"
+source = "one_star/puzzles6_scored.csv"
+ranges = "6x6"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "6x6_expert"
+source = "one_star/puzzles6_scored.csv"
+ranges = "6x6"
+tier   = "Expert"
+count  = 1000
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "6x6_hard"
+source = "one_star/puzzles6_scored.csv"
+ranges = "6x6"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "6x6_medium"
+source = "one_star/puzzles6_scored.csv"
+ranges = "6x6"
+tier   = "Medium"
+count  = 1000
+
+[[book]]
+out    = "8x8_beginner"
+source = "one_star/puzzles8_scored.csv"
+ranges = "8x8"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "8x8_expert"
+source = "one_star/puzzles8_scored.csv"
+ranges = "8x8"
+tier   = "Expert"
+count  = 1000
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "8x8_hard"
+source = "one_star/puzzles8_scored.csv"
+ranges = "8x8"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "8x8_medium"
+source = "one_star/puzzles8_scored.csv"
+ranges = "8x8"
+tier   = "Medium"
+count  = 1000
+
+[[book]]
+out    = "daily_beginner"
+source = "one_star/puzzles7_scored.csv"
+ranges = "daily"
+tier   = "Beginner"
+count  = 2500
+shuffle = true
+
+[[book]]
+out    = "daily_expert"
+source = "one_star/puzzles7_scored.csv"
+ranges = "daily"
+tier   = "Expert"
+count  = 1500
+shuffle = true
+
+[[book]]
+out    = "daily_hard"
+source = "one_star/puzzles7_scored.csv"
+ranges = "daily"
+tier   = "Hard"
+count  = 2500
+shuffle = true
+
+[[book]]
+out    = "daily_medium"
+source = "one_star/puzzles7_scored.csv"
+ranges = "daily"
+tier   = "Medium"
+count  = 2500
+shuffle = true
+
+[[book]]
+out    = "6x6_mono"
+source = "one_star/mono_6.csv"
+ranges = "6x6_mono"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "8x8_mono"
+source = "one_star/mono_8.csv"
+ranges = "8x8"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "12x12_mono"
+source = "one_star/mono_12.csv"
+ranges = "12x12_mono"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "6x6_trio"
+source = "one_star/trip_6.csv"
+ranges = "6x6_mono"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "8x8_trio"
+source = "one_star/trip_8.csv"
+ranges = "8x8"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "12x12_trio"
+source = "one_star/trip_12.csv"
+ranges = "12x12_trio"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }

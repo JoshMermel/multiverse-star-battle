@@ -1,0 +1,154 @@
+# Books in the "Playground" group of data/manifest.json (their pools may live in other tools/library/ dirs; see tools/build_books.py).
+# Run:  python3 build_books.py playground   (stages to books_staging/; add --promote to copy into data/)
+
+[ranges.8x8]
+Beginner  = [14, 85]   # shell history
+Medium    = [40, 190]   # shell history
+Hard      = [125, 275]   # shell history
+Expert    = [225, 500]   # shell history
+
+[ranges.6x6_square_free]
+Beginner  = [10, 80]   # INFERRED from current book span -- verify
+Medium    = [40, 150]   # INFERRED from current book span -- verify
+Hard      = [115, 225]   # INFERRED from current book span -- verify
+Expert    = [190, 450]   # INFERRED from current book span -- verify
+
+[ranges.9x9_square_free]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
+Beginner  = [55, 170]
+Medium    = [175, 330]
+Hard      = [345, 510]
+Expert    = [400, 760]
+
+[ranges.6x6_equal_area]
+Medium    = [55, 150]   # INFERRED from current book span -- verify
+Hard      = [115, 225]   # INFERRED from current book span -- verify
+Expert    = [190, 450]   # INFERRED from current book span -- verify
+
+[ranges.9x9_equal_area]
+Medium    = [160, 320]   # 9x9 2-star Medium range (the family has only 2 Medium puzzles: 266, 299)
+Hard      = [300, 720]   # widened from [300,600] to include ALL 17 Hard puzzles (333-701)
+Expert    = [300, 1950]  # wide on purpose: equal-area Experts score 316-1984
+
+[ranges.9x9_square_free_mono]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
+Beginner  = [55, 155]
+Medium    = [155, 300]
+Hard      = [290, 455]
+Expert    = [345, 715]
+
+[[book]]
+out    = "voronoi"
+source = "playground/voronoi_scored.csv"
+ranges = "8x8"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "6x6_square_free"
+source = "playground/6x6_squarefree_scored.csv"
+ranges = "6x6_square_free"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "8x8_square_free"
+source = "playground/8x8_squarefree_scored.csv"
+ranges = "8x8"
+group_by = "suffix"
+groups = ["old", "debox"]   # 50/50 mix of the two square-free generators: old = SquareFreeGenerator (tree growth), debox = SquareFreeDeboxGenerator
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus_each = { Grandmaster = 1 }
+
+[[book]]
+out    = "9x9_square_free"
+source = "playground/two_star_squarefree.csv"
+ranges = "9x9_square_free"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+
+[[book]]
+out    = "9x9_square_free_mono"
+source = "playground/two_star_squarefree_mono_scored.csv"
+ranges = "9x9_square_free_mono"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 6 }
+
+[[book]]
+out    = "6x6_equal_area"
+source = "playground/puzzles6_equal.csv"
+ranges = "6x6_equal_area"
+tiers  = [
+  {tier="Medium", count=100},
+  {tier="Hard", count=100},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "8x8_equal_area"
+source = "playground/puzzles8_equal.csv"
+ranges = "8x8"
+tiers  = [
+  {tier="Expert", count=500, min=0, max=100000, pick="easiest"},    # Josh (2026-10-11): the 500 easiest Experts in the pool, whatever their score
+]
+bonus  = { Grandmaster = 5 }
+notes  = "The 500 easiest Experts of the 16,741 in the pool (the 2026-10-11 all-pairs search added 12,675; this family has no puzzles below Expert) + 5 bonus Grandmasters."
+
+# 8x8 square-free MONO (single board, unique solution). The pool mixes the two square-free generators
+# for variety: suffix "old" = SquareFreeGenerator (tree growth; the live book, which was probably made
+# by it, is labelled "old" too), suffix "debox" = SquareFreeDeboxGenerator. Equal shares.
+# Pool made with gen_mono_extra.py (4000 of each generator).
+[[book]]
+out    = "8x8_square_free_mono"
+source = "playground/8x8_squarefree_mono.csv"
+ranges = "8x8"
+group_by = "suffix"
+groups = ["old", "debox"]
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus_each = { Grandmaster = 1, UNSOLVED = 1 }
+
+# 9x9 equal-area 2-star (every region exactly 9 cells; VotingDistrictGenerator). The gimmick leaves almost no
+# easy puzzles: of 69k generated, 99.6% are UNSOLVED, 0.29% Expert, 0.17% Grandmaster, and only 2 Medium + 8 Hard exist.
+# Final composition (Josh, 2026-10-11): Medium 2 + Hard 17 (everything) + the easiest 281 of ~421 Experts + 5 bonus Grandmasters.
+# Expert 500 (old "option B") is impossible: capture-recapture says only ~430 distinct Experts exist for this generator.
+[[book]]
+out    = "9x9_equal_area"
+source = "playground/equal_area_2_star_scored.csv"
+ranges = "9x9_equal_area"
+tiers  = [
+  {tier="Beginner", count=1, min=0, max=100000},                  # the one Beginner puzzle the family has (found by the 2026-10-11 all-pairs search)
+  {tier="Medium", count=2},                      # every Medium puzzle this family has
+  {tier="Hard", count=44},                       # every Hard puzzle in the band (44 of the 46 the family has)
+  {tier="Expert", count=453, pick="easiest"},    # the 453 easiest of ~1,087 Experts (=> 500 puzzles in total)
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "Josh (2026-10-11): every Beginner (1), Medium (2) and Hard (44 in the band) puzzle the family has, plus the 453 easiest Experts = 500 puzzles before the 5 bonus Grandmasters and 5 bonus UNSOLVED. Before the all-pairs search the family looked exhausted (421 Experts, 17 Hards, no Beginner); about 64% of all board pairs are puzzles, so more can be found."

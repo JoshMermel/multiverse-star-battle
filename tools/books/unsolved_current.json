@@ -1,0 +1,297 @@
+{
+ "_comment": "Audit 2026-10-10: a pool is `current` if a sample of its UNSOLVED rows rescored to the SAME score under the current scorer (UNSOLVED score = cells decided before the solver stuck, scorer/engine.py, since 2026-09-30). Builds that ask for UNSOLVED bonus rows are refused for pools that are not current. Re-audit after rescoring a pool.",
+ "pools": {
+  "giants/giant.csv": {
+   "current": true,
+   "sampled": 12,
+   "unchanged": 12,
+   "now_solved": 0,
+   "unsolved_rows": 27
+  },
+  "giants/giant_duo.csv": {
+   "current": true,
+   "sampled": 12,
+   "unchanged": 12,
+   "now_solved": 0,
+   "unsolved_rows": 320
+  },
+  "giants/puzzles_17_scored.csv": {
+   "current": true,
+   "sampled": "all",
+   "unchanged": "n/a",
+   "now_solved": "n/a",
+   "unsolved_rows": 2625,
+   "note": "fully rescored 2026-10-11"
+  },
+  "giants/puzzles_21_scored.csv": {
+   "current": true,
+   "sampled": "all",
+   "unchanged": "n/a",
+   "now_solved": "n/a",
+   "unsolved_rows": 722,
+   "note": "fully rescored 2026-10-12"
+  },
+  "giants/puzzles_25.csv": {
+   "current": true,
+   "sampled": "all",
+   "unchanged": "n/a",
+   "now_solved": "n/a",
+   "unsolved_rows": 526,
+   "note": "fully rescored 2026-10-12"
+  },
+  "one_star/mono_12.csv": {
+   "current": true,
+   "sampled": 2,
+   "unchanged": 2,
+   "now_solved": 0,
+   "unsolved_rows": 2
+  },
+  "one_star/puzzles12.csv": {
+   "current": true,
+   "sampled": 2,
+   "unchanged": 2,
+   "now_solved": 0,
+   "unsolved_rows": 2
+  },
+  "playground/8x8_squarefree_mono.csv": {
+   "current": true,
+   "sampled": 4,
+   "unchanged": 4,
+   "now_solved": 0,
+   "unsolved_rows": 4
+  },
+  "playground/equal_area_2_star_scored.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 966,
+   "rescored": "2026-10-10"
+  },
+  "playground/puzzles8_equal.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 1971,
+   "rescored": "2026-10-10"
+  },
+  "playground/two_star_squarefree.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 692,
+   "rescored": "2026-10-10"
+  },
+  "playground/two_star_squarefree_mono_scored.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 14030,
+   "rescored": "2026-10-10"
+  },
+  "rectangles/quads_scored.csv": {
+   "current": true,
+   "sampled": 2,
+   "unchanged": 2,
+   "unsolved_rows": 2,
+   "rescored": "2026-10-10"
+  },
+  "rectangles/two_star_sudoku.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 1476,
+   "rescored": "2026-10-10"
+  },
+  "regionless/10x10_symmetric_complement.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 194,
+   "rescored": "2026-10-10"
+  },
+  "regionless/13x13.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 30232,
+   "rescored": "2026-10-10"
+  },
+  "regionless/17x17.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 29772,
+   "rescored": "2026-10-10"
+  },
+  "regionless/8x8.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 65,
+   "rescored": "2026-10-10"
+  },
+  "regionless/8x8_symmetric_complement.csv": {
+   "current": true,
+   "sampled": 3,
+   "unchanged": 3,
+   "unsolved_rows": 3,
+   "rescored": "2026-10-10"
+  },
+  "regionless/9x9.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 69958,
+   "rescored": "2026-10-10"
+  },
+  "sym_data/11.csv": {
+   "current": true,
+   "sampled": 5,
+   "unchanged": 5,
+   "unsolved_rows": 5,
+   "rescored": "2026-10-10"
+  },
+  "sym_data/24a.csv": {
+   "current": true,
+   "sampled": 1,
+   "unchanged": 1,
+   "unsolved_rows": 1,
+   "rescored": "2026-10-10"
+  },
+  "sym_data/24b.csv": {
+   "current": true,
+   "sampled": 2,
+   "unchanged": 2,
+   "unsolved_rows": 2,
+   "rescored": "2026-10-10"
+  },
+  "sym_data/35.csv": {
+   "current": true,
+   "sampled": 1,
+   "unchanged": 1,
+   "unsolved_rows": 1,
+   "rescored": "2026-10-10"
+  },
+  "sym_data/42a.csv": {
+   "current": true,
+   "sampled": 1,
+   "unchanged": 1,
+   "unsolved_rows": 1,
+   "rescored": "2026-10-10"
+  },
+  "sym_data/42b.csv": {
+   "current": true,
+   "sampled": 0,
+   "unchanged": 0,
+   "unsolved_rows": 0,
+   "rescored": "2026-10-10"
+  },
+  "symmetry/symmetric_twin.csv": {
+   "current": true,
+   "sampled": 1,
+   "unchanged": 1,
+   "now_solved": 0,
+   "unsolved_rows": 1
+  },
+  "symmetry/two_star_twin.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "unsolved_rows": 7041,
+   "rescored": "2026-10-10"
+  },
+  "three_star/13x13.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "now_solved": 0,
+   "unsolved_rows": 1905
+  },
+  "three_star/13x13_mono.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "now_solved": 0,
+   "unsolved_rows": 2448
+  },
+  "three_star/13x13_trio.csv": {
+   "current": true,
+   "sampled": 4,
+   "unchanged": 4,
+   "now_solved": 0,
+   "unsolved_rows": 4
+  },
+  "three_star/14x14.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "now_solved": 0,
+   "unsolved_rows": 7932
+  },
+  "three_star/14x14_mono.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "now_solved": 0,
+   "unsolved_rows": 1415
+  },
+  "two_star/9x9.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "now_solved": 0,
+   "unsolved_rows": 1352
+  },
+  "two_star/9x9_mono.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "now_solved": 0,
+   "unsolved_rows": 10650
+  },
+  "two_star/puzzles_10.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "now_solved": 0,
+   "unsolved_rows": 28539
+  },
+  "two_star/puzzles_10_mono.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "now_solved": 0,
+   "unsolved_rows": 6452
+  },
+  "two_star/puzzles_14.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "now_solved": 0,
+   "unsolved_rows": 928
+  },
+  "two_star/puzzles_14_mono.csv": {
+   "current": true,
+   "sampled": 30,
+   "unchanged": 30,
+   "now_solved": 0,
+   "unsolved_rows": 1629
+  },
+  "symmetry/mono_sym_9x9.csv": {
+   "current": true,
+   "sampled": 25,
+   "unchanged": 25,
+   "now_solved": 0,
+   "unsolved_rows": 2351,
+   "note": "2026-10-14: pool built today by gen_sym9_mono.py with the current scorer; sample of 25 UNSOLVED rows rescored identically"
+  },
+  "symmetry/symmetric_twin_10x10.csv": {
+   "current": true,
+   "sampled": 40,
+   "unchanged": 40,
+   "now_solved": 0,
+   "unsolved_rows": 3031,
+   "note": "re-audited 2026-10-16 after the 10 h growth run (pool built with the current scorer)"
+  }
+ }
+}

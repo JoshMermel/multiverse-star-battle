@@ -1,0 +1,38 @@
+# Books in the "Curiosities" group of data/manifest.json (their pools may live in other tools/library/ dirs; see tools/build_books.py).
+# Run:  python3 build_books.py curiosities   (stages to books_staging/; add --promote to copy into data/)
+
+[ranges.half_dozen]
+Beginner  = [35, 100]   # INFERRED from current book span -- verify
+Medium    = [60, 220]   # INFERRED from current book span -- verify
+Hard      = [155, 325]   # INFERRED from current book span -- verify
+Expert    = [303, 595]   # INFERRED from current book span -- verify
+
+[ranges.8x8]
+Beginner  = [14, 85]   # shell history
+Medium    = [40, 190]   # shell history
+Hard      = [125, 275]   # shell history
+Expert    = [225, 500]   # shell history
+
+[[book]]
+out    = "half_dozen"
+source = "curiosities/6x_scored.csv"
+ranges = "half_dozen"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "void"
+source = "playground/void_scored.csv"
+ranges = "8x8"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }

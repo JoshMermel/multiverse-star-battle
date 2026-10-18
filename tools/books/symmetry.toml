@@ -1,0 +1,333 @@
+# Books in the "Symmetry" group of data/manifest.json (their pools may live in other tools/library/ dirs; see tools/build_books.py).
+# Run:  python3 build_books.py symmetry   (stages to books_staging/; add --promote to copy into data/)
+
+[ranges.8x8]
+Beginner  = [14, 85]   # shell history
+Medium    = [40, 190]   # shell history
+Hard      = [125, 275]   # shell history
+Expert    = [225, 500]   # shell history
+
+[ranges.8x8_twin]
+Beginner  = [12, 85]   # INFERRED from current book span -- verify
+Medium    = [40, 190]   # INFERRED from current book span -- verify
+Hard      = [125, 275]   # INFERRED from current book span -- verify
+Expert    = [225, 500]   # INFERRED from current book span -- verify
+
+[ranges.9x9_twin]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
+Beginner  = [47, 155]
+Medium    = [155, 320]
+Hard      = [285, 450]
+Expert    = [330, 720]
+
+# ---------------------------------------------------------------------------
+# Split books: rows are grouped by their normalized name suffix
+# (puzzle_<id>_<suffix>); see the "Groups" section of build_books.py.
+# ---------------------------------------------------------------------------
+
+[ranges.10x10_complement]
+Beginner  = [25, 185]   # INFERRED from current book span (26-183) -- verify
+Hard      = [215, 540]   # 2026-10-12: lower edge from the work-per-row ladder (books/THRESHOLDS.md); ceiling = pool max, as before (these pools are light, so only their top slice matches regular-book work)
+
+[ranges.8x8_complement]
+Beginner  = [13, 50]   # INFERRED from current book span -- verify
+Hard      = [105, 285]   # 2026-10-12: lower edge from the work-per-row ladder (books/THRESHOLDS.md); ceiling = pool max, as before (these pools are light, so only their top slice matches regular-book work)
+
+[ranges.10x10_symmetric]
+Beginner  = [22, 200]   # INFERRED from current book span -- verify
+Hard      = [215, 570]   # 2026-10-12: lower edge from the work-per-row ladder (books/THRESHOLDS.md); ceiling = pool max, as before (these pools are light, so only their top slice matches regular-book work)
+Expert    = [275, 680]   # 2026-10-12: lower edge from the work-per-row ladder (books/THRESHOLDS.md); ceiling = pool max, as before (these pools are light, so only their top slice matches regular-book work)
+
+[ranges.8x8_symmetric]
+Beginner  = [20, 56]   # INFERRED from current book span -- verify
+Hard      = [105, 310]   # 2026-10-12: lower edge from the work-per-row ladder (books/THRESHOLDS.md); ceiling = pool max, as before (these pools are light, so only their top slice matches regular-book work)
+Expert    = [180, 375]   # 2026-10-12: lower edge from the work-per-row ladder (books/THRESHOLDS.md); ceiling = pool max, as before (these pools are light, so only their top slice matches regular-book work)
+
+[[book]]
+out    = "8x8_quadruplets"
+source = "symmetry/quadruplets.csv"
+ranges = "8x8"
+group_by = "suffix"
+groups = [
+  "rot180_flip_diag_flip_antidiag",
+  "rot90_flip_diag_flip_antidiag",
+  "rot90_flip_h_flip_antidiag",
+  "rot90_flip_h_flip_v",
+  "rot90_flip_v_flip_diag",
+  "rot90_rot180_flip_antidiag",
+  "rot90_rot180_flip_diag",
+  "rot90_rot180_flip_h",
+  "rot90_rot180_flip_v",
+  "rot90_rot180_rot270",
+]   # 10 transform combos, equal shares
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus_each = { Grandmaster = 1 }   # one from each group that has any (9 of 10 do)
+
+[[book]]
+out    = "8x8_symmetric_triplets"
+source = "symmetry/symmetric_trio.csv"
+ranges = "8x8"
+group_by = "suffix"
+groups = { translate = ["translate_*"], "180" = ["180_*"], diag = ["diag_*"], t180 = ["t180_*"] }
+shares = { translate = 0.4, "180" = 0.3, diag = 0.3, t180 = 0.0 }   # t180: backfill only
+tiers  = [
+  {tier="Beginner", count=200},
+  {tier="Medium", count=800},
+  {tier="Hard", count=800},
+  {tier="Expert", count=200},
+]
+bonus_each = { Grandmaster = 2 }
+
+[[book]]
+out    = "8x8_twin"
+source = "symmetry/one_star_twin.csv"
+ranges = "8x8_twin"
+group_by = "suffix"
+groups = { rot180 = ["rot180"], rot90 = ["rot90"], flip = ["flip_diag", "flip_antidiag"] }
+shares = { rot180 = 0.35, rot90 = 0.30, flip = 0.35 }
+tiers  = [
+  {tier="Beginner", count=300},
+  {tier="Medium", count=1200},
+  {tier="Hard", count=1200},
+  {tier="Expert", count=300},
+]
+bonus_each = { Grandmaster = 2 }
+
+[[book]]
+out    = "9x9_twin"
+source = "symmetry/two_star_twin.csv"
+ranges = "9x9_twin"
+group_by = "suffix"
+groups = { rot180 = ["rot180"], rot90 = ["rot90"], flip = ["flip_diag", "flip_antidiag"] }
+shares = { rot180 = 0.35, rot90 = 0.30, flip = 0.35 }
+tiers  = [
+  {tier="Beginner", count=300},
+  {tier="Medium", count=1200},
+  {tier="Hard", count=1200},
+  {tier="Expert", count=300},
+]
+bonus_each = { Grandmaster = 2, UNSOLVED = 2 }   # two of each type (rot180 / rot90 / flip)
+
+# 8x8 symmetric twin: 4 symmetry types x 750 = 3000 puzzles, each type split
+# 10/40/40/10 over Beginner/Medium/Hard/Expert (the per-tier counts below are
+# those of the whole book; each group's share of a tier == its share of 3000).
+# Shares are in puzzles-of-3000:
+#   mirror     750 (all rot90)
+#   180        750 = 500 rot90 + 250 flip (flip_diag/flip_antidiag pooled)
+#   diag       750 (all rot180)
+#   translate  750 = 300 rot180 + 300 rot90 + 150 flip
+#   t180 (translate+rot180), tmirror (translate+mirror): share 0 -- these rare groups
+#   only "replace" puzzles from the 3000 (backfill), never get a target of their own.
+# Short groups (e.g. diag has only 4 Expert) are level-filled from the others.
+# Plus up to 2 Grandmaster per group, outside the 3000.
+# Pool history: the translate / t180 / tmirror families (and ~180 diag rows) were
+# salvaged from the published book into symmetric_twin.csv, rescored, and topped
+# up with gen_twin_extra.py (see tools/books/TODO.md for what is still thin).
+
+[[book]]
+out    = "8x8_symmetric_twin"
+source = "symmetry/symmetric_twin.csv"
+ranges = "8x8"
+group_by = "suffix"
+groups = { mirror = ["mirror_*"], "180_rot90" = ["180_rot90"], "180_flip" = ["180_flip_*"], diag = ["diag_*"], translate_rot180 = ["translate_rot180"], translate_rot90 = ["translate_rot90"], translate_flip = ["translate_flip_*"], t180 = ["t180_*"], tmirror = ["tmirror_*"] }
+shares = { mirror = 750, "180_rot90" = 500, "180_flip" = 250, diag = 750, translate_rot180 = 300, translate_rot90 = 300, translate_flip = 150, t180 = 0, tmirror = 0 }
+tiers  = [
+  {tier="Beginner", count=300},
+  {tier="Medium", count=1200},
+  {tier="Hard", count=1200},
+  {tier="Expert", count=300},
+]
+bonus_each = { Grandmaster = 2, UNSOLVED = 1 }
+notes  = "Still thin (level-filled by other groups): translate_rot180 Medium/Hard, 180_flip Expert, diag Expert. See tools/books/TODO.md"
+
+# 8x8 symmetric MONO (single board): symmetric boards with a unique solution on their own.
+# diag and 180 are the main types (equal shares); translate and ddiag are tiny pools, so share 0 =
+# they only "replace" puzzles as backfill (live book: 180 55 / diag 40 / translate 7 / ddiag 1).
+[[book]]
+out    = "8x8_symmetric_mono"
+source = "symmetry/mono_sym.csv"
+ranges = "8x8"
+group_by = "suffix"
+groups = { diag = ["diag"], "180" = ["180"], translate = ["translate"], ddiag = ["ddiag"] }
+shares = { diag = 1, "180" = 1, translate = 0, ddiag = 0 }
+tiers  = [
+  {tier="Beginner", count=10},
+  {tier="Medium", count=40},
+  {tier="Hard", count=40},
+  {tier="Expert", count=10},
+]
+bonus_each = { Grandmaster = 1 }
+
+# 10x10 two-star symmetric TWIN (2026-10-14); size now 1000 = 100/400/400/100 (first draft was 50/200/200/50; 2000 also builds full). Pool: library/symmetry/symmetric_twin_10x10.csv, grown
+# by gen_twin_pool.py (names puzzle_<id>_<kind>_<transform>). Which kinds exist at 10x10/2 star: rot180 (95% of its twins are
+# rot90, 5% flip_diag), translate (vsplit/hsplit), and thin diag / mirror; t180 and tmirror are invalid at N=10, and
+# double mirror / double diagonal / rot90 produce nothing. Shares are the preferred mix: rot180 and translate carry the
+# book, diag and mirror are token groups (they only exist at some difficulties), and proportional fill moves any shortfall
+# onto the groups that have puzzles. The Symmetry tier is not in the book. Bands: two_star 10x10.
+[ranges.10x10_symmetric_twin]
+Beginner  = [70, 205]
+Medium    = [190, 380]
+Hard      = [310, 500]
+Expert    = [335, 795]
+
+[[book]]
+out    = "10x10_symmetric_twin"
+source = "symmetry/symmetric_twin_10x10.csv"
+ranges = "10x10_symmetric_twin"
+group_by = "suffix"
+groups = { "180_rot90" = ["180_rot90"], "180_flip" = ["180_flip_*"], translate_rot180 = ["translate_rot180"], translate_rot90 = ["translate_rot90"], translate_flip = ["translate_flip_*"], diag = ["diag_*"], mirror = ["mirror_*"] }
+# Two-level split (Josh, 2026-10-16): four symmetry families at 25% each. mirror and diag contribute what they can (up to
+# their 25%) and never receive anyone's shortfall; whatever they can't supply goes evenly to rot180 and translate. Inside a
+# family the groups split the family's count by the sub-shares below (8x8-style 2:1 for 180; 2:2:1 for translate), and a
+# group short of its sub-share is made up by its siblings. (Previous flat shares, supply-driven: 180_rot90 40, 180_flip 5,
+# translate_rot180 22, translate_rot90 8, translate_flip 8, diag 10, mirror 7 -> 8% backfill at size 1000.)
+families = { mirror = ["mirror"], diag = ["diag"], rot180 = ["180_rot90", "180_flip"], translate = ["translate_rot180", "translate_rot90", "translate_flip"] }
+family_shares = { mirror = 25, diag = 25, rot180 = 25, translate = 25 }
+family_no_spill = ["mirror", "diag"]
+shares = { "180_rot90" = 2, "180_flip" = 1, translate_rot180 = 2, translate_rot90 = 2, translate_flip = 1, diag = 1, mirror = 1 }
+tiers  = [
+  {tier="Beginner", count=100, allow_short=true},
+  {tier="Medium", count=400, allow_short=true},
+  {tier="Hard", count=400, allow_short=true},
+  {tier="Expert", count=100, allow_short=true},
+]
+bonus_each = { Grandmaster = 1, UNSOLVED = 1 }
+notes  = "Josh 2026-10-16: size 1000 (100/400/400/100) + bonus 'for now' (only 8% backfilled; 2000 would be 14%, 3000 18%). Token diag / mirror / translate_flip groups are fine. Pool grown overnight 2026-10-15/16 to 16.7k rows; bigger sizes are possible (the 2000 version builds full)."
+
+# 9x9 two-star one-board symmetric (2026-10-14). Pool: library/symmetry/mono_sym_9x9.csv, grown by gen_sym9_mono.py.
+# Only rot180 (suffix 180), diagonal (diag), translate and t180 can have a unique solution at 9x9/2 star. The Symmetry
+# tier is deliberately not in the book (Josh). 180 is plentiful; diag and translate are rare, so the shares are only
+# the preferred mix and 180 fills what they can't supply. Bands: same as 9x9_symmetric / two_star 9x9.
+[ranges.9x9_symmetric_mono]
+Beginner  = [47, 160]
+Medium    = [160, 315]
+Hard      = [310, 465]
+Expert    = [380, 745]
+
+[[book]]
+out    = "9x9_symmetric_mono"
+source = "symmetry/mono_sym_9x9.csv"
+ranges = "9x9_symmetric_mono"
+group_by = "suffix"
+groups = { "180" = ["180"], diag = ["diag"], translate = ["translate"] }     # t180 dropped (Josh, 2026-10-14)
+shares = { "180" = 2, diag = 1, translate = 1 }
+fill   = "proportional"
+tiers  = [
+  {tier="Beginner", count=10},
+  {tier="Medium", count=40},
+  {tier="Hard", count=40},
+  {tier="Expert", count=10},
+]
+bonus_each = { Grandmaster = 1, UNSOLVED = 1 }     # one of each per symmetry type, where the pool has one
+notes  = "Token book like 8x8_symmetric_mono: 100 puzzles, 10/40/40/10, mostly rot180; diag and translate are mixed in as far as the pool has them, plus one Grandmaster and one UNSOLVED per symmetry type."
+
+[[book]]
+out    = "10x10_regionless_complement"
+source = "regionless/10x10_symmetric_complement.csv"
+ranges = "10x10_complement"
+group_by = "suffix"
+# Split by symmetry, rejoined in thirds: {(180, 90), lr, t}. 90 counts as a subset of 180 (rot90
+# implies rot180), and within that first third 180 gets 75 percent and 90 gets 25 percent.
+# Shares are out of 12: 180 = 3, 90 = 1, lr = 4, t = 4.
+groups = { "180" = ["180"], "90" = ["90"], lr = ["lr"], t = ["t"] }
+shares = { "180" = 3, "90" = 1, lr = 4, t = 4 }
+tiers  = [
+  {tier="Beginner", count=250},
+  {tier="Hard", count=250, allow_short=true},
+]
+unsolved_extremes = true
+notes  = "Round sizes (Josh, 2026-10-11): 250 Beginner / 250 Hard. The matched Hard band holds 292 puzzles."
+
+[[book]]
+out    = "8x8_regionless_complement"
+source = "regionless/8x8_symmetric_complement.csv"
+ranges = "8x8_complement"
+group_by = "suffix"
+# Split by symmetry, rejoined in thirds: {(180, 90), lr, t}. 90 counts as a subset of 180 (rot90
+# implies rot180), and within that first third 180 gets 75 percent and 90 gets 25 percent.
+# Shares are out of 12: 180 = 3, 90 = 1, lr = 4, t = 4.
+# (The pool's "90" Hard group is tiny -- 4 puzzles -- so the other groups absorb its shortfall.)
+groups = { "180" = ["180"], "90" = ["90"], lr = ["lr"], t = ["t"] }
+shares = { "180" = 3, "90" = 1, lr = 4, t = 4 }
+tiers  = [
+  {tier="Beginner", count=250},
+  {tier="Hard", count=250, allow_short=true},
+]
+bonus_each = { Grandmaster = 2 }
+unsolved_extremes = true
+notes  = "Round sizes (Josh, 2026-10-11): 250 Beginner / 250 Hard. The matched Hard band holds 263 puzzles."
+
+[[book]]
+out    = "10x10_regionless_symmetric"
+source = "regionless/10x10_true_symmetric_pool.csv"
+ranges = "10x10_symmetric"
+group_by = "suffix"
+# Split by symmetry, rejoined in thirds: rot180-symmetric (one third, split 75% "180" / 25% "90"),
+# diag (one third), translate "t" (one third). Shares are out of 12: 180 = 3, 90 = 1, diag = 4, t = 4.
+# generate_true_symmetric.py suffixes: 180=rot180, 90=rot90, diag, t=translate, t180=translate with a rot180 half.
+# t180 is NOT in the groups: it is a small bonus appended after the main rows (the `suffix` segments below).
+groups = { "180" = ["180"], "90" = ["90"], diag = ["diag"], translate = ["t"] }
+shares = { "180" = 3, "90" = 1, diag = 4, translate = 4 }
+tiers  = [
+  {tier="Beginner", count=200},
+  {tier="Hard", count=200, allow_short=true},
+  {tier="Expert", count=14, allow_short=true},
+  {tier="Beginner", count=50, suffix="t180"},
+  {tier="Hard", count=50, suffix="t180", allow_short=true},
+  {tier="Expert", count=11, suffix="t180", allow_short=true},
+]
+bonus_each = { Grandmaster = 2 }
+notes  = "Round sizes (Josh, 2026-10-11): 250 Beginner / 250 Hard / 25 Expert, t180 bonus family (50 / 50 / 11) inside those totals."
+
+[[book]]
+out    = "8x8_regionless_symmetric"
+source = "regionless/8x8_true_symmetric_pool.csv"
+ranges = "8x8_symmetric"
+group_by = "suffix"
+# Split by symmetry, rejoined in thirds: rot180-symmetric (one third, split 75% "180" / 25% "90"),
+# diag (one third), translate "t" (one third). Shares are out of 12: 180 = 3, 90 = 1, diag = 4, t = 4.
+# generate_true_symmetric.py suffixes: 180=rot180, 90=rot90, diag, t=translate, t180=translate with a rot180 half.
+# t180 is NOT in the groups: it is a small bonus appended after the main rows (the `suffix` segments below).
+groups = { "180" = ["180"], "90" = ["90"], diag = ["diag"], translate = ["t"] }
+shares = { "180" = 3, "90" = 1, diag = 4, translate = 4 }
+tiers  = [
+  {tier="Beginner", count=240},
+  {tier="Hard", count=240, allow_short=true},
+  {tier="Expert", count=25, allow_short=true},
+  {tier="Beginner", count=10, suffix="t180"},
+  {tier="Hard", count=10, suffix="t180", allow_short=true},
+]
+bonus_each = { Grandmaster = 2 }
+notes  = "Round sizes (Josh, 2026-10-11): 250 Beginner / 250 Hard / 25 Expert, t180 bonus family (10 / 10) inside those totals. The pool is light, so the matched Hard band holds only 253 puzzles and the Expert band 29."
+
+# >>> 9x9_symmetric: generated by tools/sym9_book.py from library/sym_data2/groups.toml -- edit that file, not this block >>>
+[ranges.9x9_symmetric]   # same bands as books/two_star.toml [ranges.9x9] (what gen_sym9.py counted against)
+Beginner  = [47, 160]
+Medium    = [160, 315]
+Hard      = [310, 465]
+Expert    = [380, 745]
+
+[[book]]
+out    = "9x9_symmetric"
+source = "symmetry/9x9_symmetric.csv"
+ranges = "9x9_symmetric"
+group_by = "suffix"
+# One group per sym_data2 file; share = group weight x the file's sub-split (groups.toml). A shortfall goes first to
+# the `backfill` files, then to whichever group is furthest below its share (fill = "proportional").
+groups = { "2" = ["2"], "3" = ["3"], "4" = ["4"], "6" = ["6"], "7" = ["7"], "8" = ["8"], "9a" = ["9a"], "10" = ["10"], "11" = ["11"], "12a" = ["12a"], "12b" = ["12b"], "14a" = ["14a"], "14b" = ["14b"], "15" = ["15"], "16a" = ["16a"], "16b" = ["16b"], "17a" = ["17a"], "17b" = ["17b"], "18a" = ["18a"], "18b" = ["18b"], "19" = ["19"], "21a" = ["21a"], "21b" = ["21b"], "24a" = ["24a"], "24b" = ["24b"], "26a" = ["26a"], "26b" = ["26b"], "26c" = ["26c"], "27" = ["27"], "28" = ["28"], "29" = ["29"], "30" = ["30"], "31" = ["31"], "32" = ["32"], "33" = ["33"], "34" = ["34"], "35" = ["35"], "40a" = ["40a"], "40b" = ["40b"], "40c" = ["40c"], "40d" = ["40d"], "41a" = ["41a"], "41b" = ["41b"], "42a" = ["42a"], "42b" = ["42b"], "43" = ["43"], "44a" = ["44a"], "44b" = ["44b"], "45a" = ["45a"], "45b" = ["45b"], "46" = ["46"], "47" = ["47"], "48a" = ["48a"], "48b" = ["48b"], "49a" = ["49a"], "49b" = ["49b"], "50" = ["50"], "51a" = ["51a"], "51b" = ["51b"], "52" = ["52"], "53a" = ["53a"], "53b" = ["53b"] }
+shares = { "2" = 100, "3" = 100, "4" = 100, "6" = 100, "7" = 100, "8" = 100, "9a" = 100, "10" = 100, "11" = 100, "12a" = 70, "12b" = 30, "14a" = 70, "14b" = 30, "15" = 100, "16a" = 70, "16b" = 30, "17a" = 70, "17b" = 30, "18a" = 280, "18b" = 120, "19" = 200, "21a" = 50, "21b" = 50, "24a" = 50, "24b" = 50, "26a" = 99.99, "26b" = 100.02, "26c" = 99.99, "27" = 100, "28" = 100, "29" = 100, "30" = 100, "31" = 100, "32" = 100, "33" = 100, "34" = 100, "35" = 100, "40a" = 70, "40b" = 70, "40c" = 30, "40d" = 30, "41a" = 50, "41b" = 50, "42a" = 50, "42b" = 50, "43" = 200, "44a" = 280, "44b" = 120, "45a" = 280, "45b" = 120, "46" = 400, "47" = 400, "48a" = 280, "48b" = 120, "49a" = 200, "49b" = 200, "50" = 400, "51a" = 200, "51b" = 200, "52" = 100, "53a" = 50, "53b" = 50 }
+fill   = "proportional"
+backfill = []
+tiers  = [
+  {tier="Beginner", count=800},
+  {tier="Medium", count=3200},
+  {tier="Hard", count=3200},
+  {tier="Expert", count=800},
+]
+bonus_each = { Grandmaster = 1 }
+notes  = "Josh 2026-10-14: 800/3200/3200/800 over ~42 symmetry-pair groups (library/sym_data2/groups.toml); Medium is the scarce tier. Tier labels follow the scorer; bands as in two_star 9x9."
+# <<< 9x9_symmetric <<<

@@ -1,0 +1,161 @@
+# Books in the "Two Star" group of data/manifest.json (their pools may live in other tools/library/ dirs; see tools/build_books.py).
+# Run:  python3 build_books.py two_star   (stages to books_staging/; add --promote to copy into data/)
+
+[ranges.9x9]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [47, 160]
+Medium    = [160, 315]
+Hard      = [310, 465]
+Expert    = [380, 745]
+
+[ranges.10x10]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [70, 205]
+Medium    = [190, 380]
+Hard      = [310, 500]
+Expert    = [335, 795]
+
+[ranges.14x14]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [95, 225]
+Medium    = [200, 490]
+Hard      = [375, 645]
+Expert    = [520, 1250]
+
+[ranges.10x10_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [75, 160]
+Medium    = [170, 325]
+Hard      = [290, 480]
+Expert    = [375, 790]
+
+[ranges.14x14_2star_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [100, 205]
+Medium    = [190, 460]
+Hard      = [340, 625]
+Expert    = [485, 1055]
+
+[ranges.9x9_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [50, 140]
+Medium    = [145, 275]
+Hard      = [270, 435]
+Expert    = [335, 710]
+
+[[book]]
+out    = "10x10_beginner"
+source = "two_star/puzzles_10.csv"
+ranges = "10x10"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "10x10_expert"
+source = "two_star/puzzles_10.csv"
+ranges = "10x10"
+tier   = "Expert"
+count  = 1000
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+
+[[book]]
+out    = "10x10_hard"
+source = "two_star/puzzles_10.csv"
+ranges = "10x10"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "10x10_medium"
+source = "two_star/puzzles_10.csv"
+ranges = "10x10"
+tier   = "Medium"
+count  = 1000
+
+[[book]]
+out    = "14x14_2star_beginner"
+source = "two_star/puzzles_14.csv"
+ranges = "14x14"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "14x14_2star_expert"
+source = "two_star/puzzles_14.csv"
+ranges = "14x14"
+tier   = "Expert"
+count  = 1000
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+
+[[book]]
+out    = "14x14_2star_hard"
+source = "two_star/puzzles_14.csv"
+ranges = "14x14"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "14x14_2star_medium"
+source = "two_star/puzzles_14.csv"
+ranges = "14x14"
+tier   = "Medium"
+count  = 1000
+
+[[book]]
+out    = "9x9_beginner"
+source = "two_star/9x9.csv"
+ranges = "9x9"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "9x9_expert"
+source = "two_star/9x9.csv"
+ranges = "9x9"
+tier   = "Expert"
+count  = 1000
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+
+[[book]]
+out    = "9x9_hard"
+source = "two_star/9x9.csv"
+ranges = "9x9"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "9x9_medium"
+source = "two_star/9x9.csv"
+ranges = "9x9"
+tier   = "Medium"
+count  = 1000
+
+[[book]]
+out    = "9x9_mono"
+source = "two_star/9x9_mono.csv"
+ranges = "9x9_mono"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+
+[[book]]
+out    = "10x10_mono"
+source = "two_star/puzzles_10_mono.csv"
+ranges = "10x10_mono"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+
+[[book]]
+out    = "14x14_2star_mono"
+source = "two_star/puzzles_14_mono.csv"
+ranges = "14x14_2star_mono"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }

@@ -1,0 +1,154 @@
+# Books in the "Regionless" group of data/manifest.json (their pools may live in other tools/library/ dirs; see tools/build_books.py).
+# Run:  python3 build_books.py regionless   (stages to books_staging/; add --promote to copy into data/)
+
+[ranges.6x6]
+Beginner  = [18, 69]   # shell history
+Hard      = [90, 175]   # 2026-10-12: work-per-row ladder applied to the regionless pool directly (books/THRESHOLDS.md); was 95-190
+Expert    = [145, 465]   # 2026-10-12: work-per-row ladder applied to the regionless pool directly (books/THRESHOLDS.md); was 180-470
+
+[ranges.8x8]
+Beginner  = [18, 69]   # shell history
+Hard      = [105, 230]   # 2026-10-12: work-per-row ladder applied to the regionless pool directly (books/THRESHOLDS.md); was 105-220
+Expert    = [195, 420]   # 2026-10-12: work-per-row ladder applied to the regionless pool directly (books/THRESHOLDS.md); was 205-420
+
+[ranges.9x9]
+Beginner  = [30, 150]   # shell history
+Hard      = [200, 340]   # 2026-10-12: work-per-row ladder applied to the regionless pool directly (books/THRESHOLDS.md); was 230-450
+Expert    = [270, 620]   # 2026-10-12: work-per-row ladder applied to the regionless pool directly (books/THRESHOLDS.md); was 465-1150
+
+[ranges.13x13]
+Beginner  = [60, 327]   # INFERRED from current book span -- verify
+Hard      = [350, 560]   # 2026-10-12: work-per-row ladder applied to the regionless pool directly (books/THRESHOLDS.md); was 240-550
+Expert    = [460, 1030]   # 2026-10-12: work-per-row ladder applied to the regionless pool directly (books/THRESHOLDS.md); was 800-2400
+
+[ranges.17x17]
+Beginner  = [85, 400]   # shell history
+Hard      = [485, 790]   # 2026-10-12: work-per-row ladder applied to the regionless pool directly (books/THRESHOLDS.md); was 670-1900
+Expert    = [740, 2185]   # 2026-10-12: work-per-row ladder applied to the regionless pool directly (books/THRESHOLDS.md); was 1250-2420
+
+[[book]]
+out    = "13x13_regionless_beginner"
+source = "regionless/13x13.csv"
+ranges = "13x13"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "13x13_regionless_expert"
+source = "regionless/13x13.csv"
+ranges = "13x13"
+tier   = "Expert"
+count  = 1000
+bonus  = { Grandmaster = 5 }
+unsolved_extremes = true
+
+[[book]]
+out    = "13x13_regionless_hard"
+source = "regionless/13x13.csv"
+ranges = "13x13"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "17x17_regionless_beginner"
+source = "regionless/17x17.csv"
+ranges = "17x17"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "17x17_regionless_expert"
+source = "regionless/17x17.csv"
+ranges = "17x17"
+tier   = "Expert"
+count  = 500
+bonus  = { Grandmaster = 5 }
+unsolved_extremes = true
+
+[[book]]
+out    = "17x17_regionless_hard"
+source = "regionless/17x17.csv"
+ranges = "17x17"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "6x6_regionless_beginner"
+source = "regionless/6x6.csv"
+ranges = "6x6"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "6x6_regionless_expert"
+source = "regionless/6x6.csv"
+ranges = "6x6"
+group_by = "suffix"
+# Split by the Expert rule the solve needs (suffixes from tag_expert_rules.py; rerun it after any rescore of the pool):
+# ra = region algebra, tpq = tile pair quota fill, ls3 = 3-row/col line sync, ratpq = region algebra AND tile pair quota fill (a
+# gem: only 193 exist, so nearly all go in), gm = Grandmaster rows (share 0: only the bonus rows draw from it).
+groups = { ra = ["ra"], tpq = ["tpq"], ls3 = ["ls3"], ratpq = ["ratpq"], gm = ["gm"] }
+shares = { ra = 27, tpq = 27, ls3 = 27, ratpq = 19, gm = 0 }
+tiers  = [ {tier="Expert", count=500} ]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "6x6_regionless_hard"
+source = "regionless/6x6.csv"
+ranges = "6x6"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "8x8_regionless_beginner"
+source = "regionless/8x8.csv"
+ranges = "8x8"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "8x8_regionless_expert"
+source = "regionless/8x8.csv"
+ranges = "8x8"
+group_by = "suffix"
+# Split by the Expert rule(s) the solve needs (suffixes from tag_expert_rules.py; rerun it after any rescore of the pool):
+# single-rule groups ra = region algebra, tpq = tile pair quota fill, ls3 = 3-row/col line sync; multi-rule groups are the rare
+# combinations (ls3ra, ratpq, ls3tpq, ls3ratpq), which get big shares so that every one of them in the score range goes in and the
+# three single-rule groups split the rest. gm / uns = the Grandmaster / UNSOLVED rows (share 0: only the bonus rows draw from them).
+groups = { ra = ["ra"], tpq = ["tpq"], ls3 = ["ls3"], ls3ra = ["ls3ra"], ratpq = ["ratpq"], ls3tpq = ["ls3tpq"], ls3ratpq = ["ls3ratpq"], gm = ["gm"], uns = ["uns"] }
+shares = { ra = 21, tpq = 21, ls3 = 21, ls3ra = 15, ratpq = 15, ls3tpq = 3, ls3ratpq = 3, gm = 0, uns = 0 }
+tiers  = [ {tier="Expert", count=750} ]     # Josh 2026-10-12: 750 + bonuses (the multi-rule groups are too small in the new band for 1,000)
+bonus  = { Grandmaster = 5 }
+unsolved_extremes = true
+
+[[book]]
+out    = "8x8_regionless_hard"
+source = "regionless/8x8.csv"
+ranges = "8x8"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "9x9_regionless_beginner"
+source = "regionless/9x9.csv"
+ranges = "9x9"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "9x9_regionless_expert"
+source = "regionless/9x9.csv"
+ranges = "9x9"
+tier   = "Expert"
+count  = 1000
+bonus  = { Grandmaster = 5 }
+unsolved_extremes = true
+
+[[book]]
+out    = "9x9_regionless_hard"
+source = "regionless/9x9.csv"
+ranges = "9x9"
+tier   = "Hard"
+count  = 1000
+
+# --- split books (groups by name suffix; see build_books.py "Groups") -------

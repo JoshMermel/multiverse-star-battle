@@ -1,0 +1,95 @@
+# Books in the "Giants" group of data/manifest.json (their pools may live in other tools/library/ dirs; see tools/build_books.py).
+# Run:  python3 build_books.py giants   (stages to books_staging/; add --promote to copy into data/)
+
+[ranges.17x17_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [250, 605]   # lower edge = the pool minimum (Josh, 2026-10-12: gentle intro for the big boards)
+Medium    = [375, 725]
+Hard      = [790, 1085]
+Expert    = [930, 1575]
+
+[ranges.21x21_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [360, 620]   # lower edge = the pool minimum (Josh, 2026-10-12: gentle intro for the big boards)
+Medium    = [620, 970]
+Hard      = [1010, 1405]
+Expert    = [1160, 1985]
+
+[ranges.25x25_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [550, 830]   # lower edge = the pool minimum (Josh, 2026-10-12: gentle intro for the big boards)
+Medium    = [820, 1270]
+Hard      = [1330, 1830]
+Expert    = [1470, 2570]
+
+[ranges.20x20]
+Beginner  = [85, 275]   # kept 2026-10-12: the pool holds only 193 Beginners for 100 wanted
+Medium    = [170, 350]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
+Hard      = [370, 690]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
+Expert    = [545, 1310]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
+
+[ranges.20x20_mono]
+Beginner  = [38, 133]   # INFERRED from current book span -- verify
+Medium    = [80, 255]   # INFERRED from current book span -- verify
+Hard      = [140, 300]   # INFERRED from current book span -- verify
+Expert    = [465, 1375]   # 2026-10-13: ladder band from the pool with the heavy Experts added (library/giants/giant_heavy.csv); Hard and the other tiers unchanged
+
+[[book]]
+out    = "17x17_mono"
+source = "giants/puzzles_17_scored.csv"
+ranges = "17x17_mono"
+tiers  = [
+  {tier="Beginner", count=1000},
+  {tier="Medium", count=500},
+  {tier="Hard", count=250},
+  {tier="Expert", count=250},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "After the 2026-10-11 rescore the pool had only 364 Mediums; 562 new ones were generated on 2026-10-12 (gen params frac 0.65-0.8, weights 0.02-0.15; about 1 Medium per 13 puzzles) and appended, so the book is full again. Proposed band in books/THRESHOLDS.md."
+
+[[book]]
+out    = "21x21_mono"
+source = "giants/puzzles_21_scored.csv"
+ranges = "21x21_mono"
+tiers  = [
+  {tier="Beginner", count=1000},
+  {tier="Medium", count=500},
+  {tier="Hard", count=250},
+  {tier="Expert", count=250},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "After the 2026-10-11 rescore the pool had 661 Mediums (483 in the band); 2026-10-12 backfill (frac 0.55-0.8, ~1 Medium per 14 puzzles, 30 s per puzzle per core) appended more. Proposed band in books/THRESHOLDS.md."
+
+[[book]]
+out    = "25x25_mono"
+source = "giants/puzzles_25.csv"
+ranges = "25x25_mono"
+tiers  = [
+  {tier="Beginner", count=1000},
+  {tier="Medium", count=500},
+  {tier="Hard", count=250},
+  {tier="Expert", count=250},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "Medium was thin (524 in the pool for 500) after the 2026-10-11 rescore; 2026-10-12 backfill appended more (see 21x21_mono). Proposed band in books/THRESHOLDS.md."
+
+[[book]]
+out    = "20x20"
+source = "giants/giant_duo.csv"
+ranges = "20x20"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+
+[[book]]
+out    = "20x20_mono"
+source = "giants/giant.csv"
+ranges = "20x20_mono"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }

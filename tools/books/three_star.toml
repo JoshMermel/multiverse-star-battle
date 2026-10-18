@@ -1,0 +1,107 @@
+# Books in the "Three Star" group of data/manifest.json (their pools may live in other tools/library/ dirs; see tools/build_books.py).
+# Run:  python3 build_books.py three_star   (stages to books_staging/; add --promote to copy into data/)
+
+[ranges.13x13]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [115, 265]
+Medium    = [200, 535]
+Hard      = [555, 775]
+Expert    = [645, 1185]
+
+[ranges.14x14]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [150, 270]
+Medium    = [275, 525]
+Hard      = [510, 770]
+Expert    = [655, 1385]
+
+
+[ranges.13x13_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [125, 235]
+Medium    = [240, 445]
+Hard      = [480, 695]
+Expert    = [570, 1095]
+
+[ranges.14x14_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
+Beginner  = [140, 230]
+Medium    = [245, 455]
+Hard      = [455, 700]
+Expert    = [560, 1165]
+
+[[book]]
+out    = "13x13_beginner"
+source = "three_star/13x13.csv"
+ranges = "13x13"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "13x13_expert"
+source = "three_star/13x13.csv"
+ranges = "13x13"
+tier   = "Expert"
+count  = 1000
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+[[book]]
+out    = "13x13_hard"
+source = "three_star/13x13.csv"
+ranges = "13x13"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "13x13_medium"
+source = "three_star/13x13.csv"
+ranges = "13x13"
+tier   = "Medium"
+count  = 1000
+
+[[book]]
+out    = "14x14_3star_beginner"
+source = "three_star/14x14.csv"
+ranges = "14x14"
+tier   = "Beginner"
+count  = 1000
+
+[[book]]
+out    = "14x14_3star_expert"
+source = "three_star/14x14.csv"
+ranges = "14x14"
+tier   = "Expert"
+count  = 1000
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+[[book]]
+out    = "14x14_3star_hard"
+source = "three_star/14x14.csv"
+ranges = "14x14"
+tier   = "Hard"
+count  = 1000
+
+[[book]]
+out    = "14x14_3star_medium"
+source = "three_star/14x14.csv"
+ranges = "14x14"
+tier   = "Medium"
+count  = 1000
+
+[[book]]
+out    = "13x13_mono"
+source = "three_star/13x13_mono.csv"
+ranges = "13x13_mono"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+
+[[book]]
+out    = "14x14_3star_mono"
+source = "three_star/14x14_mono.csv"
+ranges = "14x14_mono"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
