@@ -539,7 +539,9 @@ those 2 remaining stars puts one next to the circled cell, so it must be a dot.
 
 As in part 1, the pair doesn't have to be two regions: any two non-overlapping
 rows, columns and regions work, and the third unit can be a row, a column or a
-region on either board. Two more examples:
+region on either board. As in part 1, the pair has to touch (share an edge) to
+count as Expert; a pair that's far apart is a Grandmaster technique. Two more
+examples:
 
 <a href="index.html?book=armory2&puzzle=34">
 <img src="images/multi_region_algebra_row_region.png" width="600"></img> </a>

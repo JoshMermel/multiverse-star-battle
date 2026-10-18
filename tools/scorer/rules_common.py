@@ -286,9 +286,39 @@ class CommonRules:
     # to C's own cell count rather than the total unit count -- measured at
     # ~0.3ms/call on the same 25x25/6★ board, matching the original's cost
     # profile.
+    #
+    # TOUCHING vs. APART (2026-10-17, user's call): when A and B share an edge
+    # (some cell of A is orthogonally adjacent to some cell of B) the union
+    # is one connected blob and easy to see, so the rule stays at Expert
+    # (rule_region_algebra). When they are APART the player has to hold two
+    # separate shapes in mind, so that case is its own Grandmaster-tier rule
+    # (rule_region_algebra_apart, first in the Grandmaster block). Regionless
+    # puzzles are exempt: there every A/B pair is accepted by the Expert rule
+    # and the Grandmaster one never fires.
     # Matches hintRegionAlgebra in solver-rules-common.js.
+    @staticmethod
+    def _units_touch(p, ua, ub):
+        """True if some cell of ua shares an edge with some cell of ub."""
+        n = p.n
+        b_set = set(ub["indices"])
+        for i in ua["indices"]:
+            r, c = divmod(i, n)
+            if ((c > 0 and i - 1 in b_set) or (c < n - 1 and i + 1 in b_set)
+                    or (r > 0 and i - n in b_set) or (r < n - 1 and i + n in b_set)):
+                return True
+        return False
+
     def rule_region_algebra(self, p):
+        return self._region_algebra(p, apart=False)
+
+    def rule_region_algebra_apart(self, p):
+        return self._region_algebra(p, apart=True)
+
+    def _region_algebra(self, p, apart):
         N = p.stars_per_unit
+        regionless = all(p.regionless_boards)
+        if apart and regionless:
+            return 0
         for c_unit in p.units:
             live = [i for i in c_unit["indices"] if p.grid[i] != "."]
             if len(live) < 2:
@@ -319,6 +349,8 @@ class CommonRules:
                     # anything. Matches solver-rules-common.js.
                     if (ua["board_idx"] is not None and ub["board_idx"] is not None
                             and ua["board_idx"] != ub["board_idx"]):
+                        continue
+                    if not regionless and self._units_touch(p, ua, ub) == apart:
                         continue
                     c_set = set(c_unit["indices"])
                     rem = [i for i in ua["indices"] + ub["indices"] if i not in c_set]

@@ -600,6 +600,11 @@ The three units can be any mix of rows, columns and regions. The only
 combination that can't happen is a row paired with a column, because they
 always cross. The next three examples show some of the other combinations.
 
+In every example here, A and B touch (they share an edge), so the pair reads as
+one connected shape. The same reasoning also works when A and B are far apart,
+but that's much harder to spot, so the hint system treats it as a Grandmaster
+technique. (On regionless boards it stays Expert either way.)
+
 ---
 
 <a
@@ -634,11 +639,11 @@ between them, and C4 touches all four, so C4 must be a dot.
 href="index.html?book=armory&puzzle=41">
 <img src="images/region_algebra_rows_region.png" width="600"></img> </a>
 
-*Two rows, minus a region.* A and B are Row 1 and Row 4, together holding 2
-stars. C is the brown region from board 2, which has only two open cells left,
-F1 and E4 — one in each of the blue rows. Its star must be one of them, so the
-rest of the blue rows, which is just B1 and A4, holds exactly 1 star. B3 sees
-B1 (same column) and A4 (diagonally), so a star at B3 would leave neither of
+*Two rows, minus a region.* A and B are Row 1 and Row 2, together holding 2
+stars. C is the brown region from board 1, which has only two open cells left,
+C1 and E2 — one in each of the blue rows. Its star must be one of them, so the
+rest of the blue rows, which is just B1 and A2, holds exactly 1 star. B3 sees
+B1 (same column) and A2 (diagonally), so a star at B3 would leave neither of
 them available. B3 must be a dot.
 
 ### Lookahead

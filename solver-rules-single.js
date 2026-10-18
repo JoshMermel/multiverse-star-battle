@@ -1011,6 +1011,10 @@ export function applySingleStarRules(PuzzleSolver) {
       { key: 'regionAlgebra',             fn: () => this.hintRegionAlgebra() },
       { key: 'regionPairPlacementForced', fn: () => this.hintRegionPairPlacementForced() },
       // Grandmaster
+      // Region algebra whose two units are apart (don't share an edge); the
+      // touching case is Expert, above -- see the section comment above
+      // hintRegionAlgebra.
+      { key: 'regionAlgebraApart',          fn: () => this.hintRegionAlgebra(true) },
       // Tiles rule 4b -- see the section comment above hintTilePairQuotaFill
       // in solver-rules-multi.js. The 3-or-more-tile generalization of
       // hintTilePairQuotaFill (Expert, above).

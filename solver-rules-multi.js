@@ -3381,6 +3381,10 @@ export function applyMultiStarRules(PuzzleSolver) {
       // rule in Expert. See the section comment above hintPartialSubset.
       { key: 'partialSubsetUnion',             fn: () => this.hintPartialSubsetUnion() },
       // Grandmaster
+      // Region algebra whose two units are apart (don't share an edge); the
+      // touching case is Expert, above -- see the section comment above
+      // hintRegionAlgebra. Matches Python's rule_region_algebra_apart.
+      { key: 'regionAlgebraApart',             fn: () => this.hintRegionAlgebra(true) },
       // Cross-board region/line quota fill + partition forced -- see the
       // section comment above hintCrossBoardRegionLineQuotaFill. Genuinely
       // cross-board only (same-board matches are already caught by the

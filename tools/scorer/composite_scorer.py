@@ -50,7 +50,8 @@ from .rules_multi_star import MultiStarRules
 # leaving either excluded would also open a fresh JS/Python parity gap on
 # top of the regression.
 MULTI_STAR_TIER_CUTOFF = "Expert"
-MULTI_STAR_CUTOFF_EXEMPT = {"rule_tile_pair_quota_fill_grandmaster", "rule_lookahead_dots"}
+MULTI_STAR_CUTOFF_EXEMPT = {"rule_tile_pair_quota_fill_grandmaster", "rule_lookahead_dots",
+                            "rule_region_algebra_apart"}
 
 
 class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
@@ -169,6 +170,9 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_region_pair_placement_forced,        100, "Expert"),
 
             # -- Grandmaster --------------------------------------------------
+            # Region algebra whose two units are apart (don't share an edge);
+            # the touching case is Expert, above. See rules_common.py.
+            (self.rule_region_algebra_apart,                 95, "Grandmaster"),
             # Tiles rule 4b -- shared with 2★+, see rules_multi_star.py's
             # rule_tile_pair_quota_fill_grandmaster. The 3-or-more-tile
             # generalization of rule_tile_pair_quota_fill (Expert, above).
@@ -366,6 +370,11 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_partial_subset_union,                      170, "Expert"),
 
             # -- Grandmaster ------------------------------------------------
+            # Region algebra whose two units are apart (don't share an edge);
+            # the touching case is Expert, above. See rules_common.py. Exempt
+            # from the 3★+ Grandmaster cutoff (MULTI_STAR_CUTOFF_EXEMPT): it
+            # costs exactly what the Expert-tier rule does.
+            (self.rule_region_algebra_apart,                      152, "Grandmaster"),
             # Cross-board region/line quota fill + partition forced -- see
             # rules_multi_star.py's "Cross-board region/line quota fill +
             # partition forced" section comment. Genuinely cross-board only

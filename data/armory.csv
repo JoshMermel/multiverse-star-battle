@@ -39,4 +39,4 @@ puzzle_hardest_beginner,8,FAAAAAACFAAGHHACFAAGHHHCGGGGHHHCGGGHHHECGGEEEEECGGDDDE
 puzzle_easiest_gm,8,BGGGGHHHBEEDDHHHBEEDDDDHBBBDDDAABBBFAAAABBFFFFAABFFFFAAABCCFFAAA,DDDEEEEEDDDDEEEEDDDAECBBDAAAACBBAAAHAGBBFAAHHGGBFAAAHHHHFFAHHHHH,....x....x.............x.....x.....x..........x.x.........x.....,177,rule_lookahead_1_stage,True
 puzzle_region_algebra_regions_region,6,AABBBBADBBBBDDDBCCFFDCCCFFFFEEFFFFEE,FFFFDDEEBBDDEEBBDDBBBCCDBBBCCACCCCAA,...x..x.........x...x........x.x....,439,rule_region_algebra,True
 puzzle_region_algebra_row_region,6,FFFAADFFAADDFFAAEDFBBAEEBBBBEECCBBEE,DDDDBBDDBBBBECCCCBEEECCAEEAAAAFFFAAA,..x........x...x...x........x.x.....,242,rule_region_algebra,True
-puzzle_region_algebra_rows_region,6,AAAAADAAFFFDAAFFFFEEFFCCEEEFCCEEBFCC,FFCCCCFFFACEFFFACEBFFACEBBAAEEBBDEEE,.....x.x.......x..x.........x...x...,125,rule_region_algebra,True
+puzzle_region_algebra_rows_region,6,BEFFFFBEFFFFBEAADDBEAAADBAACDDBACCCD,AAADDDFCCDDDFCCBDDFCBBBDFFBBEDFFEEEE,.x........x...x...x........x.......x,348,rule_region_algebra,True

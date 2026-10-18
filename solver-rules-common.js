@@ -1,4 +1,5 @@
 import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS } from './constants.js';
+import { isRegionlessBoard } from './geometry.js';
 
 // Rules referenced, by the exact same underlying function, in both the
 // single-star and multi-star rule lists: error/already-solved checks,
@@ -571,9 +572,29 @@ export function applyCommonSolverRules(PuzzleSolver) {
   // candidate set for this C, found in time proportional to C's own cell
   // count rather than the total unit count -- measured at ~0.3ms/call on
   // the same 25x25/6★ board, matching the original's cost profile.
-  // Python port: rule_region_algebra in rules_common.py.
-  p.hintRegionAlgebra = function () {
+  //
+  // TOUCHING vs. APART (2026-10-17, user's call): when A and B share an edge
+  // (some cell of A is orthogonally adjacent to some cell of B) the union is
+  // one connected blob and easy to see, so the rule stays Expert
+  // (hintRegionAlgebra()). When they are APART the player has to hold two
+  // separate shapes in mind, so that case is its own Grandmaster rule
+  // (hintRegionAlgebra(true), first in the Grandmaster block). Regionless
+  // puzzles are exempt: there the Expert rule accepts every A/B pair and the
+  // Grandmaster one never fires.
+  // Python port: rule_region_algebra / rule_region_algebra_apart in
+  // rules_common.py.
+  p.hintRegionAlgebra = function (apart = false) {
     const n = this.n;
+    const regionless = this.game.regions.every(isRegionlessBoard);
+    if (apart && regionless) return null;
+    const touches = (ua, ub) => {
+      const bSet = new Set(ub.indices);
+      return ua.indices.some(i => {
+        const c = i % n;
+        return (c > 0 && bSet.has(i - 1)) || (c < n - 1 && bSet.has(i + 1))
+          || bSet.has(i - n) || bSet.has(i + n);
+      });
+    };
     const N = this.starsPerGroup;
     const starsText = N === 1 ? '1 star' : `${N} stars`;
     const hints = [];
@@ -607,6 +628,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
           // boards are never added together. A row/column is on every
           // board, so it can pair with anything.
           if (ua.boardIdx !== undefined && ub.boardIdx !== undefined && ua.boardIdx !== ub.boardIdx) continue;
+          if (!regionless && touches(ua, ub) === apart) continue;
 
           const cSet = new Set(cUnit.indices);
           const rem = [...ua.indices, ...ub.indices].filter(i => !cSet.has(i));
