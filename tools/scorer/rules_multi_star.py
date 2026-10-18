@@ -18,11 +18,9 @@ or judged too hard to explain to a player. Restored:
 rule_lookahead_dots(_single_board), rule_region_subset_expert (defined
 in rules_common.py), rule_unit_completion_satisfies_other_unit_*,
 rule_unit_region_sync_multi_2_disjoint, rule_crossboard_n_region_pinned_multi_*,
-and rule_lookahead_1/2/3_stage_multi (all three commented out in
-composite_scorer.py for performance -- each is a full board-wide
-speculative sweep per empty cell, repeated per stage, and got noticeably
-slow at 3★+ scale even at 1 stage; rule_lookahead_dots(_single_board)'s
-cheaper one-round version stays active). See composite_scorer.py's
+(all multi-stage multi-star lookahead rules were removed 2026-10-18: too
+hard to explain to a player; rule_lookahead_dots(_single_board)'s one-round
+quota-aware version is active). See composite_scorer.py's
 multi_star_rules for what's still in play. If this
 branch doesn't pan out, `git show gh-pages:tools/scorer/rules_multi_star.py`
 has the pre-experiment version.
@@ -1411,61 +1409,6 @@ class MultiStarRules:
             )
             if changes > 0:
                 return changes
-        return 0
-
-    # -- Multi-stage lookahead (2★+, restored from pre-experiment) --------------
-    #
-    # 2★+ analogue of rules_single_star.py's rule_lookahead_1/2/3_stage. For
-    # each empty cell, hypothetically place a star there and repeatedly
-    # propagate quota-aware consequences -- adjacency dots, unit-solved
-    # dots, and forced-star fills -- placing any newly-implied stars and
-    # dots each round, for n_stages rounds. If a contradiction results, that
-    # cell must be a dot. Unlike rule_lookahead_dots(_single_board) (which
-    # only ever applies ONE round of direct consequences), this repeats the
-    # propagation, so it can catch contradictions several steps removed from
-    # the speculative placement -- at real computational cost, hence
-    # Grandmaster tier. All three stages are commented out in
-    # composite_scorer.py's multi_star_rules for performance (even 1-stage
-    # got noticeably slow at 3★+ scale) -- the same cost shows up in the JS
-    # hint UI's lookaheadLoop1/2/3/8, also commented out there, see
-    # solver-rules-multi.js's _getMultiStarRuleList. Kept for 1★
-    # (rules_single_star.py's rule_lookahead_1/2/3_stage) and available here
-    # if this gets revisited.
-
-    def rule_lookahead_1_stage_multi(self, p):
-        return self._lookahead_n_stages_multi(p, n_stages=1)
-
-    def rule_lookahead_2_stages_multi(self, p):
-        return self._lookahead_n_stages_multi(p, n_stages=2)
-
-    def rule_lookahead_3_stages_multi(self, p):
-        # High stage count runs propagation to a fixed point; "3" is a
-        # minimum depth, not an exact count. Mirrors rule_lookahead_3_stages.
-        return self._lookahead_n_stages_multi(p, n_stages=10)
-
-    def _lookahead_n_stages_multi(self, p, n_stages):
-        for test_idx in (i for i, val in enumerate(p.grid) if val is None):
-            saved = p.copy_grid()
-            p.grid[test_idx] = "x"
-            broken = False
-
-            for _ in range(n_stages):
-                self.rule_exclude_adjacency(p, silent=True)
-                self.rule_exclude_solved_unit(p, silent=True)
-                self.rule_only_empty_multi(p, silent=True)
-                if self.is_board_broken(p):
-                    broken = True
-                    break
-
-            p.restore_grid(saved)
-
-            if broken:
-                changes = p.validate_and_set(
-                    test_idx, ".",
-                    f"{n_stages}-stage multi-star Lookahead contradiction",
-                    self.verbose)
-                if changes > 0:
-                    return changes
         return 0
 
     # -- Symmetry rules (2★+) ---------------------------------------------------

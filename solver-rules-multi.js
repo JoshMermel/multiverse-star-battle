@@ -2871,9 +2871,9 @@ export function applyMultiStarRules(PuzzleSolver) {
   // restored by explicit request as testing progressed -- see
   // rules_multi_star.py's module docstring (the Python mirror of this file)
   // for the fuller history of what was removed/restored and why.
-  // lookaheadLoop1/2/3/8 (see the comment above those entries below) are
-  // commented out for performance; fromSolution is the only Grandmaster
-  // entry still active, so it's always the final fallback past Expert.
+  // There is no multi-stage lookahead for 2★+ (removed 2026-10-18, see the
+  // comment near the end of the rule list below); fromSolution is the final
+  // fallback past the Grandmaster rules.
   // `git show gh-pages:solver-rules-multi.js` has the pre-experiment
   // version if this doesn't pan out.
   // -- Tiles: partial tiling + trapped "bar" (2★+) -----------------------------------
@@ -3416,21 +3416,10 @@ export function applyMultiStarRules(PuzzleSolver) {
       // committing to the hypothetical star -- too much to track by hand
       // at Expert.
       { key: 'lookaheadDots',                  fn: () => this.hintLookaheadDots() },
-      // lookaheadLoop1/2/3/8 all commented out for performance: hintLookahead
-      // does a full board-wide speculative sweep per empty cell per stage,
-      // and that's gotten noticeably slow at 3★+ scale -- even 1 stage.
-      // Measured on a stuck 13x13/3★ puzzle: lookaheadLoop8 alone took ~14s,
-      // and combined with lookaheadDotsSingleBoard/lookaheadDots/lookaheadLoop1
-      // (each also a full sweep) added up to ~20s total. lookaheadDots(SingleBoard)
-      // above -- a cheaper ONE-round version -- stays active. Matches
-      // rule_lookahead_1/2/3_stage_multi being commented out in
-      // rules_multi_star.py. 1★'s lookahead1/2/3/8 (solver-rules-single.js)
-      // are untouched. Leave commented rather than deleting in case this
-      // gets revisited.
-      // { key: 'lookaheadLoop1',                 fn: () => this.hintLookahead(1) },
-      // { key: 'lookaheadLoop2',                 fn: () => this.hintLookahead(2) },
-      // { key: 'lookaheadLoop3',                 fn: () => this.hintLookahead(3) },
-      // { key: 'lookaheadLoop8',                 fn: () => this.hintLookahead(8) },
+      // No multi-stage lookahead for 2★+ (the hintLookahead(n) loops and the
+      // 1-stage experiment were removed 2026-10-18: repeated propagation is
+      // too hard to explain to a player). 1★'s lookahead1/2/3/8
+      // (solver-rules-single.js) are untouched.
       { key: 'fromSolution',                  fn: () => this.hintFromSolution() },
     ];
   };

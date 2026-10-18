@@ -5,53 +5,16 @@ Assembles CompositeScorer from the core engine (ScorerCore) plus the three
 rule-family mixins (CommonRules, SingleStarRules, MultiStarRules), and
 builds the per-star-count rule tables.
 
-There is exactly one canonical multi-star rule table (MULTI_STAR_RULES):
+There is exactly one canonical multi-star rule table (multi_star_rules):
 rules_2_star uses it in full, and rules_multi_capped -- used for every
-stars_per_unit >= 3 -- is derived from it via an explicit, documented tier
-cutoff (see MULTI_STAR_TIER_CUTOFF).
+stars_per_unit >= 3 -- is the very same table (the old 3★+ Grandmaster
+cutoff was removed 2026-10-18; the name is kept for existing callers).
 """
 
-from .engine import ScorerCore, _TIER_RANK
+from .engine import ScorerCore
 from .rules_common import CommonRules
 from .rules_single_star import SingleStarRules
 from .rules_multi_star import MultiStarRules
-
-
-# 3+ star puzzles get every multi-star rule up through Expert; only
-# Grandmaster (the N-stage lookahead rules, plus the cross-board region/
-# line rules) is capped off, since those are the ones with a real,
-# measured runtime cost at 3★+ (confirmed via recon: the Hard-only cutoff
-# previously used here produced zero incorrect deductions once tried up
-# through Expert -- this is a performance-motivated cutoff, not a
-# correctness one).
-#
-# rule_tile_pair_quota_fill_grandmaster and rule_lookahead_dots are exempted
-# from this cutoff even though both are tagged Grandmaster: neither is a
-# genuinely expensive full-board sweep or crossboard search, just a
-# human-difficulty reclassification.
-#   - rule_tile_pair_quota_fill_grandmaster's cost profile is identical to
-#     the already-included Expert-tier rule_tile_pair_quota_fill right above
-#     it (same confirmed-tile lookup, same bounded _find_disjoint_tile_combo
-#     backtracking search) -- it's just gated to a rarer combo size (3+
-#     independent tiles vs. exactly 2), not a more expensive search.
-#   - rule_lookahead_dots (the cross-board sibling of the still-Expert
-#     rule_lookahead_dots_single_board) does the same cheap one-round
-#     speculative sweep either way; it was moved to Grandmaster because the
-#     deduction it finds requires combining two DIFFERENT regions' quotas
-#     across boards after a hypothetical placement -- too much to track by
-#     hand for an Expert-tier puzzle -- not because it got more expensive.
-# The tier cutoff is a proxy for "skip genuinely expensive full-board sweeps
-# and crossboard searches," not a blanket rule that nothing above Expert may
-# ever apply to a 3★+ puzzle -- excluding a cheap, already-computed
-# deduction here would be a pure capability regression (real puzzles that
-# used to solve via this exact combinatorics before the 2-vs-3+ split
-# would become UNSOLVED) for zero performance benefit. JS's
-# _getMultiStarRuleList has no equivalent per-star-count cap at all, so
-# leaving either excluded would also open a fresh JS/Python parity gap on
-# top of the regression.
-MULTI_STAR_TIER_CUTOFF = "Expert"
-MULTI_STAR_CUTOFF_EXEMPT = {"rule_tile_pair_quota_fill_grandmaster", "rule_lookahead_dots",
-                            "rule_region_algebra_apart"}
 
 
 class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
@@ -65,29 +28,16 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
     rules_single_star.py / rules_multi_star.py for the rule_* methods
     themselves.
 
-    uncap_grandmaster: when True, rules_multi_capped (used for every
-    stars_per_unit >= 3) gets the FULL multi_star_rules table instead of
-    the MULTI_STAR_TIER_CUTOFF-filtered one -- i.e. every stars_per_unit
-    gets access to every Grandmaster-tier rule, not just the exempted
-    ones. Off by default (existing callers, and any real multi-board
-    multiverse 3★+/4★+ puzzle, keep today's performance-motivated cap
-    unchanged). Verified cost-neutral specifically for single-board
-    REGIONLESS puzzles (tools/regionless_generator.py and friends): the
-    two cross-board Grandmaster rules resolve to near-instant no-ops on a
-    single board (rule_crossboard_region_line_partition_forced/
-    _quota_fill both key off per-board region layouts, and a regionless
-    board has none -- see is_regionless_board), and the N-stage lookahead
-    Grandmaster rules are already commented out of multi_star_rules
-    entirely regardless of this flag. Measured 2.3ms/puzzle either way on
-    a 60-puzzle 17x17/4★ regionless sample -- pass True there with
-    confidence. NOT verified for real multi-board multiverse puzzles,
-    where actual cross-board region analysis is real work -- leave False
-    for those until similarly measured.
+    uncap_grandmaster: DEPRECATED, accepted and ignored. It used to lift a
+    performance-motivated cap that dropped Grandmaster rules for
+    stars_per_unit >= 3 (and the old N-stage multi-star lookahead rules were
+    commented out of the table); that cap was removed 2026-10-18, so every
+    stars_per_unit now gets the full table. The parameter stays so existing
+    callers keep working.
     """
 
     def __init__(self, verbose=False, uncap_grandmaster=False):
         super().__init__(verbose=verbose)
-        self._uncap_grandmaster = uncap_grandmaster
 
         # Each entry: (rule_func, weight, tier)
         self.rules_1star = [
@@ -371,9 +321,7 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
 
             # -- Grandmaster ------------------------------------------------
             # Region algebra whose two units are apart (don't share an edge);
-            # the touching case is Expert, above. See rules_common.py. Exempt
-            # from the 3★+ Grandmaster cutoff (MULTI_STAR_CUTOFF_EXEMPT): it
-            # costs exactly what the Expert-tier rule does.
+            # the touching case is Expert, above. See rules_common.py.
             (self.rule_region_algebra_apart,                      152, "Grandmaster"),
             # Cross-board region/line quota fill + partition forced -- see
             # rules_multi_star.py's "Cross-board region/line quota fill +
@@ -403,29 +351,15 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             # identical reorder (see the comment there).
             (self.rule_lookahead_dots,                            220, "Grandmaster"),
 
-            # The three N-stage multi-star lookahead rules are commented out
-            # for performance: each is a full board-wide speculative sweep
-            # per empty cell, repeated per stage, and that's expensive
-            # enough at 3★+ scale that even 1-stage measurably slows things
-            # down. rule_lookahead_dots(_single_board) above -- a cheaper
-            # one-round equivalent -- stays active either way (both are
-            # MULTI_STAR_CUTOFF_EXEMPT-safe / within the Expert cutoff).
-            # 1★'s rule_lookahead_1/2/3_stage (rules_single_star.py) are
-            # untouched. Leave commented rather than deleting, matching
-            # gh-pages' own convention, in case this gets revisited.
-            # (self.rule_lookahead_1_stage_multi,                   220, "Grandmaster"),
-            # (self.rule_lookahead_2_stages_multi,                  350, "Grandmaster"),
-            # (self.rule_lookahead_3_stages_multi,                  650, "Grandmaster"),
+            # There is no multi-stage lookahead for 2★+ (removed 2026-10-18:
+            # repeated propagation is too hard to explain to a player, and a
+            # 1-stage version solved only ~3% of stuck 3★+ puzzles). 1★'s
+            # rule_lookahead_1/2/3_stage (rules_single_star.py) are untouched.
         ]
 
         self.rules_2_star = multi_star_rules
 
-        # Every stars_per_unit >= 3 gets the same table with everything
-        # above MULTI_STAR_TIER_CUTOFF dropped, except MULTI_STAR_CUTOFF_EXEMPT
-        # (see its own comment above) -- unless uncap_grandmaster requests
-        # the full table outright (see this class's own docstring).
-        self.rules_multi_capped = multi_star_rules if self._uncap_grandmaster else [
-            r for r in multi_star_rules
-            if _TIER_RANK[r[2]] <= _TIER_RANK[MULTI_STAR_TIER_CUTOFF]
-            or r[0].__name__ in MULTI_STAR_CUTOFF_EXEMPT
-        ]
+        # Every stars_per_unit >= 3 uses the same, full table. (It used to be
+        # filtered to Expert and below plus a few exempt Grandmaster rules,
+        # for speed; measured on 3★+ samples the Grandmaster rules cost little.)
+        self.rules_multi_capped = multi_star_rules
