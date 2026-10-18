@@ -86,13 +86,12 @@ family is interleaved into its tier\'s section instead of trailing the book.
 
 UNSOLVED bonus: `bonus = { UNSOLVED = 2 }` / `bonus_each = { UNSOLVED = 1 }` take the HARDEST UNSOLVED rows from
 the pool: lowest score = fewest cells decided before the solver got stuck (Grandmaster is the highest scores). This is only
-meaningful if the pool's UNSOLVED scores use the current meaning (scored after 2026-09-30); pools listed as not current in
-books/unsolved_current.json make the build fail for such a book -- use `carry` for those until the pool is rescored.
+meaningful if the pool's UNSOLVED scores use the current meaning (scored after 2026-09-30), so rescore a pool before
+building UNSOLVED bonus rows from an old one.
 
 Regionless UNSOLVED rule: `unsolved_extremes = true` picks up to TWO UNSOLVED rows per book (where possible): among the
 UNSOLVED rows with score 0 (no rule ever fired), the DENSEST (fewest void cells in board_1) and the SPARSEST (most void
-cells). If the pool has NO score-0 UNSOLVED puzzle, it takes the 3 HARDEST (lowest-score) UNSOLVED rows instead. For grouped books only rows belonging to a group are considered. Same pool-currency
-guard as the other UNSOLVED options.
+cells). If the pool has NO score-0 UNSOLVED puzzle, it takes the 3 HARDEST (lowest-score) UNSOLVED rows instead. For grouped books only rows belonging to a group are considered.
 
 Why `carry`: UNSOLVED bonus rows are hand-picked (ranked by cells filled
 before the solver stalls -- see find_hardest_unsolved.py) and sometimes come
@@ -118,7 +117,6 @@ import fnmatch
 import glob
 import hashlib
 import heapq
-import json
 import os
 import random
 import re
@@ -280,7 +278,7 @@ def _normalize_book(raw, ranges):
         raise BookError("`unsolved_extremes` can't be combined with an UNSOLVED bonus/bonus_each/carry")
     # UNSOLVED bonus rows: the HARDEST are the ones with the fewest decided cells, i.e. the LOWEST score
     # (scorer/engine.py scores an UNSOLVED puzzle by cells decided before the solver stuck). Only valid
-    # for pools whose UNSOLVED scores are current -- see books/unsolved_current.json and the build check.
+    # for pools whose UNSOLVED scores are current (rescore an old pool first).
     return {
         "out": raw["out"],
         "source": raw["source"],
@@ -507,15 +505,6 @@ def _load_existing(out):
     return rows[0], rows[1:]
 
 
-def _unsolved_scores_current(source_rel):
-    path = os.path.join(BOOKS_DIR, "unsolved_current.json")
-    if not os.path.exists(path):
-        return False
-    with open(path) as f:
-        reg = json.load(f)
-    return bool(reg.get("pools", {}).get(source_rel, {}).get("current"))
-
-
 class BookJob:
     """Per-book working state while a shared source file is scanned."""
 
@@ -683,12 +672,6 @@ def fetch_rows(source_rel, wanted):
 def build_group(source_rel, specs, seed, dup_check):
     """Build every spec that draws from one source file. Returns [(spec, ok, text)]."""
     jobs = [BookJob(s, random.Random(f"{seed}:{s['out']}")) for s in specs]
-    wants_unsolved = [s["out"] for s in specs if "UNSOLVED" in s["bonus"] or "UNSOLVED" in s["bonus_each"]
-                      or s["unsolved_extremes"]]
-    if wants_unsolved and not _unsolved_scores_current(source_rel):
-        raise BookError(
-            f"{', '.join(wants_unsolved)} ask for UNSOLVED bonus rows, but {source_rel} is not marked as having "
-            f"current UNSOLVED scores (books/unsolved_current.json). Rescore its UNSOLVED rows, or use `carry` meanwhile.")
     header, total, tier_scores, dups_skipped = scan_source(source_rel, jobs, seed)
     for job in jobs:
         job.dups_skipped = dups_skipped

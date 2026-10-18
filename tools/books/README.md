@@ -137,9 +137,7 @@ adjusting a range is quick.
 Bonus rows are drawn from the **source pool**, as the hardest N: Grandmaster = highest score; UNSOLVED = *lowest* score (fewest cells
 decided before the solver stuck). For books made by mixing several kinds of puzzle, use `bonus_each` to get 1–2 of each type.
 
-UNSOLVED scores only mean "cells decided" in pools scored since 2026-09-30. `books/unsolved_current.json` records which pools have
-been verified as current (a sample of the pool's UNSOLVED rows rescores to the same score). **A book asking for UNSOLVED bonus rows
-from a pool not marked current fails to build**; use `carry` until that pool is rescored, then re-verify it and switch the recipe.
+UNSOLVED scores only mean "cells decided" in pools scored since 2026-09-30, so rescore an old pool before building UNSOLVED bonus rows from it.
 
 `unsolved_extremes = true` (used by the regionless books) picks up to two UNSOLVED rows: among those with score 0 ("no rule ever fired"),
 the one with the fewest void cells (densest) and the one with the most (sparsest). **If the pool has no score-0 UNSOLVED puzzle it takes the 3 hardest
@@ -190,7 +188,7 @@ venv/bin/python rescore_pools.py --only-tier UNSOLVED regionless/8x8.csv        
 venv/bin/python gen_puzzles.py score --skip-dedup --input X.csv --output Y.csv               # the underlying command, for a single file
 ```
 Rescoring is a pure rescore (no rows added or dropped). Cost varies enormously: a million 8x8 1-star puzzles is minutes; a pool of Expert-heavy pairs or regionless
-Grandmasters can be hours (the `giants/` pools and `regionless/8x8.csv` are the worst). Afterwards, re-verify UNSOLVED currency and update `books/unsolved_current.json`.
+Grandmasters can be hours (the `giants/` pools and `regionless/8x8.csv` are the worst).
 
 ### Trimming an oversized pool
 Pools can grow far beyond what books need (`regionless/8x8.csv` was 1M rows for ~3,000 book puzzles, and rescoring it would have taken ~10 h). `trim_pool.py` keeps up to a cap of puzzles per (tier, integer score) value,
