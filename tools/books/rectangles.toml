@@ -31,6 +31,12 @@ Medium    = [40, 190]   # shell history
 Hard      = [125, 275]   # INFERRED from current book span -- verify
 Expert    = [225, 500]   # INFERRED from current book span -- verify
 
+[ranges.venn_2star]   # 10x10 2-star bands from books/two_star.toml
+Beginner  = [70, 205]
+Medium    = [190, 380]
+Hard      = [310, 500]
+Expert    = [335, 795]
+
 [[book]]
 out    = "mondrian"
 source = "rectangles/modrian_scored.csv"
@@ -93,3 +99,16 @@ tiers  = [
 ]
 bonus  = { Grandmaster = 5 }
 notes  = "Standard 100/400/400/100 + 5 Grandmasters. The pool was grown 2026-10-11 by an all-pairs run (gen_allpairs.py, 3.8M of 14.4M possible pairs scored: +1983 Expert, +675 Grandmaster, +24.5k Hard); before that it had 66 Experts."
+
+[[book]]
+out    = "venn_2star"
+source = "playground/venn2star_10_big_scored.csv"
+ranges = "venn_2star"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "10x10 2-star venn (VennGenerator min_region_size=3, venn2star_boards.py + venn2star_pairs.py, 2026-10-18; pool of 18k pairs from ~2,000 boards, rotation/reflection duplicates removed). Boards repeat across puzzles (one board up to ~19x) -- accepted. Expert has only ~386 candidates for 100."
