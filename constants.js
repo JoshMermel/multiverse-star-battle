@@ -70,7 +70,7 @@ export const HIGHLIGHT_COLORS = Object.freeze([
 // `hl-tex-<name>` class on the palette button (style.css). Append new
 // textures at the END, like the colors.
 export const HIGHLIGHT_TEXTURES = Object.freeze([
-  'dots', 'stripes', 'hatch', 'bars', 'checker', 'grid',
+  'triangles', 'stripes', 'hatch', 'bars', 'checker', 'grid',
   'slashes', 'pillars', 'rings',
 ]);
 

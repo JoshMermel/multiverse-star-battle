@@ -117,7 +117,7 @@
   /* Ink for the textures drawn over cells (and on the palette's texture
      buttons); --hl-active is the tint under the cursor in color/texture mode
      (JS overwrites it on <body> whenever a brush is picked). */
-  --hl-ink: rgba(0, 0, 0, 0.45);
+  --hl-ink: rgba(0, 0, 0, 0.3);
   --hl-active: var(--hl-yellow);
 }
 
@@ -163,7 +163,7 @@
   /* The light-theme gray is nearly invisible as a tint over the dark cell
      background, so lighten it here (swatch and cells both read this). */
   --hl-gray: 196, 196, 196;
-  --hl-ink: rgba(255, 255, 255, 0.55);
+  --hl-ink: rgba(255, 255, 255, 0.4);
 
   /* Extra SOURCE shades — see the light-theme block above for why these
      hues were picked. Boosted opacity to match the rest of this block's
@@ -390,9 +390,11 @@ input[type="number"]::-webkit-inner-spin-button {
 .star { color: var(--text-primary); font-weight: bold; pointer-events: none; }
 
 .dot {
-  width: calc(var(--cell-size) * 0.12);
-  height: calc(var(--cell-size) * 0.12);
-  background: var(--text-secondary);
+  /* A touch bigger and darker than the textures' ink, so a dot never reads
+     as part of a texture. */
+  width: calc(var(--cell-size) * 0.16);
+  height: calc(var(--cell-size) * 0.16);
+  background: var(--text-primary);
   border-radius: 50%;
   pointer-events: none; /* also covers .cell .dot — no separate rule needed */
   z-index: 5;
@@ -492,9 +494,11 @@ input[type="number"]::-webkit-inner-spin-button {
    cell into the next and a block of marked cells reads as one continuous
    texture. Diagonals are drawn corner to corner in a square tile, which
    continues across tile edges. */
-.cell-tx-dots, .hl-tex-dots {
-  --tex-img: radial-gradient(circle at 50% 50%, var(--hl-ink) 1.5px, transparent 2px);
-  --tex-size: calc(var(--cell-size) / 5) calc(var(--cell-size) / 5);
+/* Not dots: a texture that looks like the player's dots (small round marks)
+   would read as notes about those cells being dots. */
+.cell-tx-triangles, .hl-tex-triangles {
+  --tex-img: linear-gradient(135deg, transparent 50%, var(--hl-ink) 50%);
+  --tex-size: calc(var(--cell-size) / 4) calc(var(--cell-size) / 4);
 }
 .cell-tx-stripes, .hl-tex-stripes {
   --tex-img: linear-gradient(45deg, transparent calc(50% - 0.8px), var(--hl-ink) calc(50% - 0.8px) calc(50% + 0.8px), transparent calc(50% + 0.8px));
