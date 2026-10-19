@@ -310,8 +310,8 @@ class StarBattleGame {
 
     if (isRightClick && this._inMarkMode()) {
       // In color/texture mode, right-click erases the cell's mark of the
-      // picked kind (only on cells holding neither dot nor star).
-      if (this.state[idx] === CELL.NONE) this._applyBrush([idx], true);
+      // picked kind.
+      this._applyBrush([idx], true);
       this.isDragging = false;
     } else if (isRightClick) {
       this._getCellsByIndex(idx).forEach(cell => {
@@ -329,13 +329,11 @@ class StarBattleGame {
       // A color drag that starts on an already-so-colored cell erases (see
       // _commitHighlightDrag); flag it so its preview isn't shown in color.
       document.body.classList.toggle('hl-erasing',
-        this._inMarkMode() && this._brushPartOf(this._visibleMark(idx)) === this._brushIndex());
+        this._inMarkMode() && this._brushPartOf(this.highlights[idx]) === this._brushIndex());
       this.draggedIndices = [idx];
-      if (this._canPreviewDrag(idx)) {
-        this._getCellsByIndex(idx).forEach(cell => {
-          cell.classList.add('cell-drag-highlight');
-        });
-      }
+      this._getCellsByIndex(idx).forEach(cell => {
+        cell.classList.add('cell-drag-highlight');
+      });
     }
   }
 
@@ -344,17 +342,9 @@ class StarBattleGame {
     if (this.voidCells?.has(idx)) return;
     if (!this.isDragging || this.draggedIndices.includes(idx)) return;
     this.draggedIndices.push(idx);
-    if (this._canPreviewDrag(idx)) {
-      this._getCellsByIndex(idx).forEach(cell => {
-        cell.classList.add('cell-drag-highlight');
-      });
-    }
-  }
-
-  // In color/texture mode a cell holding a dot or star can't be marked, so a
-  // drag doesn't tint it either.
-  _canPreviewDrag(idx) {
-    return !this._inMarkMode() || this.state[idx] === CELL.NONE;
+    this._getCellsByIndex(idx).forEach(cell => {
+      cell.classList.add('cell-drag-highlight');
+    });
   }
 
   // --- Cell marks (colors and textures) ---
@@ -378,11 +368,8 @@ class StarBattleGame {
     return this.activeHighlight != null ? markColor(mark) : markTexture(mark);
   }
 
-  // A cell's mark as the player sees it. Marks stay in memory under a dot or
-  // star (hidden, see _renderHighlights) so they return if the dot goes.
-  _visibleMark(idx) {
-    return this.state[idx] === CELL.NONE ? this.highlights[idx] : null;
-  }
+  // Cells holding a dot or star can be marked too: the mark is kept but not
+  // drawn (see _renderHighlights) and shows once the dot or star is gone.
   _commitDrag() {
     if (!this.draggedIndices || this.draggedIndices.length === 0) return;
     if (this._inMarkMode()) { this._commitHighlightDrag(); return; }
@@ -415,19 +402,18 @@ class StarBattleGame {
   // selected color (or texture) erases across the whole drag, otherwise it
   // paints.
   _commitHighlightDrag() {
-    const erase = this._brushPartOf(this._visibleMark(this.draggedIndices[0])) === this._brushIndex();
+    const erase = this._brushPartOf(this.highlights[this.draggedIndices[0]]) === this._brushIndex();
     this._applyBrush(this.draggedIndices, erase);
     this.draggedIndices = [];
   }
 
   // Paint (or erase) the current brush's kind of mark on each of `indices`,
-  // leaving the other kind alone, as ONE undoable event. Cells holding a dot
-  // or star are skipped -- their hidden mark is neither shown nor changed.
+  // leaving the other kind alone, as ONE undoable event.
   _applyBrush(indices, erase) {
     const fromColor = this.activeHighlight != null;
     const picked = erase ? null : this._brushIndex();
     const next = indices
-      .filter(idx => !this.voidCells?.has(idx) && this.state[idx] === CELL.NONE)
+      .filter(idx => !this.voidCells?.has(idx))
       .map(idx => {
         const mark = this.highlights[idx];
         return [idx, fromColor ? makeMark(picked, markTexture(mark)) : makeMark(markColor(mark), picked)];

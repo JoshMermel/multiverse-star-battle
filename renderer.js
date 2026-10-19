@@ -392,8 +392,9 @@ export function applyRenderer(GameClass) {
   // `cell-tx-<name>` (texture) classes, which style.css orders BELOW errors,
   // hint colors, drag and hover so those stay readable on top of one.
   // Marks are hidden entirely (not just overridden) while a hint is showing,
-  // and on a cell holding a dot or star -- they stay in memory there, so they
-  // return when the dot goes -- and come back when the hint is dismissed.
+  // and on a cell holding a dot or star -- a mark can still be placed there;
+  // it stays in memory and shows when the dot goes -- and come back when the
+  // hint is dismissed.
   p._highlightsEnabled = function () {
     return localStorage.getItem('setting-highlights') === 'true';
   };
