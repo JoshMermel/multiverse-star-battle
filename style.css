@@ -160,6 +160,9 @@
   --highlight-error-star:     #ff6b6b;
   --hl-cell-alpha: 0.6;
   --hl-cursor-alpha: 0.32;
+  /* The light-theme gray is nearly invisible as a tint over the dark cell
+     background, so lighten it here (swatch and cells both read this). */
+  --hl-gray: 196, 196, 196;
   --hl-ink: rgba(255, 255, 255, 0.55);
 
   /* Extra SOURCE shades — see the light-theme block above for why these
