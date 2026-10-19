@@ -88,6 +88,7 @@
     {"id": "8x8_regionless_complement",   "label": "8x8 regionless complement",   "group": "Symmetry",     "desc": "Regionless puzzles where the black and white squares have the same shape", "stars": 1, "size": "regionless"},
     {"id": "10x10_regionless_complement", "label": "10x10 regionless complement", "group": "Symmetry",     "desc": "Regionless puzzles where the black and white squares have the same shape", "stars": 2, "size": "regionless"},
     {"id": "venn",                  "label": "Venn",                    "group": "Rectangles",       "desc": "Boards inspired by venn diagrams", "stars": 1},
+    {"id": "venn_2star",            "label": "Venn",                    "group": "Rectangles",       "desc": "Boards inspired by venn diagrams", "stars": 2},
     {"id": "not_sudoku",            "label": "Not Sudoku",              "group": "Rectangles",       "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply", "stars": 1},
     {"id": "not_sudoku_2star",      "label": "Not Sudoku",              "group": "Rectangles",       "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply", "stars": 2},
     {"id": "quadrants",             "label": "Quadrants",               "group": "Rectangles",       "desc": "Boards split into quadrants", "stars": 1},
