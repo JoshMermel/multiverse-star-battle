@@ -390,11 +390,12 @@ input[type="number"]::-webkit-inner-spin-button {
 .star { color: var(--text-primary); font-weight: bold; pointer-events: none; }
 
 .dot {
-  /* A touch bigger and darker than the textures' ink, so a dot never reads
-     as part of a texture. */
+  /* A touch bigger than the textures' marks, so a dot never reads as part of
+     a texture -- but kept in the secondary gray, never the primary text color
+     the stars use: scanning for stars matters more than anything else here. */
   width: calc(var(--cell-size) * 0.16);
   height: calc(var(--cell-size) * 0.16);
-  background: var(--text-primary);
+  background: var(--text-secondary);
   border-radius: 50%;
   pointer-events: none; /* also covers .cell .dot — no separate rule needed */
   z-index: 5;
