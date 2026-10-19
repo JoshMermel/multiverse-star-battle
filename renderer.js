@@ -383,47 +383,49 @@ export function applyRenderer(GameClass) {
     this._renderHighlights();
   };
 
-  // --- Cell colors (opt-in "Cell colors" setting) ---
+  // --- Cell marks (opt-in "Cell colors" setting) ---
   //
-  // The player's own colors, kept in this.highlights (cell index -> index
-  // into HIGHLIGHT_COLORS, or null) independently of the dot/star state.
-  // Drawn as a `cell-hl-<name>` class, which style.css orders BELOW errors,
+  // The player's own marks, kept in this.highlights (cell index -> a mark, or
+  // null; constants.js's markColor/markTexture/makeMark unpack it)
+  // independently of the dot/star state. A cell holds at most one color and
+  // one texture. A mark is drawn as `cell-hl-<name>` (color) and
+  // `cell-tx-<name>` (texture) classes, which style.css orders BELOW errors,
   // hint colors, drag and hover so those stay readable on top of one.
-  // They're hidden entirely (not just overridden) while a hint is showing,
-  // and come back when it's dismissed -- see applyHintUI/clearHintUI.
+  // Marks are hidden entirely (not just overridden) while a hint is showing,
+  // and on a cell holding a dot or star -- they stay in memory there, so they
+  // return when the dot goes -- and come back when the hint is dismissed.
   p._highlightsEnabled = function () {
     return localStorage.getItem('setting-highlights') === 'true';
   };
 
   p._renderHighlights = function () {
     if (!this._allCells || !this.highlights) return;
-    const { HIGHLIGHT_COLORS, HIGHLIGHT_TEXTURES, HIGHLIGHT_TEX_STRIDE } = this._constants;
-    const classes = HIGHLIGHT_COLORS.map(name => `cell-hl-${name}`);
+    const { CELL, HIGHLIGHT_COLORS, HIGHLIGHT_TEXTURES, markColor, markTexture } = this._constants;
+    const colorClasses = HIGHLIGHT_COLORS.map(name => `cell-hl-${name}`);
     const texClasses = HIGHLIGHT_TEXTURES.map(name => `cell-tx-${name}`);
     const show = this._highlightsEnabled() && !this._hintShowing;
     this._allCells.forEach(cell => {
-      cell.classList.remove(...classes, ...texClasses);
-      const value = show ? this.highlights[cell.dataset.index] : null;
-      if (value != null) {
-        cell.classList.add(classes[value % HIGHLIGHT_TEX_STRIDE]);
-        // Texture 0 is the plain color; it needs no class.
-        const tex = Math.floor(value / HIGHLIGHT_TEX_STRIDE);
-        if (tex > 0) cell.classList.add(texClasses[tex]);
-      }
+      cell.classList.remove(...colorClasses, ...texClasses);
+      const idx = cell.dataset.index;
+      if (!show || this.state[idx] !== CELL.NONE) return;
+      const mark = this.highlights[idx];
+      const color = markColor(mark);
+      const texture = markTexture(mark);
+      if (color != null) cell.classList.add(colorClasses[color]);
+      if (texture != null) cell.classList.add(texClasses[texture]);
     });
   };
 
-  // Build the color palette bar: a first row with the "Dots & stars" mode
-  // button, one swatch per color and "Clear colors", then a second row of
-  // textures that go on top of the picked color. Called once at startup;
-  // shown/hidden by the setting.
+  // Build the palette bar: a first row with the "Dots & stars" mode button,
+  // one swatch per color and "Clear all", then a second row with one button
+  // per texture. Exactly one button across both rows is pressed (one brush
+  // at a time). Called once at startup; shown/hidden by the setting.
   p.setupHighlightPalette = function () {
     const palette = document.getElementById('highlight-palette');
     if (!palette) return;
     const { HIGHLIGHT_COLORS, HIGHLIGHT_TEXTURES } = this._constants;
     this.activeHighlight = null;
-    this.activeTexture = 0;
-    this._lastHighlight = 0;
+    this.activeTexture = null;
 
     const makeButton = (color, label, className) => {
       const btn = document.createElement('button');
@@ -444,7 +446,8 @@ export function applyRenderer(GameClass) {
     const clear = document.createElement('button');
     clear.type = 'button';
     clear.className = 'hl-clear-btn';
-    clear.textContent = 'Clear colors';
+    clear.textContent = 'Clear all';
+    clear.title = 'Remove every color and texture';
     clear.onclick = () => this._clearAllHighlights();
     palette.appendChild(clear);
 
@@ -456,48 +459,55 @@ export function applyRenderer(GameClass) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `hl-tex-btn hl-tex-${name}`;
-      btn.setAttribute('aria-label', name === 'solid' ? 'Plain color' : `Texture: ${name}`);
-      btn.title = name === 'solid' ? 'Plain color' : `Texture: ${name}`;
-      btn.onclick = () => {
-        this._selectTexture(i);
-        if (this.activeHighlight == null) this._selectHighlight(this._lastHighlight);
-      };
+      btn.setAttribute('aria-label', `Texture: ${name}`);
+      btn.title = `Texture: ${name}`;
+      btn.onclick = () => this._selectTexture(i);
       palette.appendChild(btn);
     });
 
     this._selectHighlight(null);
-    this._selectTexture(0);
   };
 
-  // Pick the texture painted over the selected color. Picking one while in
-  // "Dots & stars" mode switches to the last color used, so the click does
-  // what it looks like it does.
-  p._selectTexture = function (tex) {
-    this.activeTexture = tex;
-    document.querySelectorAll('#highlight-palette .hl-tex-btn').forEach((btn, i) => {
-      btn.setAttribute('aria-pressed', String(i === tex));
-    });
-  };
-
-  // Remove every color from the board, as a single undoable event (so no
-  // confirmation prompt -- Undo brings them all back).
+  // Remove every color and texture from the board (including ones hidden
+  // under dots and stars), as a single undoable event (so no confirmation
+  // prompt -- Undo brings them all back).
   p._clearAllHighlights = function () {
-    this._setHighlights(this.highlights.map((_, i) => i), null);
+    this._setHighlights(this.highlights.map((_, i) => [i, null]));
   };
 
   // Switch between dot/star mode (null) and painting with color `color`.
   p._selectHighlight = function (color) {
     this.activeHighlight = color;
-    if (color != null) this._lastHighlight = color;
+    this.activeTexture = null;
+    this._syncBrushUI();
+  };
+
+  // Switch to painting with texture `tex`.
+  p._selectTexture = function (tex) {
+    this.activeHighlight = null;
+    this.activeTexture = tex;
+    this._syncBrushUI();
+  };
+
+  // Reflect the current brush in the palette buttons, the board's mode class
+  // and the cursor/drag tint (style.css, "In color mode ...").
+  p._syncBrushUI = function () {
+    const color = this.activeHighlight;
+    const tex = this.activeTexture;
     const buttons = [...document.querySelectorAll('#highlight-palette .hl-btn')];
     buttons.forEach((btn, i) => {
-      // Button 0 is "Dots & stars" (color null); swatch i+1 is color i.
-      btn.setAttribute('aria-pressed', String(i === (color == null ? 0 : color + 1)));
+      // Button 0 is "Dots & stars" (no brush); swatch i+1 is color i.
+      btn.setAttribute('aria-pressed', String(i === (color == null ? 0 : color + 1) && tex == null));
     });
-    document.body.classList.toggle('highlight-mode', color != null);
-    // Drives the cursor/drag tint (style.css, "In color mode ...").
+    document.querySelectorAll('#highlight-palette .hl-tex-btn').forEach((btn, i) => {
+      btn.setAttribute('aria-pressed', String(i === tex));
+    });
+    document.body.classList.toggle('highlight-mode', color != null || tex != null);
+    // Textures have no color of their own: tint with gray.
     if (color != null) {
       document.body.style.setProperty('--hl-active', `var(--hl-${this._constants.HIGHLIGHT_COLORS[color]})`);
+    } else if (tex != null) {
+      document.body.style.setProperty('--hl-active', 'var(--hl-gray)');
     }
   };
 

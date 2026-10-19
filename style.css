@@ -111,9 +111,9 @@
   /* The lighter tint shown under the cursor / while dragging in color
      mode, in the SELECTED color (--hl-active, set from JS). */
   --hl-cursor-alpha: 0.25;
-  /* Ink for the textures (dots / stripes / hatch) drawn over a cell color,
-     and the color the palette's texture buttons preview (JS overwrites
-     --hl-active on <body> whenever a color is picked). */
+  /* Ink for the textures drawn over cells (and on the palette's texture
+     buttons); --hl-active is the tint under the cursor in color/texture mode
+     (JS overwrites it on <body> whenever a brush is picked). */
   --hl-ink: rgba(0, 0, 0, 0.45);
   --hl-active: var(--hl-yellow);
 }
@@ -472,9 +472,10 @@ input[type="number"]::-webkit-inner-spin-button {
 .cell-hl-blue   { background-color: rgba(var(--hl-blue), var(--hl-cell-alpha)); }
 .cell-hl-gray   { background-color: rgba(var(--hl-gray), var(--hl-cell-alpha)); }
 
-/* Textures laid over a cell color (palette row 2) -- the same patterns draw
-   on the palette's texture buttons, so both read the pattern from these
-   variables. The plain color ('solid') has no class. */
+/* Textures (palette row 2) are a second kind of mark, independent of the
+   cell colors and drawn over them when a cell has both. The same patterns
+   draw on the palette's texture buttons, so both read them from these
+   variables. */
 .cell-tx-dots, .hl-tex-dots {
   --tex-img: radial-gradient(circle, var(--hl-ink) 1.5px, transparent 2px);
   --tex-size: 7px 7px;
@@ -487,6 +488,19 @@ input[type="number"]::-webkit-inner-spin-button {
   --tex-img: repeating-linear-gradient(45deg, var(--hl-ink) 0 1.2px, transparent 1.2px 6px),
              repeating-linear-gradient(-45deg, var(--hl-ink) 0 1.2px, transparent 1.2px 6px);
   --tex-size: auto;
+}
+.cell-tx-bars, .hl-tex-bars {
+  --tex-img: repeating-linear-gradient(0deg, var(--hl-ink) 0 2px, transparent 2px 7px);
+  --tex-size: auto;
+}
+.cell-tx-checker, .hl-tex-checker {
+  --tex-img: conic-gradient(var(--hl-ink) 25%, transparent 0 50%, var(--hl-ink) 0 75%, transparent 0);
+  --tex-size: 10px 10px;
+}
+.cell-tx-grid, .hl-tex-grid {
+  --tex-img: linear-gradient(var(--hl-ink) 1px, transparent 1px),
+             linear-gradient(90deg, var(--hl-ink) 1px, transparent 1px);
+  --tex-size: 8px 8px;
 }
 [class*="cell-tx-"] {
   background-image: var(--tex-img);
@@ -761,7 +775,8 @@ body.highlight-mode:not(.hl-erasing) .cell-drag-highlight:not(:has(.dot, .star))
 .hl-swatch.hl-swatch-blue:not(:disabled)   { background: rgb(var(--hl-blue)); }
 .hl-swatch.hl-swatch-gray:not(:disabled)   { background: rgb(var(--hl-gray)); }
 
-/* Row 2: texture buttons, previewed in the currently selected color. */
+/* Row 2: texture buttons, drawn in neutral ink on the page background (the
+   :not(:disabled):hover variant outranks the global button hover rule). */
 .hl-row-break { flex-basis: 100%; height: 0; }
 .hl-tex-btn {
   width: 32px;
@@ -773,7 +788,7 @@ body.highlight-mode:not(.hl-erasing) .cell-drag-highlight:not(:has(.dot, .star))
 }
 .hl-tex-btn:not(:disabled),
 .hl-tex-btn:not(:disabled):hover {
-  background-color: rgba(var(--hl-active), var(--hl-cell-alpha));
+  background-color: var(--bg-white);
   background-image: var(--tex-img, none);
   background-size: var(--tex-size, auto);
 }

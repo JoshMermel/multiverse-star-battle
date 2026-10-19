@@ -57,11 +57,27 @@ export const TILE_OUTLINE_COLORS = Object.freeze(['blue', 'brown', 'cyan', 'pink
 // and sky vs. mid orange/gray vs. dark brown/blue.
 export const HIGHLIGHT_COLORS = Object.freeze(['yellow', 'orange', 'brown', 'sky', 'blue', 'gray']);
 
-// Optional textures laid over a cell color (the palette's second row), so a
-// deduction can be told apart by pattern as well as hue. A stored highlight
-// is color + HIGHLIGHT_TEX_STRIDE * texture (null = uncolored), so a plain
-// color keeps its original value and old saves load unchanged. Index 0 is
-// the plain, untextured color. As with the colors, append new textures at
-// the END; HIGHLIGHT_TEX_STRIDE must stay above HIGHLIGHT_COLORS.length.
-export const HIGHLIGHT_TEXTURES = Object.freeze(['solid', 'dots', 'stripes', 'hatch']);
-export const HIGHLIGHT_TEX_STRIDE = 10;
+// Textures: a second, independent kind of mark (the palette's second row).
+// A cell can hold one color AND one texture at once -- e.g. color for notes
+// about one board and texture for the other -- but never two of the same
+// kind. Each name maps to a `cell-tx-<name>` class on the board and a
+// `hl-tex-<name>` class on the palette button (style.css). Append new
+// textures at the END, like the colors.
+export const HIGHLIGHT_TEXTURES = Object.freeze(['dots', 'stripes', 'hatch', 'bars', 'checker', 'grid']);
+
+// A cell's mark (this.highlights[i], null = none) packs both kinds into one
+// small integer: the ones digit is the color (palette index + 1, 0 = no
+// color) and the tens digit is the texture (index + 1, 0 = no texture), so a
+// mark is always 1..66 and fits two characters in storage.
+export function markColor(mark) {
+  const part = mark == null ? 0 : mark % 10;
+  return part ? part - 1 : null;
+}
+export function markTexture(mark) {
+  const part = mark == null ? 0 : Math.floor(mark / 10);
+  return part ? part - 1 : null;
+}
+export function makeMark(color, texture) {
+  const mark = (color == null ? 0 : color + 1) + 10 * (texture == null ? 0 : texture + 1);
+  return mark || null;
+}

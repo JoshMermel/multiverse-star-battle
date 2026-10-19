@@ -1,3 +1,5 @@
+import { makeMark } from './constants.js';
+
 // Firebase configuration.
 const firebaseConfig = {
   apiKey: "AIzaSyB0a0ypQx03ZtyYlJ9EvBD0cJqryRqDINA",
@@ -126,27 +128,41 @@ class StorageManager {
 
   // --- Cell colors (local-only; never synced to the cloud) ---
 
-  // Two chars per cell: '--' for uncolored, else the highlight value (palette
-  // index + 10 * texture, see constants.js) zero-padded to two digits.
-  // Older saves used ONE char per cell (the palette index as a digit, no
-  // textures); those still load.
+  // Saved as '2:' then two chars per cell: '--' for no mark, else the mark
+  // (color + texture packed into one number, see constants.js) zero-padded to
+  // two digits. Two older formats still load: the first release saved ONE
+  // digit per cell (the color index), and a short-lived second one saved two
+  // digits per cell with the texture as color + 10 * texture, texture 0 being
+  // the plain color.
   getHighlights(puzzleId, length) {
     const str = localStorage.getItem(`sb_hl_${puzzleId}`);
     if (!str) return null;
-    if (str.length === length) {
-      return str.split('').map(ch => (ch === '-' ? null : Number(ch)));
+    if (str.startsWith('2:')) {
+      if (str.length !== 2 + 2 * length) return null;
+      return Array.from({ length }, (_, i) => {
+        const pair = str.slice(2 + 2 * i, 4 + 2 * i);
+        return pair === '--' ? null : Number(pair);
+      });
     }
-    if (str.length !== 2 * length) return null;
-    return Array.from({ length }, (_, i) => {
-      const pair = str.slice(2 * i, 2 * i + 2);
-      return pair === '--' ? null : Number(pair);
-    });
+    if (str.length === length) {
+      return str.split('').map(ch => (ch === '-' ? null : makeMark(Number(ch), null)));
+    }
+    if (str.length === 2 * length) {
+      return Array.from({ length }, (_, i) => {
+        const pair = str.slice(2 * i, 2 * i + 2);
+        if (pair === '--') return null;
+        const v = Number(pair);
+        const texture = Math.floor(v / 10);
+        return makeMark(v % 10, texture ? texture - 1 : null);
+      });
+    }
+    return null;
   }
 
   saveHighlights(puzzleId, highlights) {
-    const str = highlights.map(h => (h == null ? '--' : String(h).padStart(2, '0'))).join('');
-    if (/^(--)*$/.test(str)) localStorage.removeItem(`sb_hl_${puzzleId}`);
-    else localStorage.setItem(`sb_hl_${puzzleId}`, str);
+    const body = highlights.map(h => (h == null ? '--' : String(h).padStart(2, '0'))).join('');
+    if (/^(--)*$/.test(body)) localStorage.removeItem(`sb_hl_${puzzleId}`);
+    else localStorage.setItem(`sb_hl_${puzzleId}`, `2:${body}`);
   }
 
   markPuzzleSolved(puzzleId) {
