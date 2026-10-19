@@ -152,3 +152,23 @@ tiers  = [
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
 notes  = "Josh (2026-10-11): every Beginner (1), Medium (2) and Hard (44 in the band) puzzle the family has, plus the 453 easiest Experts = 500 puzzles before the 5 bonus Grandmasters and 5 bonus UNSOLVED. Before the all-pairs search the family looked exhausted (421 Experts, 17 Hards, no Beginner); about 64% of all board pairs are puzzles, so more can be found."
+
+[ranges.13x13_square_free]   # 13x13 3-star bands from books/three_star.toml
+Beginner  = [115, 265]
+Medium    = [200, 535]
+Hard      = [555, 775]
+Expert    = [645, 1185]
+
+[[book]]
+out    = "13x13_square_free"
+source = "playground/sf13_3star_v2_pairs_scored.csv"
+ranges = "13x13_square_free"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+allow_short = true
+notes  = "13x13 3-star square-free pairs from squarefree_3star_pool.py (repair-descent + grow to 40 solutions) + squarefree_3star_pairs.py, 2026-10-19."
