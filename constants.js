@@ -55,7 +55,13 @@ export const TILE_OUTLINE_COLORS = Object.freeze(['blue', 'brown', 'cyan', 'pink
 // (red~green and blue~purple collapse for red-green colorblindness) in
 // favor of colors that differ in LIGHTNESS as well as hue -- light yellow
 // and sky vs. mid orange/gray vs. dark brown/blue.
-export const HIGHLIGHT_COLORS = Object.freeze(['yellow', 'orange', 'brown', 'sky', 'blue', 'gray']);
+export const HIGHLIGHT_COLORS = Object.freeze([
+  'yellow', 'orange', 'brown', 'sky', 'blue', 'gray',
+  // Added later for players who want more choice; green/red/purple are the
+  // classic confusable trio under red-green colorblindness, so the original
+  // six remain the safe set.
+  'green', 'red', 'purple',
+]);
 
 // Textures: a second, independent kind of mark (the palette's second row).
 // A cell can hold one color AND one texture at once -- e.g. color for notes
@@ -63,12 +69,17 @@ export const HIGHLIGHT_COLORS = Object.freeze(['yellow', 'orange', 'brown', 'sky
 // kind. Each name maps to a `cell-tx-<name>` class on the board and a
 // `hl-tex-<name>` class on the palette button (style.css). Append new
 // textures at the END, like the colors.
-export const HIGHLIGHT_TEXTURES = Object.freeze(['dots', 'stripes', 'hatch', 'bars', 'checker', 'grid']);
+export const HIGHLIGHT_TEXTURES = Object.freeze([
+  'dots', 'stripes', 'hatch', 'bars', 'checker', 'grid',
+  'slashes', 'pillars', 'rings',
+]);
 
 // A cell's mark (this.highlights[i], null = none) packs both kinds into one
 // small integer: the ones digit is the color (palette index + 1, 0 = no
 // color) and the tens digit is the texture (index + 1, 0 = no texture), so a
-// mark is always 1..66 and fits two characters in storage.
+// mark is always 1..99 and fits two characters in storage. That caps each
+// list at NINE entries (both are full): going past nine of either needs a
+// new storage format.
 export function markColor(mark) {
   const part = mark == null ? 0 : mark % 10;
   return part ? part - 1 : null;

@@ -107,6 +107,9 @@
   --hl-sky:    86,  180, 233;
   --hl-blue:   0,   114, 178;
   --hl-gray:   117, 117, 117;
+  --hl-green:  58,  165, 72;
+  --hl-red:    214, 40,  40;
+  --hl-purple: 142, 68,  173;
   --hl-cell-alpha: 0.5;
   /* The lighter tint shown under the cursor / while dragging in color
      mode, in the SELECTED color (--hl-active, set from JS). */
@@ -471,6 +474,9 @@ input[type="number"]::-webkit-inner-spin-button {
 .cell-hl-sky    { background-color: rgba(var(--hl-sky), var(--hl-cell-alpha)); }
 .cell-hl-blue   { background-color: rgba(var(--hl-blue), var(--hl-cell-alpha)); }
 .cell-hl-gray   { background-color: rgba(var(--hl-gray), var(--hl-cell-alpha)); }
+.cell-hl-green  { background-color: rgba(var(--hl-green), var(--hl-cell-alpha)); }
+.cell-hl-red    { background-color: rgba(var(--hl-red), var(--hl-cell-alpha)); }
+.cell-hl-purple { background-color: rgba(var(--hl-purple), var(--hl-cell-alpha)); }
 
 /* Textures (palette row 2) are a second kind of mark, independent of the
    cell colors and drawn over them when a cell has both. The same patterns
@@ -508,6 +514,18 @@ input[type="number"]::-webkit-inner-spin-button {
   --tex-img: linear-gradient(var(--hl-ink) 1px, transparent 1px),
              linear-gradient(90deg, var(--hl-ink) 1px, transparent 1px);
   --tex-size: calc(var(--cell-size) / 4) calc(var(--cell-size) / 4);
+}
+.cell-tx-slashes, .hl-tex-slashes {
+  --tex-img: linear-gradient(135deg, transparent calc(50% - 0.8px), var(--hl-ink) calc(50% - 0.8px) calc(50% + 0.8px), transparent calc(50% + 0.8px));
+  --tex-size: calc(var(--cell-size) / 4) calc(var(--cell-size) / 4);
+}
+.cell-tx-pillars, .hl-tex-pillars {
+  --tex-img: linear-gradient(to right, transparent calc(50% - 1px), var(--hl-ink) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px));
+  --tex-size: calc(var(--cell-size) / 6) calc(var(--cell-size) / 6);
+}
+.cell-tx-rings, .hl-tex-rings {
+  --tex-img: radial-gradient(circle at 50% 50%, transparent calc(var(--cell-size) / 14), var(--hl-ink) calc(var(--cell-size) / 14) calc(var(--cell-size) / 14 + 1.3px), transparent calc(var(--cell-size) / 14 + 1.3px));
+  --tex-size: calc(var(--cell-size) / 3) calc(var(--cell-size) / 3);
 }
 [class*="cell-tx-"] {
   background-image: var(--tex-img);
@@ -781,6 +799,9 @@ body.highlight-mode:not(.hl-erasing) .cell-drag-highlight {
 .hl-swatch.hl-swatch-sky:not(:disabled)    { background: rgb(var(--hl-sky)); }
 .hl-swatch.hl-swatch-blue:not(:disabled)   { background: rgb(var(--hl-blue)); }
 .hl-swatch.hl-swatch-gray:not(:disabled)   { background: rgb(var(--hl-gray)); }
+.hl-swatch.hl-swatch-green:not(:disabled)  { background: rgb(var(--hl-green)); }
+.hl-swatch.hl-swatch-red:not(:disabled)    { background: rgb(var(--hl-red)); }
+.hl-swatch.hl-swatch-purple:not(:disabled) { background: rgb(var(--hl-purple)); }
 
 /* Row 2: texture buttons, drawn in neutral ink on the page background (the
    :not(:disabled):hover variant outranks the global button hover rule). */
@@ -800,6 +821,39 @@ body.highlight-mode:not(.hl-erasing) .cell-drag-highlight {
   background-image: var(--tex-img, none);
   background-size: var(--tex-size, auto);
   background-origin: border-box;
+}
+
+/* Phones: lay the palette out as a compact grid -- the "Dots & stars" mode
+   and "Clear all" buttons on one row, then the nine colors and the nine
+   textures as two aligned rows of nine (the flex-wrap layout above takes
+   four ragged rows on a 375px screen). `order` puts the two wide buttons
+   first without changing the DOM order the keyboard follows. */
+@media (max-width: 600px) {
+  .highlight-palette:not([hidden]) {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 8px 4px;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto 10px;
+    padding: 0 6px;
+    box-sizing: border-box;
+  }
+  .highlight-palette .hl-row-break { display: none; }
+  .highlight-palette .hl-btn--none { order: 0; grid-column: 1 / span 4; justify-self: start; }
+  .highlight-palette .hl-clear-btn { order: 1; grid-column: 6 / span 4; justify-self: end; margin-left: 0; }
+  .highlight-palette .hl-swatch { order: 2; }
+  .highlight-palette .hl-tex-btn { order: 3; }
+  .highlight-palette .hl-btn--none,
+  .highlight-palette .hl-clear-btn { padding: 5px 12px; font-size: 0.85rem; }
+  /* The buttons shrink to their column (up to 32px) and stay square/round. */
+  .highlight-palette .hl-swatch,
+  .highlight-palette .hl-tex-btn {
+    width: min(32px, 100%);
+    height: auto;
+    aspect-ratio: 1;
+    justify-self: center;
+  }
 }
 
 /* Duplicate control bar at the bottom of the page -- off by default,
