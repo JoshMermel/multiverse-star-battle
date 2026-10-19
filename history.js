@@ -91,7 +91,10 @@ export function applyHistory(GameClass) {
   p._resetHistoryTo = function (state, highlights = null) {
     this.state = state;
     this.dotReasons = new Map();
-    this.highlights = highlights ?? new Array(this.n * this.n).fill(null);
+    // Saves from before colors were limited to empty cells may carry colors
+    // under dots or stars; drop them.
+    this.highlights = (highlights ?? new Array(this.n * this.n).fill(null))
+      .map((h, i) => (state[i] === CELL.NONE ? h : null));
     this.history = [JSON.stringify({ state, dotReasons: {}, highlights: this.highlights })];
     this.historyIdx = 0;
   };

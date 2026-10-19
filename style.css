@@ -111,6 +111,11 @@
   /* The lighter tint shown under the cursor / while dragging in color
      mode, in the SELECTED color (--hl-active, set from JS). */
   --hl-cursor-alpha: 0.25;
+  /* Ink for the textures (dots / stripes / hatch) drawn over a cell color,
+     and the color the palette's texture buttons preview (JS overwrites
+     --hl-active on <body> whenever a color is picked). */
+  --hl-ink: rgba(0, 0, 0, 0.45);
+  --hl-active: var(--hl-yellow);
 }
 
 [data-theme="dark"] {
@@ -152,6 +157,7 @@
   --highlight-error-star:     #ff6b6b;
   --hl-cell-alpha: 0.6;
   --hl-cursor-alpha: 0.32;
+  --hl-ink: rgba(255, 255, 255, 0.55);
 
   /* Extra SOURCE shades — see the light-theme block above for why these
      hues were picked. Boosted opacity to match the rest of this block's
@@ -466,6 +472,27 @@ input[type="number"]::-webkit-inner-spin-button {
 .cell-hl-blue   { background-color: rgba(var(--hl-blue), var(--hl-cell-alpha)); }
 .cell-hl-gray   { background-color: rgba(var(--hl-gray), var(--hl-cell-alpha)); }
 
+/* Textures laid over a cell color (palette row 2) -- the same patterns draw
+   on the palette's texture buttons, so both read the pattern from these
+   variables. The plain color ('solid') has no class. */
+.cell-tx-dots, .hl-tex-dots {
+  --tex-img: radial-gradient(circle, var(--hl-ink) 1.5px, transparent 2px);
+  --tex-size: 7px 7px;
+}
+.cell-tx-stripes, .hl-tex-stripes {
+  --tex-img: repeating-linear-gradient(45deg, var(--hl-ink) 0 1.5px, transparent 1.5px 6px);
+  --tex-size: auto;
+}
+.cell-tx-hatch, .hl-tex-hatch {
+  --tex-img: repeating-linear-gradient(45deg, var(--hl-ink) 0 1.2px, transparent 1.2px 6px),
+             repeating-linear-gradient(-45deg, var(--hl-ink) 0 1.2px, transparent 1.2px 6px);
+  --tex-size: auto;
+}
+[class*="cell-tx-"] {
+  background-image: var(--tex-img);
+  background-size: var(--tex-size);
+}
+
 .cell-hover-line { background-color: var(--highlight-hover-line-bg); }
 
 .error-cell          { background-color: var(--highlight-error-bg); }
@@ -634,9 +661,10 @@ input[type="number"]::-webkit-inner-spin-button {
    --hl-active is set from JS (_selectHighlight). A drag that will ERASE
    (.hl-erasing) keeps the neutral drag color, since previewing the color
    there would be misleading (the hover rule steps aside too, so the drag
-   color shows). (0,3,1) beats the (0,2,0) combined rules above. */
-body.highlight-mode:not(.hl-erasing) .cell-hover-sync,
-body.highlight-mode:not(.hl-erasing) .cell-drag-highlight {
+   color shows). Cells holding a dot or star can't be colored, so they keep
+   the usual tint. (0,4,1) beats the (0,2,0) combined rules above. */
+body.highlight-mode:not(.hl-erasing) .cell-hover-sync:not(:has(.dot, .star)),
+body.highlight-mode:not(.hl-erasing) .cell-drag-highlight:not(:has(.dot, .star)) {
   background-color: rgba(var(--hl-active), var(--hl-cursor-alpha));
 }
 
@@ -715,18 +743,40 @@ body.highlight-mode:not(.hl-erasing) .cell-drag-highlight {
   border-radius: 50%;
   padding: 0;
 }
-.hl-btn[aria-pressed="true"] {
+.hl-btn[aria-pressed="true"],
+.hl-tex-btn[aria-pressed="true"] {
   border-color: var(--primary-blue);
   box-shadow: 0 0 0 2px var(--primary-blue);
 }
-.hl-btn--none[aria-pressed="true"] { background: var(--primary-blue-active-bg); }
+/* The :not(:disabled) matches the global `button:not(:disabled):hover` rule
+   (style.css, near the top): without it that rule's gray wins over these
+   backgrounds -- and on touch screens :hover sticks after a tap, so the
+   picked swatch stayed gray. */
+.hl-btn--none[aria-pressed="true"]:not(:disabled) { background: var(--primary-blue-active-bg); }
 .hl-clear-btn { margin-left: 6px; }
-.hl-swatch-yellow { background: rgb(var(--hl-yellow)); }
-.hl-swatch-orange { background: rgb(var(--hl-orange)); }
-.hl-swatch-brown  { background: rgb(var(--hl-brown)); }
-.hl-swatch-sky    { background: rgb(var(--hl-sky)); }
-.hl-swatch-blue   { background: rgb(var(--hl-blue)); }
-.hl-swatch-gray   { background: rgb(var(--hl-gray)); }
+.hl-swatch.hl-swatch-yellow:not(:disabled) { background: rgb(var(--hl-yellow)); }
+.hl-swatch.hl-swatch-orange:not(:disabled) { background: rgb(var(--hl-orange)); }
+.hl-swatch.hl-swatch-brown:not(:disabled)  { background: rgb(var(--hl-brown)); }
+.hl-swatch.hl-swatch-sky:not(:disabled)    { background: rgb(var(--hl-sky)); }
+.hl-swatch.hl-swatch-blue:not(:disabled)   { background: rgb(var(--hl-blue)); }
+.hl-swatch.hl-swatch-gray:not(:disabled)   { background: rgb(var(--hl-gray)); }
+
+/* Row 2: texture buttons, previewed in the currently selected color. */
+.hl-row-break { flex-basis: 100%; height: 0; }
+.hl-tex-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid var(--border-strong);
+}
+.hl-tex-btn:not(:disabled),
+.hl-tex-btn:not(:disabled):hover {
+  background-color: rgba(var(--hl-active), var(--hl-cell-alpha));
+  background-image: var(--tex-img, none);
+  background-size: var(--tex-size, auto);
+}
 
 /* Duplicate control bar at the bottom of the page -- off by default,
    shown by the "Buttons also on bottom" setting (see _applyBottomControls

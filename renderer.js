@@ -397,23 +397,33 @@ export function applyRenderer(GameClass) {
 
   p._renderHighlights = function () {
     if (!this._allCells || !this.highlights) return;
-    const { HIGHLIGHT_COLORS } = this._constants;
+    const { HIGHLIGHT_COLORS, HIGHLIGHT_TEXTURES, HIGHLIGHT_TEX_STRIDE } = this._constants;
     const classes = HIGHLIGHT_COLORS.map(name => `cell-hl-${name}`);
+    const texClasses = HIGHLIGHT_TEXTURES.map(name => `cell-tx-${name}`);
     const show = this._highlightsEnabled() && !this._hintShowing;
     this._allCells.forEach(cell => {
-      cell.classList.remove(...classes);
-      const color = show ? this.highlights[cell.dataset.index] : null;
-      if (color != null) cell.classList.add(classes[color]);
+      cell.classList.remove(...classes, ...texClasses);
+      const value = show ? this.highlights[cell.dataset.index] : null;
+      if (value != null) {
+        cell.classList.add(classes[value % HIGHLIGHT_TEX_STRIDE]);
+        // Texture 0 is the plain color; it needs no class.
+        const tex = Math.floor(value / HIGHLIGHT_TEX_STRIDE);
+        if (tex > 0) cell.classList.add(texClasses[tex]);
+      }
     });
   };
 
-  // Build the color palette bar (buttons for "Dots & stars" mode plus one
-  // swatch per color). Called once at startup; shown/hidden by the setting.
+  // Build the color palette bar: a first row with the "Dots & stars" mode
+  // button, one swatch per color and "Clear colors", then a second row of
+  // textures that go on top of the picked color. Called once at startup;
+  // shown/hidden by the setting.
   p.setupHighlightPalette = function () {
     const palette = document.getElementById('highlight-palette');
     if (!palette) return;
-    const { HIGHLIGHT_COLORS } = this._constants;
+    const { HIGHLIGHT_COLORS, HIGHLIGHT_TEXTURES } = this._constants;
     this.activeHighlight = null;
+    this.activeTexture = 0;
+    this._lastHighlight = 0;
 
     const makeButton = (color, label, className) => {
       const btn = document.createElement('button');
@@ -438,7 +448,35 @@ export function applyRenderer(GameClass) {
     clear.onclick = () => this._clearAllHighlights();
     palette.appendChild(clear);
 
+    // Force the textures onto their own row.
+    const rowBreak = document.createElement('div');
+    rowBreak.className = 'hl-row-break';
+    palette.appendChild(rowBreak);
+    HIGHLIGHT_TEXTURES.forEach((name, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `hl-tex-btn hl-tex-${name}`;
+      btn.setAttribute('aria-label', name === 'solid' ? 'Plain color' : `Texture: ${name}`);
+      btn.title = name === 'solid' ? 'Plain color' : `Texture: ${name}`;
+      btn.onclick = () => {
+        this._selectTexture(i);
+        if (this.activeHighlight == null) this._selectHighlight(this._lastHighlight);
+      };
+      palette.appendChild(btn);
+    });
+
     this._selectHighlight(null);
+    this._selectTexture(0);
+  };
+
+  // Pick the texture painted over the selected color. Picking one while in
+  // "Dots & stars" mode switches to the last color used, so the click does
+  // what it looks like it does.
+  p._selectTexture = function (tex) {
+    this.activeTexture = tex;
+    document.querySelectorAll('#highlight-palette .hl-tex-btn').forEach((btn, i) => {
+      btn.setAttribute('aria-pressed', String(i === tex));
+    });
   };
 
   // Remove every color from the board, as a single undoable event (so no
@@ -450,6 +488,7 @@ export function applyRenderer(GameClass) {
   // Switch between dot/star mode (null) and painting with color `color`.
   p._selectHighlight = function (color) {
     this.activeHighlight = color;
+    if (color != null) this._lastHighlight = color;
     const buttons = [...document.querySelectorAll('#highlight-palette .hl-btn')];
     buttons.forEach((btn, i) => {
       // Button 0 is "Dots & stars" (color null); swatch i+1 is color i.

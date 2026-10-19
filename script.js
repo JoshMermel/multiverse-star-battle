@@ -1,5 +1,5 @@
 import { PuzzleSolver } from './solver.js';
-import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, HIGHLIGHT_COLORS } from './constants.js';
+import { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, HIGHLIGHT_COLORS, HIGHLIGHT_TEXTURES, HIGHLIGHT_TEX_STRIDE } from './constants.js';
 import { storageManager } from './storage.js';
 import { isRegionlessBoard } from './geometry.js';
 import { applyRenderer } from './renderer.js';
@@ -20,7 +20,7 @@ class StarBattleGame {
   constructor() {
     // Expose singletons to renderer and input modules to avoid circular imports.
     this._deps = { storageManager };
-    this._constants = { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, HIGHLIGHT_COLORS };
+    this._constants = { CELL, HINT_COLOR, HINT_SOURCE_VARIANTS, HIGHLIGHT_COLORS, HIGHLIGHT_TEXTURES, HIGHLIGHT_TEX_STRIDE };
 
     this.puzzleCache = new Map();
     this.categories = [];
@@ -328,11 +328,13 @@ class StarBattleGame {
       // A color drag that starts on an already-so-colored cell erases (see
       // _commitHighlightDrag); flag it so its preview isn't shown in color.
       document.body.classList.toggle('hl-erasing',
-        this.activeHighlight != null && this.highlights[idx] === this.activeHighlight);
+        this.activeHighlight != null && this.highlights[idx] === this._activeHighlightValue());
       this.draggedIndices = [idx];
-      this._getCellsByIndex(idx).forEach(cell => {
-        cell.classList.add('cell-drag-highlight');
-      });
+      if (this._canPreviewDrag(idx)) {
+        this._getCellsByIndex(idx).forEach(cell => {
+          cell.classList.add('cell-drag-highlight');
+        });
+      }
     }
   }
 
@@ -341,11 +343,24 @@ class StarBattleGame {
     if (this.voidCells?.has(idx)) return;
     if (!this.isDragging || this.draggedIndices.includes(idx)) return;
     this.draggedIndices.push(idx);
-    this._getCellsByIndex(idx).forEach(cell => {
-      cell.classList.add('cell-drag-highlight');
-    });
+    if (this._canPreviewDrag(idx)) {
+      this._getCellsByIndex(idx).forEach(cell => {
+        cell.classList.add('cell-drag-highlight');
+      });
+    }
   }
 
+  // In color mode a cell holding a dot or star can't be colored, so a drag
+  // doesn't tint it either.
+  _canPreviewDrag(idx) {
+    return this.activeHighlight == null || this.state[idx] === CELL.NONE;
+  }
+
+  // The value a click/drag writes in color mode: the picked color plus the
+  // picked texture (see HIGHLIGHT_TEX_STRIDE in constants.js).
+  _activeHighlightValue() {
+    return this.activeHighlight + HIGHLIGHT_TEX_STRIDE * (this.activeTexture ?? 0);
+  }
   _commitDrag() {
     if (!this.draggedIndices || this.draggedIndices.length === 0) return;
     if (this.activeHighlight != null) { this._commitHighlightDrag(); return; }
@@ -377,17 +392,20 @@ class StarBattleGame {
   // cell decides the gesture: starting on a cell that already has the
   // selected color erases across the whole drag, otherwise it paints.
   _commitHighlightDrag() {
-    const color = this.activeHighlight;
-    const erase = this.highlights[this.draggedIndices[0]] === color;
-    this._setHighlights(this.draggedIndices, erase ? null : color);
+    const value = this._activeHighlightValue();
+    const erase = this.highlights[this.draggedIndices[0]] === value;
+    this._setHighlights(this.draggedIndices, erase ? null : value);
     this.draggedIndices = [];
   }
 
   // Set (or clear, with null) the highlight on each of `indices` as ONE
-  // undoable event. Highlights never touch cell state, dots or stars.
+  // undoable event. Highlights never touch cell state, dots or stars, but
+  // only empty cells can be colored: a cell holding a dot or star is skipped.
   _setHighlights(indices, color) {
     for (const idx of indices) {
-      if (!this.voidCells?.has(idx)) this.highlights[idx] = color;
+      if (this.voidCells?.has(idx)) continue;
+      if (color != null && this.state[idx] !== CELL.NONE) continue;
+      this.highlights[idx] = color;
     }
     this._renderHighlights();
     this.saveCurrentState();
@@ -452,8 +470,25 @@ class StarBattleGame {
       this._suppressAutoFill = false;
     }
 
+    // A cell holding a dot or star carries no color (placing one, by hand or
+    // by auto-fill, wipes it), so drop colors from every filled cell.
+    this._dropHighlightsOnFilledCells();
+
     this.validate({ suppressWinToast, debounceMs: delay });
     this.saveCurrentState();
+  }
+
+  // Enforces "only empty cells are colored". Returns true if anything changed.
+  _dropHighlightsOnFilledCells() {
+    let changed = false;
+    this.highlights?.forEach((h, i) => {
+      if (h != null && this.state[i] !== CELL.NONE) {
+        this.highlights[i] = null;
+        changed = true;
+      }
+    });
+    if (changed) this._renderHighlights();
+    return changed;
   }
 
 

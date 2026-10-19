@@ -126,16 +126,26 @@ class StorageManager {
 
   // --- Cell colors (local-only; never synced to the cloud) ---
 
-  // One char per cell: '-' for uncolored, else the palette index as a digit.
+  // Two chars per cell: '--' for uncolored, else the highlight value (palette
+  // index + 10 * texture, see constants.js) zero-padded to two digits.
+  // Older saves used ONE char per cell (the palette index as a digit, no
+  // textures); those still load.
   getHighlights(puzzleId, length) {
     const str = localStorage.getItem(`sb_hl_${puzzleId}`);
-    if (!str || str.length !== length) return null;
-    return str.split('').map(ch => (ch === '-' ? null : Number(ch)));
+    if (!str) return null;
+    if (str.length === length) {
+      return str.split('').map(ch => (ch === '-' ? null : Number(ch)));
+    }
+    if (str.length !== 2 * length) return null;
+    return Array.from({ length }, (_, i) => {
+      const pair = str.slice(2 * i, 2 * i + 2);
+      return pair === '--' ? null : Number(pair);
+    });
   }
 
   saveHighlights(puzzleId, highlights) {
-    const str = highlights.map(h => (h == null ? '-' : String(h))).join('');
-    if (/^-*$/.test(str)) localStorage.removeItem(`sb_hl_${puzzleId}`);
+    const str = highlights.map(h => (h == null ? '--' : String(h).padStart(2, '0'))).join('');
+    if (/^(--)*$/.test(str)) localStorage.removeItem(`sb_hl_${puzzleId}`);
     else localStorage.setItem(`sb_hl_${puzzleId}`, str);
   }
 

@@ -56,3 +56,12 @@ export const TILE_OUTLINE_COLORS = Object.freeze(['blue', 'brown', 'cyan', 'pink
 // favor of colors that differ in LIGHTNESS as well as hue -- light yellow
 // and sky vs. mid orange/gray vs. dark brown/blue.
 export const HIGHLIGHT_COLORS = Object.freeze(['yellow', 'orange', 'brown', 'sky', 'blue', 'gray']);
+
+// Optional textures laid over a cell color (the palette's second row), so a
+// deduction can be told apart by pattern as well as hue. A stored highlight
+// is color + HIGHLIGHT_TEX_STRIDE * texture (null = uncolored), so a plain
+// color keeps its original value and old saves load unchanged. Index 0 is
+// the plain, untextured color. As with the colors, append new textures at
+// the END; HIGHLIGHT_TEX_STRIDE must stay above HIGHLIGHT_COLORS.length.
+export const HIGHLIGHT_TEXTURES = Object.freeze(['solid', 'dots', 'stripes', 'hatch']);
+export const HIGHLIGHT_TEX_STRIDE = 10;
