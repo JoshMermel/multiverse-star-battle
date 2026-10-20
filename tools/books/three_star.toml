@@ -2,8 +2,8 @@
 # Run:  python3 build_books.py three_star   (stages to books_staging/; add --promote to copy into data/)
 
 [ranges.13x13]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
-Beginner  = [115, 265]
-Medium    = [200, 535]
+Beginner  = [115, 250]
+Medium    = [210, 520]
 Hard      = [555, 775]
 Expert    = [645, 1185]
 
