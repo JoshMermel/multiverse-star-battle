@@ -90,6 +90,23 @@ from generator import Generator
 from symmetric_allowlists import ALLOWLISTS as _ALLOWLISTS
 
 
+def _is_block_grid(flat: str, n: int) -> bool:
+    """
+    True when the board is exactly a b x b grid of b x b blocks (n = b*b,
+    e.g. nine 3x3 blocks on a 9x9 board) -- every region is one block.
+    Always False when n is not a perfect square (so 8x8 is unaffected).
+    """
+    b = int(round(n ** 0.5))
+    if b * b != n or len(set(flat)) != n:
+        return False
+    for br in range(b):
+        for bc in range(b):
+            labels = {flat[(br * b + r) * n + bc * b + c] for r in range(b) for c in range(b)}
+            if len(labels) != 1:
+                return False
+    return True
+
+
 def _rect_neighbors(flat: int, cols: int, rows: int) -> list:
     """
     4-connected neighbours of flat index in a (rows x cols) rectangle.
@@ -1288,9 +1305,15 @@ class SymmetricGenerator(Generator):
         distinct.
         """
         if self.trans_type == 'none':
-            return self._try_generate_full()
+            result = self._try_generate_full()
         else:
-            return self._try_generate_tiled()
+            result = self._try_generate_tiled()
+        # The translation generators sometimes emit the degenerate board
+        # made of nine 3x3 blocks (fully octo-symmetric). Outside octo that
+        # is an accidental extra symmetry, not the requested one -- reject.
+        if result is not None and self.sym_type != 'octo' and _is_block_grid(result[0], self.n):
+            return None
+        return result
 
     def _try_generate_full(self):
         """Direct generation of the full NxN board (no tiling)."""
