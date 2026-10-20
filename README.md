@@ -44,10 +44,13 @@ you'll arrive at the only unique solution.
 │   ├── scorer/           # Scoring engine (package; see tools/README.md)
 │   ├── *_generator.py   # Generators for candidate boards
 │   ├── *_comparator.py  # Compare candidate boards to produce puzzles
-│   └── board_utils.py   # Shared utils
+│   ├── board_utils.py   # Shared utils
+│   ├── build_books.py   # Builds the books in data/ from the pools in tools/library/
+│   ├── books/           # Book recipes (*.toml) and docs for build_books.py (see tools/books/README.md)
+│   └── library/         # Big scratch pools of scored puzzles the books are built from (gitignored)
 └── data/
     ├── manifest.json    # List of puzzle books/categories
-    └── <catId>.csv      # Puzzle data for each category
+    └── <catId>.csv      # Puzzle data for each category (built by tools/build_books.py)
 ```
 
 ---
@@ -99,6 +102,9 @@ puzzle_2,8,BCCCCCCEBBBHHCCEGBBHHCAAGGBDHAAAGGDDDDAAGDDDDDAAGFDDDDAAFFDDDDAA,AACC
 -  everything else - unused metadata.
 
 For other board counts, add or omit board_n columns from the csv header.
+
+The books are not hand-assembled: they are built from larger pools of generated puzzles by `tools/build_books.py`
+(see [Building Puzzle Books](#building-puzzle-books) below).
 
 ---
 
@@ -174,6 +180,29 @@ application made during the solve.
 For details on these inferences, see how_to_solve.md.
 
 Puzzles that the scorer cannot fully solve are marked `UNSOLVED`.
+
+---
+
+## Building Puzzle Books
+
+The books in `data/` are built from big scratch pools of scored puzzles in `tools/library/` (gitignored) by
+`tools/build_books.py`, following small declarative recipes in `tools/books/*.toml`. A recipe names a pool and says, per
+difficulty tier, how many puzzles to pick and over what score range (the picks are spread as evenly as the pool allows
+across that range); it can also split a book across puzzle types in target proportions, and add bonus Grandmaster and
+UNSOLVED puzzles (the hardest of each in the pool). After a rescore or a scoring change, rebuilding every book is one command:
+
+```bash
+cd tools
+python3 build_books.py --all              # build all books into tools/books_staging/ and print a report
+python3 build_books.py 8x8_hard --promote # build one book and copy it into data/
+```
+
+Nothing touches `data/` until you `--promote`, and promotion refuses to overwrite a book with uncommitted changes. The report
+shows, per book and tier, what was picked, how many candidates the pool had, and any shortfall.
+
+The full guide (recipe format, groups and bonus rows, how to rescore pools and top them up with newly generated puzzles, and the
+supporting scripts) is in [`tools/books/README.md`](tools/books/README.md); open work is tracked in
+[`tools/books/TODO.md`](tools/books/TODO.md).
 
 ---
 

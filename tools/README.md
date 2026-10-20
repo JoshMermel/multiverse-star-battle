@@ -25,6 +25,14 @@ Python code for generating and scoring puzzles.
  - font_data.py is a pixel font used to generate boards with letters inside them
  - board_utils.py contains helpers that are useful across the project and which
    don't fit anywhere else.
+ - build_books.py builds the finished books in data/ from the big pools of scored
+   puzzles in library/ (gitignored), following the recipes in books/*.toml. See
+   books/README.md for the full guide. Supporting scripts: rescore_pools.py (refresh
+   pools after a scoring change), trim_pool.py (shrink oversized pools
+   while keeping every score tail), topup_pool.py / probe_gen.py / gen_twin_extra.py /
+   gen_mono_extra.py / append_to_pool.py (grow a pool with newly generated puzzles),
+   unsolved_sync.py (keep data/ UNSOLVED rows present in their pools), and book_gen.py
+   (the original one-book selector).
 
 Stuff I might or might not do longer term:
  - Maybe account for the following during scoring:
