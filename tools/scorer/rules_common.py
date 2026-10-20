@@ -175,6 +175,10 @@ class CommonRules:
     # placement becomes a star. Single-board only, never cross-board. Pairs
     # whose enumeration would exceed ENUMERATION_COMBO_CAP are skipped (the
     # enumerator returns None for them).
+    #
+    # Split into rule_region_pair_stars (forced stars) and
+    # rule_region_pair_dots (forced dots), tried in that order and both ahead
+    # of region algebra (2026-10-20, user's call).
     def _touching_region_pairs(self, p, board_idx):
         cache = getattr(p, "_touching_region_pairs_cache", None)
         if cache is None:
@@ -198,7 +202,8 @@ class CommonRules:
             cache[board_idx] = [(by_label[a], by_label[b]) for a, b in sorted(pairs)]
         return cache[board_idx]
 
-    def rule_region_pair_placement_forced(self, p):
+    def _region_pair_unions(self, p):
+        """Yield (union, need) for every touching pair of unfinished regions."""
         for b_idx in range(p.n_boards):
             if p.regionless_boards[b_idx]:
                 continue
@@ -212,39 +217,109 @@ class CommonRules:
                     "label": f"{ua['label']}+{ub['label']}",
                     "board_idx": b_idx,
                 }
-                # Weak enumeration depends only on the union's own cells, so
-                # cache on exactly that state.
-                enum_cache = getattr(p, "_region_pair_combos_cache", None)
-                if enum_cache is None:
-                    enum_cache = p._region_pair_combos_cache = {}
-                key = (union["label"], tuple(p.grid[i] for i in union["indices"]))
-                if key not in enum_cache:
-                    enum_cache[key] = self._enumerate_unit_completions(
-                        p, union, strong=False, quota=2 * p.stars_per_unit)
-                combos = enum_cache[key]
-                if not combos:
-                    continue  # over cap (None) or contradiction ([]) -- leave to other rules
-                union_set = set(union["indices"])
-                avail = [i for i in union["indices"] if p.grid[i] is None]
-                outside = {
-                    nb for cell in union["indices"] for nb in p._neighbor_map[cell]
-                    if nb not in union_set and p.grid[nb] is None
-                }
-                forced_stars = [c for c in avail if all(c in combo for combo in combos)]
-                forced_dots = [c for c in avail if not any(c in combo for combo in combos)]
-                forced_dots += [
-                    c for c in outside
-                    if all(any(self._cells_adjacent(p, s, c) for s in combo) for combo in combos)
-                ]
-                label = f"RegionPairPlacementForced({union['label']})"
-                changes = 0
-                for idx in forced_stars:
+                yield union, need_a + need_b
+
+    def _region_pair_forced(self, p, union):
+        """(forced_stars, forced_dots) from the weak enumeration of `union`,
+        or None if it is over the cap / contradictory."""
+        # Weak enumeration depends only on the union's own cells, so
+        # cache on exactly that state.
+        enum_cache = getattr(p, "_region_pair_combos_cache", None)
+        if enum_cache is None:
+            enum_cache = p._region_pair_combos_cache = {}
+        key = (union["label"], tuple(p.grid[i] for i in union["indices"]))
+        if key not in enum_cache:
+            enum_cache[key] = self._enumerate_unit_completions(
+                p, union, strong=False, quota=2 * p.stars_per_unit)
+        combos = enum_cache[key]
+        if not combos:
+            return None  # over cap (None) or contradiction ([]) -- leave to other rules
+        union_set = set(union["indices"])
+        avail = [i for i in union["indices"] if p.grid[i] is None]
+        outside = {
+            nb for cell in union["indices"] for nb in p._neighbor_map[cell]
+            if nb not in union_set and p.grid[nb] is None
+        }
+        forced_stars = [c for c in avail if all(c in combo for combo in combos)]
+        forced_dots = [c for c in avail if not any(c in combo for combo in combos)]
+        forced_dots += [
+            c for c in outside
+            if all(any(self._cells_adjacent(p, s, c) for s in combo) for combo in combos)
+        ]
+        return forced_stars, forced_dots
+
+    def _region_pair_placement(self, p, want_stars):
+        for union, _need in self._region_pair_unions(p):
+            forced = self._region_pair_forced(p, union)
+            if forced is None:
+                continue
+            label = f"RegionPair{'Stars' if want_stars else 'Dots'}({union['label']})"
+            changes = 0
+            if want_stars:
+                for idx in forced[0]:
                     changes += p.validate_and_set(idx, "x", label, self.verbose)
-                for idx in forced_dots:
+            else:
+                for idx in forced[1]:
                     changes += p.validate_and_set(idx, ".", label, self.verbose)
+            if changes > 0:
+                return changes
+        return 0
+
+    def rule_region_pair_stars(self, p):
+        return self._region_pair_placement(p, True)
+
+    def rule_region_pair_dots(self, p):
+        return self._region_pair_placement(p, False)
+
+    # -- Region-pair tiles ---------------------------------------------------------
+    #
+    # The tile-shaped version of rule_region_pair_stars/_dots, tried first at
+    # the same tier and score (same relationship as rule_region_tile_star/dots
+    # to unit_placement_forced): the pair's union needs K = need_a + need_b
+    # stars, so if its empty cells split into exactly K cliques (subsets of a
+    # 2x2 box), each holds exactly one star. A tile with ONE empty cell is a
+    # star; any empty cell touching EVERY cell of a 2-3 cell tile is a dot.
+    # Tilings made only of single cells are skipped (the placement wording
+    # covers "as many empties as stars needed"). Matches
+    # hintRegionPairTileStar/Dots in solver-rules-common.js.
+    def _region_pair_tiles(self, p, union, k):
+        empties = tuple(i for i in union["indices"] if p.grid[i] is None)
+        if k <= 0 or len(empties) == k:
+            return set()
+        cache = getattr(p, "_region_pair_tiles_cache", None)
+        if cache is None:
+            cache = p._region_pair_tiles_cache = {}
+        key = (union["label"], k, empties)
+        if key not in cache:
+            cache[key] = self._clique_partition_tiles(p, empties, k)
+        return cache[key]
+
+    def _region_pair_tile(self, p, want_stars):
+        label = "RegionPairTileStar" if want_stars else "RegionPairTileDots"
+        for union, k in self._region_pair_unions(p):
+            for tile in self._region_pair_tiles(p, union, k):
+                changes = 0
+                if want_stars:
+                    if len(tile) == 1:
+                        (i,) = tile
+                        changes = p.validate_and_set(i, "x", label, self.verbose)
+                else:
+                    if len(tile) < 2:
+                        continue
+                    cells = sorted(tile)
+                    for i in p._neighbor_map[cells[0]]:
+                        if (p.grid[i] is None and i not in tile
+                                and all(i in p._neighbor_map[c] for c in cells[1:])):
+                            changes += p.validate_and_set(i, ".", label, self.verbose)
                 if changes > 0:
                     return changes
         return 0
+
+    def rule_region_pair_tile_star(self, p):
+        return self._region_pair_tile(p, True)
+
+    def rule_region_pair_tile_dots(self, p):
+        return self._region_pair_tile(p, False)
 
     # -- Region algebra --------------------------------------------------------
     #

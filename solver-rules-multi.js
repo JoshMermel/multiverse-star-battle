@@ -2021,8 +2021,11 @@ export function applyMultiStarRules(PuzzleSolver) {
       // whole line was just clutter.
       const kind = this._unitKind(unit);
       const unitPhrase = kind === 'region' ? 'the amber-outlined region' : `this ${kind}`;
+      // "still needs" once the unit already holds some of its stars, so the
+      // count reads as the REMAINING need, not the unit's full quota.
+      const needsWord = unit.indices.some(i => this.vState(i) === CELL.STAR) ? 'still needs' : 'needs';
       return {
-        description: `The ${combo.length} highlighted ${tileWord} ${holdWord} exactly one star, accounting for ${starsPhrase} ${unitPhrase} needs.${this._tileCoverClause(displayTiles)}`,
+        description: `The ${combo.length} highlighted ${tileWord} ${holdWord} exactly one star, accounting for ${starsPhrase} ${unitPhrase} ${needsWord}.${this._tileCoverClause(displayTiles)}`,
         highlights,
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
@@ -2392,9 +2395,11 @@ export function applyMultiStarRules(PuzzleSolver) {
   // tile, kept so a hint can show the whole covering, same as band tiles.
   // Cached on the unit's own state (a unit's tiles never depend on cells
   // outside it).
-  p._unitTileEntries = function (unit) {
+  // `kOverride` is for a synthetic unit (a region-pair union, see
+  // hintRegionPairTileStar) whose need isn't starsPerGroup minus its stars.
+  p._unitTileEntries = function (unit, kOverride = null) {
     const stars = unit.indices.filter(i => this.vState(i) === CELL.STAR).length;
-    const k = this.starsPerGroup - stars;
+    const k = kOverride ?? (this.starsPerGroup - stars);
     if (k <= 0) return [];
     const empties = unit.indices.filter(i => this.vState(i) === CELL.NONE);
     if (empties.length < k || empties.length > 4 * k) return [];
@@ -2476,6 +2481,42 @@ export function applyMultiStarRules(PuzzleSolver) {
   // hint per region (the tiling marking the most cells). The line versions
   // (lineTileStar/Dots) do the same for a single row/column, whose tiles are
   // 1x2 dominoes or single cells.
+  // The tiling (witness) whose tiles mark the most cells, among `entries`
+  // (from _unitTileEntries): { id, group: { witness, matching, targets } } or
+  // null. wantStar: tiles with ONE empty cell (the cell is the star, skipped
+  // when the whole tiling is single cells -- unitPlacementForced's own
+  // wording is the natural one there); otherwise tiles of 2-3 cells, whose
+  // targets are the empty cells touching every one of them (dots). A unit can
+  // have several similar tilings with similar deductions; show only the best
+  // (first found on ties).
+  p._bestTileGroup = function (entries, wantStar) {
+    const byWitness = new Map();
+    for (const entry of entries) {
+      let targets;
+      if (wantStar) {
+        if (entry.cells.length !== 1 || entry.witness.every(t => t.cells.length === 1)) continue;
+        targets = [entry.cells[0]];
+      } else {
+        if (entry.cells.length < 2) continue;
+        const [first, ...others] = entry.cells;
+        targets = this.getNeighbors(first).filter(i =>
+          this.vState(i) === CELL.NONE && !entry.cells.includes(i)
+          && others.every(c => this._cellsAdjacent(c, i)));
+      }
+      if (targets.length === 0) continue;
+      const id = entry.witness[0].tilingId;
+      if (!byWitness.has(id)) byWitness.set(id, { witness: entry.witness, matching: [], targets: new Set() });
+      const group = byWitness.get(id);
+      group.matching.push(entry.rep);
+      targets.forEach(t => group.targets.add(t));
+    }
+    let best = null;
+    for (const [id, group] of byWitness) {
+      if (!best || group.targets.size > best.group.targets.size) best = { id, group };
+    }
+    return best;
+  };
+
   p._regionTileHints = function (wantStar, lines = false) {
     const hints = [];
     const seenWitness = new Set();
@@ -2484,35 +2525,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       // dominoes: 1 empty cell or 2 touching ones.
       if ((unit.boardIdx === undefined) !== lines) continue;
       const kind = this._unitKind(unit);
-      const byWitness = new Map();
-      for (const entry of this._unitTileEntries(unit)) {
-        let targets;
-        if (wantStar) {
-          // A tiling of ALL single cells is just "the region has exactly as
-          // many empties as it needs" -- unitPlacementForced's own wording
-          // is the natural one there, so only show tilings with a real tile.
-          if (entry.cells.length !== 1 || entry.witness.every(t => t.cells.length === 1)) continue;
-          targets = [entry.cells[0]];
-        } else {
-          if (entry.cells.length < 2) continue;
-          const [first, ...others] = entry.cells;
-          targets = this.getNeighbors(first).filter(i =>
-            this.vState(i) === CELL.NONE && !entry.cells.includes(i)
-            && others.every(c => this._cellsAdjacent(c, i)));
-        }
-        if (targets.length === 0) continue;
-        const id = entry.witness[0].tilingId;
-        if (!byWitness.has(id)) byWitness.set(id, { witness: entry.witness, matching: [], targets: new Set() });
-        const group = byWitness.get(id);
-        group.matching.push(entry.rep);
-        targets.forEach(t => group.targets.add(t));
-      }
-      // A region can have several similar tilings with similar deductions;
-      // show only the one that marks the most cells (first found on ties).
-      let best = null;
-      for (const [id, group] of byWitness) {
-        if (!best || group.targets.size > best.group.targets.size) best = { id, group };
-      }
+      const best = this._bestTileGroup(this._unitTileEntries(unit), wantStar);
       for (const [id, { witness, matching, targets }] of best ? [[best.id, best.group]] : []) {
         if (seenWitness.has(id)) continue;
         seenWitness.add(id);
@@ -3371,11 +3384,15 @@ export function applyMultiStarRules(PuzzleSolver) {
       // pair needing K stars (at least one side a pair; groups of 3+ regions
       // aren't considered). See hintRegionSubsetExpert in solver-rules-common.js.
       { key: 'regionSubsetExpert',             fn: () => this.hintRegionSubsetExpert() },
-      // Region algebra, then the region-pair hybrid enumeration -- see the
-      // section comments above hintRegionAlgebra/hintRegionPairPlacementForced
-      // in solver-rules-common.js.
+      // Region-pair hybrid enumeration (stars, then dots; each preceded by
+      // its tile-shaped version), then region algebra -- see the section
+      // comments above hintRegionPairStars/hintRegionAlgebra in
+      // solver-rules-common.js.
+      { key: 'regionPairTileStar',             fn: () => this.hintRegionPairTileStar() },
+      { key: 'regionPairStars',                fn: () => this.hintRegionPairStars() },
+      { key: 'regionPairTileDots',             fn: () => this.hintRegionPairTileDots() },
+      { key: 'regionPairDots',                 fn: () => this.hintRegionPairDots() },
       { key: 'regionAlgebra',                  fn: () => this.hintRegionAlgebra() },
-      { key: 'regionPairPlacementForced',      fn: () => this.hintRegionPairPlacementForced() },
       { key: 'lookaheadDotsSingleBoard',       fn: () => this.hintLookaheadDotsSingleBoard() },
       // Partial subset where either side is a union of two units -- hardest
       // rule in Expert. See the section comment above hintPartialSubset.

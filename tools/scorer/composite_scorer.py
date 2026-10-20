@@ -114,10 +114,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_lookahead_half_stage_single_board,   78, "Expert"),
             (self.rule_lookahead_half_stage,                80, "Expert"),
             (self.rule_region_pair_contains_pair,           90, "Expert"),
-            # Region algebra, then the region-pair hybrid enumeration -- see
+            # Region-pair hybrid enumeration (stars, then dots; each preceded
+            # by its tile-shaped version), then region algebra -- see
             # rules_common.py's section comments for both.
-            (self.rule_region_algebra,                      95, "Expert"),
-            (self.rule_region_pair_placement_forced,        100, "Expert"),
+            (self.rule_region_pair_tile_star,               95, "Expert"),
+            (self.rule_region_pair_stars,                   95, "Expert"),
+            (self.rule_region_pair_tile_dots,               97, "Expert"),
+            (self.rule_region_pair_dots,                    97, "Expert"),
+            (self.rule_region_algebra,                      100, "Expert"),
 
             # -- Grandmaster --------------------------------------------------
             # Region algebra whose two units are apart (don't share an edge);
@@ -309,10 +313,14 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_crossboard_n_region_pinned_multi_3_cols,   125, "Expert"),
             # Region or region-pair inside a region or pair, equal need.
             (self.rule_region_subset_expert,                      130, "Expert"),
-            # Region algebra, then the region-pair hybrid enumeration -- see
+            # Region-pair hybrid enumeration (stars, then dots; each preceded
+            # by its tile-shaped version), then region algebra -- see
             # rules_common.py's section comments for both.
-            (self.rule_region_algebra,                            152, "Expert"),
-            (self.rule_region_pair_placement_forced,              155, "Expert"),
+            (self.rule_region_pair_tile_star,                     152, "Expert"),
+            (self.rule_region_pair_stars,                         152, "Expert"),
+            (self.rule_region_pair_tile_dots,                     153, "Expert"),
+            (self.rule_region_pair_dots,                          153, "Expert"),
+            (self.rule_region_algebra,                            155, "Expert"),
             (self.rule_lookahead_dots_single_board,               160, "Expert"),
             # Partial subset where either side is a union of two units --
             # hardest rule in Expert. See rules_common.py's "Partial subset"

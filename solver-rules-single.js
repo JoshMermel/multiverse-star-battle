@@ -1005,11 +1005,15 @@ export function applySingleStarRules(PuzzleSolver) {
       { key: 'lookaheadHalfSingleBoard', fn: () => this.hintLookaheadHalfSingleBoard() },
       { key: 'lookaheadHalf',            fn: () => this.hintLookaheadHalf() },
       { key: 'regionSubsetSync2',        fn: () => this.hintRegionSubsetSync(2) },
-      // Region algebra, then the region-pair hybrid enumeration -- see the
-      // section comments above hintRegionAlgebra/hintRegionPairPlacementForced
-      // in solver-rules-common.js.
+      // Region-pair hybrid enumeration (stars, then dots; each preceded by
+      // its tile-shaped version), then region algebra -- see the section
+      // comments above hintRegionPairStars/hintRegionAlgebra in
+      // solver-rules-common.js.
+      { key: 'regionPairTileStar',        fn: () => this.hintRegionPairTileStar() },
+      { key: 'regionPairStars',           fn: () => this.hintRegionPairStars() },
+      { key: 'regionPairTileDots',        fn: () => this.hintRegionPairTileDots() },
+      { key: 'regionPairDots',            fn: () => this.hintRegionPairDots() },
       { key: 'regionAlgebra',             fn: () => this.hintRegionAlgebra() },
-      { key: 'regionPairPlacementForced', fn: () => this.hintRegionPairPlacementForced() },
       // Grandmaster
       // Region algebra whose two units are apart (don't share an edge); the
       // touching case is Expert, above -- see the section comment above

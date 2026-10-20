@@ -422,7 +422,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
   // outside the union touching a star of every placement, is a dot; a cell
   // in every placement is a star. Single-board only, never cross-board.
   // Pairs whose enumeration would exceed ENUMERATION_COMBO_CAP are skipped.
-  // Python port: rule_region_pair_placement_forced in rules_common.py.
+  // Python port: rule_region_pair_stars / rule_region_pair_dots in rules_common.py.
   p._touchingRegionPairs = function () {
     if (this._touchingRegionPairsCache) return this._touchingRegionPairsCache;
     const n = this.n;
@@ -474,8 +474,10 @@ export function applyCommonSolverRules(PuzzleSolver) {
     return combos;
   };
 
-  p.hintRegionPairPlacementForced = function () {
-    const hints = [];
+  // Every touching pair of unfinished regions as a synthetic union unit,
+  // with `need` = the pair's combined remaining stars.
+  p._regionPairUnions = function () {
+    const out = [];
     const pairs = this._touchingRegionPairs()
       .slice()
       .sort((x, y) => (x.a.indices[0] - y.a.indices[0]) || (x.b.indices[0] - y.b.indices[0]));
@@ -483,54 +485,110 @@ export function applyCommonSolverRules(PuzzleSolver) {
       const needA = this.starsPerGroup - a.indices.filter(i => this.vState(i) === CELL.STAR).length;
       const needB = this.starsPerGroup - b.indices.filter(i => this.vState(i) === CELL.STAR).length;
       if (needA <= 0 || needB <= 0) continue;
+      out.push({
+        union: { indices: [...a.indices, ...b.indices], label: `${a.label}+${b.label}`, boardIdx },
+        need: needA + needB,
+        boardIdx
+      });
+    }
+    return out;
+  };
 
-      const union = { indices: [...a.indices, ...b.indices], label: `${a.label}+${b.label}`, boardIdx };
-      const combos = this._regionPairCombos(union);
-      if (!combos || combos.length === 0) continue;
-
-      const unionSet = new Set(union.indices);
-      const avail = union.indices.filter(i => this.vState(i) === CELL.NONE);
-      const outside = new Set();
-      for (const cell of union.indices) {
-        for (const nb of this.getNeighbors(cell)) {
-          if (!unionSet.has(nb) && this.vState(nb) === CELL.NONE) outside.add(nb);
-        }
+  // { forcedStars, forcedDots } from the weak enumeration of a pair's union,
+  // or null if it is over the cap / contradictory.
+  p._regionPairForced = function (union) {
+    const combos = this._regionPairCombos(union);
+    if (!combos || combos.length === 0) return null;
+    const unionSet = new Set(union.indices);
+    const avail = union.indices.filter(i => this.vState(i) === CELL.NONE);
+    const outside = new Set();
+    for (const cell of union.indices) {
+      for (const nb of this.getNeighbors(cell)) {
+        if (!unionSet.has(nb) && this.vState(nb) === CELL.NONE) outside.add(nb);
       }
-      const forcedStars = avail.filter(cell => combos.every(combo => combo.includes(cell)));
-      const forcedDots = [
+    }
+    return {
+      forcedStars: avail.filter(cell => combos.every(combo => combo.includes(cell))),
+      forcedDots: [
         ...avail.filter(cell => !combos.some(combo => combo.includes(cell))),
         ...[...outside].filter(cell => combos.every(combo => combo.some(s => this._cellsAdjacent(s, cell)))),
-      ];
-      if (forcedStars.length === 0 && forcedDots.length === 0) continue;
+      ]
+    };
+  };
 
-      const need = needA + needB;
+  // Split into two rules, tried stars first then dots (2026-10-20, user's
+  // call), both ahead of region algebra. Python: rule_region_pair_stars /
+  // rule_region_pair_dots.
+  p._regionPairPlacementHints = function (wantStars) {
+    const hints = [];
+    for (const { union, need, boardIdx } of this._regionPairUnions()) {
+      const forced = this._regionPairForced(union);
+      if (!forced) continue;
+      const cells = wantStars ? forced.forcedStars : forced.forcedDots;
+      if (cells.length === 0) continue;
       const intro = `Treat the two blue-outlined regions as one. Every way to place their ${need} remaining star${need === 1 ? '' : 's'}`;
-      // Prototype: outline the union (a and b touching, so they trace as
-      // ONE seamless blue shape -- no shared-edge line between them, since
-      // both are in the same outline entry) instead of filling its cells.
-      // See renderer.js's _buildRegionOutlineSvg.
-      const regionOutlines = [{ indices: union.indices, color: 'blue', boardIdx }];
-      if (forcedStars.length > 0) {
-        hints.push({
-          description: `${intro} includes the marked cell${forcedStars.length === 1 ? '' : 's'}.`,
-          highlights: [],
-          marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
-          regionOutlines,
-          boardIdx
-        });
-      }
-      if (forcedDots.length > 0) {
-        hints.push({
-          description: `${intro} rules out a star at the marked cell${forcedDots.length === 1 ? '' : 's'}.`,
-          highlights: [],
-          marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
-          regionOutlines,
-          boardIdx
-        });
-      }
+      // Outline the union (a and b touching, so they trace as ONE seamless
+      // blue shape -- no shared-edge line between them, since both are in
+      // the same outline entry) instead of filling its cells. See
+      // renderer.js's _buildRegionOutlineSvg.
+      hints.push({
+        description: wantStars
+          ? `${intro} includes the marked cell${cells.length === 1 ? '' : 's'}.`
+          : `${intro} rules out a star at the marked cell${cells.length === 1 ? '' : 's'}.`,
+        highlights: [],
+        marks: cells.map(idx => ({ idx, color: wantStars ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET })),
+        regionOutlines: [{ indices: union.indices, color: 'blue', boardIdx }],
+        boardIdx,
+        observation: this._unitObservation(union)
+      });
     }
     return hints.length > 0 ? hints : null;
   };
+
+  p.hintRegionPairStars = function () { return this._regionPairPlacementHints(true); };
+  p.hintRegionPairDots = function () { return this._regionPairPlacementHints(false); };
+
+  // Tile-shaped versions of the two rules above, tried first at the same tier
+  // (same relationship as hintRegionTileStar/Dots to unitPlacementForced, see
+  // "Region tiles on their own" in solver-rules-multi.js): the pair's union
+  // needs K = need stars, so if its empty cells split into K cliques (tiles),
+  // each holds exactly one star. A one-cell tile is a star; a cell touching
+  // every cell of a 2-3 cell tile is a dot. At most one hint per pair.
+  // Python: rule_region_pair_tile_star / rule_region_pair_tile_dots.
+  p._regionPairTileHints = function (wantStar) {
+    const hints = [];
+    for (const { union, need, boardIdx } of this._regionPairUnions()) {
+      const best = this._bestTileGroup(this._unitTileEntries(union, need), wantStar);
+      if (!best) continue;
+      const { witness, matching, targets } = best.group;
+      const targetList = [...targets].sort((a, b) => a - b);
+      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(witness, matching, targetList);
+      const K = witness.length;
+      const intro = `The two amber-outlined regions together still need ${K} stars, and their empty cells split into these ${K} tiles that can each hold at most one star -- so exactly one each.`;
+      const outro = wantStar
+        ? (matching.length === 1
+          ? `The highlighted tile has only one empty cell left, so that cell is the star.`
+          : `${matching.length} of these tiles have only one empty cell left, so each of those cells is a star.`)
+        : (matching.length === 1
+          ? `The marked ${targetList.length === 1 ? 'cell touches' : 'cells touch'} every empty cell of the highlighted tile, so ${targetList.length === 1 ? "it's a dot" : "they're dots"}.`
+          : `Each marked cell touches every empty cell of one of the highlighted tiles, so ${targetList.length === 1 ? "it's a dot" : "they're dots"}.`);
+      hints.push({
+        description: `${intro} ${outro}`,
+        highlights,
+        marks: targetList.map(idx => ({ idx, color: wantStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET })),
+        tileOutlines,
+        regionOutlines: [{ indices: union.indices, color: 'amber', boardIdx }],
+        boardIdx,
+        observation: this._unitObservation(union)
+      });
+    }
+    if (hints.length === 0) return null;
+    hints.sort((a, b) => a.marks[0].idx - b.marks[0].idx);
+    return hints;
+  };
+
+  p.hintRegionPairTileStar = function () { return this._regionPairTileHints(true); };
+  p.hintRegionPairTileDots = function () { return this._regionPairTileHints(false); };
 
   // -- Region algebra (1★ AND 2★+, Expert) ---------------------------------
   //
@@ -700,7 +758,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
           // every board, like any other row/column outline. A and B's
           // indices are merged into ONE array per board so touching units
           // still trace as a single seamless shape, same as
-          // hintRegionPairPlacementForced's union.
+          // hintRegionPairStars's union.
           const pairHome = ua.boardIdx ?? ub.boardIdx;
           const pairBoards = pairHome !== undefined ? [pairHome] : this.boardIndices;
           const pairByBoard = new Map(pairBoards.map(b => [b, [...ua.indices, ...ub.indices]]));
