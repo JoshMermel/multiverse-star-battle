@@ -7,6 +7,12 @@ Medium    = [375, 725]
 Hard      = [790, 1085]
 Expert    = [930, 1575]
 
+[ranges.17x17]   # 2026-10-21: threshold_ladder.py bands for the 2-board pool
+Beginner  = [180, 310]   # lower edge = the pool minimum, upper = the Medium lower edge (ladder rule gave only 225-265)
+Medium    = [310, 530]
+Hard      = [600, 1225]
+Expert    = [1020, 2300]   # widened for supply
+
 [ranges.21x21_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
 Beginner  = [360, 620]   # lower edge = the pool minimum (Josh, 2026-10-12: gentle intro for the big boards)
 Medium    = [620, 970]
@@ -30,6 +36,19 @@ Beginner  = [38, 133]   # INFERRED from current book span -- verify
 Medium    = [80, 255]   # INFERRED from current book span -- verify
 Hard      = [140, 300]   # INFERRED from current book span -- verify
 Expert    = [465, 1375]   # 2026-10-13: ladder band from the pool with the heavy Experts added (library/giants/giant_heavy.csv); Hard and the other tiers unchanged
+
+[[book]]
+out    = "17x17"
+source = "giants/17x17_pair.csv"
+ranges = "17x17"
+tiers  = [
+  {tier="Beginner", count=1000},
+  {tier="Medium", count=500},
+  {tier="Hard", count=250},
+  {tier="Expert", count=250},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "17x17 4-star, two boards (every board required). Pool from tools/gen_multi_board.py with a 1 s star-placement budget: small_region_frac 0.4 for Beginner/Medium/Hard, plus unbiased growth for Expert and up."
 
 [[book]]
 out    = "17x17_mono"

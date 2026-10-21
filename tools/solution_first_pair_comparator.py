@@ -40,7 +40,7 @@ class SolutionFirstPairComparator(Comparator):
     def __init__(self, n, output_rows, board_count=2, stars_per_unit=1,
                  size_variation=0.0, randomize_orientation_for_output=True,
                  small_region_frac=0.0, small_region_weight=0.02,
-                 small_region_weight_max=None):
+                 small_region_weight_max=None, star_time_limit=None):
         super().__init__(n, output_rows, randomize_orientation_for_output)
         if board_count < 2:
             raise ValueError(
@@ -60,6 +60,12 @@ class SolutionFirstPairComparator(Comparator):
         self.small_region_frac = small_region_frac
         self.small_region_weight = small_region_weight
         self.small_region_weight_max = small_region_weight_max
+        # CP-SAT budget (seconds) for the shared random star placement; None
+        # keeps random_star_placement's own 15 s default. That placement never
+        # proves optimal, so at 17x17+ almost all of an attempt is spent waiting
+        # it out: 1 s is as uniform as 15 s at 17x17 and ~8x faster overall
+        # (see books/THRESHOLDS.md, "Where the time goes").
+        self.star_time_limit = star_time_limit
 
     def _next_pair(self):
         result = self._try_generate_group()
@@ -72,7 +78,10 @@ class SolutionFirstPairComparator(Comparator):
         n = self.n
         stars_per_unit = self.stars_per_unit
 
-        star_cells = random_star_placement(n, stars_per_unit)
+        if self.star_time_limit is None:
+            star_cells = random_star_placement(n, stars_per_unit)
+        else:
+            star_cells = random_star_placement(n, stars_per_unit, self.star_time_limit)
         if star_cells is None:
             return None
 
