@@ -15,6 +15,13 @@
     comment, the title) is ignored.
 -->
 
+## 2026-10-21 — New books
+
+- **3-Boards** books in Two Star (9x9, 10x10, 14x14) and Three Star (13x13, 14x14): three boards share one solution, and you need all three to find it. Any single board, or any two together, still leave more than one answer.
+- **9x9 Symmetric** (two stars) and **10x10 Symmetric Twin** (two stars) in Symmetry.
+- **Venn** now has a two-star book (10x10) in Rectangles.
+- **13x13 Square Free** (three stars) in Playground.
+
 ## 2026-10-13 — Cell colors
 
 - Added a new setting, **Cell colors**, that lets you color in cells while solving. It's off by default; turn it on in Settings.
