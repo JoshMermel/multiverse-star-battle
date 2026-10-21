@@ -159,3 +159,65 @@ tiers  = [
   {tier="Expert", count=100},
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+
+# --- Three-board puzzles (2026-10-20) --------------------------------------------------------------------------------
+# Pools come from tools/gen_three_board.py (SolutionFirstPairComparator, board_count=3): the three boards share exactly one
+# solution and every single board and every pair of boards is still ambiguous, so the solver needs all three.
+# PROVISIONAL bands (copied from the 2-board tables) until threshold_ladder.py derives pool-specific ones.
+
+[ranges.9x9_trio]   # 2026-10-21: threshold_ladder.py bands for the 3-board pool
+Beginner  = [60, 175]
+Medium    = [180, 345]
+Hard      = [310, 490]
+Expert    = [400, 760]
+
+[ranges.10x10_trio]   # 2026-10-20: threshold_ladder.py bands for the 3-board pool
+Beginner  = [75, 205]
+Medium    = [210, 410]
+Hard      = [330, 530]
+Expert    = [365, 815]
+
+[ranges.14x14_2star_trio]   # 2026-10-20: threshold_ladder.py bands for the 3-board pool
+Beginner  = [100, 265]
+Medium    = [235, 555]
+Hard      = [395, 710]
+Expert    = [555, 1150]
+
+[[book]]
+out    = "9x9_trio"
+source = "three_board/9x9_2star.csv"
+ranges = "9x9_trio"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "9x9 2-star, three boards (unbiased growth; Expert is rare, ~0.4% of generated)."
+
+[[book]]
+out    = "10x10_trio"
+source = "three_board/10x10_2star.csv"
+ranges = "10x10_trio"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "10x10 2-star, three boards (unbiased growth)."
+
+[[book]]
+out    = "14x14_2star_trio"
+source = "three_board/14x14_2star.csv"
+ranges = "14x14_2star_trio"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "14x14 2-star, three boards (small_region_frac 0.4)."

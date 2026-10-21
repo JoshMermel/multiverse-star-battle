@@ -105,3 +105,45 @@ tiers  = [
   {tier="Expert", count=100},
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+
+# --- Three-board puzzles (2026-10-20) --------------------------------------------------------------------------------
+# Pools come from tools/gen_three_board.py (see two_star.toml). PROVISIONAL bands (copied from the 2-board tables) until
+# threshold_ladder.py derives pool-specific ones.
+
+[ranges.13x13_trio]   # 2026-10-21: threshold_ladder.py bands for the 3-board pool
+Beginner  = [160, 315]
+Medium    = [325, 600]
+Hard      = [595, 845]
+Expert    = [705, 1270]
+
+[ranges.14x14_3star_trio]   # 2026-10-20: threshold_ladder.py bands for the 3-board pool
+Beginner  = [150, 290]
+Medium    = [290, 575]
+Hard      = [570, 830]
+Expert    = [570, 1305]
+
+[[book]]
+out    = "13x13_trio"
+source = "three_board/13x13_3star.csv"
+ranges = "13x13_trio"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "13x13 3-star, three boards (unbiased growth; Medium is the scarce tier)."
+
+[[book]]
+out    = "14x14_3star_trio"
+source = "three_board/14x14_3star.csv"
+ranges = "14x14_3star_trio"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "14x14 3-star, three boards (small_region_frac 0.15 for the easier tiers, plus unbiased for Expert and up)."
