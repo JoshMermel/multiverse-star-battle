@@ -13,6 +13,12 @@ Medium    = [310, 530]
 Hard      = [600, 1225]
 Expert    = [1020, 2300]   # widened for supply
 
+[ranges.21x21]   # 2026-10-22: threshold_ladder.py bands for the 2-board pool
+Beginner  = [340, 500]   # lower edge = the pool minimum, upper = the Medium lower edge (ladder rule gave only 380-420)
+Medium    = [500, 780]
+Hard      = [890, 1635]
+Expert    = [1155, 3560]   # widened for supply
+
 [ranges.21x21_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
 Beginner  = [360, 620]   # lower edge = the pool minimum (Josh, 2026-10-12: gentle intro for the big boards)
 Medium    = [620, 970]
@@ -62,6 +68,19 @@ tiers  = [
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
 notes  = "After the 2026-10-11 rescore the pool had only 364 Mediums; 562 new ones were generated on 2026-10-12 (gen params frac 0.65-0.8, weights 0.02-0.15; about 1 Medium per 13 puzzles) and appended, so the book is full again. Proposed band in books/THRESHOLDS.md."
+
+[[book]]
+out    = "21x21"
+source = "giants/21x21_pair.csv"
+ranges = "21x21"
+tiers  = [
+  {tier="Beginner", count=1000},
+  {tier="Medium", count=500},
+  {tier="Hard", count=250},
+  {tier="Expert", count=250},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "21x21 5-star, two boards (every board required). Pool from tools/gen_multi_board.py with a 3 s star-placement budget: small_region_frac 0.4 for Beginner/Medium/Hard, plus unbiased growth for Expert and up."
 
 [[book]]
 out    = "21x21_mono"
