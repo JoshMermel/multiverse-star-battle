@@ -117,6 +117,7 @@
     {"id": "20x20_mono",            "label": "20x20 1-board",           "group": "Giants", "stars": 1},
     {"id": "21x21",                 "label": "21x21",                   "group": "Giants", "stars": 5},
     {"id": "21x21_mono",            "label": "21x21 1-Board",           "group": "Giants", "stars": 5},
+    {"id": "25x25",                 "label": "25x25",                   "group": "Giants", "stars": 6},
     {"id": "25x25_mono",            "label": "25x25 1-Board",           "group": "Giants", "stars": 6},
     {"id": "signoff",               "label": "Signoff",                 "group": "Signoff", "stars": 1}
   ]

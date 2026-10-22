@@ -25,6 +25,12 @@ Medium    = [620, 970]
 Hard      = [1010, 1405]
 Expert    = [1160, 1985]
 
+[ranges.25x25]   # 2026-10-22: threshold_ladder.py bands for the 2-board pool
+Beginner  = [515, 695]   # lower edge = the pool minimum, upper = the Medium lower edge (ladder rule gave only 575-625)
+Medium    = [695, 1015]
+Hard      = [1135, 1515]
+Expert    = [1370, 2185]   # the pool holds only 26 Experts in this band (unbiased growth was not run); the book ships short
+
 [ranges.25x25_mono]   # 2026-10-12: work-per-row ladder bands (books/THRESHOLDS.md)
 Beginner  = [550, 830]   # lower edge = the pool minimum (Josh, 2026-10-12: gentle intro for the big boards)
 Medium    = [820, 1270]
@@ -94,6 +100,19 @@ tiers  = [
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
 notes  = "After the 2026-10-11 rescore the pool had 661 Mediums (483 in the band); 2026-10-12 backfill (frac 0.55-0.8, ~1 Medium per 14 puzzles, 30 s per puzzle per core) appended more. Proposed band in books/THRESHOLDS.md."
+
+[[book]]
+out    = "25x25"
+source = "giants/25x25_pair.csv"
+ranges = "25x25"
+tiers  = [
+  {tier="Beginner", count=1000},
+  {tier="Medium", count=500},
+  {tier="Hard", count=250},
+  {tier="Expert", count=250, allow_short=true},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "25x25 6-star, two boards (every board required). Pool from tools/gen_multi_board.py with a 5 s star-placement budget: small_region_frac 0.4 for Beginner/Medium/Hard, then unbiased growth for Expert and up (slow: about 10 h per 100 Experts on 10 cores), so the Expert tier may ship short."
 
 [[book]]
 out    = "25x25_mono"
