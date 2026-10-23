@@ -15,6 +15,11 @@
     comment, the title) is ignored.
 -->
 
+## 2026-10-23 — Two-board giants and button placement
+
+- **Two-board Giants** books: 17x17 (four stars), 21x21 (five stars) and 25x25 (six stars), each with two boards sharing one solution. They sit alongside the existing 1-Board books in Giants.
+- New setting, **Button placement**, replaces "Buttons also on bottom". Choose **Top** (the default), **Top & bottom**, or **Floating**, which keeps the undo/redo/reset/hint buttons pinned to the top of the screen as you scroll. If you use Cell colors, its palette follows the same choice. If you'd turned on "Buttons also on bottom", you're now on Top & bottom.
+
 ## 2026-10-21 — New books
 
 - **3-Boards** books in Two Star (9x9, 10x10, 14x14) and Three Star (13x13, 14x14): three boards share one solution, and you need all three to find it. Any single board, or any two together, still leave more than one answer.
