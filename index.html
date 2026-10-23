@@ -41,21 +41,25 @@
   </header>
 
   <main id="game-container">
-    <section id="controls" aria-label="Game controls">
-      <button id="undo-btn" class="ctrl-undo">Undo</button>
-      <button id="redo-btn" class="ctrl-redo">Redo</button>
-      <button id="reset-btn" class="ctrl-reset">Reset</button>
-      <button id="check-btn" class="ctrl-check" data-mobile-label="Check">Correct so far?</button>
-      <button id="hint-btn" class="ctrl-hint">Hint</button>
-    </section>
+    <div id="top-bar" class="top-bar">
+      <section id="controls" aria-label="Game controls">
+        <button id="undo-btn" class="ctrl-undo">Undo</button>
+        <button id="redo-btn" class="ctrl-redo">Redo</button>
+        <button id="reset-btn" class="ctrl-reset">Reset</button>
+        <button id="check-btn" class="ctrl-check" data-mobile-label="Check">Correct so far?</button>
+        <button id="hint-btn" class="ctrl-hint">Hint</button>
+      </section>
 
-    <div id="highlight-palette" class="highlight-palette" role="toolbar" aria-label="Cell colors" hidden></div>
+      <div id="highlight-palette" class="highlight-palette" role="toolbar" aria-label="Cell colors" hidden></div>
+    </div>
 
     <div id="boards-wrapper">
       <div id="board-tabs" class="board-tabs" aria-hidden="true">
         <button id="board-swap-btn" class="board-tab">Swap to Board 2</button>
       </div>
     </div>
+
+    <div id="highlight-palette-bottom" class="highlight-palette" role="toolbar" aria-label="Cell colors (bottom)" hidden></div>
 
     <section id="controls-bottom" class="bottom-controls" aria-label="Game controls (bottom)">
       <button id="undo-btn-bottom" class="ctrl-undo">Undo</button>
@@ -126,16 +130,17 @@
               <span class="toggle-track"><span class="toggle-thumb"></span></span>
             </div>
           </label>
-          <label class="settings-row">
+          <div class="settings-row settings-row--stacked">
             <div class="settings-row-text">
-              <span class="settings-label">Buttons also on bottom</span>
-              <span class="settings-desc">Also show the undo/redo/reset/hint controls at the bottom of the page, for puzzles tall enough that the top bar scrolls out of view</span>
+              <span class="settings-label">Button placement</span>
+              <span class="settings-desc">Where the undo/redo/reset/hint controls (and the cell-color palette, if on) go, for puzzles tall enough that the top bar scrolls out of view. "Top" keeps them above the board; "Top &amp; bottom" adds a second set below it; "Floating" keeps them pinned to the top of the screen as you scroll.</span>
             </div>
-            <div class="toggle-switch">
-              <input type="checkbox" id="setting-buttons-on-bottom" role="switch" aria-checked="false">
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <div class="segmented-control" id="setting-controls-placement" role="radiogroup" aria-label="Button placement">
+              <button type="button" data-value="top" role="radio" aria-checked="false">Top</button>
+              <button type="button" data-value="both" role="radio" aria-checked="false">Top &amp; bottom</button>
+              <button type="button" data-value="floating" role="radio" aria-checked="false">Floating</button>
             </div>
-          </label>
+          </div>
           <div class="settings-row" id="setting-cell-size-row" hidden>
             <div class="settings-row-text">
               <span class="settings-label">Board size</span>
@@ -159,7 +164,7 @@
           <label class="settings-row">
             <div class="settings-row-text">
               <span class="settings-label">Cell colors</span>
-              <span class="settings-desc">Adds a palette above the board for marking empty cells with colors and textures (a cell can hold one of each, e.g. color for one board and texture for the other) to keep track of your own deductions. Marks hide under a dot or star and return if it's removed. Hidden while a hint is showing.</span>
+              <span class="settings-desc">Adds a palette next to the buttons (see Button placement) for marking empty cells with colors and textures (a cell can hold one of each, e.g. color for one board and texture for the other) to keep track of your own deductions. Marks hide under a dot or star and return if it's removed. Hidden while a hint is showing.</span>
             </div>
             <div class="toggle-switch">
               <input type="checkbox" id="setting-highlights" role="switch" aria-checked="false">

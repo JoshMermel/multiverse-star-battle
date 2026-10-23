@@ -420,13 +420,19 @@ export function applyRenderer(GameClass) {
   // Build the palette bar: a first row with the "Dots & stars" mode button,
   // one swatch per color and "Clear all", then a second row with one button
   // per texture. Exactly one button across both rows is pressed (one brush
-  // at a time). Called once at startup; shown/hidden by the setting.
+  // at a time). Called once at startup; shown/hidden by the setting. The
+  // bar has a twin below the boards (index.html's #highlight-palette-bottom,
+  // shown with "Button placement: Top & bottom"), so every palette element
+  // gets its own full set of buttons and _syncBrushUI keeps them in step.
   p.setupHighlightPalette = function () {
-    const palette = document.getElementById('highlight-palette');
-    if (!palette) return;
-    const { HIGHLIGHT_COLORS, HIGHLIGHT_TEXTURES } = this._constants;
     this.activeHighlight = null;
     this.activeTexture = null;
+    document.querySelectorAll('.highlight-palette').forEach(palette => this._buildHighlightPalette(palette));
+    this._selectHighlight(null);
+  };
+
+  p._buildHighlightPalette = function (palette) {
+    const { HIGHLIGHT_COLORS, HIGHLIGHT_TEXTURES } = this._constants;
 
     const makeButton = (color, label, className) => {
       const btn = document.createElement('button');
@@ -465,8 +471,6 @@ export function applyRenderer(GameClass) {
       btn.onclick = () => this._selectTexture(i);
       palette.appendChild(btn);
     });
-
-    this._selectHighlight(null);
   };
 
   // Remove every color and texture from the board (including ones hidden
@@ -495,13 +499,14 @@ export function applyRenderer(GameClass) {
   p._syncBrushUI = function () {
     const color = this.activeHighlight;
     const tex = this.activeTexture;
-    const buttons = [...document.querySelectorAll('#highlight-palette .hl-btn')];
-    buttons.forEach((btn, i) => {
-      // Button 0 is "Dots & stars" (no brush); swatch i+1 is color i.
-      btn.setAttribute('aria-pressed', String(i === (color == null ? 0 : color + 1) && tex == null));
-    });
-    document.querySelectorAll('#highlight-palette .hl-tex-btn').forEach((btn, i) => {
-      btn.setAttribute('aria-pressed', String(i === tex));
+    document.querySelectorAll('.highlight-palette').forEach(palette => {
+      palette.querySelectorAll('.hl-btn').forEach((btn, i) => {
+        // Button 0 is "Dots & stars" (no brush); swatch i+1 is color i.
+        btn.setAttribute('aria-pressed', String(i === (color == null ? 0 : color + 1) && tex == null));
+      });
+      palette.querySelectorAll('.hl-tex-btn').forEach((btn, i) => {
+        btn.setAttribute('aria-pressed', String(i === tex));
+      });
     });
     document.body.classList.toggle('highlight-mode', color != null || tex != null);
     // Textures have no color of their own: tint with gray.
@@ -512,9 +517,21 @@ export function applyRenderer(GameClass) {
     }
   };
 
+  // Show/hide the palettes: the top one whenever the setting is on, the
+  // bottom twin only when the bottom control bar is showing too. Reads the
+  // placement off the body class that _applyControlsPlacement maintains.
+  p._syncPaletteVisibility = function () {
+    const on = localStorage.getItem('setting-highlights') === 'true';
+    const top = document.getElementById('highlight-palette');
+    const bottom = document.getElementById('highlight-palette-bottom');
+    if (top) top.hidden = !on;
+    if (bottom) bottom.hidden = !(on && document.body.classList.contains('show-bottom-controls'));
+  };
+
   p._applyHighlightsSetting = function (on) {
-    const palette = document.getElementById('highlight-palette');
-    if (palette) palette.hidden = !on;
+    this._syncPaletteVisibility();
+    // The palettes change the room the bottom bar leaves for the boards.
+    this._recomputeBoardLayout();
     // Turning the feature off must also leave color mode, or clicks would
     // silently keep painting colors nobody can see.
     if (!on) this._selectHighlight(null);
@@ -875,15 +892,18 @@ export function applyRenderer(GameClass) {
     this._updateStarsBadges?.();
   };
 
-  // Show/hide the duplicate control bar at the bottom of the page (the
-  // "Buttons also on bottom" setting) -- handy on puzzles whose boards are
-  // tall enough to scroll the top bar out of view. See #controls-bottom
-  // in style.css for how the class actually toggles display.
-  p._applyBottomControls = function (on) {
-    document.body.classList.toggle('show-bottom-controls', on);
+  // Apply the "Button placement" setting ('top', 'both' or 'floating') --
+  // for puzzles whose boards are tall enough to scroll the top bar out of
+  // view. 'both' shows a duplicate bar (and palette) below the boards;
+  // 'floating' pins the top bar to the top of the screen. See #controls-bottom
+  // and .top-bar in style.css for how the classes actually take effect.
+  p._applyControlsPlacement = function (placement) {
+    document.body.classList.toggle('show-bottom-controls', placement === 'both');
+    document.body.classList.toggle('floating-controls', placement === 'floating');
+    this._syncPaletteVisibility();
     // The bottom bar eats into the vertical space _recomputeBoardLayout
-    // measures for the >=900px grid layout, so a live toggle needs to
-    // reshuffle board sizing, not just its own visibility.
+    // measures for the >=900px grid layout, so a live change needs to
+    // reshuffle board sizing, not just visibility.
     this._recomputeBoardLayout();
   };
 
@@ -948,7 +968,7 @@ export function applyRenderer(GameClass) {
   //    own getBoundingClientRect().top (nets out the ACTUAL rendered header
   //    and controls above it, not a guessed chrome-height constant) minus
   //    whatever's reserved below it (the bottom control bar, if the
-  //    "Buttons also on bottom" setting is on, else a little breathing room),
+  //    "Top & bottom" button placement is on, else a little breathing room),
   //  - the real column/row gaps, read live via getComputedStyle so this
   //    stays in sync if that CSS value ever changes.
   //
@@ -988,7 +1008,7 @@ export function applyRenderer(GameClass) {
   //
   // Runs once per puzzle load (via _applyTabMode) and again on resize
   // (see setupGlobalListeners in input.js) and whenever the bottom
-  // control bar's visibility changes (_applyBottomControls) -- both
+  // control bar's visibility changes (_applyControlsPlacement) -- both
   // affect the available box this measures.
   p._recomputeBoardLayout = function () {
     const wrapper = document.getElementById('boards-wrapper');
@@ -1012,14 +1032,18 @@ export function applyRenderer(GameClass) {
 
     const bottomControls = document.getElementById('controls-bottom');
     const bottomVisible = bottomControls && getComputedStyle(bottomControls).display !== 'none';
-    // 20px covers #controls-bottom's own margin-block; 24px is just
-    // breathing room at the bottom of the page when it's hidden. Neither
-    // of these accounts for the hint toast (a `position: fixed` overlay,
-    // so it never affects the controls bar's own layout) -- that's what
-    // COMPACT_TOAST_RESERVE is for, added only under the "Compact" board
-    // size setting (see its own comment above).
+    const bottomPalette = document.getElementById('highlight-palette-bottom');
+    const bottomPaletteVisible = bottomPalette && !bottomPalette.hidden;
+    // 20px covers #controls-bottom's own margin-block (and likewise the
+    // bottom palette's top margin); 24px is just breathing room at the
+    // bottom of the page when they're hidden. Neither of these accounts
+    // for the hint toast (a `position: fixed` overlay, so it never affects
+    // the controls bar's own layout) -- that's what COMPACT_TOAST_RESERVE
+    // is for, added only under the "Compact" board size setting (see its
+    // own comment above).
     const bottomReserve = (bottomVisible
       ? bottomControls.getBoundingClientRect().height + 20
+        + (bottomPaletteVisible ? bottomPalette.getBoundingClientRect().height + 20 : 0)
       : 24) + (isCompactCellSize() ? COMPACT_TOAST_RESERVE : 0);
     // getBoundingClientRect().top is relative to the current SCROLL
     // POSITION, not the page -- adding window.scrollY converts it to the

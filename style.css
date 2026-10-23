@@ -752,6 +752,28 @@ body.highlight-mode:not(.hl-erasing) .cell-drag-highlight {
 }
 
 /* 6. CONTROLS */
+/* Wraps the control bar and the cell-color palette so they can stick
+   together. Plain stacking by default; pinned to the top of the screen by
+   the "Floating" button placement (body.floating-controls). The opaque
+   background keeps boards from showing through as they scroll underneath,
+   and the margins are trimmed so the pinned bar doesn't waste screen. */
+.top-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+body.floating-controls .top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50; /* above the boards' own stacking (<=6), below modals */
+  background: var(--bg-white);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+body.floating-controls #controls { margin-block: 8px; }
+body.floating-controls .highlight-palette { margin-bottom: 8px; }
+
 #controls {
   display: flex;
   justify-content: center;
@@ -865,7 +887,7 @@ body.highlight-mode:not(.hl-erasing) .cell-drag-highlight {
 }
 
 /* Duplicate control bar at the bottom of the page -- off by default,
-   shown by the "Buttons also on bottom" setting (see _applyBottomControls
+   shown by the "Top & bottom" button placement (see _applyControlsPlacement
    in renderer.js) for puzzles whose boards are tall enough to scroll the
    top bar out of view. Shares its non-display layout with #controls;
    `display` itself is gated on body.show-bottom-controls below (and
@@ -879,6 +901,10 @@ body.highlight-mode:not(.hl-erasing) .cell-drag-highlight {
   max-width: 800px;
   margin-block: 20px;
 }
+
+/* The bottom palette (when the Cell colors setting is on too) sits just
+   above the bottom bar; its [hidden] attribute is managed in JS. */
+#highlight-palette-bottom { margin: 20px auto 0; }
 
 .bottom-controls { display: none; }
 body.show-bottom-controls .bottom-controls { display: flex; }
@@ -1518,6 +1544,17 @@ body.show-bottom-controls .bottom-controls { display: flex; }
   cursor: pointer;
 }
 .settings-row:last-child { border-bottom: none; }
+
+/* For rows whose control is too wide to sit beside the text (the 3-way
+   Button placement choice): the control drops below the text and its
+   options share the full width. */
+.settings-row--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  cursor: default;
+}
+.settings-row--stacked .segmented-control button { flex: 1; }
 
 .settings-row-text {
   display: flex;

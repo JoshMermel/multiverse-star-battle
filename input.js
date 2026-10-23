@@ -11,7 +11,7 @@ export function applyInput(GameClass) {
   // Set up event handlers for control buttons.
   p.setupControls = function () {
     // Each control has a twin in the bottom bar (see index.html's
-    // #controls-bottom, shown only when "Buttons also on bottom" is on),
+    // #controls-bottom, shown only when "Button placement" is "Top & bottom"),
     // so bind by role class rather than a single id.
     document.querySelectorAll('.ctrl-undo').forEach(btn => btn.onclick = () => this.undo());
     document.querySelectorAll('.ctrl-redo').forEach(btn => btn.onclick = () => this.redo());
@@ -190,7 +190,6 @@ export function applyInput(GameClass) {
         }
       },
       { key: 'setting-show-timer', applyOnInit: true, onChange: (self, v) => self._applyShowTimer(v) },
-      { key: 'setting-buttons-on-bottom', applyOnInit: true, onChange: (self, v) => self._applyBottomControls(v) },
       // No apply step, same as auto-fill-dots above -- _setHoverSync reads
       // this straight off localStorage on every hover, so there's nothing
       // to (re-)apply when the toggle itself changes.
@@ -217,6 +216,33 @@ export function applyInput(GameClass) {
         if (onChange) onChange(this, toggle.checked);
       });
     }
+
+    // --- Button placement ---
+    //
+    // 3-way (top / both / floating), so like Board size it's a segmented
+    // control wired outside the boolean loop above. It replaces the old
+    // boolean "setting-buttons-on-bottom": anyone who'd turned that on is
+    // migrated to "both" the first time they load this version.
+    const PLACEMENT_KEY = 'setting-controls-placement';
+    const PLACEMENTS = ['top', 'both', 'floating'];
+    let placement = localStorage.getItem(PLACEMENT_KEY);
+    if (!PLACEMENTS.includes(placement)) {
+      placement = localStorage.getItem('setting-buttons-on-bottom') === 'true' ? 'both' : 'top';
+      localStorage.setItem(PLACEMENT_KEY, placement);
+    }
+    const placementButtons = [...document.querySelectorAll(`#${PLACEMENT_KEY} button`)];
+    const setPlacementSelection = (value) => {
+      placementButtons.forEach(btn => btn.setAttribute('aria-checked', String(btn.dataset.value === value)));
+    };
+    setPlacementSelection(placement);
+    this._applyControlsPlacement(placement);
+    placementButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        localStorage.setItem(PLACEMENT_KEY, btn.dataset.value);
+        setPlacementSelection(btn.dataset.value);
+        this._applyControlsPlacement(btn.dataset.value);
+      });
+    });
 
     // --- Board size ---
     //
