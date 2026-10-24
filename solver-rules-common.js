@@ -25,7 +25,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
 
     if (highlights.length > 0) {
       return [{
-        description: "Can't provide a hint, fix the errors marked in red first",
+        description: "Cannot provide a hint — fix the errors marked in red first.",
         highlights,
         marks: [],
         boardIdx: undefined
@@ -67,12 +67,12 @@ export function applyCommonSolverRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
     return candidates.map(({ unit, empty }) => {
-      const unitType = this._unitKind(unit);
+      const unitRef = this._unitRef(unit);
       const description = starsPerGroup === 1
-        ? `Only one spot is left for a star in this ${unitType}.`
+        ? `Only one spot is left for a star in ${unitRef}.`
         : empty.length === 1
-          ? `Only one spot is left for the last star in this ${unitType}.`
-          : `Exactly ${empty.length} spots are left for the ${empty.length} remaining stars in this ${unitType}.`;
+          ? `Only one spot is left for the last star in ${unitRef}.`
+          : `Exactly ${empty.length} spots are left for the ${empty.length} remaining stars in ${unitRef}.`;
       return {
         description,
         highlights: [],
@@ -89,11 +89,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
   // Rule: Check for units that already have all their stars placed.
   p.hintExcludeSolvedUnit = function () {
     const starsPerGroup = this.starsPerGroup || 1;
-    const typeDescs = {
-      row: starsPerGroup === 1 ? "This row already has its star." : `This row already has its ${starsPerGroup} stars.`,
-      column: starsPerGroup === 1 ? "This column already has its star." : `This column already has its ${starsPerGroup} stars.`,
-      region: starsPerGroup === 1 ? "This region already has its star." : `This region already has its ${starsPerGroup} stars.`,
-    };
+    const starsText = starsPerGroup === 1 ? 'its star' : `its ${starsPerGroup} stars`;
     const candidates = [];
     for (const unit of this.units) {
       const stars = unit.indices.filter(idx => this.vState(idx) === CELL.STAR);
@@ -103,10 +99,9 @@ export function applyCommonSolverRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.indices[0] - b.indices[0]);
     return candidates.map(unit => {
-      const key = this._unitKind(unit);
       const empty = unit.indices.filter(idx => this.vState(idx) === CELL.NONE);
       return {
-        description: typeDescs[key],
+        description: `${this._unitRefCap(unit)} already has ${starsText}.`,
         highlights: [],
         marks: empty.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         boardIdx: unit.boardIdx ?? undefined,
@@ -277,7 +272,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a - b);
     return candidates.map(idx => ({
-      description: "No logical hint was found. Here's a nudge from the solution.",
+      description: "No logical hint was found. Here is a nudge from the solution.",
       highlights: [],
       marks: [{ idx, color: HINT_COLOR.TARGET }],
       boardIdx: undefined
@@ -338,25 +333,16 @@ export function applyCommonSolverRules(PuzzleSolver) {
 
     // Name every line involved, the same way renderer.js labels the axes:
     // rows by 1-indexed number, columns by letter.
-    const lineName = (label, i) => label === "Row" ? String(i + 1) : String.fromCharCode(65 + i);
-    const listPhrase = (label, idxs) => {
-      const names = [...idxs].sort((a, b) => a - b).map(i => lineName(label, i));
-      const word = label.toLowerCase() + (names.length === 1 ? '' : 's');
-      const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-      return `${word} ${list}`;
-    };
     const windowIdxs = unitCombo.map(u => axisLabel === "Row" ? Math.floor(u[0] / n) : u[0] % n);
-    const otherPhrase = listPhrase(otherAxisLabel, touchedOther);
-    const windowPhrase = listPhrase(axisLabel, windowIdxs);
+    const otherPhrase = this._describeLines(otherAxisLabel, touchedOther);
+    const windowPhrase = this._describeLines(axisLabel, windowIdxs);
     const otherCount = touchedOther.size;
-    const provides = otherCount === 1 ? 'provides' : 'provide';
-    const needs = windowIdxs.length === 1 ? 'needs' : 'need';
     const starsPhrase = requiredCount === 1 ? 'the 1 star' : `the ${requiredCount} stars`;
     const satisfies = otherCount === 1 ? `that ${otherAxisLabel.toLowerCase()}`
       : otherCount === 2 ? `both ${otherAxisLabel.toLowerCase()}s`
       : `all of those ${otherAxisLabel.toLowerCase()}s`;
-    const description = `${otherPhrase[0].toUpperCase()}${otherPhrase.slice(1)} ${provides} ${starsPhrase} `
-      + `${windowPhrase} still ${needs}, which satisfies ${satisfies}.`;
+    const description = `${starsPhrase[0].toUpperCase()}${starsPhrase.slice(1)} still needed by ${windowPhrase} `
+      + `must be in ${otherPhrase}, which satisfies ${satisfies}.`;
 
     return {
       boardIdx: undefined,
@@ -519,6 +505,16 @@ export function applyCommonSolverRules(PuzzleSolver) {
   // Split into two rules, tried stars first then dots (2026-10-20, user's
   // call), both ahead of region algebra. Python: rule_region_pair_stars /
   // rule_region_pair_dots.
+  // Shared text of the region-pair hints (the enumeration versions and their
+  // tile-shaped twins, which differ only in how the deduction was found).
+  p._regionPairPlacementText = function (need, wantStars, cellCount) {
+    const intro = `Treat the 2 outlined regions as one.`;
+    const stars = `their ${need} remaining star${need === 1 ? '' : 's'}`;
+    return wantStars
+      ? `${intro} Every way to place ${stars} includes the marked cell${cellCount === 1 ? '' : 's'}.`
+      : `${intro} Placing ${stars} is unsolvable if a star is placed at ${cellCount === 1 ? 'the marked cell' : 'any of the marked cells'}.`;
+  };
+
   p._regionPairPlacementHints = function (wantStars) {
     const hints = [];
     for (const { union, need, boardIdx } of this._regionPairUnions()) {
@@ -526,15 +522,12 @@ export function applyCommonSolverRules(PuzzleSolver) {
       if (!forced) continue;
       const cells = wantStars ? forced.forcedStars : forced.forcedDots;
       if (cells.length === 0) continue;
-      const intro = `Treat the two blue-outlined regions as one. Every way to place their ${need} remaining star${need === 1 ? '' : 's'}`;
       // Outline the union (a and b touching, so they trace as ONE seamless
       // blue shape -- no shared-edge line between them, since both are in
       // the same outline entry) instead of filling its cells. See
       // renderer.js's _buildRegionOutlineSvg.
       hints.push({
-        description: wantStars
-          ? `${intro} includes the marked cell${cells.length === 1 ? '' : 's'}.`
-          : `${intro} rules out a star at the marked cell${cells.length === 1 ? '' : 's'}.`,
+        description: this._regionPairPlacementText(need, wantStars, cells.length),
         highlights: [],
         marks: cells.map(idx => ({ idx, color: wantStars ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET })),
         regionOutlines: [{ indices: union.indices, color: 'blue', boardIdx }],
@@ -563,17 +556,10 @@ export function applyCommonSolverRules(PuzzleSolver) {
       const { witness, matching, targets } = best.group;
       const targetList = [...targets].sort((a, b) => a - b);
       const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(witness, matching, targetList);
-      const K = witness.length;
-      const intro = `The two amber-outlined regions together still need ${K} stars, and their empty cells split into these ${K} tiles that can each hold at most one star -- so exactly one each.`;
-      const outro = wantStar
-        ? (matching.length === 1
-          ? `The highlighted tile has only one empty cell left, so that cell is the star.`
-          : `${matching.length} of these tiles have only one empty cell left, so each of those cells is a star.`)
-        : (matching.length === 1
-          ? `The marked ${targetList.length === 1 ? 'cell touches' : 'cells touch'} every empty cell of the highlighted tile, so ${targetList.length === 1 ? "it's a dot" : "they're dots"}.`
-          : `Each marked cell touches every empty cell of one of the highlighted tiles, so ${targetList.length === 1 ? "it's a dot" : "they're dots"}.`);
+      // The text is the same as hintRegionPairStars/Dots's (the tiles are
+      // how the deduction was found, shown but not spelled out).
       hints.push({
-        description: `${intro} ${outro}`,
+        description: this._regionPairPlacementText(need, wantStar, targetList.length),
         highlights,
         marks: targetList.map(idx => ({ idx, color: wantStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET })),
         tileOutlines,
@@ -698,11 +684,11 @@ export function applyCommonSolverRules(PuzzleSolver) {
           let forcedStars = [];
           let forcedDots = [];
           let why;
+          const at = count => count === 1 ? 'the marked cell' : 'any of the marked cells';
           if (have >= N) {
             forcedDots = avail;
-            why = { dots: forcedDots.length === 1
-              ? `The cyan cells already have their ${starsText}, so the marked cell is a dot.`
-              : `The cyan cells already have their ${starsText}, so the marked cells are dots.` };
+            why = { dots: `The cyan cells already have ${N === 1 ? 'their star' : `their ${N} stars`}, `
+              + `so a star at ${at(forcedDots.length)} is unsolvable.` };
           } else if (N === 1) {
             if (avail.length === 1) forcedStars = avail;
             for (let i = 0; i < n * n; i++) {
@@ -711,10 +697,8 @@ export function applyCommonSolverRules(PuzzleSolver) {
             why = {
               // forcedStars is only ever populated when avail.length === 1,
               // so this branch is always singular.
-              stars: `Only one cyan cell is still open, so it's a star.`,
-              dots: forcedDots.length === 1
-                ? `A star at the marked cell would see every open cyan cell, leaving them without their star.`
-                : `A star at any of the marked cells would see every open cyan cell, leaving them without their star.`,
+              stars: `Only one cyan cell is open, so it is a star.`,
+              dots: `Placing it is unsolvable if a star is placed at ${at(forcedDots.length)}.`,
             };
           } else {
             const combos = this._enumerateUnitCompletions({ indices: rem, label: 'regionAlgebra' }, false, N);
@@ -731,12 +715,8 @@ export function applyCommonSolverRules(PuzzleSolver) {
               ...[...outside].filter(cell => combos.every(combo => combo.some(s => this._cellsAdjacent(s, cell)))),
             ];
             why = {
-              stars: forcedStars.length === 1
-                ? `Every way to place ${N} non-touching stars in the cyan cells includes the marked cell.`
-                : `Every way to place ${N} non-touching stars in the cyan cells includes the marked cells.`,
-              dots: forcedDots.length === 1
-                ? `Every way to place ${N} non-touching stars in the cyan cells rules out a star at the marked cell.`
-                : `Every way to place ${N} non-touching stars in the cyan cells rules out a star at the marked cells.`,
+              stars: `Every way to place them includes the marked ${forcedStars.length === 1 ? 'cell' : 'cells'}.`,
+              dots: `Placing them is unsolvable if a star is placed at ${at(forcedDots.length)}.`,
             };
           }
           if (forcedStars.length === 0 && forcedDots.length === 0) continue;
@@ -810,13 +790,12 @@ export function applyCommonSolverRules(PuzzleSolver) {
           // reachable, covering all 5 real cases.
           const kindA = this._unitKind(ua), kindB = this._unitKind(ub);
           const pairPhrase = kindA === kindB
-            ? `two blue-outlined ${kindA}s`
+            ? `the 2 blue-outlined ${kindA}s`
             : `the blue-outlined ${kindA === 'region' ? kindB : kindA} and region`;
 
           const cName = cUnit.boardIdx !== undefined ? `The brown region` : `${cUnit.label} (brown)`;
-          const intro = `${pairPhrase[0].toUpperCase()}${pairPhrase.slice(1)} hold ${2 * N} stars together. `
-            + `${cName} has all its open cells inside them, so it accounts for ${N} of those, `
-            + `leaving exactly ${starsText} for the cyan cells. `;
+          const intro = `${cName} lies inside ${pairPhrase}, which hold ${2 * N} stars together. `
+            + `It takes ${N} of them, leaving ${starsText} for the cyan cells. `;
           if (forcedStars.length > 0) {
             hints.push({
               description: intro + why.stars,
@@ -911,15 +890,21 @@ export function applyCommonSolverRules(PuzzleSolver) {
 
   // "the blue row", "the two blue columns", "the blue row and region"...
   p._partialSubsetPhrase = function (side, color) {
-    const kinds = side.members.map(u => this._unitKind(u));
-    if (kinds.length === 1) return `the ${color} ${kinds[0]}`;
-    if (kinds[0] === kinds[1]) return `the two ${color} ${kinds[0]}s`;
-    const [line, other] = kinds[0] === 'region' ? [kinds[1], kinds[0]] : [kinds[0], kinds[1]];
-    return `the ${color} ${line} and ${other}`;
+    const outlined = `${color}-outlined`;
+    const members = side.members;
+    const kinds = members.map(u => this._unitKind(u));
+    if (members.length === 1) {
+      return kinds[0] === 'region' ? `the ${outlined} region` : `${this._unitRef(members[0])} (${outlined})`;
+    }
+    if (kinds[0] === 'region' && kinds[1] === 'region') return `the 2 ${outlined} regions`;
+    if (kinds[0] === kinds[1]) {
+      const axis = kinds[0] === 'row' ? 'Row' : 'Column';
+      return `${this._describeLines(axis, members.map(u => this._lineIdxOfUnit(u)))} (${outlined})`;
+    }
+    const line = members.find((u, i) => kinds[i] !== 'region');
+    return `${this._unitRef(line)} and the region (both ${outlined})`;
   };
 
-  // The board a side is drawn on: its region's board if it has one (a
-  // row/column paired with a region is drawn there only), else `fallback`.
   p._partialSubsetBoard = function (side, fallback) {
     const owner = side.members.find(u => u.boardIdx !== undefined);
     return owner ? owner.boardIdx : fallback;
@@ -970,25 +955,19 @@ export function applyCommonSolverRules(PuzzleSolver) {
     // A side that is a pair of units reads as plural ("the two blue rows
     // need 4 stars together"); a single unit stays singular.
     const verb = (side, singular, plural) => side.members.length === 2 ? plural : singular;
-    const intro = `${cap(this._partialSubsetPhrase(inner, 'blue'))} ${verb(inner, 'needs', 'need')} ${starsText(inner.need)}`
-      + `${inner.members.length === 2 ? ' together' : ''} and ${verb(inner, 'lies', 'lie')} entirely inside `
-      + `${this._partialSubsetPhrase(outer, 'brown')}, which ${verb(outer, 'needs', 'together need')} ${starsText(outer.need)}. `
-      + `All of the blue stars are among the brown ones, leaving exactly ${starsText(quota)} for the pink cells. `;
+    const intro = `${cap(this._partialSubsetPhrase(inner, 'blue'))} ${verb(inner, 'contributes', 'contribute')} ${starsText(inner.need)} `
+      + `to ${this._partialSubsetPhrase(outer, 'brown')}, so the pink cells must provide the remaining ${starsText(quota)}.`;
     const hints = [];
     if (forcedStars.length > 0) {
       hints.push({
-        description: intro + (forcedStars.length === 1
-          ? `Every way to place ${quota} non-touching ${quota === 1 ? 'star' : 'stars'} in the pink cells includes the marked cell.`
-          : `Every way to place ${quota} non-touching ${quota === 1 ? 'star' : 'stars'} in the pink cells includes the marked cells.`),
+        description: `${intro} That requires ${forcedStars.length === 1 ? 'a star' : 'stars'} at the marked ${forcedStars.length === 1 ? 'cell' : 'cells'}.`,
         highlights, regionOutlines, boardIdx,
         marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR, boards: involved })),
       });
     }
     if (forcedDots.length > 0) {
       hints.push({
-        description: intro + (forcedDots.length === 1
-          ? `Every way to place ${quota} non-touching ${quota === 1 ? 'star' : 'stars'} in the pink cells rules out a star at the marked cell.`
-          : `Every way to place ${quota} non-touching ${quota === 1 ? 'star' : 'stars'} in the pink cells rules out a star at the marked cells.`),
+        description: `${intro} That is unsolvable if a star is placed at ${forcedDots.length === 1 ? 'the marked cell' : 'any of the marked cells'}.`,
         highlights, regionOutlines, boardIdx,
         marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET, boards: involved })),
       });
@@ -1083,7 +1062,7 @@ export function applyCommonSolverRules(PuzzleSolver) {
     candidates.sort((a, b) => a - b);
     return candidates.map(testIdx => ({
       boardIdx: undefined,
-      description: `Placing a star here would make the puzzle unsolvable (takes some lookahead to see why).`,
+      description: `Placing a star at the marked cell would make the puzzle unsolvable (it takes some lookahead to see why).`,
       highlights: [],
       marks: [{ idx: testIdx, color: HINT_COLOR.TARGET }]
     }));

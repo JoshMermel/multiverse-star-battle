@@ -59,17 +59,17 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (this.internalRotation180 || this.crossboardRotation180) {
       // Just states the solution's symmetry, whether internal or cross-board
       // -- same as the 1★ hintSymmetryDeduction.
-      const description = `The solution has 180° rotational symmetry. A cell that "sees" its own rotation (shares a row/column, or a region with no room for both) can't be a star.`;
+      const description = `The solution has 180° rotational symmetry. A cell that "sees" its own rotation (shares a row/column, or a region with no room for both) cannot hold a star.`;
       trySeesOwnMirror(i => (n * n - 1) - i, description);
     }
 
     if (this.isMainDiagonalSymmetric) {
-      const description = `The solution is symmetric across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
+      const description = `The solution is symmetric across the main diagonal (↘). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) cannot hold a star.`;
       trySeesOwnMirror(i => (i % n) * n + Math.floor(i / n), description);
     }
 
     if (this.isAntiDiagonalSymmetric) {
-      const description = `The solution is symmetric across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) can't be a star.`;
+      const description = `The solution is symmetric across the anti-diagonal (↙). A cell that "sees" its own reflection (shares a row/column, or a region with no room for both) cannot hold a star.`;
       trySeesOwnMirror(i => (n - 1 - i % n) * n + (n - 1 - Math.floor(i / n)), description);
     }
 
@@ -93,7 +93,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         const idx = diagEmpties[0];
         const color = needStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET;
         results.push({
-          description: `${reason}, so by parity the diagonal needs an ${parity} number of stars — this cell is a ${needStar ? 'star' : 'dot'}.`,
+          description: `${reason}, so by parity the diagonal needs an ${parity} number of stars — this cell ${needStar ? 'is a star' : 'cannot hold a star'}.`,
           highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
             .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
           marks: [{ idx, color }],
@@ -106,7 +106,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         ));
         if (!allIncompatible) return;
         results.push({
-          description: `${reason}, so by parity the diagonal needs an ${parity} number of stars — the rest of the diagonal is dots.`,
+          description: `${reason}, so by parity the diagonal needs an ${parity} number of stars — no other cell on the diagonal can hold a star.`,
           highlights: diagIndices.filter(i => this.vState(i) === CELL.STAR)
             .map(i => ({ idx: i, color: HINT_COLOR.SOURCE })),
           marks: diagEmpties.map(i => ({ idx: i, color: HINT_COLOR.TARGET })),
@@ -204,19 +204,16 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.unit.indices[0] - b.unit.indices[0]);
 
-    const caveat = level === 'weak' ? ""
-      : level === 'intermediate' ? ", also accounting for other rows/columns/regions' star limits on this board,"
-      : ", also accounting for other rows/columns/regions' star limits across every board,";
+    // Weak reasons about the unit alone; the other levels say what else they
+    // took into account.
+    const lead = this._levelLead(level);
     const hints = [];
     for (const { unit, forcedStars, forcedDots } of candidates) {
-      const unitType = this._unitKind(unit);
-      const starsWord = `${this.starsPerGroup} non-touching star${this.starsPerGroup === 1 ? '' : 's'}`;
+      const subject = lead ? this._unitRef(unit) : this._unitRefCap(unit);
 
       if (forcedStars.length > 0) {
         hints.push({
-          description: forcedStars.length === 1
-            ? `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cell.`
-            : `Every way to place this ${unitType}'s ${starsWord}${caveat} includes the marked cells.`,
+          description: `${lead}${subject} is unsolvable unless the marked ${forcedStars.length === 1 ? 'cell holds a star' : 'cells all hold stars'}.`,
           highlights: [],
           marks: forcedStars.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
           boardIdx: unit.boardIdx,
@@ -233,9 +230,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       // go there.
       if (forcedDots.length > 0) {
         hints.push({
-          description: forcedDots.length === 1
-            ? `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cell.`
-            : `Every way to place this ${unitType}'s ${starsWord}${caveat} rules out a star at the marked cells.`,
+          description: `${lead}${subject} is unsolvable if a star is placed at ${forcedDots.length === 1 ? 'the marked cell' : 'any of the marked cells'}.`,
           highlights: [],
           marks: forcedDots.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
           boardIdx: unit.boardIdx,
@@ -408,7 +403,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
         candidates.push({
           boardIdx,
-          description: `The amber-outlined ${lineWord} needs ${needed} more star${needed === 1 ? '' : 's'}. The ${this._colorsPhrase(colors)} always put${combo.length === 1 ? 's' : ''} at least ${needed} there, no matter how ${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
+          description: this._withLead(this._levelLead(level), `${this._cap(this._lineName(kind, lineIdx))} (amber-outlined) still needs ${needed} star${needed === 1 ? '' : 's'}. The ${this._colorsPhrase(colors)} always put${combo.length === 1 ? 's' : ''} at least ${needed} there — so ${this._lineName(kind, lineIdx)} cannot hold a star anywhere else.`),
           highlights: [],
           marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
           // Outline the matched regions (each in its own color) instead of filling their
@@ -555,7 +550,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       return {
         boardIdx,
-        description: `At least ${guarantee} star${guarantee === 1 ? '' : 's'} from the blue-outlined cells falls ${sideWord} the amber-outlined ${lineWord}, among the marked ${cellWord} -- and the circled cell touches every one of them, so it can't be a star.`,
+        description: this._withLead(this._levelLead(level), `At least ${guarantee} star${guarantee === 1 ? '' : 's'} from the blue-outlined cells ${guarantee === 1 ? 'falls' : 'fall'} ${sideWord} ${this._lineName(lineKind, lineIdx)} (amber-outlined), which is unsolvable if a star is placed at the marked cell, since it touches every one of those cells.`),
         highlights: [],
         marks: [{ idx: target, color: HINT_COLOR.TARGET }],
         // Outline this region-slice (the part of one region on one side of
@@ -773,7 +768,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates.map(({ boardIdx, lineKind, lineIdx, lineNeeded, side, regionIndices, comboUnits, forcedCells, lineCount, restCount }) => {
       const lineWord = lineKind === 'row' ? 'row' : 'column';
       const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
-      const itsAStar = forcedCells.length === 1 ? "it's a star" : "they're stars";
+      const itsAStar = forcedCells.length === 1 ? "it is a star" : "they are stars";
 
       // 'outside' facts also name what the line's own exact count leaves
       // for the rest of the region -- that's the count whose placements
@@ -812,15 +807,12 @@ export function applyMultiStarRules(PuzzleSolver) {
       // into a line, but only one ever shown), the description says so
       // explicitly and names every region by its outline color, instead of
       // asserting the "own region" claim as if it stood alone.
-      const description = comboUnits.length === 1
-        ? `No matter how the ${ownColor}-outlined region places its remaining stars, exactly ${lineCount} `
-          + `of them always land in the amber-outlined ${lineWord}${restClause} -- and every one of those `
-          + `arrangements includes the marked ${cellWord}, so ${itsAStar}.`
-        : `The amber-outlined ${lineWord} needs ${lineNeeded} more star${lineNeeded === 1 ? '' : 's'}. No matter `
-          + `how the ${this._colorsPhrase(colors)} place their own remaining stars, they always account for `
-          + `exactly ${lineNeeded} of them between them -- which pins the ${ownColor}-outlined region's own `
-          + `share to exactly ${lineCount}${restClause}. Every way to do that includes the marked ${cellWord}, `
-          + `so ${itsAStar}.`;
+      const starsText = k => `${k} star${k === 1 ? '' : 's'}`;
+      const lineName = this._lineName(lineKind, lineIdx);
+      const restText = side === 'outside' ? `, leaving ${restCount} for the rest of the region` : '';
+      const description = this._withLead(this._levelLead(level), comboUnits.length === 1
+        ? `The ${ownColor}-outlined region puts exactly ${starsText(lineCount)} in ${lineName} (amber-outlined)${restText}, and every way to do that includes the marked ${cellWord}.`
+        : `The ${this._colorsPhrase(colors)} supply all ${lineNeeded} stars ${lineName} (amber-outlined) still needs, so the ${ownColor}-outlined region puts exactly ${starsText(lineCount)} in ${lineName}${restText} — every way to do that includes the marked ${cellWord}.`);
 
       return {
         boardIdx,
@@ -947,10 +939,9 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       candidates.push({
         boardIdx: undefined,
-        description: `Cross-board (${boardsNote}): the amber-outlined ${lineWord} needs ${needed} more `
-          + `star${needed === 1 ? '' : 's'}. The ${this._colorsPhraseWithBoards(combo.map(e => e.unit), colors)} always `
-          + `put${combo.length === 1 ? 's' : ''} at least ${needed} there between them, no matter how `
-          + `${resolveWord} -- so every other empty cell in the outlined ${lineWord} is a dot.`,
+        description: this._withLead(this._levelLead('strong'), `${this._cap(this._lineName(kind, lineIdx))} (amber-outlined) still needs ${needed} `
+          + `star${needed === 1 ? '' : 's'}. The ${this._colorsPhrase(colors)} always `
+          + `put${combo.length === 1 ? 's' : ''} at least ${needed} there between them — so ${this._lineName(kind, lineIdx)} cannot hold a star anywhere else.`),
         highlights: [],
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         // Outline each matched region on its own board instead of filling
@@ -1039,7 +1030,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     return candidates.map(({ unit, comboUnits, side, forcedCells, lineKind, lineIdx, lineNeeded, lineCount, restCount }) => {
       const lineWord = lineKind === 'row' ? 'row' : 'column';
       const cellWord = forcedCells.length === 1 ? 'cell' : 'cells';
-      const itsAStar = forcedCells.length === 1 ? "it's a star" : "they're stars";
+      const itsAStar = forcedCells.length === 1 ? "it is a star" : "they are stars";
       const restClause = side === 'outside'
         ? `, leaving exactly ${restCount} star${restCount === 1 ? '' : 's'} for the rest of the region`
         : '';
@@ -1060,11 +1051,9 @@ export function applyMultiStarRules(PuzzleSolver) {
         // of just this one -- the "combined with a region on another
         // board" clause used to leave that other region (and which board
         // it's on) unstated and unoutlined entirely.
-        description: `Cross-board: the amber-outlined ${lineWord} needs ${lineNeeded} more star${lineNeeded === 1 ? '' : 's'}. `
-          + `No matter how the ${this._colorsPhraseWithBoards(comboUnits, colors)} place their own remaining `
-          + `stars, they always account for exactly ${lineNeeded} of them between them -- which pins the `
-          + `${ownColor}-outlined region's own share to exactly ${lineCount}${restClause}. Every way to do that `
-          + `includes the marked ${cellWord}, so ${itsAStar}.`,
+        description: this._withLead(this._levelLead('strong'), `The ${this._colorsPhrase(colors)} supply all ${lineNeeded} stars ${this._lineName(lineKind, lineIdx)} (amber-outlined) still needs, `
+          + `so the ${ownColor}-outlined region puts exactly ${lineCount} star${lineCount === 1 ? '' : 's'} in ${this._lineName(lineKind, lineIdx)}${side === 'outside' ? `, leaving ${restCount} for the rest of the region` : ''} `
+          + `— every way to do that includes the marked ${cellWord}.`),
         highlights: [],
         marks: forcedCells.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
         // Outline every region in the matched combo, each on its own board,
@@ -1116,11 +1105,11 @@ export function applyMultiStarRules(PuzzleSolver) {
     // Same wording as the 1★ _hintUnitsCoveredByRegions, plus "remaining"
     // since a region/line can already hold some of its stars here.
     const N = unitCombo.length;
-    const axisWord = axis.toLowerCase();
+    const lineText = this._describeLines(axis, unitCombo.map(u => axis === "Row" ? Math.floor(u[0] / this.n) : u[0] % this.n));
     const regWord = touchingRegs.length === 1 ? 'region' : 'regions';
     const description = N === 1
-      ? `The highlighted ${axisWord} provides all the remaining stars for the blue-outlined ${regWord}.`
-      : `The ${N} highlighted ${axisWord}s provide all the remaining stars for the blue-outlined ${regWord}.`;
+      ? `All remaining stars for the outlined ${regWord} must be in ${lineText}.`
+      : `All remaining stars for the outlined ${regWord} must be in ${lineText}.`;
 
     return {
       boardIdx: bIdx,
@@ -1171,11 +1160,11 @@ export function applyMultiStarRules(PuzzleSolver) {
     // Same wording/fill as the 1★ _hintRegionsTrappedInUnits, plus
     // "remaining" since a region/line can already hold some of its stars.
     const N = windowIndices.length;
-    const axisWord = axis.toLowerCase();
+    const lineText = this._describeLines(axis, windowIndices.map(u => axis === "Row" ? Math.floor(u[0] / this.n) : u[0] % this.n));
     const regWord = pinnedRegs.length === 1 ? 'region' : 'regions';
     const description = N === 1
-      ? `All remaining stars for this ${axisWord} must come from the blue-outlined ${regWord}.`
-      : `All remaining stars for these ${N} ${axisWord}s must come from the blue-outlined ${regWord}.`;
+      ? `All remaining stars for ${lineText} must be in the outlined ${regWord}.`
+      : `All remaining stars for ${lineText} must be in the outlined ${regWord}.`;
 
     return {
       boardIdx: bIdx,
@@ -1332,9 +1321,11 @@ export function applyMultiStarRules(PuzzleSolver) {
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => (a.targets[0] ?? 0) - (b.targets[0] ?? 0));
 
-    const caveat = level === 'intermediate' ? ' (using only this board\'s regions)' : ' (potentially combining both boards\' regions)';
+    const lead = level === 'intermediate' ? "Using only this board's regions, " : "Combining every board's regions, ";
+    const coloredRef = (u, color) => this._unitKind(u) === "region"
+      ? `the ${color}-outlined region` : `${this._unitRef(u)} (${color}-outlined)`;
     return candidates.map(({ unit, other, targets }) => ({
-      description: `Every way to place this ${this._unitKind(unit)} (blue)'s remaining star(s)${caveat} completely fills up this ${this._unitKind(other)} (brown) too, so the rest of that ${this._unitKind(other)} is dots.`,
+      description: `${lead}every way to place ${coloredRef(unit, 'blue')}'s remaining stars completely fills ${coloredRef(other, 'brown')}, so ${this._unitRef(other)} cannot hold a star anywhere else.`,
       highlights: [],
       marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
       boardIdx: unit.boardIdx ?? other.boardIdx,
@@ -1527,9 +1518,7 @@ export function applyMultiStarRules(PuzzleSolver) {
     candidates.sort((a, b) => (a.onlyA[0] ?? 0) - (b.onlyA[0] ?? 0));
     return candidates.map(({ regA, regB, shared, onlyA, onlyB, boardA, boardB }) => ({
       boardIdx: undefined,
-      description: `The blue region (${this._describeBoards([boardA])}) and the brown region (${this._describeBoards([boardB])}) overlap in the cyan cells. `
-        + `Outside the cyan cells, both regions must hold the same number of stars -- but every such cell of one region touches every such cell of the other, `
-        + `so neither can hold any. All their stars are in the cyan cells.`,
+      description: `Partial overlap: The 2 outlined regions mostly overlap, and their non-overlapping cells all touch one another.`,
       // The overlap's empty cells, shaded on both boards -- same treatment
       // as the 1★ hintPartialOverlap.
       highlights: shared.map(idx => ({ idx, color: HINT_SOURCE_VARIANTS[2], boards: [boardA, boardB] })),
@@ -1849,6 +1838,20 @@ export function applyMultiStarRules(PuzzleSolver) {
   // have only 1 empty cell) -- those all get combined into ONE hint here,
   // rather than one hint per tile forcing the player to cycle through
   // sibling forced-stars from the exact same covering one at a time.
+  // Opening sentence of the two row/column-pair tiling hints below, naming
+  // the pair ("rows 3 and 4"). A band's tiles carry their own top-left
+  // cell, from which the pair's first line follows.
+  p._tilingIntro = function (tiling, K) {
+    const axisLabel = tiling.axis === 'row' ? 'Row' : 'Column';
+    const first = tiling.axis === 'row'
+      ? Math.floor(tiling.tiles[0].topLeftIdx / this.n)
+      : tiling.tiles[0].topLeftIdx % this.n;
+    const pair = this._describeLines(axisLabel, [first, first + 1]);
+    return K === 1
+      ? `${this._cap(pair)} still need 1 star, and their empty cells fit in this one tile.`
+      : `${this._cap(pair)} still need ${K} stars, split into these ${K} tiles — one each.`;
+  };
+
   p.hintTileSingleEmpty = function () {
     const seenMarks = new Set(); // markIdx already claimed by an earlier tiling
     const hints = [];
@@ -1862,11 +1865,11 @@ export function applyMultiStarRules(PuzzleSolver) {
       const K = tiling.tiles.length;
       const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(tiling.tiles, matchingTiles, markIdxs);
       const forceText = matchingTiles.length === 1
-        ? "This tile's last empty cell must be the star."
-        : `${matchingTiles.length} of these tiles have only one empty cell left, so each one must be the star.`;
+        ? "This tile has only one empty cell left, so that cell must be a star."
+        : `These ${matchingTiles.length} tiles each have only one empty cell left, so those cells must be stars.`;
 
       hints.push({
-        description: `This ${this._axisPairLabel(tiling.axis)} still needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. ${forceText}`,
+        description: `${this._tilingIntro(tiling, K)} ${forceText}`,
         highlights,
         marks: markIdxs.map(idx => ({ idx, color: HINT_COLOR.TARGET_STAR })),
         tileOutlines,
@@ -1919,13 +1922,12 @@ export function applyMultiStarRules(PuzzleSolver) {
       // number of tiles), which is a different count and can differ from
       // it (e.g. several tiles sharing one deduped target, or one tile
       // with several touching targets).
-      const dotWord = targetList.length === 1 ? 'cell' : 'cells';
       const dotText = matchingTiles.length === 1
-        ? `Both of this tile's empty cells touch the marked ${dotWord}, so ${targetList.length === 1 ? "it's a dot" : "they're dots"}.`
-        : `In each of these ${matchingTiles.length} tiles, both empty cells touch a marked cell next to it, so the marked ${dotWord} ${targetList.length === 1 ? 'is a dot' : 'are dots'}.`;
+        ? `This tile needs one star, which cannot happen if a star is placed at ${targetList.length === 1 ? 'the marked cell' : 'any of the marked cells'}.`
+        : `These ${matchingTiles.length} tiles each need one star, which cannot happen if a star is placed at ${targetList.length === 1 ? 'the marked cell' : 'any of the marked cells'}.`;
 
       hints.push({
-        description: `This ${this._axisPairLabel(tiling.axis)} still needs ${K} star${K === 1 ? '' : 's'}, split into these ${K} tiles -- one each. ${dotText}`,
+        description: `${this._tilingIntro(tiling, K)} ${dotText}`,
         highlights,
         marks: targetList.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
@@ -2010,22 +2012,19 @@ export function applyMultiStarRules(PuzzleSolver) {
       const displayTiles = this._displayTilesForCombo(combo);
       const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(displayTiles, combo, targets);
 
-      const tileWord = combo.length === 1 ? 'tile' : 'tiles';
-      const holdWord = combo.length === 1 ? 'holds' : 'each hold';
-      // "all 1 star" reads as a typo, not a count -- "all" only pulls its
-      // weight once there's more than one to sum up.
-      const starsPhrase = combo.length === 1 ? 'the 1 star' : `all ${combo.length} stars`;
       // A region is worth outlining (its shape isn't obvious from the
       // tiles alone); a row or column is not -- the tiles all sit in it and
       // the marked dots are the rest of it, so an amber band across the
       // whole line was just clutter.
       const kind = this._unitKind(unit);
-      const unitPhrase = kind === 'region' ? 'the amber-outlined region' : `this ${kind}`;
+      const unitPhrase = kind === 'region' ? 'the outlined region' : this._unitRef(unit);
       // "still needs" once the unit already holds some of its stars, so the
       // count reads as the REMAINING need, not the unit's full quota.
       const needsWord = unit.indices.some(i => this.vState(i) === CELL.STAR) ? 'still needs' : 'needs';
       return {
-        description: `The ${combo.length} highlighted ${tileWord} ${holdWord} exactly one star, accounting for ${starsPhrase} ${unitPhrase} ${needsWord}.${this._tileCoverClause(displayTiles)}`,
+        description: combo.length === 1
+          ? `The highlighted tile holds the star ${unitPhrase} ${needsWord}.`
+          : `The ${combo.length} highlighted tiles each hold one star, accounting for all ${combo.length} stars ${unitPhrase} ${needsWord}.`,
         highlights,
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
@@ -2112,8 +2111,8 @@ export function applyMultiStarRules(PuzzleSolver) {
       // Same wording as the 1★ hintTileSeesTooMuch.
       hints.push({
         description: matchingTiles.length === 1
-          ? `This tile's empty cells must contain a star.`
-          : `${matchingTiles.length} of these tiles' empty cells must each contain a star.`,
+          ? `This tile must contain a star.`
+          : `These ${matchingTiles.length} tiles must each contain a star.`,
         highlights,
         marks: targetList.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
@@ -2267,12 +2266,10 @@ export function applyMultiStarRules(PuzzleSolver) {
 
       // The pair being filled, named the same way renderer.js labels its
       // axes: rows by 1-indexed number, columns by letter.
-      const pairName = bandAxis === 'col'
-        ? `rows ${windowStart + 1} and ${windowStart + 2}`
-        : `columns ${String.fromCharCode(65 + windowStart)} and ${String.fromCharCode(66 + windowStart)}`;
+      const pairName = this._describeLines(bandAxis === 'col' ? 'Row' : 'Column', [windowStart, windowStart + 1]);
 
       return {
-        description: `Each tile must hold exactly one star. The colored cells satisfy ${pairName}.${this._tileCoverClause(displayTiles)}`,
+        description: `Each highlighted tile holds exactly one star, which satisfies ${pairName}.`,
         highlights,
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
@@ -2452,18 +2449,6 @@ export function applyMultiStarRules(PuzzleSolver) {
   // Extra sentence explaining WHY outlined tiles hold exactly one star,
   // only when a region/row/column covering is involved (band coverings are
   // already what the base wording assumes, so pure-band hints are unchanged).
-  p._tileCoverClause = function (displayTiles) {
-    const kinds = [];
-    for (const t of displayTiles) {
-      const kind = t.tilingKind ?? (t.axis === 'row' ? 'row pair' : 'column pair');
-      if (!kinds.includes(kind)) kinds.push(kind);
-    }
-    if (!kinds.some(k => k === 'region' || k === 'row' || k === 'column')) return '';
-    const joined = kinds.length === 1 ? kinds[0]
-      : kinds.length === 2 ? `${kinds[0]} or ${kinds[1]}`
-      : `${kinds.slice(0, -1).join(', ')}, or ${kinds[kinds.length - 1]}`;
-    return ` Each color of outlined tiles exactly covers the empty cells of one ${joined} that still needs that many stars, so every tile holds exactly one.`;
-  };
 
   // -- Region and line tiles on their own (2★+, Beginner) ----------------------------------
   //
@@ -2532,22 +2517,11 @@ export function applyMultiStarRules(PuzzleSolver) {
         const targetList = [...targets].sort((a, b) => a - b);
         const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(witness, matching, targetList);
         const K = witness.length;
-        const intro = lines
-          ? (K === 1
-            ? `This ${kind} needs one more star, and its empty cells are just these two touching cells, which can hold only one star.`
-            : `This ${kind} still needs ${K} stars, and its empty cells split into these ${K} tiles of one or two touching cells -- each holds at most one star, so exactly one each.`)
-          : (K === 1
-            ? `The empty cells of the amber-outlined region all touch each other (they fit in a 2x2 box), so it can hold only one star -- and it needs exactly one more.`
-            : `The amber-outlined region still needs ${K} stars, and its empty cells split into these ${K} tiles that can each hold at most one star -- so exactly one each.`);
-        const outro = wantStar
-          ? (matching.length === 1
-            ? `The highlighted tile has only one empty cell left, so that cell is the star.`
-            : `${matching.length} of these tiles have only one empty cell left, so each of those cells is a star.`)
-          : (matching.length === 1
-            ? `The marked ${targetList.length === 1 ? 'cell touches' : 'cells touch'} every empty cell of the highlighted tile, so ${targetList.length === 1 ? "it's a dot" : "they're dots"}.`
-            : `Each marked cell touches every empty cell of one of the highlighted tiles, so ${targetList.length === 1 ? "it's a dot" : "they're dots"}.`);
+        const subject = lines ? this._unitRef(unit) : 'the outlined region';
         hints.push({
-          description: `${intro} ${outro}`,
+          description: K === 1
+            ? `The empty cells of ${subject} form one tile, which holds exactly one star.`
+            : `Each tile in ${subject} holds exactly one star.`,
           highlights,
           marks: targetList.map(idx => ({ idx, color: wantStar ? HINT_COLOR.TARGET_STAR : HINT_COLOR.TARGET })),
           tileOutlines,
@@ -2747,15 +2721,9 @@ export function applyMultiStarRules(PuzzleSolver) {
         seenWitness.add(id);
         const targetList = [...targets].sort((a, b) => a - b);
         const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(witness, matching, targetList);
-        const kind = this._unitKind(unit);
-        const K = witness.length;
-        const intro = K === 1
-          ? `The empty cells of the amber-outlined ${kind} all touch each other (they fit in a 2x2 box), so it can hold only one star -- and it needs exactly one more.`
-          : `The amber-outlined ${kind} still needs ${K} stars, and its empty cells split into these ${K} tiles that can each hold at most one star -- so exactly one each.`;
-        const which = matching.length === 1 ? "the highlighted tile's cells" : "any highlighted tile's cells";
         const one = targetList.length === 1;
         hints.push({
-          description: `${intro} Wherever the star lands among ${which}, it either touches ${one ? 'the marked cell' : 'each marked cell'} or fills a row or column that ${one ? 'it shares' : 'they share'} -- so ${one ? "it's a dot" : "they're dots"}.`,
+          description: `${matching.length === 1 ? 'This tile needs' : `These ${matching.length} tiles each need`} one star, which cannot happen if a star is placed at ${one ? 'the marked cell' : 'any of the marked cells'}.`,
           highlights,
           marks: targetList.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
           tileOutlines,
@@ -2844,8 +2812,8 @@ export function applyMultiStarRules(PuzzleSolver) {
     // region's own remaining capacity (often one on the other board), which
     // is why it's worth spelling out explicitly here.
     const description = singleBoard
-      ? `The blue-outlined cells can no longer reach their required star count if the circled cell holds a star.`
-      : `The blue-outlined cells can no longer reach their required star count if the circled cell holds a star -- every way to place their remaining stars would break some other row, column, or region's own star limit.`;
+      ? `The outlined cells could no longer hold their remaining stars if a star is placed at the marked cell.`
+      : `The outlined cells could no longer hold their remaining stars if a star is placed at the marked cell — that would break another row, column, or region's star limit.`;
     // The cross-board version also says which boards the player needs to
     // look at, when it's more than one -- same as the 1★ hintLookaheadHalf.
     const sandboxForBoards = testIdx => boards => {
@@ -3181,7 +3149,7 @@ export function applyMultiStarRules(PuzzleSolver) {
         axis, lineIdx, barLen: barCells.length,
         hint: {
           boardIdx: undefined,
-          description: `The ${tiles.length} tile${tiles.length === 1 ? '' : 's'} provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to this ${lineWord} pair, so the ${barCells.length} highlighted ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}.`,
+          description: `The ${tiles.length} tile${tiles.length === 1 ? '' : 's'} provide${tiles.length === 1 ? 's' : ''} at most ${tiles.length} star${tiles.length === 1 ? '' : 's'} to ${this._describeLines(axis === 'row' ? 'Row' : 'Column', [lineIdx, lineIdx + 1])}, so the ${barCells.length} highlighted ${barWord} must provide at least ${need} star${need === 1 ? '' : 's'}.`,
           // The bar's own cells, filled (board-agnostic, so on every
           // board). Never overlaps `targets`, which are all off the bar.
           highlights: barCells.map(idx => ({ idx, color: HINT_COLOR.SOURCE })),

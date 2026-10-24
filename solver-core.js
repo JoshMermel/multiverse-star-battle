@@ -713,10 +713,75 @@ export class PuzzleSolver {
   // "Board 1", "Board 1 and Board 2", or "Board 1, Board 2 and Board 3".
   // Used so cross-board hint text names its boards explicitly instead of
   // leaving the player to guess which ones are involved.
+  // Board mentions in running text are lowercase ("board 1", "boards 1 and 2").
   _describeBoards(boardIdxs) {
-    const names = [...new Set(boardIdxs)].sort((a, b) => a - b).map(b => `Board ${b + 1}`);
-    if (names.length <= 1) return names[0] ?? '';
-    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+    return this._describeBoardNumbers(boardIdxs);
+  }
+
+  // "a" / "a and b" / "a, b, and c" -- the one list style every hint uses.
+  _joinList(items) {
+    if (items.length <= 1) return items[0] ?? '';
+    if (items.length === 2) return `${items[0]} and ${items[1]}`;
+    return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+  }
+
+  // Lowercase board-number phrase for running text: "board 1",
+  // "boards 1 and 2", "boards 1, 2, and 3".
+  _describeBoardNumbers(boardIdxs) {
+    const nums = [...new Set(boardIdxs)].sort((a, b) => a - b).map(b => String(b + 1));
+    return `${nums.length === 1 ? 'board' : 'boards'} ${this._joinList(nums)}`;
+  }
+
+  // Row/column list for running text, e.g. "rows 3 and 4" or "columns B, D,
+  // and E". `axis` is "Row" or "Column"; `unitIdxs` are 0-based row/column
+  // numbers. Rows are numbered from 1, columns lettered from A.
+  // Four or more adjacent lines read as a range ("rows 2–7").
+  _describeLines(axis, unitIdxs) {
+    const sorted = [...unitIdxs].sort((a, b) => a - b);
+    const name = i => axis === "Row" ? String(i + 1) : String.fromCharCode(65 + i);
+    const word = `${axis.toLowerCase()}${sorted.length === 1 ? '' : 's'}`;
+    const adjacent = sorted.every((u, k) => k === 0 || u === sorted[k - 1] + 1);
+    if (sorted.length >= 4 && adjacent) return `${word} ${name(sorted[0])}–${name(sorted[sorted.length - 1])}`;
+    return `${word} ${this._joinList(sorted.map(name))}`;
+  }
+
+  // How a hint refers to one unit: rows and columns by name ("row 3",
+  // "column B"), since the picture alone doesn't always say which line is
+  // meant; regions are just "this region" (they have no names).
+  _unitRef(unit) {
+    return this._unitKind(unit) === "region" ? 'this region'
+      : unit.label.replace(/^(Row|Column)/, m => m.toLowerCase());
+  }
+
+  _unitRefCap(unit) {
+    return this._cap(this._unitRef(unit));
+  }
+
+  _cap(text) {
+    return text[0].toUpperCase() + text.slice(1);
+  }
+
+  // Opening clause naming how much of the board a weak/intermediate/strong
+  // rule took into account ('' for weak). Prepend with _withLead.
+  _levelLead(level) {
+    return level === 'intermediate' ? 'Given the star limits elsewhere on this board, '
+      : level === 'strong' ? 'Given the star limits on every board, '
+      : '';
+  }
+
+  _withLead(lead, text) {
+    return lead ? lead + text[0].toLowerCase() + text.slice(1) : text;
+  }
+
+  // A line (row/column) named in running text, from the 'row'/'col' kind
+  // and 0-based index the line-based rules carry: "row 3", "column B".
+  _lineName(kind, lineIdx) {
+    return this._describeLines(kind === 'row' ? "Row" : "Column", [lineIdx]);
+  }
+
+  // The 0-based index of a row/column unit (from its first cell).
+  _lineIdxOfUnit(unit) {
+    return this._unitKind(unit) === "row" ? Math.floor(unit.indices[0] / this.n) : unit.indices[0] % this.n;
   }
 
   formatSubsetHint(sourceRegs, targetRegs, targets, sourceBoardIdx, targetBoardIdx) {
@@ -742,9 +807,10 @@ export class PuzzleSolver {
     ];
 
     const crossBoard = sourceBoardIdx !== targetBoardIdx;
-    const sourcePhrase = sourceRegs.length === 1 ? "One region" : `A group of ${sourceRegs.length} regions`;
-    const targetPhrase = targetRegs.length === 1 ? "another" : `another group of ${targetRegs.length}`;
-    const description = `${sourcePhrase} (blue) is a subset of ${targetPhrase} (brown).`;
+    const groupName = (regs) => regs.length === 1 ? 'region'
+      : regs.length === 2 ? 'region-pair' : `${regs.length}-region group`;
+    const description = `The empty cells of the blue-outlined ${groupName(sourceRegs)} `
+      + `are contained in the brown-outlined ${groupName(targetRegs)}.`;
 
     // Inside the larger (target) group, fill the smaller (source) group's
     // empty cells in the source's own outline color, so the "fits inside"
@@ -777,8 +843,7 @@ export class PuzzleSolver {
       for (const idx of r.availableIdxs) highlights.push({ idx, color: fill, boards: otherBoards });
     });
 
-    const boardsInvolved = this._describeBoards(combo.map(r => r.original.boardIdx));
-    const otherWord = this.boardIndices.length > 2 ? 'the other boards' : 'the other board';
+    const boardsInvolved = this._describeBoardNumbers(combo.map(r => r.original.boardIdx));
     return {
       boardIdx: undefined,
       // combo.length (trapped REGIONS) and uList.length (the ROW/COL
@@ -787,8 +852,10 @@ export class PuzzleSolver {
       // construction) -- for 2★+, a region can need more than 1 star, so
       // fewer regions than the window size can still supply its entire
       // need. Use each count where it actually belongs.
-      description: `Cross-board (${boardsInvolved}): These ${combo.length} region${combo.length === 1 ? '' : 's'} must place their stars in the same ${uList.length} ${axis.toLowerCase()}${uList.length === 1 ? '' : 's'}. `
-        + `Each region is outlined in its own color, and its empty cells are shaded in that color on ${otherWord}.`,
+      description: (combo.length === 1
+        ? `The outlined region (from ${boardsInvolved}) satisfies`
+        : `The ${combo.length} outlined regions (from ${boardsInvolved}) satisfy`)
+        + ` ${this._describeLines(axis, uList)}.`,
       highlights,
       // Target cells are a row/column consequence -- board-agnostic by
       // construction (rows/columns are shared across every board), so no
