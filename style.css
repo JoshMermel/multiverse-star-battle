@@ -348,6 +348,22 @@ input[type="number"]::-webkit-inner-spin-button {
   letter-spacing: 0.5px;
 }
 
+/* Stands in for the "of N" label while a typed puzzle number is waiting to
+   be committed, for keyboards with no Enter key (iOS's number pad). Same
+   footprint as the label, so nothing shifts. */
+.puzzle-go-btn {
+  padding: 1px 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  border-radius: 10px;
+  border: 1.5px solid var(--primary-blue);
+  background: var(--primary-blue);
+  color: #fff;
+}
+.puzzle-go-btn:not(:disabled):hover { background: var(--primary-blue); filter: brightness(1.1); }
+.puzzle-go-btn[hidden] { display: none; }
+
 #solved-badge {
   position: absolute;
   right: -25px;

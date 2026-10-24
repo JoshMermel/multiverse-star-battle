@@ -519,20 +519,43 @@ export function applyInput(GameClass) {
     prevBtn.onpointerdown = (e) => { e.preventDefault(); this.stepPuzzle(-1); };
     nextBtn.onpointerdown = (e) => { e.preventDefault(); this.stepPuzzle(1); };
 
+    // iOS's number pad has no Enter key, so a typed number needs another
+    // way to be committed: while there's an uncommitted draft, a "Go"
+    // button takes the place of the "of N" label under the box.
+    const goBtn = document.getElementById('puzzle-go-btn');
+    const countLabel = document.getElementById('puzzle-count-label');
+    const syncGoButton = () => {
+      const draft = parseInt(puzInput.value, 10);
+      const pending = document.activeElement === puzInput && !isNaN(draft) && draft !== this.currentPuzzleNum;
+      goBtn.hidden = !pending;
+      countLabel.hidden = pending;
+    };
+    const commitAndClose = () => {
+      this.commitPuzzleSelection();
+      puzInput.blur();
+    };
+
     puzInput.addEventListener('input', (e) => {
       // Commit spinner inputs immediately; wait for explicit actions when typing.
       if (e.inputType === undefined || e.inputType === 'insertReplacementText') {
         this.commitPuzzleSelection();
       }
+      syncGoButton();
     });
 
     puzInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        this.commitPuzzleSelection();
-        puzInput.blur();
+        commitAndClose();
       }
     });
+
+    // pointerdown (not click), with the default prevented so the box keeps
+    // focus: the blur handler below would otherwise discard the draft
+    // before a click could land. Keyboard activation still arrives as a
+    // click (detail 0).
+    goBtn.onpointerdown = (e) => { e.preventDefault(); commitAndClose(); };
+    goBtn.onclick = (e) => { if (e.detail === 0) commitAndClose(); };
 
     // Clicking away from an uncommitted edit discards it rather than
     // acting like a silent Enter -- typing a number and then clicking
@@ -541,6 +564,7 @@ export function applyInput(GameClass) {
     // 'input' handler above) actually commit.
     puzInput.addEventListener('blur', () => {
       puzInput.value = this.currentPuzzleNum || 1;
+      syncGoButton();
     });
   };
 
