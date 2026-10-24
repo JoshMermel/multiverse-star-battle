@@ -21,6 +21,7 @@ export function applyInput(GameClass) {
     this.setupBrowseModal();
     this.setupBookPicker();
     this.setupSettings();
+    this.setupPrintModal();
     this.setupAuth();
   };
 

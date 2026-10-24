@@ -184,6 +184,13 @@
         </div>
         <div class="settings-account-zone">
           <div class="settings-row-text">
+            <span class="settings-label">Print puzzles</span>
+            <span class="settings-desc">Make a PDF booklet of puzzles from the current book, with an answer key.</span>
+          </div>
+          <button id="print-btn" class="auth-btn" aria-haspopup="dialog">Print…</button>
+        </div>
+        <div class="settings-account-zone">
+          <div class="settings-row-text">
             <span class="settings-label">Account Sync</span>
             <span class="settings-desc">Sign in to back up and sync your progress across devices.</span>
           </div>
@@ -195,6 +202,77 @@
             <span class="settings-desc">Permanently deletes all puzzle progress and solved history.</span>
           </div>
           <button id="clear-saves-btn" class="danger-btn">Clear saves</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="print-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="print-modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="print-modal-title">Print puzzles</h2>
+        <button data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="print-intro">Make a PDF booklet of puzzles from <strong id="print-book-name">this book</strong>, numbered as they are in the game, followed by an answer key.</p>
+        <div class="settings-list">
+          <div class="settings-row settings-row--stacked">
+            <div class="settings-row-text">
+              <label class="settings-label" for="print-selection">Puzzles</label>
+              <span class="settings-desc">A range, a list, or both — like <code>1-10</code> or <code>3, 7, 12-15</code>. Type <code>all</code> for the whole book (<span id="print-book-total">—</span> puzzles).</span>
+            </div>
+            <input type="text" id="print-selection" class="settings-input" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
+            <span id="print-selection-error" class="print-error" role="alert" hidden></span>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Paper size</span>
+            </div>
+            <div class="segmented-control" id="print-paper" role="radiogroup" aria-label="Paper size">
+              <button type="button" data-value="letter" role="radio" aria-checked="false">Letter</button>
+              <button type="button" data-value="a4" role="radio" aria-checked="false">A4</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <label class="settings-label" for="print-per-page">Puzzles per page</label>
+              <span class="settings-desc">Auto fits as many as stay comfortably big to write in.</span>
+            </div>
+            <select id="print-per-page" class="settings-select">
+              <option value="auto">Auto</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="6">6</option>
+              <option value="8">8</option>
+            </select>
+          </div>
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Row &amp; column labels</span>
+              <span class="settings-desc">Letter the columns and number the rows on every board, to refer to cells</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="print-axis-labels" role="switch" aria-checked="false">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <span class="settings-label">Answer key</span>
+              <span class="settings-desc">Add pages at the end showing every solution</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="print-answer-key" role="switch" aria-checked="false">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
+        </div>
+        <p id="print-summary" class="print-summary" aria-live="polite"></p>
+        <div class="print-actions">
+          <button type="button" data-close class="secondary-btn">Cancel</button>
+          <button type="button" id="print-download-btn" class="primary-btn">Download PDF</button>
         </div>
       </div>
     </div>
