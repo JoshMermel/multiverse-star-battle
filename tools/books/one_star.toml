@@ -25,7 +25,6 @@ Medium    = [110, 255]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
 Hard      = [225, 425]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
 Expert    = [335, 795]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
 
-
 [ranges.6x6_mono]
 Beginner  = [10, 80]   # INFERRED from current book span -- verify
 Medium    = [45, 125]   # INFERRED from current book span -- verify
@@ -43,6 +42,12 @@ Beginner  = [46, 150]   # shell history
 Medium    = [175, 300]   # INFERRED from current book span -- verify
 Hard      = [225, 425]   # INFERRED from current book span -- verify
 Expert    = [353, 997]   # INFERRED from current book span -- verify
+
+[ranges.half_dozen]
+Beginner  = [35, 100]   # INFERRED from current book span -- verify
+Medium    = [60, 220]   # INFERRED from current book span -- verify
+Hard      = [155, 325]   # INFERRED from current book span -- verify
+Expert    = [303, 595]   # INFERRED from current book span -- verify
 
 [[book]]
 out    = "12x12_beginner"
@@ -227,6 +232,18 @@ bonus  = { Grandmaster = 5 }
 out    = "12x12_trio"
 source = "one_star/trip_12.csv"
 ranges = "12x12_trio"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
+
+[[book]]
+out    = "half_dozen"
+source = "curiosities/6x_scored.csv"
+ranges = "half_dozen"
 tiers  = [
   {tier="Beginner", count=100},
   {tier="Medium", count=400},

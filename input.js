@@ -895,8 +895,9 @@ export function applyInput(GameClass) {
 
     const renderDrill = (group) => {
       const meta = groupMeta(group.group);
-      const sizes = [...new Set(group.cats.map(c => catSize(c.id)).filter(Boolean))]
-        .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+      // Numeric sizes ("8x8", "13x13") sort numerically; any other labels keep manifest order.
+      const sizes = [...new Set(group.cats.map(c => catSize(c.id)).filter(Boolean))];
+      if (sizes.every(s => !isNaN(parseInt(s, 10)))) sizes.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
       const hasOther = sizes.length > 0 && group.cats.some(c => !catSize(c.id));
 
       if (sizes.length < 2) {

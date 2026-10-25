@@ -1,0 +1,20 @@
+# Books that are NOT in data/manifest.json -- reachable only by URL (e.g. ?book=void), as Easter eggs. Their CSVs stay in data/.
+# Run:  python3 build_books.py hidden   (stages to books_staging/; add --promote to copy into data/)
+
+[ranges.8x8]
+Beginner  = [14, 85]   # shell history
+Medium    = [40, 190]   # shell history
+Hard      = [125, 275]   # shell history
+Expert    = [225, 500]   # shell history
+
+[[book]]
+out    = "void"
+source = "playground/void_scored.csv"
+ranges = "8x8"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5 }
