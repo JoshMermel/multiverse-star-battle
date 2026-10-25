@@ -871,7 +871,8 @@ export function applyInput(GameClass) {
         const cats = catsForSize(size);
         const isActive = cats.some(c => c.id === activeCatId);
         const sub = `${cats.length} book${cats.length === 1 ? '' : 's'}`;
-        const card = makeGroupCard(label, meta.icon, sub, '', isActive, '');
+        // A group's manifest entry may give each size/sub-category its own icon: "sizes": {"Venn": {"icon": "🫧"}}.
+        const card = makeGroupCard(label, meta.sizes?.[label]?.icon ?? meta.icon, sub, '', isActive, '');
         card.onclick = () => renderCatList(
           cats, `${group.group} · ${label}`, '', `← ${group.group}`,
           () => renderSizePicker(group, sizes, hasOther)
