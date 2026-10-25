@@ -60,3 +60,67 @@ int solve2(const unsigned char *grid, int n, int cap, unsigned char *out) {
     rec(0);
     return found;
 }
+
+/* ---- joint solver: any stars-per-unit K, several boards at once, stops after `cap` common solutions ---- */
+#define MAXB 4
+static int JN, JK, JNB, JCAP, jfound;
+static long jnodes, jlimit;
+static int jabort;
+static const unsigned char *JG;           /* JG[(b*N + r)*N + c] */
+static unsigned char *JOUT;
+static int jcol[MAXN], jreg[MAXB][MAXN], jpick[MAXN][MAXN];
+static int jleft[MAXB][MAXN + 1][MAXN];
+
+static void jrow(int r);
+
+static void jpickcols(int r, int c0, int j) {
+    if (jfound >= JCAP || jabort) return;
+    if (++jnodes > jlimit) { jabort = 1; return; }
+    if (j == JK) { jrow(r + 1); return; }
+    int lastc = JN - 1 - 2 * (JK - j - 1);
+    for (int c = c0; c <= lastc; c++) {
+        if (jcol[c] >= JK) continue;
+        if (r > 0) {
+            int bad = 0;
+            for (int i = 0; i < JK; i++) { int d = jpick[r-1][i] - c; if (d >= -1 && d <= 1) { bad = 1; break; } }
+            if (bad) continue;
+        }
+        int ok = 1;
+        for (int b = 0; b < JNB; b++) if (jreg[b][JG[(b * JN + r) * JN + c]] >= JK) { ok = 0; break; }
+        if (!ok) continue;
+        jcol[c]++;
+        for (int b = 0; b < JNB; b++) jreg[b][JG[(b * JN + r) * JN + c]]++;
+        jpick[r][j] = c;
+        jpickcols(r, c + 2, j + 1);
+        jcol[c]--;
+        for (int b = 0; b < JNB; b++) jreg[b][JG[(b * JN + r) * JN + c]]--;
+        if (jfound >= JCAP || jabort) return;
+    }
+}
+
+static void jrow(int r) {
+    if (r == JN) {
+        for (int i = 0; i < JN; i++) for (int j = 0; j < JK; j++) JOUT[jfound * JN * JK + i * JK + j] = jpick[i][j];
+        jfound++;
+        return;
+    }
+    int rem = JN - r;
+    for (int c = 0; c < JN; c++) if (JK - jcol[c] > (rem + 1) / 2) return;
+    for (int b = 0; b < JNB; b++)
+        for (int g = 0; g < JN; g++) if (JK - jreg[b][g] > jleft[b][r][g]) return;
+    jpickcols(r, 0, 0);
+}
+
+/* returns number of common solutions found (<= cap), or -1 if the node limit was exceeded before reaching cap */
+int joint_solve(const unsigned char *grids, int nb, int n, int k, int cap, unsigned char *out, long node_limit) {
+    JN = n; JK = k; JNB = nb; JCAP = cap; jfound = 0; jnodes = 0; jlimit = node_limit; jabort = 0; JG = grids; JOUT = out;
+    memset(jcol, 0, sizeof jcol); memset(jreg, 0, sizeof jreg); memset(jleft, 0, sizeof jleft);
+    for (int b = 0; b < nb; b++)
+        for (int r = n - 1; r >= 0; r--) {
+            for (int g = 0; g < n; g++) jleft[b][r][g] = jleft[b][r + 1][g];
+            for (int c = 0; c < n; c++) jleft[b][r][grids[(b * n + r) * n + c]]++;
+        }
+    jrow(0);
+    if (jabort && jfound < cap) return -1;
+    return jfound;
+}

@@ -171,7 +171,8 @@ def get_solutions_capped_multi(grids, n, cap=2, stars_per_unit=1, time_limit_sec
     Returns collector.solutions normally, or None if the time limit was
     hit before the search could either reach `cap` solutions or prove
     there are fewer -- callers MUST treat None as "don't know, retry from
-    scratch", never as a valid (possibly empty) solution set.
+    scratch", never as a valid (possibly empty) solution set. That covers any
+    non-exhaustive end (UNKNOWN, or FEASIBLE after solutions were found).
     """
     model, x = _build_star_model_multi(grids, n, stars_per_unit)
     solver = cp_model.CpSolver()
@@ -179,7 +180,9 @@ def get_solutions_capped_multi(grids, n, cap=2, stars_per_unit=1, time_limit_sec
     solver.parameters.max_time_in_seconds = time_limit_seconds
     collector = _CappedSolutionCollector(x, cap)
     status = solver.solve(model, collector)
-    if len(collector.solutions) < cap and status == cp_model.UNKNOWN:
+    # Fewer than `cap` solutions is only a trustworthy count if the search was exhaustive. A time limit that expires after
+    # some solutions were found ends with FEASIBLE (not UNKNOWN), and that partial set must not be reported as complete.
+    if len(collector.solutions) < cap and status not in (cp_model.OPTIMAL, cp_model.INFEASIBLE):
         return None
     return collector.solutions
 

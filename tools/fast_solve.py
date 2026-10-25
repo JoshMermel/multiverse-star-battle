@@ -37,3 +37,27 @@ def solution_cells(grid, n, cap=4000):
         return None
     a = np.frombuffer(buf.raw, dtype=np.uint8, count=k * 2 * n).reshape(k, n, 2).astype(np.int16)
     return (a + (np.arange(n, dtype=np.int16) * n)[None, :, None]).reshape(k, 2 * n)
+
+
+_lib.joint_solve.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_char_p, ctypes.c_long]
+_lib.joint_solve.restype = ctypes.c_int
+
+
+def joint_solutions(grids, n, k, cap=2, node_limit=200_000_000):
+    """Solutions common to every board in `grids` (each a flat list of region ids 0..n-1, k stars per row/col/region, no touching), up to
+    `cap`. Returns a list of solution strings ('x'/'.', row-major), or None if the node limit ran out before the answer was settled."""
+    assert len(grids) <= 4
+    flat = b"".join(bytes(g) for g in grids)
+    buf = ctypes.create_string_buffer(cap * n * k)
+    got = _lib.joint_solve(flat, len(grids), n, k, cap, buf, node_limit)
+    if got < 0:
+        return None
+    raw = buf.raw
+    out = []
+    for s in range(got):
+        cells = ['.'] * (n * n)
+        for r in range(n):
+            for j in range(k):
+                cells[r * n + raw[s * n * k + r * k + j]] = 'x'
+        out.append(''.join(cells))
+    return out
