@@ -148,5 +148,5 @@ tiers  = [
   {tier="Hard", count=40},
   {tier="Expert", count=10},
 ]
-bonus  = { UNSOLVED = 1 }
-notes  = "Token 1-board 10x10 2-star mondrian: boards from mondrian2star_boards.py whose rectangle layout has exactly one solution (264 found in a 60 s pilot, ~0.4% of solvable boards). 10% the size of mondrian_2star. No Grandmaster exists among them."
+bonus  = { Grandmaster = 1, UNSOLVED = 1 }
+notes  = "Token 1-board 10x10 2-star mondrian: boards from mondrian2star_boards.py whose rectangle layout has exactly one solution (264 from the first pilot). 10% the size of mondrian_2star. Pool grown 2026-10-25 to 3,547 boards by mondrian_mono_boards.py (10 min search, 6.3k hits ~3.3k distinct; the space looks nearly saturated)."
