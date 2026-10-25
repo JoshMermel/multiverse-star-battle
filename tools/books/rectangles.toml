@@ -31,6 +31,18 @@ Medium    = [40, 190]   # shell history
 Hard      = [125, 275]   # INFERRED from current book span -- verify
 Expert    = [225, 500]   # INFERRED from current book span -- verify
 
+[ranges.mondrian_2star]   # same 10x10 2-star bands as venn_2star (books/two_star.toml)
+Beginner  = [70, 205]
+Medium    = [190, 380]
+Hard      = [310, 500]
+Expert    = [335, 795]
+
+[ranges.mondrian_2star_mono]   # 1-board 10x10 2-star bands (books/two_star.toml 10x10_mono)
+Beginner  = [75, 160]
+Medium    = [170, 325]
+Hard      = [290, 480]
+Expert    = [375, 790]
+
 [ranges.venn_2star]   # 10x10 2-star bands from books/two_star.toml
 Beginner  = [70, 205]
 Medium    = [190, 380]
@@ -112,3 +124,29 @@ tiers  = [
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
 notes  = "10x10 2-star venn (VennGenerator min_region_size=3, venn2star_boards.py + venn2star_pairs.py, 2026-10-18; pool of 18k pairs from ~2,000 boards, rotation/reflection duplicates removed). Boards repeat across puzzles (one board up to ~19x) -- accepted. Expert has only ~386 candidates for 100."
+
+[[book]]
+out    = "mondrian_2star"
+source = "rectangles/mondrian_2star_scored.csv"
+ranges = "mondrian_2star"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "10x10 2-star mondrian (SubdivisionGenerator min_region_size=3, mondrian2star_boards.py + mondrian2star_pairs.py, 2026-10-25). Pool = random 5,000-puzzle sample of 286k pairs from 5,000 boards."
+
+[[book]]
+out    = "mondrian_2star_mono"
+source = "rectangles/mondrian_2star_mono_scored.csv"
+ranges = "mondrian_2star_mono"
+tiers  = [
+  {tier="Beginner", count=10},
+  {tier="Medium", count=40},
+  {tier="Hard", count=40},
+  {tier="Expert", count=10},
+]
+bonus  = { UNSOLVED = 1 }
+notes  = "Token 1-board 10x10 2-star mondrian: boards from mondrian2star_boards.py whose rectangle layout has exactly one solution (264 found in a 60 s pilot, ~0.4% of solvable boards). 10% the size of mondrian_2star. No Grandmaster exists among them."

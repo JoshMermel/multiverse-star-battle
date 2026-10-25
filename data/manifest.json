@@ -98,6 +98,8 @@
     {"id": "not_sudoku_2star",      "label": "Not Sudoku",              "group": "Rectangles",       "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply", "stars": 2},
     {"id": "quadrants",             "label": "Quadrants",               "group": "Rectangles",       "desc": "Boards split into quadrants", "stars": 1},
     {"id": "mondrian",              "label": "Mondrian",                "group": "Rectangles",       "desc": "Inspired by Mondrian", "stars": 1},
+    {"id": "mondrian_2star",        "label": "Mondrian",                "group": "Rectangles",       "desc": "Inspired by Mondrian", "stars": 2},
+    {"id": "mondrian_2star_mono",   "label": "Mondrian 1-board",        "group": "Rectangles",       "desc": "Inspired by Mondrian; a single board", "stars": 2},
     {"id": "6x6_square_free",       "label": "6x6 Square Free",         "group": "Playground",       "desc": "Regions have no 2x2 squares", "stars": 1},
     {"id": "8x8_square_free",       "label": "8x8 Square Free",         "group": "Playground",       "desc": "Regions have no 2x2 squares", "stars": 1},
     {"id": "8x8_square_free_mono",  "label": "8x8 Square Free 1-board", "group": "Playground",       "desc": "Regions have no 2x2 squares", "stars": 1},

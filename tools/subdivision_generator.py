@@ -37,6 +37,24 @@ class SubdivisionGenerator(Generator):
     BALANCED_WEIGHT   = 1
     DEGENERATE_WEIGHT = 0.2
 
+    def __init__(self, n, stars_per_unit=1, min_region_size=1):
+        """
+        min_region_size: never produce a rectangle with fewer cells than this.
+        For 2-star boards every rectangle must also be able to hold two
+        non-touching stars, which rules out 2x2 (use min_region_size=3).
+        Region sizes only shrink as splitting continues, so excluding bad
+        cuts at split time is exact.  Defaults leave the 1-star output unchanged.
+        """
+        super().__init__(n, stars_per_unit)
+        self.min_region_size = min_region_size
+
+    def _rect_ok(self, rect):
+        _, _, h, w = rect
+        if h * w < self.min_region_size:
+            return False
+        # a 2-star region needs two cells >= 2 apart in some axis, i.e. not a 2x2 (or smaller)
+        return not (self.stars_per_unit >= 2 and max(h, w) < 3)
+
     @staticmethod
     def _can_split(rect):
         _, _, h, w = rect
@@ -47,8 +65,7 @@ class SubdivisionGenerator(Generator):
             return False
         return True
 
-    @classmethod
-    def _split_options(cls, rect):
+    def _split_options(self, rect):
         """
         Returns a list of ((axis, cut), weight) pairs for every valid cut.
         axis='H' cuts horizontally; axis='V' cuts vertically.
@@ -62,12 +79,14 @@ class SubdivisionGenerator(Generator):
         options = []
         for cut in range(1, h):
             both_thick = (cut >= 2) and (h - cut >= 2)
-            weight = cls.BALANCED_WEIGHT if both_thick else cls.DEGENERATE_WEIGHT
-            options.append((('H', cut), weight))
+            weight = self.BALANCED_WEIGHT if both_thick else self.DEGENERATE_WEIGHT
+            if self._rect_ok((0, 0, cut, w)) and self._rect_ok((0, 0, h - cut, w)):
+                options.append((('H', cut), weight))
         for cut in range(1, w):
             both_thick = (cut >= 2) and (w - cut >= 2)
-            weight = cls.BALANCED_WEIGHT if both_thick else cls.DEGENERATE_WEIGHT
-            options.append((('V', cut), weight))
+            weight = self.BALANCED_WEIGHT if both_thick else self.DEGENERATE_WEIGHT
+            if self._rect_ok((0, 0, h, cut)) and self._rect_ok((0, 0, h, w - cut)):
+                options.append((('V', cut), weight))
         return options
 
     @staticmethod
@@ -86,7 +105,8 @@ class SubdivisionGenerator(Generator):
 
         # We need exactly n regions, so we need n-1 splits.
         for _ in range(n - 1):
-            splittable = [rect for rect in rects if self._can_split(rect)]
+            splittable = [rect for rect in rects
+                          if self._can_split(rect) and self._split_options(rect)]
             if not splittable:
                 # Dead end: not enough splittable rectangles remain.
                 return None
