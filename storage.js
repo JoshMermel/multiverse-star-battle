@@ -126,6 +126,46 @@ class StorageManager {
     localStorage.setItem(`sb_v2_state_${puzzleId}`, this._serializeState(stateArray));
   }
 
+  // --- Dot provenance (local-only; never synced to the cloud) ---
+  //
+  // The game records WHY each dot exists (rules.js) so removing a star can
+  // retract just the dots that star alone justified. Only the board (stars and
+  // dots) is saved above, so on reload that record is rebuilt from the board
+  // (stars next to a dot, a row/column/region at quota) -- except for the one
+  // fact the board can't tell you: which dots the player placed by hand, and
+  // so must never be retracted. This saves the opposite list, the dots that
+  // were placed ONLY automatically, as { v: 1, s: <board string it belongs
+  // to>, a: [cell indices] }. A record whose board string no longer matches the
+  // saved board (an older cached copy of the app saved the board without
+  // updating it, or another tab did) is ignored, and every dot then counts as
+  // the player's own -- the safe default, and what a puzzle with no record
+  // (every game saved before this existed) gets.
+  getAutoDots(puzzleId, stateArray) {
+    try {
+      const raw = localStorage.getItem(`sb_dr_${puzzleId}`);
+      if (!raw) return null;
+      const rec = JSON.parse(raw);
+      if (rec?.v !== 1 || rec.s !== this._serializeState(stateArray) || !Array.isArray(rec.a)) return null;
+      return rec.a.filter(Number.isInteger);
+    } catch {
+      return null;
+    }
+  }
+
+  saveAutoDots(puzzleId, stateArray, autoDots) {
+    const key = `sb_dr_${puzzleId}`;
+    if (!stateArray || autoDots.length === 0) {
+      localStorage.removeItem(key);
+      return;
+    }
+    try {
+      localStorage.setItem(key, JSON.stringify({ v: 1, s: this._serializeState(stateArray), a: autoDots }));
+    } catch (err) {
+      // Not essential (worst case every dot counts as the player's own after a reload), so a full quota must not break saving the board.
+      localStorage.removeItem(key);
+    }
+  }
+
   // --- Cell colors (local-only; never synced to the cloud) ---
 
   // Saved as '2:' then two chars per cell: '--' for no mark, else the mark
@@ -228,7 +268,7 @@ class StorageManager {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key === 'sb_solved' || key === 'sb_solve_times' || key === 'sb_elapsed_times' ||
-        key.startsWith('sb_v2_state_') || key.startsWith('sb_hl_')) {
+        key.startsWith('sb_v2_state_') || key.startsWith('sb_hl_') || key.startsWith('sb_dr_')) {
         keysToDelete.push(key);
       }
     }

@@ -114,6 +114,21 @@ export function applyRules(GameClass) {
     }
   };
 
+  // Every reason idx would be a dot RIGHT NOW, judged only from the stars on
+  // the board: each adjacent star (reason = that star's cell index) and each
+  // row/column/region containing idx that currently meets its quota (reason =
+  // the group token). Used when a cell is vacated (_refillIfNowJustified) and
+  // to rebuild an auto-placed dot's provenance after a reload, where only the
+  // board itself was saved (see history.js).
+  p._currentDotReasons = function (idx) {
+    const reasons = [];
+    getNeighbors8(idx, this.n).forEach(nb => {
+      if (this.state[nb] === CELL.STAR) reasons.push(nb);
+    });
+    this._groupFillReasons(idx).forEach(({ reason }) => reasons.push(reason));
+    return reasons;
+  };
+
   // Called when the star at idx is removed, on the now-empty idx itself:
   // a cell that WAS a star is exempt from being dotted (see the STAR-skip
   // above), so any reason that already applied to it -- an adjacent star
@@ -125,12 +140,7 @@ export function applyRules(GameClass) {
     if (this.voidCells?.has(idx)) return;
     if (this.state[idx] !== CELL.NONE) return;
 
-    const reasons = [];
-    getNeighbors8(idx, this.n).forEach(nb => {
-      if (this.state[nb] === CELL.STAR) reasons.push(nb);
-    });
-    this._groupFillReasons(idx).forEach(({ reason }) => reasons.push(reason));
-
+    const reasons = this._currentDotReasons(idx);
     if (reasons.length === 0) return;
     this.state[idx] = CELL.DOT;
     this._getCellsByIndex(idx).forEach(cell => {

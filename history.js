@@ -72,30 +72,52 @@ export function applyHistory(GameClass) {
     }
   };
 
+  // Cells of the dots placed ONLY automatically (no 'manual' reason) -- the
+  // part of the dot provenance that a reload can't rebuild from the board
+  // (see _resetHistoryTo). A solved puzzle keeps none: nothing is retracted
+  // after the win, and the record would otherwise pile up in storage for
+  // every puzzle ever solved with auto-dot on.
+  p._autoOnlyDots = function () {
+    if (!this.dotReasons || this.isSolved?.()) return [];
+    const out = [];
+    for (const [idx, reasons] of this.dotReasons) {
+      if (this.state[idx] === CELL.DOT && !reasons.has('manual')) out.push(idx);
+    }
+    return out;
+  };
+
   // Persist current state to localStorage, along with the timer's
   // in-progress elapsed time so a resumed session picks up where it left off.
   p.saveCurrentState = function () {
     storageManager.savePuzzleState(this.currentPuzzleUniqueId, this.state);
+    storageManager.saveAutoDots(this.currentPuzzleUniqueId, this.state, this._autoOnlyDots());
     storageManager.saveHighlights(this.currentPuzzleUniqueId, this.highlights);
     this._persistTimerProgress();
   };
 
   // Replace the live board state, and reset history to a single fresh
-  // snapshot of it. A freshly loaded/reset/reconstructed state has no
-  // per-cell provenance to restore (only stars and dots are saved, not WHY
-  // each dot exists), so every dot already on the board is recorded as the
-  // player's own ('manual', see rules.js's dot-provenance helpers). Without
-  // that, such a dot would have no reason at all, and the first star placed
-  // in any of its groups would give it one (a row/column/region quota) that
-  // is retracted again when the star is removed -- wiping a dot that was
-  // there before the star. `highlights` (the player's cell colors) is the
-  // exception to "nothing carried over" -- it's saved per puzzle, so loads
-  // pass the saved copy back in; everything else (reset, clear-all) gets none.
-  p._resetHistoryTo = function (state, highlights = null) {
+  // snapshot of it. Only stars and dots are saved, not WHY each dot exists
+  // (see rules.js's dot-provenance helpers), so provenance is rebuilt here:
+  //  - a dot named in `autoDots` (saved by saveCurrentState: dots placed only
+  //    automatically) gets the reasons the board gives it right now -- an
+  //    adjacent star, a row/column/region at quota -- so removing that star
+  //    later still retracts it, as it would have without a reload;
+  //  - every other dot is recorded as the player's own ('manual'), including
+  //    all dots of a state with no saved record. Without any reason a dot
+  //    would be given one by the first star placed in any of its groups, and
+  //    retracted again with that star -- wiping a dot that was there before.
+  // `highlights` (the player's cell colors) is the other thing carried over
+  // from storage -- it's saved per puzzle, so loads pass the saved copy back
+  // in; resets and clear-all pass neither.
+  p._resetHistoryTo = function (state, highlights = null, autoDots = null) {
     this.state = state;
     this.dotReasons = new Map();
+    const auto = new Set(autoDots || []);
     state.forEach((cell, i) => {
-      if (cell === CELL.DOT) this._addDotReason(i, 'manual');
+      if (cell !== CELL.DOT) return;
+      const reasons = auto.has(i) ? this._currentDotReasons(i) : [];
+      if (reasons.length === 0) this._addDotReason(i, 'manual');
+      else reasons.forEach(reason => this._addDotReason(i, reason));
     });
     this.highlights = highlights ?? new Array(this.n * this.n).fill(null);
     this.history = [JSON.stringify({ state, dotReasons: serializeDotReasons(this.dotReasons), highlights: this.highlights })];
@@ -117,7 +139,10 @@ export function applyHistory(GameClass) {
   p.loadProgress = function ({ suppressWinToast = false, isReset = false } = {}) {
     const savedState = storageManager.getPuzzleState(this.currentPuzzleUniqueId);
     if (savedState && savedState.length === this.n * this.n) {
-      this._resetHistoryTo(savedState, storageManager.getHighlights(this.currentPuzzleUniqueId, this.n * this.n));
+      this._resetHistoryTo(
+        savedState,
+        storageManager.getHighlights(this.currentPuzzleUniqueId, this.n * this.n),
+        storageManager.getAutoDots(this.currentPuzzleUniqueId, savedState));
       this.updateVisuals();
       this.validate({ suppressWinToast });
     } else if (!isReset && storageManager.getSolvedList().includes(this.currentPuzzleUniqueId)) {
