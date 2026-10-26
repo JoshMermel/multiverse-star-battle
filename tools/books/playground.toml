@@ -331,20 +331,3 @@ tiers  = [
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
 notes  = "14x14 3-star Mondrian: SubdivisionGenerator(stars_per_unit=3; every rectangle must be able to hold 3 non-touching stars), 17k solvable boards from mondrian2star_boards.py, 67,886 hashed-pair puzzles from mondrian2star_pairs.py, all scored 2026-10-26 (run_mond3_14.sh). Boards repeat across puzzles."
-
-[ranges.mondrian_3star_mono]   # 14x14 3-star 1-board Mondrian: only 21 solvable unique-solution boards exist so far (1 Medium, 9 Hard, 11 Expert), so these bands just span them
-Medium    = [400, 800]
-Hard      = [450, 1600]
-Expert    = [850, 2500]
-
-[[book]]
-out    = "mondrian_3star_mono"
-source = "rectangles/mondrian_3star_14_mono_scored.csv"
-ranges = "mondrian_3star_mono"
-tiers  = [
-  {tier="Medium", count=1},
-  {tier="Hard", count=9},
-  {tier="Expert", count=11},
-]
-bonus  = { UNSOLVED = 5 }
-notes  = "14x14 3-star 1-board Mondrian: boards from mondrian2star_boards.py whose rectangle layout has exactly one solution (131 found in ~2 core-hours of board search: 84% UNSOLVED by the scorer, 21 Medium/Hard/Expert, no Beginner or Grandmaster). Everything solvable that exists, plus 5 UNSOLVED."
