@@ -1,5 +1,5 @@
 """mondrian2star_boards.py n seconds workers out.pkl [stars=2] [min_region=3] [balanced=1.0] [degenerate=0.2]
-Time-boxed generation of Mondrian (all-rectangle, 2-star) boards, with stats.  Solves with the C enumerator (fast_solve.py), not CP-SAT.
+Time-boxed generation of Mondrian (all-rectangle, 2-star) boards, with stats.  Solves with the C enumerator (fast_solve.py); for 3+ stars a CP-SAT existence check runs first.
 Pickle: {board string: int16 array (num_solutions, 2n) of star cell indices}; pair them with mondrian2star_pairs.py."""
 import sys, time, random, pickle, os, statistics
 CWD = os.getcwd(); TOOLS = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, TOOLS)
@@ -33,7 +33,7 @@ def worker(job):
         DEGENERATE_WEIGHT = deg
     g = G(n, stars_per_unit=stars, min_region_size=minreg)
     maps = [m[0] for m in get_transformation_maps(n)]
-    st = dict(draws=0, struct=0, dup=0, swast=0, toomany=0, zero=0)
+    st = dict(draws=0, struct=0, dup=0, swast=0, toomany=0, zero=0, undecided=0)
     boards, seen = {}, set()
     t0 = time.time()
     while time.time() - t0 < secs:
@@ -51,7 +51,26 @@ def worker(job):
         if cs in seen:
             st['dup'] += 1; continue
         seen.add(cs)
-        sols = fast_solve.solution_cells(grid, n, CAP)
+        if stars == 2:
+            sols = fast_solve.solution_cells(grid, n, CAP)
+        else:
+            # 3+ stars: try the C enumerator under a small node budget (it settles roughly half of the boards at once: no solution, or all of them);
+            # only the boards it cannot decide go to CP-SAT for a has-any-solution check, then the C enumerator with a big budget
+            import ctypes
+            buf = ctypes.create_string_buffer(CAP * n * stars)
+            got = fast_solve._lib.joint_solve(bytes(grid), 1, n, stars, CAP, buf, 1_000_000)
+            if got == 0: st['zero'] += 1; continue
+            if got >= CAP: st['toomany'] += 1; continue
+            if got > 0:
+                import numpy as np
+                a = np.frombuffer(buf.raw, dtype=np.uint8, count=got * n * stars).reshape(got, n, stars).astype(np.int16)
+                sols = (a + (np.arange(n, dtype=np.int16) * n)[None, :, None]).reshape(got, n * stars)
+            else:
+                from board_solver import get_solutions_capped
+                ex = get_solutions_capped(grid, n, cap=2, stars_per_unit=stars, time_limit_seconds=10)
+                if ex is None: st['undecided'] += 1; continue
+                if len(ex) == 0: st['zero'] += 1; continue
+                sols = fast_solve.solution_cells_k(grid, n, stars, CAP, node_limit=40_000_000)
         if sols is None:
             st['toomany'] += 1; continue
         if len(sols) == 0:

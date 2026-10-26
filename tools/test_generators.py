@@ -818,6 +818,32 @@ class TestSubdivisionGenerator:
         assert_ambiguous(solutions)
 
 
+class TestSubdivisionGeneratorMultiStarRegions:
+    """Every rectangle a multi-star SubdivisionGenerator makes must be able to hold stars_per_unit non-touching stars, else the board is unsolvable."""
+
+    @pytest.mark.parametrize("n,stars", [(10, 2), (13, 3), (14, 3)])
+    def test_every_region_fits_its_stars(self, n, stars):
+        import random
+        from collections import defaultdict
+        gen = SubdivisionGenerator(n, stars_per_unit=stars)
+        grids = []
+        gen._make_result = lambda grid, *a, **k: grids.append(list(grid)) or None
+        random.seed(n * 10 + stars)
+        for _ in range(300):
+            gen._try_generate()
+        assert len(grids) > 100
+        for grid in grids:
+            cells = defaultdict(list)
+            for i, v in enumerate(grid):
+                cells[v].append((i // n, i % n))
+            assert len(cells) == n
+            for pts in cells.values():
+                rows = [r for r, _ in pts]; cols = [c for _, c in pts]
+                h = max(rows) - min(rows) + 1; w = max(cols) - min(cols) + 1
+                assert h * w == len(pts)                       # a rectangle
+                assert (h + 1) // 2 * ((w + 1) // 2) >= stars, (h, w)
+
+
 class TestSubdivisionGeneratorTwoStar:
     """Verifies SubdivisionGenerator can produce valid 2-star (stars_per_unit=2) boards."""
 

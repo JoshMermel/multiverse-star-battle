@@ -40,8 +40,9 @@ class SubdivisionGenerator(Generator):
     def __init__(self, n, stars_per_unit=1, min_region_size=1):
         """
         min_region_size: never produce a rectangle with fewer cells than this.
-        For 2-star boards every rectangle must also be able to hold two
-        non-touching stars, which rules out 2x2 (use min_region_size=3).
+        For multi-star boards every rectangle must also be able to hold
+        stars_per_unit non-touching stars (checked automatically, see
+        _rect_ok); min_region_size=3 or more is then just an extra floor.
         Region sizes only shrink as splitting continues, so excluding bad
         cuts at split time is exact.  Defaults leave the 1-star output unchanged.
         """
@@ -52,8 +53,9 @@ class SubdivisionGenerator(Generator):
         _, _, h, w = rect
         if h * w < self.min_region_size:
             return False
-        # a 2-star region needs two cells >= 2 apart in some axis, i.e. not a 2x2 (or smaller)
-        return not (self.stars_per_unit >= 2 and max(h, w) < 3)
+        # a rectangle holds at most ceil(h/2) * ceil(w/2) mutually non-touching cells; a k-star region needs k of them (so 2 stars rules out
+        # 2x2 and smaller, 3 stars also rules out 1x4, 2x4, 2x2, 3x2 ...).  Without this a board is simply unsolvable.
+        return (h + 1) // 2 * ((w + 1) // 2) >= self.stars_per_unit
 
     @staticmethod
     def _can_split(rect):

@@ -312,3 +312,39 @@ tiers  = [
 ]
 bonus  = { Grandmaster = 1, UNSOLVED = 1 }
 notes  = "Token 1-board 10x10 2-star mondrian: boards from mondrian2star_boards.py whose rectangle layout has exactly one solution (264 from the first pilot). 10% the size of mondrian_2star. Pool grown 2026-10-25 to 3,547 boards by mondrian_mono_boards.py (10 min search, 6.3k hits ~3.3k distinct; the space looks nearly saturated)."
+
+[ranges.mondrian_3star]   # 14x14 3-star Mondrian. Medium/Hard/Expert are exactly the regular 14x14 3-star bands (books/three_star.toml; the pool has 2.2k / 10k / 8.5k candidates in them for 400 / 400 / 100 slots). Beginner is Mondrian-specific: Beginner-tier puzzles score 275-550 (5th-95th percentile) here, so the regular 150-270 band would hold ~1 puzzle; it is capped at 400 (1,000 candidates for 100 slots) so Beginner stays below the Medium band's typical score.
+Beginner  = [275, 400]
+Medium    = [275, 525]
+Hard      = [510, 770]
+Expert    = [655, 1385]
+
+[[book]]
+out    = "mondrian_3star"
+source = "rectangles/mondrian_3star_14_scored.csv"
+ranges = "mondrian_3star"
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+notes  = "14x14 3-star Mondrian: SubdivisionGenerator(stars_per_unit=3; every rectangle must be able to hold 3 non-touching stars), 17k solvable boards from mondrian2star_boards.py, 67,886 hashed-pair puzzles from mondrian2star_pairs.py, all scored 2026-10-26 (run_mond3_14.sh). Boards repeat across puzzles."
+
+[ranges.mondrian_3star_mono]   # 14x14 3-star 1-board Mondrian: only 21 solvable unique-solution boards exist so far (1 Medium, 9 Hard, 11 Expert), so these bands just span them
+Medium    = [400, 800]
+Hard      = [450, 1600]
+Expert    = [850, 2500]
+
+[[book]]
+out    = "mondrian_3star_mono"
+source = "rectangles/mondrian_3star_14_mono_scored.csv"
+ranges = "mondrian_3star_mono"
+tiers  = [
+  {tier="Medium", count=1},
+  {tier="Hard", count=9},
+  {tier="Expert", count=11},
+]
+bonus  = { UNSOLVED = 5 }
+notes  = "14x14 3-star 1-board Mondrian: boards from mondrian2star_boards.py whose rectangle layout has exactly one solution (131 found in ~2 core-hours of board search: 84% UNSOLVED by the scorer, 21 Medium/Hard/Expert, no Beginner or Grandmaster). Everything solvable that exists, plus 5 UNSOLVED."
