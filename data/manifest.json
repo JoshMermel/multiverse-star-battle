@@ -105,6 +105,7 @@
     {"id": "10x10_symmetric_twin",  "label": "Symmetric Twin",        "group": "Symmetry",    "desc": "Both Symmetric and Twin at once", "stars": 2, "size": "Symmetric Twin"},
     {"id": "8x8_symmetric_triplets", "label": "Symmetric Triplets",   "group": "Symmetry",    "desc": "Three identical boards with internal symmetry", "stars": 1, "size": "Triplets"},
     {"id": "8x8_quadruplets",       "label": "Quadruplets",           "group": "Symmetry",    "desc": "Four identical boards with a unique shared solution", "stars": 1, "size": "Quadruplets"},
+    {"id": "10x10_quadruplets",     "label": "Quadruplets",           "group": "Symmetry",    "desc": "Four identical boards with a unique shared solution", "stars": 2, "size": "Quadruplets"},
     {"id": "8x8_regionless_symmetric",   "label": "8x8 regionless symmetric",     "group": "Symmetry",     "desc": "Regionless puzzles with internal symmetry", "stars": 1, "size": "Regionless Symmetric"},
     {"id": "10x10_regionless_symmetric", "label": "10x10 regionless symmetric",   "group": "Symmetry",     "desc": "Regionless puzzles with internal symmetry", "stars": 2, "size": "Regionless Symmetric"},
     {"id": "8x8_regionless_complement",   "label": "8x8 regionless complement",   "group": "Symmetry",     "desc": "Regionless puzzles where the black and white squares have the same shape", "stars": 1, "size": "Regionless Complement"},

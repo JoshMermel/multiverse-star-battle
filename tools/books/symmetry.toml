@@ -42,30 +42,25 @@ Beginner  = [20, 56]   # INFERRED from current book span -- verify
 Hard      = [105, 310]   # 2026-10-12: lower edge from the work-per-row ladder (books/THRESHOLDS.md); ceiling = pool max, as before (these pools are light, so only their top slice matches regular-book work)
 Expert    = [180, 375]   # 2026-10-12: lower edge from the work-per-row ladder (books/THRESHOLDS.md); ceiling = pool max, as before (these pools are light, so only their top slice matches regular-book work)
 
+[ranges.10x10_quadruplets]   # 10x10 2-star bands (same as venn_2star / mondrian_2star)
+Beginner  = [70, 205]
+Medium    = [190, 380]
+Hard      = [310, 500]
+Expert    = [335, 795]
+
 [[book]]
 out    = "8x8_quadruplets"
 source = "symmetry/quadruplets.csv"
 ranges = "8x8"
 group_by = "suffix"
-groups = [
-  "rot180_flip_diag_flip_antidiag",
-  "rot90_flip_diag_flip_antidiag",
-  "rot90_flip_h_flip_antidiag",
-  "rot90_flip_h_flip_v",
-  "rot90_flip_v_flip_diag",
-  "rot90_rot180_flip_antidiag",
-  "rot90_rot180_flip_diag",
-  "rot90_rot180_flip_h",
-  "rot90_rot180_flip_v",
-  "rot90_rot180_rot270",
-]   # 10 transform combos, equal shares
+groups = { c4 = ["rot90_rot180_rot270"], klein = ["rot180_flip_diag_flip_antidiag"], hv = ["rot90_flip_h_flip_v", "rot90_flip_diag_flip_antidiag"], antidiag = ["rot90_flip_h_flip_antidiag", "rot90_flip_v_flip_diag"], diag = ["rot90_rot180_flip_diag", "rot90_rot180_flip_antidiag"], h = ["rot90_rot180_flip_h", "rot90_rot180_flip_v"] }   # the 10 pool suffixes are 6 distinct puzzle classes (same class seen from a different base board / global flip); equal shares per CLASS
 tiers  = [
   {tier="Beginner", count=100},
   {tier="Medium", count=400},
   {tier="Hard", count=400},
   {tier="Expert", count=100},
 ]
-bonus_each = { Grandmaster = 1 }   # one from each group that has any (9 of 10 do)
+bonus_each = { Grandmaster = 1 }   # one from each group that has any
 
 [[book]]
 out    = "8x8_symmetric_triplets"
@@ -331,3 +326,18 @@ tiers  = [
 bonus_each = { Grandmaster = 1 }
 notes  = "Josh 2026-10-14: 800/3200/3200/800 over ~42 symmetry-pair groups (library/sym_data2/groups.toml); Medium is the scarce tier. Tier labels follow the scorer; bands as in two_star 9x9."
 # <<< 9x9_symmetric <<<
+
+[[book]]
+out    = "10x10_quadruplets"
+source = "symmetry/quadruplets_10x10.csv"
+ranges = "10x10_quadruplets"
+group_by = "suffix"
+groups = { c4 = ["rot90_rot180_rot270"], klein = ["rot180_flip_diag_flip_antidiag"], hv = ["rot90_flip_h_flip_v"], antidiag = ["rot90_flip_h_flip_antidiag"], diag = ["rot90_rot180_flip_diag"], h = ["rot90_rot180_flip_h"] }   # the six feasible puzzle classes (see copies_post.py class_name), equal shares
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus_each = { Grandmaster = 1, UNSOLVED = 1 }
+notes  = "10x10 2-star quadruplets (one board + 3 rotated/reflected copies; unique shared solution). Pool: naive copies_probe.py run (group classes) + planted non-group classes (gen_copies_planted.py), 2026-10-25."
