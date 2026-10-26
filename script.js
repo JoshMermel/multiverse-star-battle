@@ -134,6 +134,8 @@ class StarBattleGame {
 
     this.state = new Array(this.n * this.n).fill(CELL.NONE);
     this.highlights = new Array(this.n * this.n).fill(null);
+    this._marksHidden = false;
+    this._syncMarksToggle?.();
     this.history = [JSON.stringify(this.state)];
     this.historyIdx = 0;
   }
@@ -330,7 +332,7 @@ class StarBattleGame {
       // A color drag that starts on an already-so-colored cell erases (see
       // _commitHighlightDrag); flag it so its preview isn't shown in color.
       document.body.classList.toggle('hl-erasing',
-        this._inMarkMode() && this._brushPartOf(this.highlights[idx]) === this._brushIndex());
+        this._inMarkMode() && !this._marksHidden && this._brushPartOf(this.highlights[idx]) === this._brushIndex());
       this.draggedIndices = [idx];
       this._getCellsByIndex(idx).forEach(cell => {
         cell.classList.add('cell-drag-highlight');
@@ -403,7 +405,8 @@ class StarBattleGame {
   // selected color (or texture) erases across the whole drag, otherwise it
   // paints.
   _commitHighlightDrag() {
-    const erase = this._brushPartOf(this.highlights[this.draggedIndices[0]]) === this._brushIndex();
+    // Hidden marks can't be seen, so a stroke never erases them: it just paints (and shows them all again).
+    const erase = !this._marksHidden && this._brushPartOf(this.highlights[this.draggedIndices[0]]) === this._brushIndex();
     this._applyBrush(this.draggedIndices, erase);
     this.draggedIndices = [];
   }
@@ -423,8 +426,10 @@ class StarBattleGame {
   }
 
   // Write marks, given as [index, mark] pairs, as ONE undoable event. Marks
-  // never touch cell state, dots or stars.
+  // never touch cell state, dots or stars. Adding a mark while they are
+  // hidden shows them all again.
   _setHighlights(entries) {
+    if (this._marksHidden) this._setMarksHidden(false);
     for (const [idx, mark] of entries) {
       if (!this.voidCells?.has(idx)) this.highlights[idx] = mark;
     }

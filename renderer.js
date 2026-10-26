@@ -394,7 +394,9 @@ export function applyRenderer(GameClass) {
   // Marks are hidden entirely (not just overridden) while a hint is showing,
   // and on a cell holding a dot or star -- a mark can still be placed there;
   // it stays in memory and shows when the dot goes -- and come back when the
-  // hint is dismissed.
+  // hint is dismissed. The palette's Hide/Show toggle (this._marksHidden)
+  // hides them all the same way without touching them; painting a mark
+  // shows them again (script.js's _setHighlights).
   p._highlightsEnabled = function () {
     return localStorage.getItem('setting-highlights') === 'true';
   };
@@ -404,7 +406,7 @@ export function applyRenderer(GameClass) {
     const { CELL, HIGHLIGHT_COLORS, HIGHLIGHT_TEXTURES, markColor, markTexture } = this._constants;
     const colorClasses = HIGHLIGHT_COLORS.map(name => `cell-hl-${name}`);
     const texClasses = HIGHLIGHT_TEXTURES.map(name => `cell-tx-${name}`);
-    const show = this._highlightsEnabled() && !this._hintShowing;
+    const show = this._highlightsEnabled() && !this._hintShowing && !this._marksHidden;
     this._allCells.forEach(cell => {
       cell.classList.remove(...colorClasses, ...texClasses);
       const idx = cell.dataset.index;
@@ -418,7 +420,7 @@ export function applyRenderer(GameClass) {
   };
 
   // Build the palette bar: a first row with the "Dots & stars" mode button,
-  // one swatch per color and "Clear all", then a second row with one button
+  // one swatch per color and the "Hide marks" toggle, then a second row with one button
   // per texture. Exactly one button across both rows is pressed (one brush
   // at a time). Called once at startup; shown/hidden by the setting. The
   // bar has a twin below the boards (index.html's #highlight-palette-bottom,
@@ -427,7 +429,9 @@ export function applyRenderer(GameClass) {
   p.setupHighlightPalette = function () {
     this.activeHighlight = null;
     this.activeTexture = null;
+    this._marksHidden = false;
     document.querySelectorAll('.highlight-palette').forEach(palette => this._buildHighlightPalette(palette));
+    this._syncMarksToggle();
     this._selectHighlight(null);
   };
 
@@ -450,13 +454,11 @@ export function applyRenderer(GameClass) {
       makeButton(i, `Color cells ${name}`, `hl-swatch hl-swatch-${name}`);
     });
 
-    const clear = document.createElement('button');
-    clear.type = 'button';
-    clear.className = 'hl-clear-btn';
-    clear.textContent = 'Clear all';
-    clear.title = 'Remove every color and texture';
-    clear.onclick = () => this._clearAllHighlights();
-    palette.appendChild(clear);
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'hl-toggle-btn';
+    toggle.onclick = () => this._setMarksHidden(!this._marksHidden);
+    palette.appendChild(toggle);
 
     // Force the textures onto their own row.
     const rowBreak = document.createElement('div');
@@ -473,11 +475,20 @@ export function applyRenderer(GameClass) {
     });
   };
 
-  // Remove every color and texture from the board (including ones hidden
-  // under dots and stars), as a single undoable event (so no confirmation
-  // prompt -- Undo brings them all back).
-  p._clearAllHighlights = function () {
-    this._setHighlights(this.highlights.map((_, i) => [i, null]));
+  // Hide or show every mark at once. Hiding only stops drawing them; they
+  // stay in memory, saves and undo history untouched.
+  p._setMarksHidden = function (hidden) {
+    this._marksHidden = hidden;
+    this._syncMarksToggle();
+    this._renderHighlights();
+  };
+
+  p._syncMarksToggle = function () {
+    document.querySelectorAll('.hl-toggle-btn').forEach(btn => {
+      btn.textContent = this._marksHidden ? 'Show marks' : 'Hide marks';
+      btn.title = this._marksHidden ? 'Show every color and texture again' : 'Hide every color and texture (they are kept)';
+      btn.setAttribute('aria-pressed', String(!!this._marksHidden));
+    });
   };
 
   // Switch between dot/star mode (null) and painting with color `color`.

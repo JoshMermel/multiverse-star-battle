@@ -811,13 +811,13 @@ body.floating-controls .highlight-palette { margin-bottom: 8px; }
   margin-bottom: 14px;
 }
 .highlight-palette[hidden] { display: none; }
-.hl-btn, .hl-clear-btn {
+.hl-btn, .hl-toggle-btn {
   cursor: pointer;
   border: 2px solid var(--border-strong);
   background: var(--bg-white);
   color: var(--text-primary);
 }
-.hl-btn--none, .hl-clear-btn {
+.hl-btn--none, .hl-toggle-btn {
   padding: 6px 12px;
   border-radius: 16px;
   font-size: 0.9rem;
@@ -838,7 +838,7 @@ body.floating-controls .highlight-palette { margin-bottom: 8px; }
    backgrounds -- and on touch screens :hover sticks after a tap, so the
    picked swatch stayed gray. */
 .hl-btn--none[aria-pressed="true"]:not(:disabled) { background: var(--primary-blue-active-bg); }
-.hl-clear-btn { margin-left: 6px; }
+.hl-toggle-btn { margin-left: 6px; }
 .hl-swatch.hl-swatch-yellow:not(:disabled) { background: rgb(var(--hl-yellow)); }
 .hl-swatch.hl-swatch-orange:not(:disabled) { background: rgb(var(--hl-orange)); }
 .hl-swatch.hl-swatch-brown:not(:disabled)  { background: rgb(var(--hl-brown)); }
@@ -870,7 +870,7 @@ body.floating-controls .highlight-palette { margin-bottom: 8px; }
 }
 
 /* Phones: lay the palette out as a compact grid -- the "Dots & stars" mode
-   and "Clear all" buttons on one row, then the nine colors and the nine
+   and "Hide marks" buttons on one row, then the nine colors and the nine
    textures as two aligned rows of nine (the flex-wrap layout above takes
    four ragged rows on a 375px screen). `order` puts the two wide buttons
    first without changing the DOM order the keyboard follows. */
@@ -887,11 +887,11 @@ body.floating-controls .highlight-palette { margin-bottom: 8px; }
   }
   .highlight-palette .hl-row-break { display: none; }
   .highlight-palette .hl-btn--none { order: 0; grid-column: 1 / span 4; justify-self: start; }
-  .highlight-palette .hl-clear-btn { order: 1; grid-column: 6 / span 4; justify-self: end; margin-left: 0; }
+  .highlight-palette .hl-toggle-btn { order: 1; grid-column: 6 / span 4; justify-self: end; margin-left: 0; }
   .highlight-palette .hl-swatch { order: 2; }
   .highlight-palette .hl-tex-btn { order: 3; }
   .highlight-palette .hl-btn--none,
-  .highlight-palette .hl-clear-btn { padding: 5px 12px; font-size: 0.85rem; }
+  .highlight-palette .hl-toggle-btn { padding: 5px 12px; font-size: 0.85rem; }
   /* The buttons shrink to their column (up to 32px) and stay square/round. */
   .highlight-palette .hl-swatch,
   .highlight-palette .hl-tex-btn {
