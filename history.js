@@ -81,18 +81,24 @@ export function applyHistory(GameClass) {
   };
 
   // Replace the live board state, and reset history to a single fresh
-  // snapshot of it. dotReasons always starts empty here -- a freshly
-  // loaded/reset/reconstructed state has no per-cell provenance to speak
-  // of, so any dots already on the board (e.g. reconstructed from a
-  // solved solution) are just inert until live play re-establishes
-  // reasons for them. `highlights` (the player's cell colors) is the
-  // exception -- it's saved per puzzle, so loads pass the saved copy back in;
-  // everything else (reset, clear-all) gets none.
+  // snapshot of it. A freshly loaded/reset/reconstructed state has no
+  // per-cell provenance to restore (only stars and dots are saved, not WHY
+  // each dot exists), so every dot already on the board is recorded as the
+  // player's own ('manual', see rules.js's dot-provenance helpers). Without
+  // that, such a dot would have no reason at all, and the first star placed
+  // in any of its groups would give it one (a row/column/region quota) that
+  // is retracted again when the star is removed -- wiping a dot that was
+  // there before the star. `highlights` (the player's cell colors) is the
+  // exception to "nothing carried over" -- it's saved per puzzle, so loads
+  // pass the saved copy back in; everything else (reset, clear-all) gets none.
   p._resetHistoryTo = function (state, highlights = null) {
     this.state = state;
     this.dotReasons = new Map();
+    state.forEach((cell, i) => {
+      if (cell === CELL.DOT) this._addDotReason(i, 'manual');
+    });
     this.highlights = highlights ?? new Array(this.n * this.n).fill(null);
-    this.history = [JSON.stringify({ state, dotReasons: {}, highlights: this.highlights })];
+    this.history = [JSON.stringify({ state, dotReasons: serializeDotReasons(this.dotReasons), highlights: this.highlights })];
     this.historyIdx = 0;
   };
 
