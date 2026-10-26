@@ -6,23 +6,23 @@
     "Three Star":       { "icon": "3️⃣",       "blurb": "Three stars in each row, column, and region",   "desc": "Three star puzzles by size and difficulty" },
     "Playground":       { "icon": "🛝",       "blurb": "Boards with a twist",
                           "sizes": {
-                            "Venn":        { "icon": "🔵" },
-                            "Mondrian":    { "icon": "🟥" },
-                            "Quadrants":   { "icon": "🪟" },
-                            "Not Sudoku":  { "icon": "🔢" },
-                            "Square Free": { "icon": "🚫" },
-                            "Equal Area":  { "icon": "⚖️" }
+                            "Venn":        { "icon": "🔵", "blurb": "Regions cut by overlapping rectangles" },
+                            "Mondrian":    { "icon": "🟥", "blurb": "Boards tiled by rectangles" },
+                            "Quadrants":   { "icon": "🪟", "blurb": "Boards split into quadrants" },
+                            "Not Sudoku":  { "icon": "🔢", "blurb": "Looks like Sudoku, plays like Star Battle" },
+                            "Square Free": { "icon": "🚫", "blurb": "No region contains a 2×2 square" },
+                            "Equal Area":  { "icon": "⚖️", "blurb": "Every region is the same size" }
                           }},
     "Giants":           { "icon": "🐋",       "blurb": "Huge puzzles with assorted star counts (desktop only)"},
     "Symmetry":         { "icon": "🔀",       "blurb": "Puzzles with symmetry",
                           "sizes": {
-                            "Symmetric":             { "icon": "🦋" },
-                            "Twin":                  { "icon": "👯" },
-                            "Symmetric Twin":        { "icon": "🪞" },
-                            "Triplets":              { "icon": "☘️" },
-                            "Quadruplets":           { "icon": "🍀" },
-                            "Regionless Symmetric":  { "icon": "🕳️" },
-                            "Regionless Complement": { "icon": "☯️" }
+                            "Symmetric":             { "icon": "🦋", "blurb": "Each board is symmetric" },
+                            "Twin":                  { "icon": "👯", "blurb": "Both boards are the same, one flipped or rotated" },
+                            "Symmetric Twin":        { "icon": "🪞", "blurb": "Symmetric boards, one a copy of the other" },
+                            "Triplets":              { "icon": "☘️", "blurb": "Three copies of one symmetric board" },
+                            "Quadruplets":           { "icon": "🍀", "blurb": "Four copies of one board" },
+                            "Regionless Symmetric":  { "icon": "🕳️", "blurb": "No regions, with symmetry" },
+                            "Regionless Complement": { "icon": "☯️", "blurb": "Black and white squares have the same shape" }
                           }},
     "Regionless":       { "icon": "🕳️",       "blurb": "No shapes -- just rows, columns, and voids", "desc": "Regionless puzzles by size and difficulty" },
     "Not For Humans":   { "icon": "💀",       "blurb": "The absolute hardest puzzles - too hard for human solvers"},
