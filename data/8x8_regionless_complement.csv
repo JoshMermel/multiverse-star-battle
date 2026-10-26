@@ -507,6 +507,6 @@ puzzle_3483_lr,8,AAAA****A***AAA*A*A*A*A*AAA*A***A*A*A*A*****AAAAA*A*A*A**A*A*A*
 puzzle_3486_lr,8,A***AAA**A*A*A*A****AAAA****AAAA**AA**AA*AAA***A**A*A*AAAAAA****,.....x...x..........x.........x....x...........x..x.....x.......,3151,Grandmaster,True,lr
 puzzle_3487_t,8,****AAAAAAA****AAAAA****AAA****A*AA*A**AA****AAAA****AAAAA*A**A*,....x....x.........x...........x..x..........x..x.............x.,3160,Grandmaster,True,translate
 puzzle_3481_t,8,AA**A**AAAAA**A*AAA**A*AAA****A***AA*AA*****AA*A***AA*A***AAAA*A,.......x.x...........x..x.........x.........x.........x....x....,3364,Grandmaster,True,translate
-puzzle_3489_lr,8,***AA**AA*A**AAA*A*A***AA*AA**A**A**AA*AA*A*AAA**A*AA***AAA**AA*,...x....x..............x..x.........x.........x..x...........x..,1,UNSOLVED,False,lr
-puzzle_3488_lr,8,AA*AA*A*AAA***A*AA*****AAAA**AAA***AA*****AAAAA****AAA*A**A**A*A,x.........x............x.x..........x.........x....x.........x..,2,UNSOLVED,False,lr
 puzzle_3490_t,8,A***AA*****AAAA*A**A*A*****A***A*AAA**AAAAA****A*AA*A*AAAAA*AAA*,....x.........x.x..........x.....x.............x..x..........x..,4,UNSOLVED,False,translate
+puzzle_3488_lr,8,AA*AA*A*AAA***A*AA*****AAAA**AAA***AA*****AAAAA****AAA*A**A**A*A,x.........x............x.x..........x.........x....x.........x..,2,UNSOLVED,False,lr
+puzzle_3489_lr,8,***AA**AA*A**AAA*A*A***AA*AA**A**A**AA*AA*A*AAA**A*AA***AAA**AA*,...x....x..............x..x.........x.........x..x...........x..,1,UNSOLVED,False,lr

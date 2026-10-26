@@ -85,7 +85,8 @@ Segments of the same tier are merged into ONE block of the book, sorted by score
 family is interleaved into its tier\'s section instead of trailing the book.
 
 UNSOLVED bonus: `bonus = { UNSOLVED = 2 }` / `bonus_each = { UNSOLVED = 1 }` take the HARDEST UNSOLVED rows from
-the pool: lowest score = fewest cells decided before the solver got stuck (Grandmaster is the highest scores). This is only
+the pool: lowest score = fewest cells decided before the solver got stuck (Grandmaster is the highest scores). In the book the
+UNSOLVED rows are ordered easiest first (most cells decided) and hardest LAST. This is only
 meaningful if the pool's UNSOLVED scores use the current meaning (scored after 2026-09-30), so rescore a pool before
 building UNSOLVED bonus rows from an old one.
 
@@ -852,7 +853,10 @@ def _finish_job(job, header, rows, total, source_rel, dup_check):
     out_rows.extend(main)
 
     for t, got in job.bonus_chosen:
-        got_rows = sorted((rows[idx] for _, _, idx in got), key=lambda r: (float(r[si]), job.tie_key(r)))  # ascending by score
+        # ascending by score -- except UNSOLVED, whose score is cells decided before the solver stuck: FEWER = harder, so those go
+        # easiest (most cells decided) first and hardest last
+        got_rows = sorted((rows[idx] for _, _, idx in got),
+                          key=lambda r: (-float(r[si]) if t == "UNSOLVED" else float(r[si]), job.tie_key(r)))
         sc = [float(r[si]) for r in got_rows]
         if t in spec["bonus"] and len(got_rows) < spec["bonus"][t]:
             warnings.append(f"bonus {t}: wanted {spec['bonus'][t]}, pool has only {len(got_rows)}")

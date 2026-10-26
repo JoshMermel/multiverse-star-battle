@@ -100,6 +100,6 @@ puzzle_8103_translate,9,AAAAAABBBACCAAAABBCCCCAAABBDDDDDDEEEDFFDDDDEEFFFFDDDEEGG
 puzzle_8277_diag,9,AABCCCDDDAABBCCDDDAABBBDDDDAABBDDDEEFFBFDDGEEHFFFFGGGEHFFFGGGGGHHFFFIIIIHHHHFIIII,.x.x..........x.x..x.x..........x.x.x.x............x.xx...x..........x.x..x.x....,709,Expert,True
 puzzle_6794_180,9,AAAABBBCCAAAAABBCCAAADBBEECAAADDEECCAFFFDEEEGHHFFDDGGGHFFIIDGGGHHIIGGGGGHHIIIGGGG,....x.x...x......x...x..x...x......x...x.x...x......x...x..x...x......x...x.x....,709,Expert,True
 puzzle_3047_180,9,AAAAABBBBAAAAABBBBCCAADEBBFCCCDDEEBFGGCDDDEFFGHCCDDEEEGHHCDIIEEHHHHIIIIIHHHHIIIII,..x.....x....x.x...x......x...x.x....x.....x....x.x...x......x...x.x....x.....x..,1002,Grandmaster,True
+puzzle_8153_diag,9,AABBBBCCCAAABBBCCCADAABCCCCDDDDCCCEEDFFFFCEEEDFFFFGHEEIFFFFGHHEIFFFFGGHHIIIGGGHHH,.x.x..........x.x..x.x..........x.x.x.x............x.xx...x..........x.x..x.x....,17,UNSOLVED,False
 puzzle_8666_translate,9,AABBBBBCCABBBBCCCCAAAAAAACCDDEEEEEFFDEEEEFFFFDDDDDDDFFGGHHHHHIIGHHHHIIIIGGGGGGGII,..x.x..........x.x.x.x..........x.x.x..x..........x.x.x.x..........x.x...x......x,0,UNSOLVED,False
 puzzle_2167_180,9,AAAAABBBBCAAAABDDBCCCAEDDBBCCCAEDDDBCCFEEEDGGHFFFEIGGGHHFFEIGGGHFFHIIIIGHHHHIIIII,.x.x..........x.x.x.x..........x...x..x...x..x...x..........x.x.x.x..........x.x.,0,UNSOLVED,False
-puzzle_8153_diag,9,AABBBBCCCAAABBBCCCADAABCCCCDDDDCCCEEDFFFFCEEEDFFFFGHEEIFFFFGHHEIFFFFGGHHIIIGGGHHH,.x.x..........x.x..x.x..........x.x.x.x............x.xx...x..........x.x..x.x....,17,UNSOLVED,False
