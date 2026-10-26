@@ -1,4 +1,4 @@
-"""probe_copies.py kind n K seconds workers out.pkl [cap=30000]
+"""copies_probe.py kind n K seconds workers out.pkl [cap=30000] [stars=2]
 Probe: boards of KIND (random | 180 | diag | mirror | translate | t180) at n x n, 2 stars; for each board look for K-board 'copy' puzzles
 (board + K-1 of its rotations/reflections) whose full intersection has exactly one solution while every leave-one-out subset is ambiguous."""
 import sys, os, time, random, pickle, itertools
@@ -14,15 +14,15 @@ KINDS = {'180': ('rot_180', 'none'), 'diag': ('diagonal', 'none'), 'mirror': ('m
          'translate3': ('none', 'vsplit3'), 'translate3_h': ('none', 'hsplit3'), 't1803': ('rot_180', 'vsplit3'), 't1803_h': ('rot_180', 'hsplit3')}
 
 def worker(job):
-    kind, n, K, secs, seed, cap = job
+    kind, n, K, secs, seed, cap, stars = job
     random.seed(seed)
     if kind == 'random':
         from random_generator import RandomGenerator
-        gen = RandomGenerator(n, stars_per_unit=2)
+        gen = RandomGenerator(n, stars_per_unit=stars)
     else:
         from symmetric_generator import SymmetricGenerator
         sym, tr = KINDS[kind]
-        gen = SymmetricGenerator(n, symmetry_type=sym, translation_type=tr, stars_per_unit=2)
+        gen = SymmetricGenerator(n, symmetry_type=sym, translation_type=tr, stars_per_unit=stars)
     maps = [np.array(m[0]) for m in get_transformation_maps(n)]
     rng = np.random.default_rng(777)
     Z = rng.integers(0, 2**63, size=n * n, dtype=np.uint64) * np.uint64(2) + rng.integers(0, 2, size=n * n, dtype=np.uint64)
@@ -37,7 +37,7 @@ def worker(job):
         gen._try_generate()
         if not cap_: continue
         grid = cap_[0]; st['struct'] += 1
-        cells = fast_solve.solution_cells(grid, n, cap)
+        cells = fast_solve.solution_cells(grid, n, cap) if stars == 2 else fast_solve.solution_cells_k(grid, n, stars, cap)
         if cells is None: st['toomany'] += 1; continue
         if len(cells) == 0: st['zero'] += 1; continue
         if len(cells) == 1: st['one'] += 1; continue
@@ -71,9 +71,10 @@ def worker(job):
 if __name__ == '__main__':
     kind = sys.argv[1]; n = int(sys.argv[2]); K = int(sys.argv[3]); secs = float(sys.argv[4]); W = int(sys.argv[5]); out = sys.argv[6]
     cap = int(sys.argv[7]) if len(sys.argv) > 7 else 30000
+    stars = int(sys.argv[8]) if len(sys.argv) > 8 else 2
     seed0 = int(time.time()) % 100000 * 100
     with ProcessPoolExecutor(W) as ex:
-        res = list(ex.map(worker, [(kind, n, K, secs, seed0 + i, cap) for i in range(W)]))
+        res = list(ex.map(worker, [(kind, n, K, secs, seed0 + i, cap, stars) for i in range(W)]))
     tot = {}; hits = []; sizes = []
     for st, h, s in res:
         for k, v in st.items(): tot[k] = tot.get(k, 0) + v

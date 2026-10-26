@@ -67,15 +67,23 @@ out    = "8x8_symmetric_triplets"
 source = "symmetry/symmetric_trio.csv"
 ranges = "8x8"
 group_by = "suffix"
-groups = { translate = ["translate_*"], "180" = ["180_*"], diag = ["diag_*"], t180 = ["t180_*"] }
-shares = { translate = 0.4, "180" = 0.3, diag = 0.3, t180 = 0.0 }   # t180: backfill only
+# Two-level split (Josh, 2026-10-26), same rule as 10x10_symmetric_triplets: by the board's OWN symmetry first -- one third each for translate (a half
+# repeated), 180 and diag -- then the translate third equally among its four rotation/reflection classes (copies_post.py class_name; the suffix
+# lists below are every pool spelling of each class).  diag boards never reach Expert (their solutions are symmetric, so symmetry reasoning
+# solves them) and one translate class (rot180_flip_h) is rare, so those give what they can and the rest goes to the other families.
+# t180 (rot180 board + a split) only exists at Expert/Grandmaster level, so it gets a small share (~5% of every tier it can fill) and, like diag,
+# never receives anyone's shortfall.
+groups = { translate_rot90_rot180 = ["translate_rot90_rot180"], translate_rot90_flip_h = ["translate_rot90_flip_h", "translate_rot90_flip_diag", "translate_rot90_flip_antidiag", "translate_rot90_flip_v"], translate_rot180_flip_h = ["translate_rot180_flip_h"], translate_rot180_flip_diag = ["translate_rot180_flip_diag"], k180 = ["180_*"], diag = ["diag_*"], t180 = ["t180_*"] }
+families = { translate = ["translate_rot90_rot180", "translate_rot90_flip_h", "translate_rot180_flip_h", "translate_rot180_flip_diag"], rot180 = ["k180"], diag = ["diag"], t180 = ["t180"] }
+family_shares = { translate = 1, rot180 = 1, diag = 1, t180 = 0.16 }
+family_no_spill = ["diag", "t180"]
 tiers  = [
   {tier="Beginner", count=200},
   {tier="Medium", count=800},
   {tier="Hard", count=800},
   {tier="Expert", count=200},
 ]
-bonus_each = { Grandmaster = 2 }
+bonus_each = { Grandmaster = 1 }
 
 [[book]]
 out    = "8x8_twin"
@@ -341,3 +349,32 @@ tiers  = [
 ]
 bonus_each = { Grandmaster = 1, UNSOLVED = 1 }
 notes  = "10x10 2-star quadruplets (one board + 3 rotated/reflected copies; unique shared solution). Pool: naive copies_probe.py run (group classes) + planted non-group classes (gen_copies_planted.py), 2026-10-25."
+
+[ranges.10x10_symmetric_triplets]   # 10x10 2-star bands (same as the 10x10 quadruplets / symmetric twin)
+Beginner  = [70, 205]
+Medium    = [190, 380]
+Hard      = [310, 500]
+Expert    = [335, 795]
+
+[[book]]
+out    = "10x10_symmetric_triplets"
+source = "symmetry/symmetric_trio_10x10.csv"
+ranges = "10x10_symmetric_triplets"
+group_by = "suffix"
+# Shares are split by the board's OWN symmetry first, then by class inside it (Josh, 2026-10-26): one third each for translate, 180 and diag
+# (translate = a half repeated; 180 = rotation; diag = reflected in the diagonal), and the translate third is split equally among its four
+# rotation/reflection classes (see copies_post.py class_name).  Diagonal boards are rare (Medium especially), so diag gives what it can up to
+# its third and never receives anyone's shortfall (family_no_spill); whatever it can't supply goes evenly to 180 and translate.
+# 180 and diag boards only ever give one class each (their rot180 / reflection copies coincide); mirror and t180 boards give none.
+groups = { translate_rot90_rot180 = ["translate_rot90_rot180"], translate_rot90_flip_h = ["translate_rot90_flip_h"], translate_rot180_flip_h = ["translate_rot180_flip_h"], translate_rot180_flip_diag = ["translate_rot180_flip_diag"], k180 = ["180_rot90_flip_h"], diag = ["diag_rot90_rot180"] }
+families = { translate = ["translate_rot90_rot180", "translate_rot90_flip_h", "translate_rot180_flip_h", "translate_rot180_flip_diag"], rot180 = ["k180"], diag = ["diag"] }
+family_shares = { translate = 1, rot180 = 1, diag = 1 }
+family_no_spill = ["diag"]
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus_each = { Grandmaster = 1, UNSOLVED = 1 }
+notes  = "10x10 2-star symmetric triplets: a symmetric board plus two rotated/reflected copies sharing exactly one solution. Pool built 2026-10-25/26 by copies_probe.py (translate, 180) and the solution-first planter copies_plant_sym.py (diag); see tools/copies_post.py and tools/trio_types.py."

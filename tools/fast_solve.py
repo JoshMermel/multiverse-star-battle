@@ -61,3 +61,14 @@ def joint_solutions(grids, n, k, cap=2, node_limit=200_000_000):
                 cells[r * n + raw[s * n * k + r * k + j]] = 'x'
         out.append(''.join(cells))
     return out
+
+
+def solution_cells_k(grid, n, k, cap=4000, node_limit=200_000_000):
+    """like solution_cells for any stars-per-unit k: int16 array (num_solutions, n*k) of star cell indices, or None if >= cap solutions / node limit hit"""
+    import numpy as np
+    buf = ctypes.create_string_buffer(cap * n * k)
+    got = _lib.joint_solve(bytes(grid), 1, n, k, cap, buf, node_limit)
+    if got < 0 or got >= cap:
+        return None
+    a = np.frombuffer(buf.raw, dtype=np.uint8, count=got * n * k).reshape(got, n, k).astype(np.int16)
+    return (a + (np.arange(n, dtype=np.int16) * n)[None, :, None]).reshape(got, n * k)
