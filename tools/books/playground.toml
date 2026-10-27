@@ -357,3 +357,18 @@ tiers  = [
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
 notes  = "13x13 3-star Mondrian (replaced the 14x14 book, whose pool is still rectangles/mondrian_3star_14_scored.csv): SubdivisionGenerator(stars_per_unit=3; every rectangle must be able to hold 3 non-touching stars), 6.3k solvable boards from a 90 s mondrian2star_boards.py run, 1,500 of them hashed-paired into 46k puzzles (mondrian2star_pairs.py), a random 20,000 scored 2026-10-27. Boards repeat across puzzles."
+
+[[book]]
+out    = "8x8_hybrid"
+source = "playground/hybrid_8x8_scored.csv"
+ranges = "8x8"
+tiers  = [
+  {tier="Beginner", count=200},
+  {tier="Medium", count=800},
+  {tier="Hard", count=800},
+  {tier="Expert", count=200},
+]
+group_by = "suffix"
+groups   = ["monven", "monquad", "monsqf", "eqmon", "eqven", "eqsqf", "eqquad", "sqfven", "quadven", "quadsqf"]
+bonus_each = { Grandmaster = 1 }
+notes  = "8x8 1-star hybrids (2026-10-27): board 1 and board 2 use different gimmicks (mon=Mondrian, ven=Venn, sqf=Square Free, eq=Equal Area, quad=Quadrants), one group per pair of the five, equal shares in every tier. Twice the usual size (200/800/800/200) so each pair gets 20/80/80/20. Pools from hybrid_boards.py + hybrid_pairs.py (up to 6,000 boards per gimmick, 120k puzzles scored per pair)."
