@@ -1754,16 +1754,26 @@ export function applyMultiStarRules(PuzzleSolver) {
   // individually part of the argument for THIS specific cell -- only the
   // one relevant tile is. Cells already getting a `marks` color are
   // dropped from highlights so a cell never gets two conflicting classes.
-  p._tileOutlinesAndHighlights = function (outlineTiles, highlightTiles, excludeFromHighlights) {
+  //
+  // `alsoOnBoard` (optional board index): the board where the conclusion is
+  // drawn. Tiles the deduction turns on (highlightTiles) are drawn there too,
+  // in the same color, even when they came from another board's regions --
+  // so the evidence sits right next to the cells it explains.
+  p._tileOutlinesAndHighlights = function (outlineTiles, highlightTiles, excludeFromHighlights, alsoOnBoard) {
     const exclude = new Set(excludeFromHighlights);
     const slotByTilingId = this._colorSlotsForTiles(outlineTiles);
-    const boardsFor = this._tileBoardAssigner(outlineTiles);
+    const baseBoardsFor = this._tileBoardAssigner(outlineTiles);
 
     // Draw order (later = on top): context tiles first -- row/column-pair
     // band tiles, then region/line tiles -- and the tiles the deduction
     // actually turns on LAST, so their outline is never hidden under (or
     // mistaken for) a neighboring tiling's overlapping box.
     const comboKeys = new Set(highlightTiles.map(t => this._groupKey(t.cells)));
+    const boardsFor = t => {
+      const boards = baseBoardsFor(t);
+      if (alsoOnBoard === undefined || !boards || boards.includes(alsoOnBoard)) return boards;
+      return comboKeys.has(this._groupKey(t.cells)) ? [...boards, alsoOnBoard] : boards;
+    };
     const rank = t => comboKeys.has(this._groupKey(t.cells)) ? 2
       : (t.tilingKind === 'region' || t.tilingKind === 'row' || t.tilingKind === 'column') ? 1 : 0;
     const ordered = outlineTiles
@@ -2010,7 +2020,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       // easily sit elsewhere on the board, and highlighting it too just
       // buries which cells the "still needs" argument is actually about.
       const displayTiles = this._displayTilesForCombo(combo);
-      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(displayTiles, combo, targets);
+      const { tileOutlines, highlights } = this._tileOutlinesAndHighlights(displayTiles, combo, targets, unit.boardIdx);
 
       // A region is worth outlining (its shape isn't obvious from the
       // tiles alone); a row or column is not -- the tiles all sit in it and
