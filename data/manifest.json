@@ -11,8 +11,7 @@
                             "Quadrants":   { "icon": "🪟", "blurb": "Boards split into quadrants" },
                             "Not Sudoku":  { "icon": "🔢", "blurb": "Looks like Sudoku, plays like Star Battle" },
                             "Square Free": { "icon": "🚫", "blurb": "No region contains a 2×2 square" },
-                            "Equal Area":  { "icon": "⚖️", "blurb": "Every region is the same size" },
-                            "Hybrid":      { "icon": "🥤", "blurb": "Each board has a different twist" }
+                            "Equal Area":  { "icon": "⚖️", "blurb": "Every region is the same size" }
                           }},
     "Giants":           { "icon": "🐋",       "blurb": "Huge puzzles with assorted star counts (desktop only)"},
     "Symmetry":         { "icon": "🔀",       "blurb": "Puzzles with symmetry",
@@ -120,7 +119,6 @@
     {"id": "mondrian_3star",        "label": "Mondrian",                "group": "Playground", "desc": "Inspired by Mondrian", "stars": 3, "size": "Mondrian"},
     {"id": "quadrants",             "label": "Quadrants",                "group": "Playground", "desc": "Boards split into quadrants", "stars": 1, "size": "Quadrants"},
     {"id": "quadrants_2star",       "label": "Quadrants",                "group": "Playground", "desc": "Boards split into quadrants", "stars": 2, "size": "Quadrants"},
-    {"id": "8x8_hybrid",            "label": "8x8 Hybrid",               "group": "Playground", "desc": "Each board has a different twist", "stars": 1, "size": "Hybrid"},
     {"id": "not_sudoku",            "label": "Not Sudoku",               "group": "Playground", "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply", "stars": 1, "size": "Not Sudoku"},
     {"id": "not_sudoku_2star",      "label": "Not Sudoku",               "group": "Playground", "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply", "stars": 2, "size": "Not Sudoku"},
     {"id": "6x6_square_free",       "label": "6x6 Square Free",          "group": "Playground", "desc": "Regions have no 2x2 squares", "stars": 1, "size": "Square Free"},
