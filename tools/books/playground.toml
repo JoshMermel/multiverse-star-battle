@@ -53,12 +53,6 @@ Medium    = [40, 190]   # shell history
 Hard      = [125, 275]   # shell history
 Expert    = [225, 500]   # shell history
 
-[ranges.quadrants_2star]   # 16x16 2-star. No ladder data yet: Hard/Expert are the 14x14 2-star ladder bands scaled by 16/14 (constant work per row), Medium = pool p5 .. p90, Beginner-tier puzzles score 177-396 here (only 1% of the pool)
-Beginner  = [150, 330]
-Medium    = [270, 600]
-Hard      = [430, 740]
-Expert    = [595, 1430]
-
 [ranges.not_sudoku_2star]   # 2026-10-12 work-per-row ladder (books/THRESHOLDS.md)
 Beginner  = [70, 175]
 Medium    = [200, 330]
@@ -241,19 +235,6 @@ tiers  = [
   {tier="Expert", count=100},
 ]
 bonus  = { Grandmaster = 5 }
-
-[[book]]
-out    = "quadrants_2star"
-source = "rectangles/quads2star_16_scored.csv"
-ranges = "quadrants_2star"
-tiers  = [
-  {tier="Beginner", count=100},
-  {tier="Medium", count=400},
-  {tier="Hard", count=400},
-  {tier="Expert", count=100},
-]
-bonus  = { Grandmaster = 5, UNSOLVED = 5 }
-notes  = "16x16 2-star quadrants: each 8x8 quadrant of both boards is cut into 4 quadrant-confined regions, exactly one common solution (gen_quadrants_2star.py: planted solution + CP-SAT repair). Pool of ~8.2k (2026-10-26: 25-min run of the old growth mix, four 8-min growth-setting sweeps, and a 2-hour run of the mixed settings now in the generator)."
 
 [[book]]
 out    = "not_sudoku_2star"

@@ -118,7 +118,6 @@
     {"id": "mondrian_2star_mono",   "label": "Mondrian 1-board",         "group": "Playground", "desc": "Inspired by Mondrian; a single board", "stars": 2, "size": "Mondrian"},
     {"id": "mondrian_3star",        "label": "Mondrian",                "group": "Playground", "desc": "Inspired by Mondrian", "stars": 3, "size": "Mondrian"},
     {"id": "quadrants",             "label": "Quadrants",                "group": "Playground", "desc": "Boards split into quadrants", "stars": 1, "size": "Quadrants"},
-    {"id": "quadrants_2star",       "label": "Quadrants",                "group": "Playground", "desc": "Boards split into quadrants", "stars": 2, "size": "Quadrants"},
     {"id": "not_sudoku",            "label": "Not Sudoku",               "group": "Playground", "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply", "stars": 1, "size": "Not Sudoku"},
     {"id": "not_sudoku_2star",      "label": "Not Sudoku",               "group": "Playground", "desc": "The right board looks like a Sudoku grid, but Star Battle rules still apply", "stars": 2, "size": "Not Sudoku"},
     {"id": "6x6_square_free",       "label": "6x6 Square Free",          "group": "Playground", "desc": "Regions have no 2x2 squares", "stars": 1, "size": "Square Free"},
