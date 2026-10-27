@@ -21,7 +21,12 @@ from filter import board_contains_swastika
 from solution_first_core import seed_and_grow
 csv.field_size_limit(10**9)
 
-N, H = 16, 8
+# QUADS_N / QUADS_QUOTA (environment, set before launching so spawned workers agree) change the board size and the number of stars each quadrant
+# holds, in the order top-left, top-right, bottom-left, bottom-right; a quadrant with q stars gets q/2 regions.  E.g. the 10x10 variant whose
+# quadrants hold 4, 6, 6, 4 stars (2, 3, 3, 2 regions):   QUADS_N=10 QUADS_QUOTA=4,6,6,4 python gen_quadrants_2star.py ...
+# (Only the diagonal arrangement is possible: with the two 2-region quadrants side by side, their half of the board would hold 8 stars, not 10.)
+N = int(os.environ.get('QUADS_N', 16)); H = N // 2
+QUOTA = [int(q) for q in os.environ.get('QUADS_QUOTA', ','.join([str(N // 2)] * 4)).split(',')]
 MIN_REGION = 4                      # a region keeps at least this many cells (its two stars are never adjacent)
 # (small_region_frac, small_region_weight_max, size_variation), one drawn per board: the fraction of tiny regions is what steers difficulty.
 # 2026-10-26 sweep (8 min x 10 workers per setting), share of Beginner / Medium in the resulting pool:
@@ -74,7 +79,7 @@ def planted_solution(rnd):
     m, x = _base_model()
     for qr in range(2):
         for qc in range(2):
-            m.add(sum(x[(qr * H + r) * N + qc * H + c] for r in range(H) for c in range(H)) == 8)
+            m.add(sum(x[(qr * H + r) * N + qc * H + c] for r in range(H) for c in range(H)) == QUOTA[qr * 2 + qc])
     sol = _solve(m, x, rnd, 10)
     return sol if isinstance(sol, list) else None
 
@@ -182,9 +187,14 @@ def worker(args):
             r = make_unique(seed)
             if r is None: continue
             boards, stars = r; S = set(stars)
-            strs = [canonical_relabel(''.join(ALPHABET[v] for v in b)) for b in boards]
-            if any(board_contains_swastika(s, N) for s in strs): continue
-            w.writerow([f'puzzle_{seed}', N] + strs + [''.join('x' if i in S else '.' for i in range(N * N))]); f.flush(); n += 1
+            strs = [''.join(ALPHABET[v] for v in b) for b in boards]
+            sol = ''.join('x' if i in S else '.' for i in range(N * N))
+            if len(set(QUOTA)) > 1:          # lopsided quadrants: show every orientation, not just the planted one
+                m = random.Random(seed).choice(_maps)
+                strs, sol = [_transform(t, m) for t in strs], _transform(sol, m)
+            strs = [canonical_relabel(t) for t in strs]
+            if any(board_contains_swastika(t, N) for t in strs): continue
+            w.writerow([f'puzzle_{seed}', N] + strs + [sol]); f.flush(); n += 1
     return n
 
 

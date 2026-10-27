@@ -237,6 +237,20 @@ tiers  = [
 bonus  = { Grandmaster = 5 }
 
 [[book]]
+out    = "quadrants_2star"
+source = "rectangles/quads2star_10_scored.csv"
+ranges = "mondrian_2star"      # the 10x10 2-star bands (same as venn_2star)
+tiers  = [
+  {tier="Beginner", count=100},
+  {tier="Medium", count=400},
+  {tier="Hard", count=400},
+  {tier="Expert", count=100},
+]
+bonus  = { Grandmaster = 5, UNSOLVED = 5 }
+allow_short = true
+notes  = "10x10 2-star quadrants, diagonal layout only: the 5x5 quadrants hold 4/6/6/4 stars = 2/3/3/2 regions (the two 2-region quadrants must be diagonal, side by side they would leave a half-board with 8 stars instead of 10). Regions never cross a quadrant; exactly one common solution. gen_quadrants_2star.py with QUADS_N=10 QUADS_QUOTA=4,6,6,4 (planted solution + CP-SAT repair); each puzzle is shown in a random one of the 8 orientations."
+
+[[book]]
 out    = "not_sudoku_2star"
 source = "rectangles/two_star_sudoku.csv"
 ranges = "not_sudoku_2star"
