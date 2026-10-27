@@ -83,6 +83,18 @@ Medium    = [170, 325]
 Hard      = [290, 480]
 Expert    = [375, 790]
 
+[ranges.mondrian_2star_9]   # 9x9 2-star bands (books/two_star.toml 9x9)
+Beginner  = [47, 160]
+Medium    = [160, 315]
+Hard      = [310, 465]
+Expert    = [380, 745]
+
+[ranges.mondrian_2star_9_mono]   # 1-board 9x9 2-star bands (books/two_star.toml 9x9_mono)
+Beginner  = [50, 140]
+Medium    = [145, 275]
+Hard      = [270, 435]
+Expert    = [335, 710]
+
 [ranges.venn_2star]   # 10x10 2-star bands from books/two_star.toml
 Beginner  = [70, 205]
 Medium    = [190, 380]
@@ -303,8 +315,8 @@ notes  = "10x10 2-star venn (VennGenerator min_region_size=3, venn2star_boards.p
 
 [[book]]
 out    = "mondrian_2star"
-source = "rectangles/mondrian_2star_scored.csv"
-ranges = "mondrian_2star"
+source = "rectangles/mondrian_2star_9_scored.csv"
+ranges = "mondrian_2star_9"
 tiers  = [
   {tier="Beginner", count=100},
   {tier="Medium", count=400},
@@ -312,12 +324,12 @@ tiers  = [
   {tier="Expert", count=100},
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
-notes  = "10x10 2-star mondrian (SubdivisionGenerator min_region_size=3, mondrian2star_boards.py + mondrian2star_pairs.py, 2026-10-25). Pool = random 5,000-puzzle sample of 286k pairs from 5,000 boards."
+notes  = "9x9 2-star mondrian (SubdivisionGenerator min_region_size=3, mondrian2star_boards.py + mondrian2star_pairs.py, 2026-10-27; replaced the 10x10 book, whose pool is still rectangles/mondrian_2star_scored.csv). Pool = random 10,000-puzzle sample of 184k pairs from 1,500 of 113k boards."
 
 [[book]]
 out    = "mondrian_2star_mono"
-source = "rectangles/mondrian_2star_mono_scored.csv"
-ranges = "mondrian_2star_mono"
+source = "rectangles/mondrian_2star_9_mono_scored.csv"
+ranges = "mondrian_2star_9_mono"
 tiers  = [
   {tier="Beginner", count=10},
   {tier="Medium", count=40},
@@ -325,17 +337,17 @@ tiers  = [
   {tier="Expert", count=10},
 ]
 bonus  = { Grandmaster = 1, UNSOLVED = 1 }
-notes  = "Token 1-board 10x10 2-star mondrian: boards from mondrian2star_boards.py whose rectangle layout has exactly one solution (264 from the first pilot). 10% the size of mondrian_2star. Pool grown 2026-10-25 to 3,547 boards by mondrian_mono_boards.py (10 min search, 6.3k hits ~3.3k distinct; the space looks nearly saturated)."
+notes  = "Token 1-board 9x9 2-star mondrian: the 5,412 unique-solution boards of a 90 s mondrian2star_boards.py run (2026-10-27; check_pool_unique clean); 10% the size of mondrian_2star. Replaced the 10x10 token book (pool rectangles/mondrian_2star_mono_scored.csv)."
 
-[ranges.mondrian_3star]   # 14x14 3-star Mondrian. Medium/Hard/Expert are exactly the regular 14x14 3-star bands (books/three_star.toml; the pool has 2.2k / 10k / 8.5k candidates in them for 400 / 400 / 100 slots). Beginner is Mondrian-specific: Beginner-tier puzzles score 275-550 (5th-95th percentile) here, so the regular 150-270 band would hold ~1 puzzle; it is capped at 400 (1,000 candidates for 100 slots) so Beginner stays below the Medium band's typical score.
-Beginner  = [275, 400]
-Medium    = [275, 525]
-Hard      = [510, 770]
-Expert    = [655, 1385]
+[ranges.mondrian_3star]   # 13x13 3-star Mondrian. Medium/Hard/Expert are exactly the regular 13x13 3-star bands (books/three_star.toml). Beginner is Mondrian-specific: Beginner-tier puzzles score 129-552 here (median 385), so the regular 115-250 band would hold ~100 of them; it is widened to [130, 400] (558 candidates for 100 slots).
+Beginner  = [130, 400]
+Medium    = [210, 520]
+Hard      = [555, 775]
+Expert    = [645, 1185]
 
 [[book]]
 out    = "mondrian_3star"
-source = "rectangles/mondrian_3star_14_scored.csv"
+source = "rectangles/mondrian_3star_13_scored.csv"
 ranges = "mondrian_3star"
 tiers  = [
   {tier="Beginner", count=100},
@@ -344,4 +356,4 @@ tiers  = [
   {tier="Expert", count=100},
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
-notes  = "14x14 3-star Mondrian: SubdivisionGenerator(stars_per_unit=3; every rectangle must be able to hold 3 non-touching stars), 17k solvable boards from mondrian2star_boards.py, 67,886 hashed-pair puzzles from mondrian2star_pairs.py, all scored 2026-10-26 (run_mond3_14.sh). Boards repeat across puzzles."
+notes  = "13x13 3-star Mondrian (replaced the 14x14 book, whose pool is still rectangles/mondrian_3star_14_scored.csv): SubdivisionGenerator(stars_per_unit=3; every rectangle must be able to hold 3 non-touching stars), 6.3k solvable boards from a 90 s mondrian2star_boards.py run, 1,500 of them hashed-paired into 46k puzzles (mondrian2star_pairs.py), a random 20,000 scored 2026-10-27. Boards repeat across puzzles."
