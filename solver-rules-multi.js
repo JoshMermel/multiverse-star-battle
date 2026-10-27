@@ -2034,7 +2034,7 @@ export function applyMultiStarRules(PuzzleSolver) {
       return {
         description: combo.length === 1
           ? `The highlighted tile holds the star ${unitPhrase} ${needsWord}.`
-          : `The ${combo.length} highlighted tiles each hold one star, accounting for all ${combo.length} stars ${unitPhrase} ${needsWord}.`,
+          : `The ${combo.length} highlighted tiles each hold one star, accounting for ${combo.length === 2 ? 'both' : `all ${combo.length}`} stars ${unitPhrase} ${needsWord}.`,
         highlights,
         marks: targets.map(idx => ({ idx, color: HINT_COLOR.TARGET })),
         tileOutlines,
