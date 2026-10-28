@@ -96,14 +96,19 @@ class MultiStarRules:
                 return local_changes
         return changes
 
+    # The N-adjacent-lines <-> regions sync rules are keyed on the deduction's
+    # SIZE, max(lines in the window, regions it matches), not on lines alone:
+    # with more than one star per unit the two sides decouple (2 columns can
+    # need 4 stars that 3 regions supply), and holding 3 regions in mind is as
+    # much work as 3 lines. See _hint_multi_regions_trapped_or_covered.
     def rule_unit_region_sync_multi_1(self, p):
-        return self._rule_unit_region_sync_multi(p, 1)
+        return self._rule_unit_region_sync_multi_range(p, 1, 2)
 
     def rule_unit_region_sync_multi_2(self, p):
-        return self._rule_unit_region_sync_multi(p, 2)
+        return self._rule_unit_region_sync_multi_range(p, 2, 3)
 
     def rule_unit_region_sync_multi_3(self, p):
-        return self._rule_unit_region_sync_multi(p, 3)
+        return self._rule_unit_region_sync_multi_range(p, 3, 4)
 
     def rule_unit_placement_forced_weak_all(self, p):
         return self.rule_unit_placement_forced_cond(p, level='weak', cond="all_stars")
@@ -874,7 +879,7 @@ class MultiStarRules:
                         return changes
         return 0
 
-    def _hint_multi_regions_trapped_or_covered(self, p, unit_combo, b_idx, axis):
+    def _hint_multi_regions_trapped_or_covered(self, p, unit_combo, b_idx, axis, size_range=None):
         """
         Quota-aware trapped/covered region <-> unit-combo sync for board
         b_idx, generalizing the 1-star pin-rule pattern to units/regions
@@ -882,13 +887,15 @@ class MultiStarRules:
         NEED, not a raw count of regions/cells -- see
         get_regions_needing_stars). unit_combo is a list of unit index-lists
         (rows or columns) and need not be adjacent, so this backs both the
-        4+-adjacent-window caller (_rule_multi_window_sync) and the disjoint
-        2-unit caller (rule_unit_region_sync_multi_2_disjoint).
+        adjacent-window callers (_rule_multi_window_sync) and the disjoint
+        2-unit caller (rule_unit_region_sync_multi_2_disjoint), which takes an
+        already-built unit_combo so it also works for non-adjacent units.
 
-        This is the same two-case logic as _apply_pin_rule_multi (which
-        handles adjacent windows directly via start_u/u_range); this version
-        takes an already-built unit_combo instead so it also works for
-        disjoint combinations of units.
+        size_range: optional (lo, hi) bounds (lo inclusive, hi exclusive,
+        None = unbounded) on the deduction's size, max(len(unit_combo),
+        number of regions it matches) -- the pinned regions for trapped, the
+        touching regions for covered. A case whose size falls outside it is
+        skipped (a different tier's rule picks it up). None = no filter.
 
         Bug history: this used to compare `p.regions` (a list of one
         region-dict per board) against `b_idx` (an int) directly -- always
@@ -918,6 +925,12 @@ class MultiStarRules:
 
         needing = p.get_regions_needing_stars(b_idx)
 
+        def size_ok(n_regions):
+            if size_range is None:
+                return True
+            lo, hi = size_range
+            return max(n, n_regions) >= lo and (hi is None or max(n, n_regions) < hi)
+
         # Trapped: regions entirely confined to unit_combo.
         pinned = [
             entry for entry in needing
@@ -925,7 +938,7 @@ class MultiStarRules:
             and all(i in unit_idxs for i in avail)
         ]
         total_pinned_needed = sum(entry["remaining"] for entry in pinned)
-        if pinned and total_pinned_needed == required_count:
+        if pinned and total_pinned_needed == required_count and size_ok(len(pinned)):
             reg_union = set().union(*(e["unit"]["indices"] for e in pinned))
             label = f"MultiRegionSync({n}-{axis}, B{b_idx+1} trapped)"
             changes = sum(
@@ -942,7 +955,7 @@ class MultiStarRules:
             if e["unit"]["label"].split(" ")[-1] in touching_labels
         ]
         total_touching_needed = sum(entry["remaining"] for entry in touching)
-        if touching and total_touching_needed == required_count:
+        if touching and total_touching_needed == required_count and size_ok(len(touching)):
             reg_union = set().union(*(e["unit"]["indices"] for e in touching))
             label = f"MultiRegionSync({n}-{axis}, B{b_idx+1} covering)"
             changes = sum(
@@ -954,7 +967,7 @@ class MultiStarRules:
 
         return 0
 
-    def _rule_multi_window_sync(self, p, n, axis):
+    def _rule_multi_window_sync(self, p, n, axis, size_range=None):
         """Helper method to run windowed region sync across 'n' units along a specific axis."""
         changes = 0
         units = p.row_indices if axis == "row" else p.col_indices
@@ -972,38 +985,29 @@ class MultiStarRules:
             window_units = [units[i] for i in window_positions]
 
             for b_idx in range(p.n_boards):
-                changes = self._hint_multi_regions_trapped_or_covered(p, window_units, b_idx, axis)
+                changes = self._hint_multi_regions_trapped_or_covered(p, window_units, b_idx, axis, size_range)
                 if changes > 0:
                     return changes
         return 0
 
     def _rule_unit_region_sync_multi_range(self, p, lo, hi):
-        for n in range(lo, p.n if hi is None else min(hi, p.n)):
+        """Sync deductions whose SIZE (see _hint_multi_regions_trapped_or_covered)
+        is in [lo, hi); hi=None is unbounded. Windows of every width up to hi
+        are tried, since a narrow window matching many regions has a large size."""
+        for n in range(1, p.n if hi is None else min(hi, p.n)):
             for axis in ["row", "col"]:
-                changes = self._rule_multi_window_sync(p, n, axis)
+                changes = self._rule_multi_window_sync(p, n, axis, (lo, hi))
                 if changes > 0:
                     return changes
         return 0
 
     def rule_unit_region_sync_multi_4_to_5(self, p):
-        """Hard: windows of 4 or 5 adjacent rows/cols."""
+        """Hard: sync deductions of size 4 or 5."""
         return self._rule_unit_region_sync_multi_range(p, 4, 6)
 
     def rule_unit_region_sync_multi_6_plus(self, p):
-        """Expert: windows of 6 or more adjacent rows/cols."""
+        """Expert: sync deductions of size 6 or more."""
         return self._rule_unit_region_sync_multi_range(p, 6, None)
-
-    def _rule_unit_region_sync_multi(self, p, n):
-        """
-        Generalized N-adjacent-rows/cols <-> region sync, for units and
-        regions that can hold more than 1 star. Python port of
-        hintUnitRegionSyncMulti(N) in solver.js.
-        """
-        for axis in ("row", "col"):
-            changes = self._apply_pin_rule_multi(p, n, axis)
-            if changes > 0:
-                return changes
-        return 0
 
     def _eligible_axis_windows(self, p, n, axis):
         """
@@ -1042,69 +1046,6 @@ class MultiStarRules:
                 continue
             windows.append(positions)
         return windows
-
-    def _apply_pin_rule_multi(self, p, n, axis):
-        """
-        Multi-star generalization of _apply_pin_rule: instead of comparing a
-        COUNT of pinned/covering regions to a count of units (which assumes 1
-        star per region), sums each region's actual remaining star need and
-        compares that sum to the window's total remaining need.
-        """
-        units = p.row_indices if axis == "row" else p.col_indices
-        for u_range in self._eligible_axis_windows(p, n, axis):
-            unit_idxs = set().union(*(units[u] for u in u_range))
-
-            stars_in_window = sum(1 for i in unit_idxs if p.grid[i] == "x")
-            required_count = n * p.stars_per_unit - stars_in_window
-            if required_count <= 0:
-                continue
-
-            avail_in_units = [i for i in unit_idxs if p.grid[i] is None]
-            if not avail_in_units:
-                continue
-
-            start_u = u_range[0]
-            for b_idx in range(p.n_boards):
-                needing = p.get_regions_needing_stars(b_idx)
-
-                # Case (b): regions entirely confined to the window ("trapped")
-                # collectively need exactly as many stars as the window still
-                # needs -> rest of the window (outside those regions) is dots.
-                pinned = [
-                    entry for entry in needing
-                    if (avail := [i for i in entry["unit"]["indices"] if p.grid[i] is None])
-                    and all(i in unit_idxs for i in avail)
-                ]
-                total_pinned_needed = sum(entry["remaining"] for entry in pinned)
-                if pinned and total_pinned_needed == required_count:
-                    reg_union = set().union(*(e["unit"]["indices"] for e in pinned))
-                    label = f"PinMulti({n}-{axis} @ {start_u}, B{b_idx+1} trapped)"
-                    changes = sum(
-                        p.validate_and_set(idx, ".", label, self.verbose)
-                        for idx in unit_idxs if idx not in reg_union and p.grid[idx] is None
-                    )
-                    if changes > 0:
-                        return changes
-
-                # Case (a): regions touching the window ("covering") collectively
-                # need exactly as many stars as the window still needs -> rest of
-                # those regions (outside the window) is dots.
-                touching_labels = {p.cell_to_region[b_idx][i] for i in avail_in_units}
-                touching = [
-                    e for e in needing
-                    if e["unit"]["label"].split(" ")[-1] in touching_labels
-                ]
-                total_touching_needed = sum(entry["remaining"] for entry in touching)
-                if touching and total_touching_needed == required_count:
-                    reg_union = set().union(*(e["unit"]["indices"] for e in touching))
-                    label = f"PinMulti({n}-{axis} @ {start_u}, B{b_idx+1} covering)"
-                    changes = sum(
-                        p.validate_and_set(idx, ".", label, self.verbose)
-                        for idx in reg_union if idx not in unit_idxs and p.grid[idx] is None
-                    )
-                    if changes > 0:
-                        return changes
-        return 0
 
     # -- Restored from pre-experiment (2★+) --------------------------------------
     #
@@ -1320,13 +1261,13 @@ class MultiStarRules:
     # entire quota (N rows x 1 star/row = N). Once a region can need more
     # than one star, "N regions confined to N rows" no longer implies "these
     # regions supply the window's entire quota" (a window of N rows needs
-    # N * stars_per_unit stars, not N) -- see _apply_pin_rule_multi's
+    # N * stars_per_unit stars, not N) -- see _hint_multi_regions_trapped_or_covered's
     # required_count for the same distinction. So this pools every trapped
     # region (any board) in the window and compares their summed remaining
     # need to the window's actual required_count, not to n. Genuinely
     # cross-board only: an all-same-board trapped set would already have
     # been caught earlier (Medium/Hard) by rule_unit_region_sync_multi_2/_3
-    # (_apply_pin_rule_multi's own per-board Case (b)), so this requires the
+    # (_hint_multi_regions_trapped_or_covered's own per-board Case (b)), so this requires the
     # trapped set to span at least 2 distinct boards.
 
     def rule_crossboard_n_region_pinned_multi_2_rows(self, p):
@@ -1350,11 +1291,11 @@ class MultiStarRules:
         placed in the window) -- and that trapped set spans at least 2
         different boards. (A trapped set confined to one board is already
         covered by rule_unit_region_sync_multi_2/_3's "trapped" case, via
-        _apply_pin_rule_multi -- this rule only fires on the genuinely
+        _hint_multi_regions_trapped_or_covered -- this rule only fires on the genuinely
         cross-board case.)
         ACTION: every other open cell in the window is a dot.
 
-        Mirrors _apply_pin_rule_multi's Case (b), generalized to pool
+        Mirrors _hint_multi_regions_trapped_or_covered's Case (b), generalized to pool
         regions from every board instead of one board at a time. Requires
         the trapped regions' open cells to be pairwise disjoint: since
         boards share one physical grid, a region on board A and a region on

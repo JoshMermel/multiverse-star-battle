@@ -1073,13 +1073,29 @@ export function applyMultiStarRules(PuzzleSolver) {
   // getRegionsNeedingStars) rather than just whether it has any star at all, so they
   // stay correct when a region or row/col can hold more than one star.
 
+  // A region<->line sync deduction's SIZE is max(lines in the window, regions
+  // it matches), and that size -- not the line count alone -- sets its tier
+  // (hintUnitRegionSyncMulti / _hintMultiRegionSyncRange). With more than one
+  // star per unit the two sides decouple: 2 columns can need 4 stars that 3
+  // regions supply, and juggling 3 regions is as much work as 3 lines.
+  // sizeRange = [lo, hi) (hi may be Infinity); undefined = no limit.
+  p._syncSizeInRange = function (lines, regions, sizeRange) {
+    if (!sizeRange) return true;
+    const size = Math.max(lines, regions);
+    return size >= sizeRange[0] && size < sizeRange[1];
+  };
+
   // Case (a): if the regions touching N adjacent rows/cols need, in total, exactly as
   // many stars as those rows/cols still need, then all of those regions' remaining
   // stars must land inside the window — so the rest of those regions must be dots.
   // `needingRegs`/`cellToRegionMap` are precomputed once per board by the
   // caller (they only depend on bIdx, not on unitCombo) rather than
   // recomputed on every window this is checked against.
-  p._hintMultiUnitsCoveredByRegions = function (unitCombo, bIdx, axis, needingRegs, cellToRegionMap) {
+  //
+  // `sizeRange` ([lo, hi), hi may be Infinity) limits which deductions this
+  // reports, by SIZE = max(lines in the window, regions it matches) -- see
+  // _syncSizeInRange. Omitted = no limit (the disjoint-window callers).
+  p._hintMultiUnitsCoveredByRegions = function (unitCombo, bIdx, axis, needingRegs, cellToRegionMap, sizeRange) {
     const windowIndices = unitCombo.flat();
     const windowSet = new Set(windowIndices);
 
@@ -1095,6 +1111,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     const totalTouchingNeeded = touchingRegs.reduce((sum, { remaining }) => sum + remaining, 0);
     if (touchingRegs.length === 0 || totalTouchingNeeded !== requiredCount) return null;
+    if (!this._syncSizeInRange(unitCombo.length, touchingRegs.length, sizeRange)) return null;
 
     const regUnion = new Set(touchingRegs.flatMap(({ region }) => region.indices));
     const targets = Array.from(regUnion)
@@ -1134,7 +1151,7 @@ export function applyMultiStarRules(PuzzleSolver) {
   // those regions) must be dots.
   // `needingRegs` is precomputed once per board by the caller (see
   // _hintMultiUnitsCoveredByRegions above).
-  p._hintMultiRegionsTrappedInUnits = function (windowIndices, bIdx, axis, needingRegs) {
+  p._hintMultiRegionsTrappedInUnits = function (windowIndices, bIdx, axis, needingRegs, sizeRange) {
     const windowSet = new Set(windowIndices.flat());
     const allIndices = windowIndices.flat();
 
@@ -1149,6 +1166,7 @@ export function applyMultiStarRules(PuzzleSolver) {
 
     const totalPinnedNeeded = pinnedRegs.reduce((sum, { remaining }) => sum + remaining, 0);
     if (pinnedRegs.length === 0 || totalPinnedNeeded !== requiredCount) return null;
+    if (!this._syncSizeInRange(windowIndices.length, pinnedRegs.length, sizeRange)) return null;
 
     const regUnion = new Set(pinnedRegs.flatMap(({ region }) => region.indices));
     const targets = allIndices.filter(idx =>
@@ -1183,7 +1201,7 @@ export function applyMultiStarRules(PuzzleSolver) {
   };
 
   // Find all 2★/3★-generalized sync hints for a window of N adjacent rows/cols.
-  p._hintMultiWindowRegionSyncAll = function (N, axis) {
+  p._hintMultiWindowRegionSyncAll = function (N, axis, sizeRange) {
     const n = this.n;
     const axisIndices = this.axisIndices[axis];
 
@@ -1219,26 +1237,22 @@ export function applyMultiStarRules(PuzzleSolver) {
       const needingRegs = this.getRegionsNeedingStars(bIdx);
       const cellToRegionMap = this.buildCellToRegionMap(bIdx);
       for (const windowIndices of windows) {
-        const trapped = this._hintMultiRegionsTrappedInUnits(windowIndices, bIdx, axis, needingRegs);
+        const trapped = this._hintMultiRegionsTrappedInUnits(windowIndices, bIdx, axis, needingRegs, sizeRange);
         if (trapped) candidates.push(trapped);
 
-        const covered = this._hintMultiUnitsCoveredByRegions(windowIndices, bIdx, axis, needingRegs, cellToRegionMap);
+        const covered = this._hintMultiUnitsCoveredByRegions(windowIndices, bIdx, axis, needingRegs, cellToRegionMap, sizeRange);
         if (covered) candidates.push(covered);
       }
     }
     return candidates;
   };
 
-  // Rule (2★/3★): Check N adjacent rows/columns synchronized with the regions they touch,
-  // accounting for units and regions that can hold more than 1 star.
+  // Rule (2★/3★): region<->line sync deductions of SIZE N (see
+  // _syncSizeInRange): N adjacent rows/columns against the regions they touch
+  // or pin, accounting for units and regions that can hold more than 1 star.
+  // Windows narrower than N count too, when they match N or more regions.
   p.hintUnitRegionSyncMulti = function (N) {
-    const candidates = [];
-    for (const axis of ["Row", "Column"]) {
-      candidates.push(...this._hintMultiWindowRegionSyncAll(N, axis));
-    }
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => (a.highlights[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? 0));
-    return candidates;
+    return this._hintMultiRegionSyncRange(N, N + 1);
   };
 
   // -- Restored from pre-experiment (2★+) --------------------------------------
@@ -3192,17 +3206,20 @@ export function applyMultiStarRules(PuzzleSolver) {
     return hints;
   };
 
-  // Windows of N adjacent rows/cols for lo <= N < hi (hi=Infinity -> up to
-  // the board size). 4-5 is Hard (unitRegionSyncMulti4To5); 6 or more is
-  // Expert (unitRegionSyncMulti6Plus).
+  // Sync deductions whose size (see _syncSizeInRange) is lo <= size < hi
+  // (hi=Infinity -> unbounded). 4-5 is Hard (unitRegionSyncMulti4To5); 6 or
+  // more is Expert (unitRegionSyncMulti6Plus). Windows of every width below hi
+  // are tried, since a narrow window matching many regions has a large size.
   p._hintMultiRegionSyncRange = function (lo, hi) {
     const candidates = [];
-    for (let n = lo; n < Math.min(hi, this.n); n++) {
+    for (let n = 1; n < Math.min(hi, this.n); n++) {
       for (const axis of ["Row", "Column"]) {
-        candidates.push(...this._hintMultiWindowRegionSyncAll(n, axis));
+        candidates.push(...this._hintMultiWindowRegionSyncAll(n, axis, [lo, hi]));
       }
     }
-    return candidates.length > 0 ? candidates : null;
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => (a.highlights[0]?.idx ?? 0) - (b.highlights[0]?.idx ?? 0));
+    return candidates;
   };
 
   p._getMultiStarRuleList = function () {

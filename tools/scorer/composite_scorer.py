@@ -166,7 +166,9 @@ class CompositeScorer(ScorerCore, CommonRules, SingleStarRules, MultiStarRules):
             (self.rule_region_tile_dots,                         10, "Beginner"),
             (self.rule_line_tile_dots,                           10, "Beginner"),
             (self.rule_unit_placement_forced_weak_dots,          10, "Beginner"),
-            # Moved here from Medium (multi-star-rules-experiment).
+            # Moved here from Medium (multi-star-rules-experiment). The
+            # sync_multi_N tiers key on a deduction's size, max(lines,
+            # regions) -- see rules_multi_star.py.
             (self.rule_unit_region_sync_multi_1,                  15, "Beginner"),
 
             # -- Medium -------------------------------------------------------
