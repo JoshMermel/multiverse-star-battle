@@ -94,11 +94,11 @@ puzzle_4851_180,8,AAAAABBBAAACCBBBAAACCCDBEAFCCCCBEFFFFCGBEHFFFGGGEEEFFGGGEEEGGG
 puzzle_16671_180,8,AAAAABBBAAACCCBBADDCCCEBFDDCCCCBFDDDDCCBFGDDDCCHFFDDDHHHFFFHHHHH,..x.........x.........x.x..............x.x.........x.........x..,236,Expert,True
 puzzle_6340_180,8,AAAAABBBAAACBBBBDACCCBEBDCCFCFFBDCCFCFFBDGDFFFHBDDDDFHHHDDDHHHHH,x...........x.........x...x..........x...x.........x...........x,236,Expert,True
 puzzle_1795_180,8,AAAAABBBAAACABBBDDCCBBEBDDCCBBBBDDDDFFBBDGDDFFBBDDDHFHHHDDDHHHHH,.......x....x.........x...x..........x...x.........x....x.......,284,Expert,True
-puzzle_1_translate,8,AAAAABBCAAAABBCCAAADDBBBAADDDBBBEEEEEFFGEEEEFFGGEEEHHFFFEEHHHFFF,.x............x....x.........x.........x....x...x.........x.....,298,Expert,True
+puzzle_1_translate,8,AAAAABBCAAAABBCCAAADDBBBAADDDBBBEEEEEFFGEEEEFFGGEEEHHFFFEEHHHFFF,.x............x....x.........x.........x....x...x.........x.....,303,Expert,True
 puzzle_13315_180,8,ABBBBBCDABBBCCCDBBBECDDDBBFECDDDBBBECGDDBBBECDDDBEEEDDDHBEDDDDDH,x...........x.........x...x..........x...x.........x...........x,320,Expert,True
 puzzle_2728_180,8,ABBBBCCCABBBCCCCBBBBCCDDBBEBBCDDBBFDDGDDBBFFDDDDFFFFDDDHFFFDDDDH,x...........x.........x...x..........x...x.........x...........x,320,Expert,True
-puzzle_22638_diag,8,AABBBBCCAAABAACCDAAAACCEDDAAAAEEDAAAFAEEDAGAAAAAGGGHHAAAGGHHHAAA,.....x.........x..x...........x.....x...x..........x.....x......,351,Expert,True
+puzzle_22638_diag,8,AABBBBCCAAABAACCDAAAACCEDDAAAAEEDAAAFAEEDAGAAAAAGGGHHAAAGGHHHAAA,.....x.........x..x...........x.....x...x..........x.....x......,356,Expert,True
 puzzle_22891_180,8,AAABBCCCAAABBBBBDAAAABBBDEEEEBBBEEEBBBBFEEEGGGGFEEEEEGGGHHHEEGGG,......x.....x.....x.....x..............x.....x.....x.....x......,379,Expert,True
-puzzle_22262_diag,8,ABBCCCDDABBCDDDDAABBDDDEDADDDDDEDDDDDFEEDDGDDFFFDDDDHHFFDDDDDHHH,.x.........x....x...........x.........x...x............x.....x..,679,Grandmaster,True
-puzzle_10_translate,8,ABBBBBBBABBCBBBBACCCCCCDAACCCCDDEFFFFFFFEFFGFFFFEGGGGGGHEEGGGGHH,.....x.....x...........x.x..........x...x.........x...........x.,1525,Grandmaster,True
+puzzle_22262_diag,8,ABBCCCDDABBCDDDDAABBDDDEDADDDDDEDDDDDFEEDDGDDFFFDDDDHHFFDDDDDHHH,.x.........x....x...........x.........x...x............x.....x..,684,Grandmaster,True
+puzzle_10_translate,8,ABBBBBBBABBCBBBBACCCCCCDAACCCCDDEFFFFFFFEFFGFFFFEGGGGGGHEEGGGGHH,.....x.....x...........x.x..........x...x.........x...........x.,1530,Grandmaster,True
 puzzle_16493_180,8,AAABCCDDAEBBBCCDAEEBBCCBAEEEBBBBEEEEBBBFEGGEEBBFHGGEEEBFHHGGEFFF,......x....x.........x..x..............x..x.........x....x......,2642,Grandmaster,True

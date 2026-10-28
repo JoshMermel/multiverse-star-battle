@@ -25,7 +25,7 @@ Hard      = [115, 225]   # INFERRED from current book span -- verify
 Expert    = [190, 450]   # INFERRED from current book span -- verify
 
 [ranges.9x9_equal_area]
-Medium    = [160, 320]   # 9x9 2-star Medium range (the family has only 2 Medium puzzles: 266, 299)
+Medium    = [160, 350]   # 9x9 2-star Medium range (the family has only 2 Medium puzzles: 266, 350 after the 2026-10-27 sync-size rescore; was 266, 299)
 Hard      = [300, 720]   # widened from [300,600] to include ALL 17 Hard puzzles (333-701)
 Expert    = [300, 1950]  # wide on purpose: equal-area Experts score 316-1984
 
