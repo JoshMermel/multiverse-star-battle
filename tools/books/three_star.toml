@@ -147,3 +147,9 @@ tiers  = [
 ]
 bonus  = { Grandmaster = 5, UNSOLVED = 5 }
 notes  = "14x14 3-star, three boards (small_region_frac 0.15 for the easier tiers, plus unbiased for Expert and up)."
+
+[[book]]
+out    = "13x13_grandmaster"
+source = "three_star/13x13_grandmaster.csv"
+tiers  = [ {tier="Grandmaster", count=500, min=0, max=99999} ]
+notes  = "2026-11-02, Josh's coworker's request: 13x13 3-star Grandmasters, two boards. 300 hardest standard-region pairs (three_star/13x13.csv) + 100 Mondrian + 100 square-free picked so each family's score spread matches the standard 300's quantiles (nearest unused Grandmaster to each of 100 quantile targets). The pool file library/three_star/13x13_grandmaster.csv is built by tools/gm13_pool.py (run from tools/), not by build_books; re-run it after rescoring the source pools."
