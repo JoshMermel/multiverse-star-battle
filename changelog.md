@@ -15,6 +15,10 @@
     comment, the title) is ignored.
 -->
 
+## 2026-11-03 — Keyboard shortcuts
+
+- **Customizable keyboard shortcuts**: Settings → Keyboard shortcuts lets you bind any key (Esc and Ctrl/Alt/Cmd combos included) to undo, redo, reset, hint, "Correct so far?", each cell color and texture, Dots & stars, and Hide marks. Previous/next puzzle keep the ← and → arrows by default but can be rebound too.
+
 ## 2026-10-23 — Two-board giants and button placement
 
 - **Two-board Giants** books: 17x17 (four stars), 21x21 (five stars) and 25x25 (six stars), each with two boards sharing one solution. They sit alongside the existing 1-Board books in Giants.

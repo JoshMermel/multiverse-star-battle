@@ -29,6 +29,7 @@ const APP_SHELL = [
   './script.js',
   './renderer.js',
   './input.js',
+  './keybindings.js',
   './puzzle-loader.js',
   './rules.js',
   './history.js',

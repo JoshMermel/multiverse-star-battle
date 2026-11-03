@@ -185,6 +185,13 @@
         </div>
         <div class="settings-account-zone">
           <div class="settings-row-text">
+            <span class="settings-label">Keyboard shortcuts</span>
+            <span class="settings-desc">Choose keys for undo, hint, cell colors and more — handy for keeping one hand off the mouse.</span>
+          </div>
+          <button id="keys-btn" class="auth-btn" aria-haspopup="dialog">Customize…</button>
+        </div>
+        <div class="settings-account-zone">
+          <div class="settings-row-text">
             <span class="settings-label">Print puzzles</span>
             <span class="settings-desc">Make a PDF booklet of puzzles from the current book, with an answer key.</span>
           </div>
@@ -203,6 +210,23 @@
             <span class="settings-desc">Permanently deletes all puzzle progress and solved history.</span>
           </div>
           <button id="clear-saves-btn" class="danger-btn">Clear saves</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="keys-modal" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="keys-modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="keys-modal-title">Keyboard shortcuts</h2>
+        <button data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="print-intro">Click a shortcut, then press the key you want (Esc and modifier combos like Ctrl+Z are fine). Shortcuts don't fire while a window like this one is open. The cell-color ones only work while "Cell colors" is on in Settings.</p>
+        <p id="keys-status" class="keys-status" role="status" aria-live="polite"></p>
+        <div id="keys-list" class="keys-list"></div>
+        <div class="print-actions">
+          <button id="keys-reset-btn" class="secondary-btn" type="button">Restore defaults</button>
         </div>
       </div>
     </div>

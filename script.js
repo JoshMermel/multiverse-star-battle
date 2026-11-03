@@ -4,6 +4,7 @@ import { storageManager } from './storage.js';
 import { isRegionlessBoard } from './geometry.js';
 import { applyRenderer } from './renderer.js';
 import { applyInput } from './input.js';
+import { applyKeybindings } from './keybindings.js';
 import { applyPrint } from './print.js';
 import { applyPuzzleLoader } from './puzzle-loader.js';
 import { applyRules } from './rules.js';
@@ -613,6 +614,7 @@ class StarBattleGame {
 // Register mixins before instantiating
 applyRenderer(StarBattleGame);
 applyInput(StarBattleGame);
+applyKeybindings(StarBattleGame);
 applyPrint(StarBattleGame);
 applyPuzzleLoader(StarBattleGame);
 applyRules(StarBattleGame);

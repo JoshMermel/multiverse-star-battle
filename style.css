@@ -1808,3 +1808,51 @@ body.tab-mode .board-container.tab-visible {
 .primary-btn:not(:disabled):hover { background: var(--primary-blue); filter: brightness(1.1); }
 .primary-btn:disabled { opacity: 0.5; cursor: default; }
 .secondary-btn { background: transparent; border: 1.5px solid var(--border-strong); color: var(--text-primary); }
+
+/* 15. KEYBOARD SHORTCUTS MODAL */
+.keys-status { margin: 0 0 8px; min-height: 1.3em; font-size: 0.85rem; color: var(--text-secondary); }
+.keys-list { display: flex; flex-direction: column; }
+.key-section {
+  margin: 14px 0 4px;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.key-section:first-child { margin-top: 0; }
+.key-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.key-row-label { flex: 1; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-primary); }
+/* The palette's own swatch/texture classes, shrunk to a label-sized chip. */
+.key-swatch { display: inline-block; flex-shrink: 0; width: 18px; height: 18px; --cell-size: 18px; border: 1.5px solid var(--border-strong); }
+.key-swatch.hl-swatch { border-radius: 50%; }
+.key-swatch.hl-tex-btn { border-radius: 4px; }
+.key-bind-btn {
+  min-width: 96px;
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--bg-white);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.key-bind-btn--unbound { font-weight: 400; color: var(--text-secondary); }
+.key-bind-btn--capturing { border-color: var(--primary-blue); box-shadow: 0 0 0 2px var(--primary-blue); }
+.key-clear-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.key-clear-btn:disabled { visibility: hidden; }

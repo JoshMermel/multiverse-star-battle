@@ -21,6 +21,7 @@ export function applyInput(GameClass) {
     this.setupBrowseModal();
     this.setupBookPicker();
     this.setupSettings();
+    this.setupKeybindingsModal();
     this.setupPrintModal();
     this.setupAuth();
   };
@@ -351,13 +352,9 @@ export function applyInput(GameClass) {
       });
     });
 
-    window.addEventListener('keydown', (e) => {
-      // Navigate puzzles with arrow keys unless focused on inputs.
-      const tag = document.activeElement?.tagName;
-      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-      if (e.key === 'ArrowLeft') { e.preventDefault(); this.stepPuzzle(-1); }
-      if (e.key === 'ArrowRight') { e.preventDefault(); this.stepPuzzle(1); }
-    });
+    // Configurable shortcuts (keybindings.js). Capture phase so it sees keys
+    // before the modals' own Escape handlers -- see _handleKeydown.
+    window.addEventListener('keydown', (e) => this._handleKeydown(e), true);
 
     window.addEventListener('pointerup', (e) => {
       if (this.isDragging) {
