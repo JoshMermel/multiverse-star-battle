@@ -827,8 +827,10 @@ def _finish_job(job, header, rows, total, source_rel, dup_check):
             lines.append("      groups: " + "  ".join(
                 f"{g} {a}" + (f"/{t}" if a != t else "") + (f" (avail {av})" if a < t or av < t else "")
                 for g, a, t, av in job.seg_groups[k]))
-    for rows_t in tier_blocks.values():     # tiers in recipe order; within a tier, ascending score
-        main.extend(sorted(rows_t, key=lambda r: (float(r[si]), job.tie_key(r))))
+    for tier_name, rows_t in tier_blocks.items():     # tiers in recipe order; within a tier, ascending score
+        # (UNSOLVED: score = cells decided, so descending = easiest first, hardest last)
+        sgn = -1 if tier_name == "UNSOLVED" else 1
+        main.extend(sorted(rows_t, key=lambda r: (sgn * float(r[si]), job.tie_key(r))))
     if any(sum(1 for sg in spec["segments"] if sg["tier"] == t) > 1 for t in tier_blocks):
         lines.append("  (segments of the same tier are merged into one score-sorted block)")
     if spec["shuffle"]:

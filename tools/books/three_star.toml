@@ -151,5 +151,11 @@ notes  = "14x14 3-star, three boards (small_region_frac 0.15 for the easier tier
 [[book]]
 out    = "13x13_grandmaster"
 source = "three_star/13x13_grandmaster.csv"
-tiers  = [ {tier="Grandmaster", count=500, min=0, max=99999} ]
-notes  = "2026-11-02, Josh's coworker's request: 13x13 3-star Grandmasters, two boards. 300 hardest standard-region pairs (three_star/13x13.csv) + 100 Mondrian + 100 square-free picked so each family's score spread matches the standard 300's quantiles (nearest unused Grandmaster to each of 100 quantile targets). The pool file library/three_star/13x13_grandmaster.csv is built by tools/gm13_pool.py (run from tools/), not by build_books; re-run it after rescoring the source pools."
+tiers  = [ {tier="Grandmaster", count=362, min=0, max=99999} ]
+notes  = "2026-11-08 re-pick after coworker feedback (the first version had short-opening / ONE crux / easy-cleanup puzzles). Pool library/three_star/13x13_grandmaster.csv is built by tools/gm13_pool.py (run from tools/), not by build_books: every solved Grandmaster 13x13 3-star pair from the standard, square-free and Mondrian pools, kept only if rules up to Expert decide <=25% of the board AND the solve has >=2 Grandmaster-tier steps. Re-run it after rescoring the source pools (delete library/three_star/13x13_gm_hardshare.json first)."
+
+[[book]]
+out    = "13x13_unsolved"
+source = "three_star/13x13_unsolved.csv"
+tiers  = [ {tier="UNSOLVED", count=100, min=0, max=99999} ]
+notes  = "2026-11-08, Josh coworker test book: 100 UNSOLVED 13x13 3-star two-board puzzles (40 standard, 30 square-free, 30 Mondrian) chosen as the ones where no single correct guess unlocks the board (see tools/unsolved13_pool.py, run from tools/; not built by build_books). Hardest last."
