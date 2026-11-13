@@ -515,16 +515,47 @@ class StarBattleGame {
   // pressing it after the hint was dismissed (clicking elsewhere) brings
   // the SAME hint back, so a long multi-step explanation can be re-read
   // without losing your place.
+  //
+  // With the "Incremental hints" setting on, each hint takes two presses:
+  // the first shows a NUDGE (where to look; see solver-nudges.js), the
+  // second the full hint, and the next press moves on to the following
+  // hint's nudge. _hintStep remembers the hint in progress:
+  //   { solver, state, hint, stage: 'nudge' | 'full' }
+  // and only applies while the board is unchanged (same solver instance and
+  // state string), so a move, undo-to-elsewhere or new puzzle starts fresh.
+  // Pressing Hint after dismissing a nudge goes on to the full hint (the
+  // player is asking for more); after dismissing a full hint it re-shows it,
+  // exactly as without the setting. Rules with no nudge (getNudge returns
+  // null: errors, "already solved", the peek at the solution) show the full
+  // hint at once.
   getHint() {
+    const incremental = localStorage.getItem('setting-incremental-hints') === 'true';
+    const state = this.state.join(',');
+    const step = this._hintStep;
+    const live = incremental && step && step.solver === this.solver && step.state === state;
+
+    if (live && (step.stage === 'nudge' || this._hintDisplayed !== true)) {
+      this.clearHintUI();
+      step.stage = 'full';
+      this.applyHintUI(step.hint);
+      this._hintDisplayed = true;
+      return;
+    }
+
     const advance = this._hintDisplayed === true;
     this.clearHintUI();
     const hint = this.solver.getHint({ advance });
-    if (hint) {
-      this.applyHintUI(hint);
-      this._hintDisplayed = true;
-    } else {
+    if (!hint) {
+      this._hintStep = null;
       this.showToast("No hints found!", "info");
+      return;
     }
+    const nudge = incremental ? this.solver.getNudge(hint) : null;
+    this._hintStep = incremental
+      ? { solver: this.solver, state, hint, stage: nudge ? 'nudge' : 'full' }
+      : null;
+    this.applyHintUI(nudge ?? hint);
+    this._hintDisplayed = true;
   }
 
   // --- URL Parameters ---

@@ -617,6 +617,9 @@ export class PuzzleSolver {
       const { key, fn } = rules[i];
       const hints = fn();
       if (!hints || hints.length === 0) continue;
+      // Tag each hint with its rule so getNudge (solver-nudges.js) can pick
+      // that rule's nudge wording / exemption.
+      for (const h of hints) h.ruleKey = key;
 
       if (key !== this.currentHintType) {
         this.currentHintType  = key;
@@ -685,6 +688,7 @@ export class PuzzleSolver {
       if (key === 'fromSolution') continue;
       const nextHints = fn();
       if (!nextHints || nextHints.length === 0) continue;
+      for (const h of nextHints) h.ruleKey = key;
       applicableSeen++;
       const fresh = nextHints.filter(h => !this._isRedundantPadding(batch[0], h));
       if (fresh.length === 0) continue;

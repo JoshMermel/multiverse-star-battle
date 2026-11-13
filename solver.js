@@ -2,6 +2,7 @@ import { PuzzleSolver } from './solver-core.js';
 import { applyCommonSolverRules } from './solver-rules-common.js';
 import { applySingleStarRules } from './solver-rules-single.js';
 import { applyMultiStarRules } from './solver-rules-multi.js';
+import { applyNudges } from './solver-nudges.js';
 
 // PuzzleSolver's core engine lives in solver-core.js; its hint rules are
 // mixed onto the prototype from the sibling solver-rules-*.js files, the
@@ -12,5 +13,6 @@ import { applyMultiStarRules } from './solver-rules-multi.js';
 applyCommonSolverRules(PuzzleSolver);
 applySingleStarRules(PuzzleSolver);
 applyMultiStarRules(PuzzleSolver);
+applyNudges(PuzzleSolver);
 
 export { PuzzleSolver };

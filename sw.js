@@ -39,6 +39,7 @@ const APP_SHELL = [
   './solver-rules-common.js',
   './solver-rules-single.js',
   './solver-rules-multi.js',
+  './solver-nudges.js',
   './constants.js',
   './geometry.js',
   './print.js',

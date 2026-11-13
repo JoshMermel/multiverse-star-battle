@@ -169,6 +169,9 @@ export function applyInput(GameClass) {
     const settingsToggles = [
       { key: 'setting-dark-mode', applyOnInit: true, onChange: (self, v) => self._applyDarkMode(v) },
       { key: 'setting-auto-fill-dots', applyOnInit: false, onChange: null },
+      // Read from localStorage on demand by getHint (script.js); flipping it
+      // just drops any half-finished nudge/full hint sequence.
+      { key: 'setting-incremental-hints', applyOnInit: false, onChange: (self) => { self._hintStep = null; } },
       { key: 'setting-tab-mode', applyOnInit: false, onChange: (self, v) => self._applyTabMode(v) },
       {
         key: 'setting-axis-labels', applyOnInit: false, onChange: (self) => {

@@ -663,6 +663,13 @@ export function applyRenderer(GameClass) {
     if (hint.tileOutlines) this._applyTileOutlines(hint.tileOutlines);
     if (hint.regionOutlines) this._applyRegionOutlines(hint.regionOutlines);
 
+    // Outlines name boards too. A nudge may carry nothing BUT outlines, and
+    // tab mode must still flag the other board it refers to.
+    for (const o of [...(hint.regionOutlines || []), ...(hint.tileOutlines || [])]) {
+      if (o.boardIdx !== undefined) involvedBoards.add(o.boardIdx);
+      (o.boards || []).forEach(b => involvedBoards.add(b));
+    }
+
     if (document.body.classList.contains('tab-mode')) {
       if (hint.boardIdx !== undefined) {
         // Single-board hint: just switch straight to it.
